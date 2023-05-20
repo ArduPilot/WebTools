@@ -1,6 +1,3 @@
-Test with `python -m http.server --bind 127.0.0.1`
+# Filter review
 
-Uses log parser from https://github.com/Williangalvani/JsDataflashParser
-
-WIP!
-
+A FFT tool for reviewing flight logs and gyro filter settings.
