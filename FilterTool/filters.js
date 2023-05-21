@@ -1,80 +1,63 @@
-function calc_lowpass_alpha_dt(dt, cutoff_freq)
-{
-    if (dt <= 0.0 || cutoff_freq <= 0.0) {
-        return 1.0;
-    }
-    var rc = 1.0/(Math.PI*2*cutoff_freq);
-    return dt/(dt+rc);
-}
-
 function PID(sample_rate,kP,kI,kD,filtE,filtD) {
+    this.sample_rate = sample_rate
 
     this._kP = kP;
     this._kI = kI;
     this._kD = kD;
 
-    this._dt = 1.0/sample_rate;
-    this.E_alpha = calc_lowpass_alpha_dt(this._dt,filtE)
-    this.D_alpha = calc_lowpass_alpha_dt(this._dt,filtD)
+    this.E_filter = new LPF_1P(sample_rate, filtE)
+    this.D_filter = new LPF_1P(sample_rate, filtD)
 
-    this._error = 0.0;
-    this._derivative = 0.0;
-    this._integrator = 0.0;
+    this.transfer = function(Z, Z1, Z2) {
+        const E_trans = this.E_filter.transfer(Z, Z1, Z2)
+        const D_trans = math.dotMultiply(E_trans, this.D_filter.transfer(Z, Z1, Z2))
 
-    this.reset = function(sample) {
-        this._error = 0.0;
-        this._derivative = 0.0;
-        this._integrator = 0.0;
-    }
+        const P_term = math.dotMultiply(E_trans, this._kP)
 
-    this.apply = function(error) {
+        // I term is k*z / (z - 1)
+        const I = math.dotMultiply(E_trans, math.dotDivide(Z, math.subtract(Z, 1)))
+        const I_term = math.dotMultiply(I, this._kI/this.sample_rate)
 
-        var error_last = this._error;
-        this._error += this.E_alpha * (error - this._error);
+        // D term is k * (1 - Z^-1)
+        const D =  math.dotMultiply(D_trans, math.subtract(1, Z1))
+        const D_term = math.dotMultiply(D, this._kD*this.sample_rate)
 
-        var derivative = (this._error - error_last) / this._dt;
-        this._derivative += this.D_alpha * (derivative - this._derivative)
-
-        this._integrator += this._error * this._kI * this._dt;
-
-        var P_out = this._error * this._kP;
-        var D_out = this._derivative * this._kD;
-
-        return P_out + this._integrator + D_out;
+        return math.add(P_term, I_term, D_term)
     }
     return this;
 }
 
 function LPF_1P(sample_rate,cutoff) {
-    this.reset = function(sample) {
-        this.value = sample;
+    // Helper function to get alpha
+    function calc_lowpass_alpha_dt(dt, cutoff_freq) {
+        if (dt <= 0.0 || cutoff_freq <= 0.0) {
+            return 1.0;
+        }
+        var rc = 1.0/(Math.PI*2*cutoff_freq);
+        return dt/(dt+rc);
     }
+
     if (cutoff <= 0) {
-        this.apply = function(sample) {
-            return sample;
+        this.transfer = function(Z, Z1, Z2) {
+            return math.ones(Z.length)._data
         }
         return this;
     }
     this.alpha = calc_lowpass_alpha_dt(1.0/sample_rate,cutoff)
-    this.value = 0.0;
-    this.apply = function(sample) {
-        this.value += this.alpha * (sample - this.value);
-        return this.value;
+    this.transfer = function(Z, Z1, Z2) {
+        // H(z) = a/(1-(1-a)*z^-1)
+        const denominator = math.subtract(1, math.dotMultiply(Z1, 1 - this.alpha))
+        return math.dotDivide(this.alpha, denominator)
     }
     return this;
 }
 
 function DigitalBiquadFilter(sample_freq, cutoff_freq) {
-    this.delay_element_1 = 0;
-    this.delay_element_2 = 0;
-    this.cutoff_freq = cutoff_freq;
+    this.sample_rate = sample_freq
 
     if (cutoff_freq <= 0) {
-        // zero cutoff means pass-thru
-        this.reset = function(sample) {
-        }
-        this.apply = function(sample) {
-            return sample;
+        this.transfer = function(Z, Z1, Z2) {
+            return math.ones(Z.length)._data
         }
         return this;
     }
@@ -88,40 +71,21 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
     this.b2 = this.b0;
     this.a1 = 2.0*(ohm*ohm-1.0)/c;
     this.a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
-    this.initialised = false;
 
-    this.apply = function(sample) {
-        if (!this.initialised) {
-            this.reset(sample);
-            this.initialised = true;
-        }
-        var delay_element_0 = sample - this.delay_element_1 * this.a1 - this.delay_element_2 * this.a2;
-        var output = delay_element_0 * this.b0 + this.delay_element_1 * this.b1 + this.delay_element_2 * this.b2;
+    this.transfer = function(Z, Z1, Z2) {
 
-        this.delay_element_2 = this.delay_element_1;
-        this.delay_element_1 = delay_element_0;
-        return output;
+        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
+        const b1z = math.dotMultiply(Z1, this.b1)
+        const b2z = math.dotMultiply(Z2, this.b2)
+        const a1z = math.dotMultiply(Z1, this.a1)
+        const a2z = math.dotMultiply(Z2, this.a2)
+
+        const numerator = math.add(this.b0, b1z, b2z)
+        const denominator = math.add(1, a1z, a2z)
+        return math.dotDivide(numerator, denominator)
     }
 
-    this.reset = function(sample) {
-        this.delay_element_1 = this.delay_element_2 = sample * (1.0 / (1 + this.a1 + this.a2));
-    }
-    
     return this;
-}
-
-function sq(v) {
-    return v*v;
-}
-
-function constrain_float(v,vmin,vmax) {
-    if (v < vmin) {
-        return vmin;
-    }
-    if (v > vmax) {
-        return vmax;
-    }
-    return v;
 }
 
 function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
@@ -129,7 +93,6 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     this.center_freq_hz = center_freq_hz;
     this.bandwidth_hz = bandwidth_hz;
     this.attenuation_dB = attenuation_dB;
-    this.need_reset = true;
     this.initialised = false;
 
     this.calculate_A_and_Q = function() {
@@ -146,9 +109,9 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
         if ((this.center_freq_hz > 0.0) && (this.center_freq_hz < 0.5 * this.sample_freq) && (this.Q > 0.0)) {
             var omega = 2.0 * Math.PI * this.center_freq_hz / this.sample_freq;
             var alpha = Math.sin(omega) / (2 * this.Q);
-            this.b0 =  1.0 + alpha*sq(this.A);
+            this.b0 =  1.0 + alpha*(this.A**2);
             this.b1 = -2.0 * Math.cos(omega);
-            this.b2 =  1.0 - alpha*sq(this.A);
+            this.b2 =  1.0 - alpha*(this.A**2);
             this.a0_inv =  1.0/(1.0 + alpha);
             this.a1 = this.b1;
             this.a2 =  1.0 - alpha;
@@ -166,40 +129,31 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
         this.initialised = false;
     }
 
-    this.apply = function(sample) {
-        if (!this.initialised || this.need_reset) {
-            // if we have not been initialised when return the input
-            // sample as output and update delayed samples
-            this.signal1 = sample;
-            this.signal2 = sample;
-            this.ntchsig = sample;
-            this.ntchsig1 = sample;
-            this.ntchsig2 = sample;
-            this.need_reset = false;
-            return sample;
+    this.transfer = function(Z, Z1, Z2) {
+        if (!this.initialised) {
+            return math.ones(Z.length)._data
         }
-        this.ntchsig2 = this.ntchsig1;
-        this.ntchsig1 = this.ntchsig;
-        this.ntchsig = sample;
-        var output = (this.ntchsig*this.b0 + this.ntchsig1*this.b1 + this.ntchsig2*this.b2 - this.signal1*this.a1 - this.signal2*this.a2) * this.a0_inv;
-        this.signal2 = this.signal1;
-        this.signal1 = output;
-        return output;
-    }
 
-    this.reset = function(sample) {
-        this.need_reset = true;
-        this.apply(sample);
+        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
+        const a0 = 1 / this.a0_inv
+
+        const b1z = math.dotMultiply(Z1, this.b1)
+        const b2z = math.dotMultiply(Z2, this.b2)
+        const a1z = math.dotMultiply(Z1, this.a1)
+        const a2z = math.dotMultiply(Z2, this.a2)
+
+        const numerator = math.add(this.b0, b1z, b2z)
+        const denominator = math.add(a0, a1z, a2z)
+        return math.dotDivide(numerator, denominator)
     }
 
     return this;
 }
 
 function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmncs,opts) {
+    this.sample_rate = sample_freq
     this.notches = []
     var chained = 1;
-    var dbl = false;
-    var triple = false;
     var composite_notches = 1;
     if (opts & 1) {
         dbl = true;
@@ -209,15 +163,9 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
         composite_notches = 3;
     }
 
-    this.reset = function(sample) {
-        for (n in this.notches) {
-            this.notches[n].reset(sample);
-        }
-    }
-
     if (enable <= 0) {
-        this.apply = function(sample) {
-            return sample;
+        this.transfer = function(Z, Z1, Z2) {
+            return math.ones(Z.length)._data
         }
         return this;
     }
@@ -258,7 +206,7 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
                 var notch_spread = bandwidth_hz / (32.0 * notch_center);
 
                 // adjust the fundamental center frequency to be in the allowable range
-                notch_center = constrain_float(notch_center, bandwidth_limit, nyquist_limit);
+                notch_center = math.min(math.max(notch_center, bandwidth_limit), nyquist_limit)
 
                 if (composite_notches != 2) {
                     // only enable the filter if its center frequency is below the nyquist frequency
@@ -282,11 +230,14 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
             }
         }
     }
-    this.apply = function(sample) {
+
+    this.transfer = function(Z, Z1, Z2) {
+        var H_total = math.ones(Z.length)._data
         for (n in this.notches) {
-            sample = this.notches[n].apply(sample);
+            const H = this.notches[n].transfer(Z, Z1, Z2);
+            H_total = math.dotMultiply(H_total, H)
         }
-        return sample;
+        return H_total;
     }
 }
 
@@ -294,70 +245,6 @@ function get_form(vname) {
     var v = parseFloat(document.getElementById(vname).value);
     setCookie(vname, v);
     return v;
-}
-
-function run_filters(filters,freq,sample_rate,samples,fast_filters = null,fast_sample_rate = null) {
-
-    for (var j=0;j<filters.length; j++) {
-        filters[j].reset(0.0);
-    }
-
-    var num_best_fit_points = 100;
-    var best_fit_offset = samples - num_best_fit_points;
-
-    // Best fit to sin to get amplitude, phase and DC offset
-    // https://math.stackexchange.com/questions/3926007/least-squares-regression-of-sine-wave
-    // Expecting output to be of same frequency at input
-    // Z = a*sin(t*kt + p) + O
-    // A = a*cos(p)
-    // B = a*sin(p)
-    // S = sin(t*kt)
-    // C = cos(t*kt)
-
-    var X = ML.MatrixLib.Matrix.ones(num_best_fit_points, 3);
-    var y = ML.MatrixLib.Matrix.zeros(num_best_fit_points, 1);
-
-    var kt =  Math.PI * 2.0 * freq;
-    var fast_filter_t = 0;
-    var fast_dt = 1.0 / fast_sample_rate;
-    for (var i=-0;i<samples;i++) {
-        var t = i / sample_rate;
-
-        // advance faster filters if any
-        if (fast_filters && fast_sample_rate) {
-            do {
-                // run filters upto current time
-                var output = Math.sin(fast_filter_t * kt);
-                for (var j=0;j<fast_filters.length; j++) {
-                    output = fast_filters[j].apply(output);
-                }
-                fast_filter_t += fast_dt;
-            } while ((fast_filter_t + fast_dt) <= t)
-            var input = output
-        } else {
-            var input = Math.sin(t * kt);
-        }
-
-        var output = input;
-        for (var j=0;j<filters.length; j++) {
-            output = filters[j].apply(output);
-        }
-        if (i >= best_fit_offset) {
-            var index = i - best_fit_offset;
-            X.data[index][0] = Math.sin(t * kt);
-            X.data[index][1] = Math.cos(t * kt);
-            y.data[index][0] = output;
-        }
-    }
-
-    // Z = a*sin(t*kt + p) + O
-    var ABO = ML.MatrixLib.solve(X, y);
-
-    var amplitude = Math.sqrt(ABO.get(0,0)*ABO.get(0,0) + ABO.get(1,0)*ABO.get(1,0));
-    var phase = Math.atan2(ABO.get(1,0),ABO.get(0,0)) * (-180.0 / Math.PI);
-    // var DC_offset = ABO.get(2,0);
-
-    return [amplitude,phase];
 }
 
 var chart_attenuation;
@@ -391,10 +278,78 @@ function get_filters(sample_rate) {
     return filters;
 }
 
+function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase) {
+
+    // Not sure why range does not return expected array, _data gets us the array
+    const freq = math.range(freq_step, freq_max, freq_step, true)._data
+
+    // Start with unity transfer function, input = output
+    var H_total = math.ones(freq.length)._data
+
+    for (let i = 0; i < filter_groups.length; i++) {
+        // Allow for batches at different sample rates
+        const filters = filter_groups[i]
+
+        const sample_rate = filters[0].sample_rate
+        for (let j = 1; j < filters.length; j++) {
+            if (filters[0].sample_rate != sample_rate) {
+                error("Sample rate miss match")
+            }
+        }
+
+        // Calculate Z for transfer function
+        // Z = e^jw
+        const Z = math.map(math.dotMultiply(freq, math.complex(0,(2*math.pi)/sample_rate)), math.exp)
+
+        // Pre calculate powers of Z
+        // pow seems not to work on complex arrays
+        let Z1 = []
+        let Z2 = []
+        for (let j = 0; j<Z.length; j++) {
+            Z1[j] = math.pow(Z[j], -1)
+            Z2[j] = math.pow(Z[j], -2)
+        }
+
+        // Apply all transfer functions
+        for (let filter of filters) {
+            const H = filter.transfer(Z, Z1, Z2)
+            H_total = math.dotMultiply(H_total, H)
+        }
+    }
+
+    let attenuation = math.abs(H_total)
+
+    // Convert to decibels
+    if (use_dB) {
+        attenuation = math.dotMultiply(math.log10(attenuation), 20.0)
+    }
+
+    // Calculate phase in deg
+    let phase = math.dotMultiply(math.atan2(math.im(H_total), math.re(H_total)), 180/math.pi)
+
+    if (unwrap_phase) {
+        // Unwrap phase if required
+        let phase_wrap = 0.0;
+        for (let i = 1; i < freq.length; i++) {
+            phase[i] += phase_wrap
+            const phase_diff = phase[i] - phase[i-1];
+            if (phase_diff > 180) {
+                phase_wrap -= 360.0;
+                phase[i] -= 360.0;
+            } else if (phase_diff < -180) {
+                phase_wrap += 360.0;
+                phase[i] += 360.0;
+            }
+        }
+    }
+
+    // Return attenuation and phase
+    return { attenuation: attenuation, phase: phase, freq: freq}
+}
+
 function calculate_filter() {
     var sample_rate = get_form("GyroSampleRate");
     var freq_max = get_form("MaxFreq");
-    var samples = 1000;
     var freq_step = 0.1;
     var filters = get_filters(sample_rate);
 
@@ -402,16 +357,10 @@ function calculate_filter() {
     setCookie("Scale", use_dB ? "Log" : "Linear");
     var use_RPM = document.getElementById("freq_Scale_RPM").checked;
     setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
-    var unwrap_pahse = document.getElementById("ScaleUnWrap").checked;
-    setCookie("PhaseScale", unwrap_pahse ? "unwrap" : "wrap");
-    var attenuation = []
-    var phase_lag = []
-    var min_phase_lag = 0.0;
-    var max_phase_lag = 0.0;
-    var phase_wrap = 0.0;
+    var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
+    setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
     var min_atten = 0.0;
     var max_atten = 1.0;
-    var last_phase = 0.0;
     var atten_string = "Magnitude";
     if (use_dB) {
         max_atten = 0;
@@ -423,54 +372,35 @@ function calculate_filter() {
         freq_string = "Frequency (RPM)";
     }
 
-    // start at zero
-    attenuation.push({x:0, y:1});
-    phase_lag.push({x:0, y:0});
+    const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
 
-    for (freq=freq_step; freq<=freq_max; freq+=freq_step) {
-        var v = run_filters(filters, freq, sample_rate, samples);
-        var aten = v[0];
-        var phase = v[1] + phase_wrap;
-        if (use_dB) {
-            // show power in decibels
-            aten = 20 * Math.log10(aten);
-        }
-        var freq_value = freq;
-        if (use_RPM) {
-            freq_value *= 60;
-        }
-        if (unwrap_pahse) {
-            var phase_diff = phase - last_phase;
-            if (phase_diff > 180) {
-                phase_wrap -= 360.0;
-                phase -= 360.0;
-            } else if (phase_diff < -180) {
-                phase_wrap += 360.0;
-                phase += 360.0;
-            }
-        }
-        attenuation.push({x:freq_value, y:aten});
-        phase_lag.push({x:freq_value, y:-phase});
-
-        min_atten = Math.min(min_atten, aten);
-        max_atten = Math.max(max_atten, aten);
-        min_phase_lag = Math.min(min_phase_lag, phase)
-        max_phase_lag = Math.max(max_phase_lag, phase)
-        last_phase = phase;
+    let X_scale = H.freq
+    if (use_RPM) {
+        X_scale = math.dotMultiply(X_scale, 60.0);
+        freq_max *= 60.0;
     }
 
-    if (unwrap_pahse) {
-        min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
-        min_phase_lag = Math.min(Math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
-        max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
-        max_phase_lag = Math.min(get_form("MaxPhaseLag"), max_phase_lag);
+    // Format for chart.js
+    attenuation = []
+    phase_lag = []
+    for (let i = 1; i < H.freq.length; i++) {
+        attenuation.push({x:X_scale[i], y:H.attenuation[i]});
+        phase_lag.push({x:X_scale[i], y:H.phase[i]});
+    }
+
+    min_atten = math.floor(math.min(math.min(H.attenuation), min_atten))
+    max_atten = math.ceil(math.max(math.max(H.attenuation), max_atten))
+    let min_phase_lag = math.min(H.phase)
+    let max_phase_lag = math.max(H.phase)
+
+    if (unwrap_phase) {
+        min_phase_lag = math.floor((min_phase_lag-10)/10)*10;
+        min_phase_lag = math.min(math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
+        max_phase_lag = math.ceil((max_phase_lag+10)/10)*10;
+        max_phase_lag = math.min(get_form("MaxPhaseLag"), max_phase_lag);
     } else {
         min_phase_lag = -180;
         max_phase_lag = 180; 
-    }
-
-    if (use_RPM) {
-        freq_max *= 60.0;
     }
 
     var freq_log = document.getElementById("freq_ScaleLog").checked;
@@ -555,8 +485,8 @@ function calculate_filter() {
         chart_phase.data.datasets[0].data = phase_lag;
         chart_phase.options.scales.xAxes[0].ticks.max = freq_max;
         chart_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        chart_phase.options.scales.yAxes[0].ticks.min = -max_phase_lag;
-        chart_phase.options.scales.yAxes[0].ticks.max = -min_phase_lag;
+        chart_phase.options.scales.yAxes[0].ticks.min = min_phase_lag;
+        chart_phase.options.scales.yAxes[0].ticks.max = max_phase_lag;
         chart_phase.update();
     } else {
         chart_phase = new Chart("Phase", {
@@ -584,7 +514,7 @@ function calculate_filter() {
                         {
                             scaleLabel: { display: true, labelString: "Phase (deg)" },
                             id: 'Phase',
-                            ticks: {min:-max_phase_lag, max:-min_phase_lag}
+                            ticks: {min:min_phase_lag, max:max_phase_lag}
                         }
                     ],
                     xAxes: [
@@ -624,7 +554,6 @@ function calculate_pid(axis_id) {
     var PID_rate = get_form("SCHED_LOOP_RATE")
     var filters = []
     var freq_max = get_form("PID_MaxFreq");
-    var samples = 1000;
     var freq_step = 0.1;
 
     // default to roll axis
@@ -650,16 +579,10 @@ function calculate_pid(axis_id) {
     setCookie("PID_Scale", use_dB ? "Log" : "Linear");
     var use_RPM =  document.getElementById("PID_freq_Scale_RPM").checked;
     setCookie("PID_feq_unit", use_RPM ? "RPM" : "Hz");
-    var unwrap_pahse = document.getElementById("PID_ScaleUnWrap").checked;
-    setCookie("PID_PhaseScale", unwrap_pahse ? "unwrap" : "wrap");
-    var attenuation = []
-    var phase_lag = []
-    var min_phase_lag = 0.0;
-    var max_phase_lag = 0.0;
-    var phase_wrap = 0.0;
+    var unwrap_phase = document.getElementById("PID_ScaleUnWrap").checked;
+    setCookie("PID_PhaseScale", unwrap_phase ? "unwrap" : "wrap");
     var min_atten = Infinity;
     var max_atten = -Infinity;
-    var last_phase = 0.0;
     var atten_string = "Gain";
     if (use_dB) {
         max_atten = 0;
@@ -671,57 +594,42 @@ function calculate_pid(axis_id) {
         freq_string = "Frequency (RPM)";
     }
 
-    var fast_filters = null;
-    var fast_sample_rate = null;
+    var filter_groups = [ filters ]
     if (document.getElementById("PID_filtering_Post").checked) {
         fast_sample_rate = get_form("GyroSampleRate");
-        fast_filters = get_filters(fast_sample_rate);
-    }
-    setCookie("filtering", fast_filters == null ? "Pre" : "Post");
-
-
-    for (freq=freq_step; freq<=freq_max; freq+=freq_step) {
-        var v = run_filters(filters, freq, PID_rate, samples, fast_filters, fast_sample_rate);
-        var aten = v[0];
-        var phase = v[1] + phase_wrap;
-        if (use_dB) {
-            // show power in decibels
-            aten = 20 * Math.log10(aten);
-        }
-        var freq_value = freq;
-        if (use_RPM) {
-            freq_value *= 60;
-        }
-        if (unwrap_pahse) {
-            var phase_diff = phase - last_phase;
-            if (phase_diff > 180) {
-                phase_wrap -= 360.0;
-                phase -= 360.0;
-            } else if (phase_diff < -180) {
-                phase_wrap += 360.0;
-                phase += 360.0;
-            }
-        }
-        attenuation.push({x:freq_value, y:aten});
-        phase_lag.push({x:freq_value, y:-phase});
-
-        min_atten = Math.min(min_atten, aten);
-        max_atten = Math.max(max_atten, aten);
-        min_phase_lag = Math.min(min_phase_lag, phase)
-        max_phase_lag = Math.max(max_phase_lag, phase)
-        last_phase = phase;
+        filter_groups.push(get_filters(fast_sample_rate))
+        setCookie("filtering", "Post")
+    } else {
+        setCookie("filtering", "Pre")
     }
 
+    const H = evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase)
+
+    let X_scale = H.freq
     if (use_RPM) {
-        freq_max *= 60.0;
+        X_scale = math.dotMultiply(X_scale, 60.0);
+        freq_max *= 60.0
     }
+
+    // Format for chart.js
+    let attenuation = []
+    let phase_lag = []
+    for (let i = 1; i < H.freq.length; i++) {
+        attenuation.push({x:X_scale[i], y:H.attenuation[i]});
+        phase_lag.push({x:X_scale[i], y:H.phase[i]});
+    }
+
+    min_atten = math.floor(math.min(math.min(H.attenuation), min_atten))
+    max_atten = math.ceil(math.max(math.max(H.attenuation), max_atten))
+    let min_phase_lag = math.min(math.min(H.phase), 0)
+    let max_phase_lag = math.max(math.max(H.phase), 0)
 
     var mean_atten = (min_atten + max_atten) * 0.5;
     var atten_range = Math.max((max_atten - min_atten) * 0.5 * 1.1, 1.0);
     min_atten = mean_atten - atten_range;
     max_atten = mean_atten + atten_range;
 
-    if (unwrap_pahse) {
+    if (unwrap_phase) {
         min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
         min_phase_lag = Math.min(Math.max(-get_form("PID_MaxPhaseLag"), min_phase_lag), 0);
         max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
@@ -814,8 +722,8 @@ function calculate_pid(axis_id) {
         PID_phase.data.datasets[0].data = phase_lag;
         PID_phase.options.scales.xAxes[0].ticks.max = freq_max;
         PID_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        PID_phase.options.scales.yAxes[0].ticks.min = -max_phase_lag;
-        PID_phase.options.scales.yAxes[0].ticks.max = -min_phase_lag;
+        PID_phase.options.scales.yAxes[0].ticks.min = min_phase_lag;
+        PID_phase.options.scales.yAxes[0].ticks.max = max_phase_lag;
         PID_phase.update();
     } else {
         PID_phase = new Chart("PID_Phase", {
@@ -843,7 +751,7 @@ function calculate_pid(axis_id) {
                         {
                             scaleLabel: { display: true, labelString: "Phase (deg)" },
                             id: 'PhaseLag',
-                            ticks: {min:-max_phase_lag, max:-min_phase_lag}
+                            ticks: {min: min_phase_lag, max: max_phase_lag}
                         }
                     ],
                     xAxes: [
