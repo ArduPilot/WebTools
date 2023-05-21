@@ -288,6 +288,42 @@ class FFTTarget extends NotchTarget {
     }
 }
 
+function DigitalBiquadFilter(sample_freq, config) {
+    this.sample_rate = sample_freq
+
+    if (config.freq <= 0) {
+        this.transfer = function(Z, Z1, Z2) {
+            return math.ones(Z.length)._data
+        }
+        return this;
+    }
+
+    var fr = sample_freq/config.freq;
+    var ohm = Math.tan(Math.PI/fr);
+    var c = 1.0+2.0*Math.cos(Math.PI/4.0)*ohm + ohm*ohm;
+
+    this.b0 = ohm*ohm/c;
+    this.b1 = 2.0*this.b0;
+    this.b2 = this.b0;
+    this.a1 = 2.0*(ohm*ohm-1.0)/c;
+    this.a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
+
+    this.transfer = function(Z, Z1, Z2) {
+
+        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
+        const b1z = math.dotMultiply(Z1, this.b1)
+        const b2z = math.dotMultiply(Z2, this.b2)
+        const a1z = math.dotMultiply(Z1, this.a1)
+        const a2z = math.dotMultiply(Z2, this.a2)
+
+        const numerator = math.add(this.b0, b1z, b2z)
+        const denominator = math.add(1, a1z, a2z)
+        return math.dotDivide(numerator, denominator)
+    }
+
+    return this;
+}
+
 // return hanning window array of given length (in tensorflow format)
 function hanning(len) {
     const half = tf.scalar(0.5)
@@ -426,12 +462,18 @@ function run_batch_fft(data_set) {
     return { bins: bins, time: time, average_sample_rate: 1/sample_time, window_size: window_size, correction: window_correction, x: x, y: y, z: z}
 }
 
+// Get index into FFT data array
+var axis = ["X" , "Y", "Z"]
+var plot_types = ["Pre-filter", "Post-filter", "Estimated post"]
+function get_FFT_data_index(gyro_num, plot_type, axi) {
+    return gyro_num*plot_types.length*axis.length + plot_type*axis.length + axi
+}
+
 // Setup plots with no data
 var Spectrogram = {}
 var fft_plot = {}
 const max_num_harmonics = 8
 function reset() {
-    let axis = ["X" , "Y", "Z"]
 
     // Disable all plot selection checkboxes
     for (let i = 0; i < 3; i++) {
@@ -455,22 +497,19 @@ function reset() {
 
     // FFT plot setup
     fft_plot.data = []
-    for (let i=0;i<Gyro_batch.length;i++) {
+    for (let i=0;i<3;i++) {
         // For each gyro
-        var sensor_num = "?"
-        var pre_post = ""
-        if (Gyro_batch[i] != null) {
-            sensor_num = Gyro_batch[i].sensor_num + 1
-            pre_post = Gyro_batch[i].post_filter ? " Post-filter" : " Pre-filter"
-        }
-        for (let j=0;j<3;j++) {
-            // For each axis
-            const name = sensor_num + axis[j] + pre_post
-            fft_plot.data[i*3 + j] = { mode: "lines",
-                                       visible: true,
-                                       name: name,
-                                       // this extra data allows us to put the name in the hover tool tip
-                                       meta: name }
+        for (let n=0;n<plot_types.length;n++) {
+            // Each type of plot
+            for (let j=0;j<axis.length;j++) {
+                // For each axis
+                const name = (i+1) + axis[j] + " " + plot_types[n]
+                fft_plot.data[get_FFT_data_index(i, n, j)] = { mode: "lines",
+                                                                visible: n < 2,
+                                                                name: name,
+                                                                // this extra data allows us to put the name in the hover tool tip
+                                                                meta: name }
+            }
         }
     }
 
@@ -553,12 +592,46 @@ function clear_calculation() {
 
 // Re-run all FFT's
 function calculate() {
+    let changed = false
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
         }
         if (Gyro_batch[i].FFT == null) {
             Gyro_batch[i].FFT = run_batch_fft(Gyro_batch[i])
+            changed = true
+        }
+    }
+    if (!changed) {
+        return
+    }
+
+    // Set FFT info
+    var set_batch_len_msg = false
+    for (let i = 0; i < 3; i++) {
+        let sample_rate = 0
+        let window_size = 0
+        let count = 0
+        for (let j = 0; j < Gyro_batch.length; j++) {
+            if ((Gyro_batch[j] == null) || Gyro_batch[j].sensor_num != i) {
+                continue
+            }
+            sample_rate += Gyro_batch[j].FFT.average_sample_rate
+            window_size += Gyro_batch[j].FFT.window_size
+            count++
+        }
+        if (count == 0) {
+            continue
+        }
+        sample_rate /= count
+        window_size /= count
+
+        document.getElementById("Gyro" + i + "_FFT_info").innerHTML = "Logging rate : " + (sample_rate).toFixed(2) + " Hz<br><br>" +
+                                                                        "Frequency  resolution : " + (sample_rate/window_size).toFixed(2) + " Hz"
+
+        if (set_batch_len_msg == false) {
+            set_batch_len_msg = true
+            document.getElementById("FFTWindowInfo").innerHTML = "Window size: " + window_size
         }
     }
 }
@@ -686,21 +759,91 @@ function redraw() {
             fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)))
         }
 
+        let plot_type = Gyro_batch[i].post_filter ? 1 : 0
+
+        let X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 0)
+        let Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 1)
+        let Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 2)
+
         // Set scaled y data
-        fft_plot.data[i*3 + 0].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
-        fft_plot.data[i*3 + 1].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
-        fft_plot.data[i*3 + 2].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
+        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
+        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
+        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
-        fft_plot.data[i*3 + 0].x = scaled_bins
-        fft_plot.data[i*3 + 1].x = scaled_bins
-        fft_plot.data[i*3 + 2].x = scaled_bins
+        fft_plot.data[X_plot_index].x = scaled_bins
+        fft_plot.data[Y_plot_index].x = scaled_bins
+        fft_plot.data[Z_plot_index].x = scaled_bins
 
         // Set hover over function
-        fft_plot.data[i*3 + 0].hovertemplate = fft_hovertemplate
-        fft_plot.data[i*3 + 1].hovertemplate = fft_hovertemplate
-        fft_plot.data[i*3 + 2].hovertemplate = fft_hovertemplate
+        fft_plot.data[X_plot_index].hovertemplate = fft_hovertemplate
+        fft_plot.data[Y_plot_index].hovertemplate = fft_hovertemplate
+        fft_plot.data[Z_plot_index].hovertemplate = fft_hovertemplate
+
+        if (Gyro_batch[i].post_filter) {
+            continue
+        }
+
+        // Estimate filtered from pre-filter data
+
+        // Calculate Z for transfer function
+        // Z = e^jw
+        const Z = math.map(math.dotMultiply(Gyro_batch[i].FFT.bins, math.complex(0,(2*math.pi)/Gyro_batch[i].gyro_rate)), math.exp)
+
+        // Pre calculate powers of Z
+        // pow seems not to work on complex arrays
+        let Z1 = []
+        let Z2 = []
+        for (let j = 0; j<Z.length; j++) {
+            Z1[j] = math.pow(Z[j], -1)
+            Z2[j] = math.pow(Z[j], -2)
+        }
+
+        filters = []
+        filters.push(DigitalBiquadFilter(Gyro_batch[i].gyro_rate, filter_params.low_pass))
+
+        // Low pass does not change frequency in flight
+        const H = filters[0].transfer(Z, Z1, Z2)
+
+        // white noise noise model
+        const quantization_noise = ((Gyro_batch[i].batch_multiplier)**2) / 12
+
+        fft_mean_x = 0
+        fft_mean_y = 0
+        fft_mean_z = 0
+        for (let j=start_index;j<end_index;j++) {
+            let attenuation = math.abs(H)
+
+            // Subtract noise, apply transfer function, re-apply noise
+            const filtered_x = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.x[j], quantization_noise)), quantization_noise)
+            const filtered_y = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.y[j], quantization_noise)), quantization_noise)
+            const filtered_z = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.z[j], quantization_noise)), quantization_noise)
+
+            // Add to mean sum
+            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(math.dotMultiply(filtered_x, window_correction)))
+            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(math.dotMultiply(filtered_y, window_correction)))
+            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(math.dotMultiply(filtered_z, window_correction)))
+        }
+
+        X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
+        Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
+        Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
+
+        // Set scaled y data
+        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
+        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
+        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
+
+        // Set scaled x data
+        fft_plot.data[X_plot_index].x = scaled_bins
+        fft_plot.data[Y_plot_index].x = scaled_bins
+        fft_plot.data[Z_plot_index].x = scaled_bins
+
+        // Set hover over function
+        fft_plot.data[X_plot_index].hovertemplate = fft_hovertemplate
+        fft_plot.data[Y_plot_index].hovertemplate = fft_hovertemplate
+        fft_plot.data[Z_plot_index].hovertemplate = fft_hovertemplate
 
     }
 
@@ -784,7 +927,7 @@ function redraw_Spectrogram() {
 
     // Setup tracking lines
     const tracking_hovertemplate = "<extra></extra>%{meta}<br>" +  "%{x:.2f} s<br>" + frequency_scale.hover("y")
-    for (let i=0;i<HNotch_setup.length;i++) {
+    for (let i=0;i<filter_params.notch.length;i++) {
         // Plus one for the spectrogram plot
         const plot_offset = i * max_num_harmonics + 1
 
@@ -794,14 +937,14 @@ function redraw_Spectrogram() {
         }
 
         // Notch disabled, nothing to do
-        if ((HNotch_setup[i].enable <= 0) || (HNotch_setup[i].harmonics <= 0)) {
+        if ((filter_params.notch[i].enable <= 0) || (filter_params.notch[i].harmonics <= 0)) {
             continue
         }
 
         // Find configured tracking source
         let tracking
         for (let j=0;j<tracking_methods.length;j++) {
-            if (HNotch_setup[i].mode == tracking_methods[j].mode_value) {
+            if (filter_params.notch[i].mode == tracking_methods[j].mode_value) {
                 tracking = tracking_methods[j]
             }
         }
@@ -812,11 +955,11 @@ function redraw_Spectrogram() {
         }
 
         const Group_name = "Notch " + (i+1) + ": " + tracking.name
-        const fundamental = tracking.get_target_freq(HNotch_setup[i])
+        const fundamental = tracking.get_target_freq(filter_params.notch[i])
 
         // Enable each harmonic
         for (let j=0;j<max_num_harmonics;j++) {
-            if ((HNotch_setup[i].harmonics & (1<<j)) == 0) {
+            if ((filter_params.notch[i].harmonics & (1<<j)) == 0) {
                 continue
             }
             const harmonic_freq = math.dotMultiply(fundamental.freq, j+1)
@@ -839,20 +982,21 @@ function redraw_Spectrogram() {
 // Update lines that are shown in FFT plot
 function update_hidden(checkbox) {
 
-    const gyro_instance = parseFloat(checkbox.id.match(/\d+/g));
-    const post_filter = checkbox.id.includes("Post");
+    const gyro_instance = parseFloat(checkbox.id.match(/\d+/g))
 
-    // Find the gyro data this box matches with
-    const batch_instance = find_instance(gyro_instance, post_filter)
-    if (batch_instance == null) {
-        console.log("Could not find matching dataset for checkbox: " + checkbox.id)
-        return
+    const post_filter = checkbox.id.includes("Post")
+    const post_estimate = checkbox.id.includes("PostEst")
+
+    var pre_post_index = 0
+    if (post_estimate) {
+        pre_post_index = 2
+    } else if (post_filter) {
+        pre_post_index = 1
     }
 
     const axi = checkbox.id.substr(checkbox.id.length - 1)
 
     let axi_index
-    let axis = ["X" , "Y", "Z"]
     for (let j=0;j<3;j++) {
         if (axis[j] == axi) {
             axi_index = j
@@ -860,7 +1004,9 @@ function update_hidden(checkbox) {
         }
     }
 
-    fft_plot.data[batch_instance*3 + axi_index].visible = checkbox.checked
+    const plot_index = get_FFT_data_index(gyro_instance, pre_post_index, axi_index)
+
+    fft_plot.data[plot_index].visible = checkbox.checked
 
     Plotly.redraw("FFTPlot")
 
@@ -887,6 +1033,8 @@ function get_HNotch_param_names() {
         ret[i] = {enable: prefix[i] + "ENABLE",
                   mode: prefix[i] + "MODE",
                   freq: prefix[i] + "FREQ",
+                  bandwidth: prefix[i] + "BW",
+                  attenuation: prefix[i] + "ATT",
                   ref: prefix[i] + "REF",
                   min_ratio: prefix[i] + "FM_RAT",
                   harmonics: prefix[i] + "HMNCS",
@@ -895,8 +1043,8 @@ function get_HNotch_param_names() {
     return ret
 }
 
-function HNotch_param_read() {
-    const HNotch_params = get_HNotch_param_names("INS_HNTCH_")
+function filter_param_read() {
+    const HNotch_params = get_HNotch_param_names()
 
     for (let i = 0; i < HNotch_params.length; i++) {
         // Enable all params in group if enable is set
@@ -909,17 +1057,20 @@ function HNotch_param_read() {
     }
 
     // Load values into HNotch object
+    Notch = []
     for (let i = 0; i < HNotch_params.length; i++) {
-        HNotch_setup[i] = []
+        Notch[i] = []
         for (const [key, value] of Object.entries(HNotch_params[i])) {
-            HNotch_setup[i][key] = parseFloat(document.getElementById(value).value)
+            Notch[i][key] = parseFloat(document.getElementById(value).value)
         }
     }
+
+    filter_params = {notch: Notch, low_pass: {freq:  parseFloat(document.getElementById("INS_GYRO_FILTER").value)}}
 }
 
 var Gyro_batch
 var tracking_methods
-var HNotch_setup = []
+var filter_params
 function load(log_file) {
 
     const start = performance.now()
@@ -1007,6 +1158,13 @@ function load(log_file) {
         y = math.dotMultiply(y, mul)
         z = math.dotMultiply(z, mul)
 
+        if (Gyro_batch[instance].batch_multiplier == null) {
+            Gyro_batch[instance].batch_multiplier = mul
+        } else if (Gyro_batch[instance].batch_multiplier != mul) {
+            console.log("Batch multiplier changed")
+            return
+        }
+
         // Add to batches for this instance
         Gyro_batch[instance].push({ sample_time: log.messages.ISBH.SampleUS[i] / 1000000,
                                     sample_rate: log.messages.ISBH.smp_rate[i],
@@ -1021,16 +1179,27 @@ function load(log_file) {
     }
 
     log.parseAtOffset('PARM')
+    log.parseAtOffset('IMU')
 
-    // Try and decode device IDs
+    // Try and decode device IDs and rate
     var num_gyro = 0
+    var gyro_rate = []
     for (let i = 0; i < 3; i++) {
         const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
         const ID = get_param_value(log.messages.PARM, ID_param)
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
+
+            if (log.messages.IMU != null) {
+                // Assume constant rate
+                gyro_rate[i] = log.messages["IMU[" + i + "]"].GHz[0]
+            } else {
+                // Use default
+                gyro_rate[i] = 1000
+            }
+
             if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " @ " + gyro_rate[i] + " Hz"
             }
             num_gyro++
         }
@@ -1053,6 +1222,7 @@ function load(log_file) {
             Gyro_batch[i].sensor_num = i
             Gyro_batch[i].post_filter = _doing_post_filter_logging && !_doing_pre_post_filter_logging
         }
+        Gyro_batch[i].gyro_rate = gyro_rate[Gyro_batch[i].sensor_num]
     }
 
     // setup/reset plot and options
@@ -1076,12 +1246,14 @@ function load(log_file) {
                 document.getElementById(param).value = value
             }
         }
-        // Allow enable values to be changed
-        document.getElementById(HNotch_params[i].enable).disabled = false 
+    }
+    const value = get_param_value(log.messages.PARM, "INS_GYRO_FILTER")
+    if (value != null) {
+        document.getElementById("INS_GYRO_FILTER").value = value
     }
 
-    // Load notch params
-    HNotch_param_read()
+    // Load filter params
+    filter_param_read()
 
     // Update ranges of start and end time
     var start_time
@@ -1119,12 +1291,12 @@ function load(log_file) {
     // Enable checkboxes for sensors which are present
     var first_gyro
     var have_pre = false
+    var have_post = false
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
         }
         const prepost = Gyro_batch[i].post_filter ? "Post" : "Pre"
-        let axis = ["X" , "Y", "Z"]
         for (let j = 0; j < 3; j++) {
             var fft_check = document.getElementById("Gyro" + Gyro_batch[i].sensor_num + prepost + axis[j])
             fft_check.disabled = false
@@ -1140,6 +1312,7 @@ function load(log_file) {
             have_pre = true
         } else {
             document.getElementById("SpecGyroPost").disabled = false
+            have_post = true
         }
         document.getElementById("SpecGyroInst" + Gyro_batch[i].sensor_num).disabled = false
         document.getElementById("SpecGyroAxisX").checked = true
@@ -1152,6 +1325,23 @@ function load(log_file) {
     document.getElementById("SpecGyro" + (have_pre ? "Pre" : "Post")).checked = true
     document.getElementById("SpecGyroAxisX").disabled = false
 
+    // Enable estimated post filter if there is pre filter data
+    if (have_pre) {
+        for (let i = 0; i < Gyro_batch.length; i++) {
+            if (Gyro_batch[i] == null) {
+                continue
+            }
+            for (let j = 0; j < 3; j++) {
+                let fft_check = document.getElementById("Gyro" + Gyro_batch[i].sensor_num + "PostEst" + axis[j])
+                fft_check.disabled = false
+                if (!have_post) {
+                    // Show estimated by default if there is no post filter data
+                    fft_check.checked = true
+                }
+            }
+        }
+    }
+
     // Calculate FFT
     calculate()
 
@@ -1160,36 +1350,6 @@ function load(log_file) {
 
     // Enable the calculate button
     document.getElementById("calculate").disabled = false
-
-    // Set FFT info
-    var set_batch_len_msg = false
-    for (let i = 0; i < 3; i++) {
-        let sample_rate = 0
-        let window_size = 0
-        let count = 0
-        for (let j = 0; j < Gyro_batch.length; j++) {
-            if ((Gyro_batch[j] == null) || Gyro_batch[j].sensor_num != i) {
-                continue
-            }
-            sample_rate += Gyro_batch[j].FFT.average_sample_rate
-            window_size += Gyro_batch[j].FFT.window_size
-            count++
-        }
-        if (count == 0) {
-            continue
-        }
-        sample_rate /= count
-        window_size /= count
-
-        document.getElementById("Gyro" + i + "_FFT_info").innerHTML = "Logging rate : " + (sample_rate).toFixed(2) + " Hz<br><br>" +
-                                                                        "Frequency  resolution : " + (sample_rate/window_size).toFixed(2) + " Hz"
-
-        if (set_batch_len_msg == false) {
-            set_batch_len_msg = true
-            document.getElementById("FFTWindowInfo").innerHTML = "Window size: " + window_size
-        }
-    }
-
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
