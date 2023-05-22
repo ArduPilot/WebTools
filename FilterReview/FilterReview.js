@@ -807,7 +807,11 @@ function redraw() {
         const H = filters[0].transfer(Z, Z1, Z2)
 
         // white noise noise model
-        const quantization_noise = ((Gyro_batch[i].batch_multiplier)**2) / 12
+        // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
+        // See also Analog Devices:
+        // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
+        // The 16 here is the number of bits in the batch log
+        const quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
 
         fft_mean_x = 0
         fft_mean_y = 0
@@ -815,15 +819,20 @@ function redraw() {
         for (let j=start_index;j<end_index;j++) {
             let attenuation = math.abs(H)
 
+            // Apply window correction
+            const corrected_x = math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)
+            const corrected_y = math.dotMultiply(Gyro_batch[i].FFT.y[j], window_correction)
+            const corrected_z = math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)
+
             // Subtract noise, apply transfer function, re-apply noise
-            const filtered_x = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.x[j], quantization_noise)), quantization_noise)
-            const filtered_y = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.y[j], quantization_noise)), quantization_noise)
-            const filtered_z = math.add(math.dotMultiply(attenuation, math.subtract(Gyro_batch[i].FFT.z[j], quantization_noise)), quantization_noise)
+            const filtered_x = math.add(math.dotMultiply(math.subtract(corrected_x, quantization_noise), attenuation), quantization_noise)
+            const filtered_y = math.add(math.dotMultiply(math.subtract(corrected_y, quantization_noise), attenuation), quantization_noise)
+            const filtered_z = math.add(math.dotMultiply(math.subtract(corrected_z, quantization_noise), attenuation), quantization_noise)
 
             // Add to mean sum
-            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(math.dotMultiply(filtered_x, window_correction)))
-            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(math.dotMultiply(filtered_y, window_correction)))
-            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(math.dotMultiply(filtered_z, window_correction)))
+            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(filtered_x))
+            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(filtered_y))
+            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(filtered_z))
         }
 
         X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
@@ -1157,13 +1166,6 @@ function load(log_file) {
         x = math.dotMultiply(x, mul)
         y = math.dotMultiply(y, mul)
         z = math.dotMultiply(z, mul)
-
-        if (Gyro_batch[instance].batch_multiplier == null) {
-            Gyro_batch[instance].batch_multiplier = mul
-        } else if (Gyro_batch[instance].batch_multiplier != mul) {
-            console.log("Batch multiplier changed")
-            return
-        }
 
         // Add to batches for this instance
         Gyro_batch[instance].push({ sample_time: log.messages.ISBH.SampleUS[i] / 1000000,
