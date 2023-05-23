@@ -75,12 +75,29 @@
                 </fieldset>
             </td>
             <td>
+                <fieldset style="width:100px;height:80px">
+                    <legend>Log type</legend>
+                    <input type="radio" id="log_type_batch" name="log_type" checked>
+                    <label for="log_type_batch">Batch</label><br>
+                    <input type="radio" id="log_type_raw" name="log_type">
+                    <label for="log_type_raw">Raw sensor</label><br>
+                </fieldset>
+            </td>
+            <td>
                 <fieldset style="width:200px;height:80px">
                     <legend>FFT Settings</legend>
-                    <label for="FFTWindow">Windows per batch</label>
-                    <input id="FFTWindow" name="FFTWindow" type="number" min="1" step="1" value="1" onchange="clear_calculation()" style="width:50px"/>
-                    <br><br>
-                    <label id="FFTWindowInfo"></label>
+                    <table>
+                        <tr>
+                            <td style="width: 125px;">
+                                <label for="FFTWindow_per_batch">Windows per batch</label><br><br>
+                                <label for="FFTWindow_size">Windows size</label>
+                            </td>
+                            <td>
+                                <input id="FFTWindow_per_batch" name="FFTWindow_per_batch" type="number" min="1" step="1" value="1" onchange="clear_calculation()" style="width:50px"/><br><br>
+                                <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="clear_calculation()" style="width:50px"/>
+                            </td>
+                        </tr>
+                    </table>
                 </fieldset>
             </td>
             <td>

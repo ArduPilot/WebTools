@@ -425,14 +425,22 @@ function run_batch_fft(data_set) {
     // Average sample time
     const sample_time = num_batch / sample_rate_sum
 
-    // Must have at least one window
-    const window_per_batch = math.max(parseInt(document.getElementById("FFTWindow").value), 1)
 
     // Hard code 50% overlap
     const window_overlap = 0.5
 
-    // Calculate window size for given number of windows and overlap
-    const window_size = math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
+    var window_size
+    if (Gyro_batch.type == "batch") {
+        // Must have at least one window
+        const window_per_batch = math.max(parseInt(document.getElementById("FFTWindow_per_batch").value), 1)
+
+        // Calculate window size for given number of windows and overlap
+        window_size = math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
+
+    } else {
+        window_size = math.min(parseInt(document.getElementById("FFTWindow_size").value), num_points)
+
+    }
 
     const window_spacing = math.round(window_size * (1 - window_overlap))
     const windowing_function = hanning(window_size)
@@ -490,7 +498,6 @@ function reset() {
     }
 
     // Clear extra text
-    document.getElementById("FFTWindowInfo").innerHTML = ""
     document.getElementById("Gyro0_FFT_info").innerHTML = "<br><br><br>"
     document.getElementById("Gyro1_FFT_info").innerHTML = "<br><br><br>"
     document.getElementById("Gyro2_FFT_info").innerHTML = "<br><br><br>"
@@ -505,7 +512,6 @@ function reset() {
                 // For each axis
                 const name = (i+1) + axis[j] + " " + plot_types[n]
                 fft_plot.data[get_FFT_data_index(i, n, j)] = { mode: "lines",
-                                                                visible: n < 2,
                                                                 name: name,
                                                                 // this extra data allows us to put the name in the hover tool tip
                                                                 meta: name }
@@ -631,7 +637,7 @@ function calculate() {
 
         if (set_batch_len_msg == false) {
             set_batch_len_msg = true
-            document.getElementById("FFTWindowInfo").innerHTML = "Window size: " + window_size
+            document.getElementById("FFTWindow_size").value = window_size
         }
     }
 }
@@ -806,12 +812,19 @@ function redraw() {
         // Low pass does not change frequency in flight
         const H = filters[0].transfer(Z, Z1, Z2)
 
-        // white noise noise model
-        // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
-        // See also Analog Devices:
-        // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
-        // The 16 here is the number of bits in the batch log
-        const quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
+        var quantization_noise
+        if (Gyro_batch.type == "batch") {
+            // white noise noise model
+            // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
+            // See also Analog Devices:
+            // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
+            // The 16 here is the number of bits in the batch log
+            quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
+
+        } else {
+            // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
+            quantization_noise = 0
+        }
 
         fft_mean_x = 0
         fft_mean_y = 0
@@ -825,6 +838,8 @@ function redraw() {
             const corrected_z = math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)
 
             // Subtract noise, apply transfer function, re-apply noise
+            // Strictly we need not bother noise, it makes the estimate less accurate
+            // However it does result in a good match to logged post filter data making it easy to verify the estimates
             const filtered_x = math.add(math.dotMultiply(math.subtract(corrected_x, quantization_noise), attenuation), quantization_noise)
             const filtered_y = math.add(math.dotMultiply(math.subtract(corrected_y, quantization_noise), attenuation), quantization_noise)
             const filtered_z = math.add(math.dotMultiply(math.subtract(corrected_z, quantization_noise), attenuation), quantization_noise)
@@ -1077,28 +1092,14 @@ function filter_param_read() {
     filter_params = {notch: Notch, low_pass: {freq:  parseFloat(document.getElementById("INS_GYRO_FILTER").value)}}
 }
 
-var Gyro_batch
-var tracking_methods
-var filter_params
-function load(log_file) {
-
-    const start = performance.now()
-
-    var log = new DataflashParser()
-    log.processData(log_file)
-
-    // Load batch messages
-    log.parseAtOffset("ISBH")
-    log.parseAtOffset("ISBD")
-    if (log.messages.ISBH == null || log.messages.ISBD == null) {
-        console.log("No Batch logging msg")
-        return
-    }
+// Load from batch logging messages
+function load_from_batch(log, num_gyro, gyro_rate) {
+    Gyro_batch = []
+    Gyro_batch.type = "batch"
 
     // Assign batches to each sensor
     // Only interested in gyro here
     const IMU_SENSOR_TYPE_GYRO = 1
-    Gyro_batch = []
     let data_index = 0
     for (let i = 0; i < log.messages.ISBH.N.length; i++) {
         // Parse headers
@@ -1175,38 +1176,6 @@ function load(log_file) {
                                     z: z })
     }
 
-    if (Gyro_batch.length == 0) {
-        console.log("no data")
-        return
-    }
-
-    log.parseAtOffset('PARM')
-    log.parseAtOffset('IMU')
-
-    // Try and decode device IDs and rate
-    var num_gyro = 0
-    var gyro_rate = []
-    for (let i = 0; i < 3; i++) {
-        const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
-        const ID = get_param_value(log.messages.PARM, ID_param)
-        if ((ID != null) && (ID > 0)) {
-            const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
-
-            if (log.messages.IMU != null) {
-                // Assume constant rate
-                gyro_rate[i] = log.messages["IMU[" + i + "]"].GHz[0]
-            } else {
-                // Use default
-                gyro_rate[i] = 1000
-            }
-
-            if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " @ " + gyro_rate[i] + " Hz"
-            }
-            num_gyro++
-        }
-    }
-
     // Work out if logging is pre/post from param value
     const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
@@ -1227,9 +1196,167 @@ function load(log_file) {
         Gyro_batch[i].gyro_rate = gyro_rate[Gyro_batch[i].sensor_num]
     }
 
+    // Grab full time range of batches
+    var start_time
+    var end_time
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if (Gyro_batch[i] == null) {
+            continue
+        }
+
+        const batch_start = Gyro_batch[i][0].sample_time
+        if ((start_time == null) || (batch_start < start_time)) {
+            start_time = batch_start
+        }
+
+        const batch_end = Gyro_batch[i][Gyro_batch[i].length - 1].sample_time
+        if ((end_time == null) || (batch_end > end_time)) {
+            end_time = batch_end
+        }
+    }
+    if ((start_time != null) && (end_time != null)) {
+        Gyro_batch.start_time = start_time
+        Gyro_batch.end_time = end_time
+    }
+}
+
+// Log from raw sensor logging
+function load_from_raw_log(log, num_gyro, gyro_rate) {
+    Gyro_batch = []
+    Gyro_batch.type = "raw"
+
+    // Work out if logging is pre/post from param value
+    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
+    const post_filter = (INS_LOG_BAT_OPT & (1 << 1)) != 0
+
+    // Load in a one massive batch
+    for (let i = 0; i < 3; i++) {
+        const instance_name = "GYR[" + i + "]"
+        if (log.messages[instance_name].length == 0) {
+            continue
+        }
+
+        Gyro_batch[i] = []
+
+        // Assume a constant sample rate for the FFT
+        const sample_rate = 1000000 / math.mean(math.diff(Array.from(log.messages[instance_name].SampleUS)))
+
+        // Use first sample time as stamp for this "batch"
+        Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[0] / 1000000,
+                             sample_rate: sample_rate,
+                             x: Array.from(log.messages[instance_name].GyrX),
+                             y: Array.from(log.messages[instance_name].GyrY),
+                             z: Array.from(log.messages[instance_name].GyrZ)})
+
+        Gyro_batch[i].sensor_num = i
+        Gyro_batch[i].post_filter = post_filter
+        Gyro_batch[i].gyro_rate = gyro_rate[i]
+    }
+
+    var start_time
+    var end_time
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if (Gyro_batch[i] == null) {
+            continue
+        }
+        const batch_start = Gyro_batch[i][0].sample_time
+        if ((start_time == null) || (batch_start < start_time)) {
+            start_time = batch_start
+        }
+
+        const batch_end = batch_start + (Gyro_batch[i][0].x.length / Gyro_batch[i][0].sample_rate)
+        if ((end_time == null) || (batch_end > end_time)) {
+            end_time = batch_end
+        }
+    }
+    if ((start_time != null) && (end_time != null)) {
+        Gyro_batch.start_time = start_time
+        Gyro_batch.end_time = end_time
+    }
+}
+
+var Gyro_batch
+var tracking_methods
+var filter_params
+function load(log_file) {
+
+    const start = performance.now()
+
+    var log = new DataflashParser()
+    log.processData(log_file)
+
+    log.parseAtOffset('PARM')
+    log.parseAtOffset('IMU')
+
+    // Try and decode device IDs and rate
+    var num_gyro = 0
+    var gyro_rate = []
+    for (let i = 0; i < 3; i++) {
+        document.getElementById("Gyro" + i + "_info").innerHTML = ""
+        const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
+        const ID = get_param_value(log.messages.PARM, ID_param)
+        if ((ID != null) && (ID > 0)) {
+            const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
+
+            if (log.messages.IMU != null) {
+                // Assume constant rate
+                gyro_rate[i] = log.messages["IMU[" + i + "]"].GHz[0]
+            } else {
+                // Use default
+                gyro_rate[i] = 1000
+            }
+
+            if (decoded != null) {
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " @ " + gyro_rate[i] + " Hz"
+            }
+            num_gyro++
+        }
+    }
+
+    // Check for some data that we can use
+    log.parseAtOffset("ISBH")
+    log.parseAtOffset("ISBD")
+    log.parseAtOffset("GYR")
+    const have_batch_log = (Object.keys(log.messages.ISBH).length > 0) && (Object.keys(log.messages.ISBD).length > 0)
+    const have_raw_log = Object.keys(log.messages.GYR).length > 0
+
+    if (!have_batch_log && !have_raw_log) {
+        console.log("No Batch or raw data")
+        return
+    }
+
+    // Update interface and work out which log type to use
+    var use_batch
+    if (have_batch_log && !have_raw_log) {
+        // Only have batch log
+        document.getElementById("log_type_batch").checked = true
+        document.getElementById("log_type_raw").disabled = true
+        use_batch = true
+
+    } else if (have_raw_log && !have_batch_log) {
+        // Only have raw log
+        document.getElementById("log_type_raw").checked = true
+        document.getElementById("log_type_batch").disabled = true
+        use_batch = false
+
+    } else {
+        // Have both, use selected
+        use_batch = document.getElementById("log_type_batch").checked
+    }
+    document.getElementById("FFTWindow_size").disabled = use_batch
+    document.getElementById("FFTWindow_per_batch").disabled = !use_batch
+
+
+    if (use_batch) {
+        load_from_batch(log, num_gyro, gyro_rate)
+
+    } else {
+        load_from_raw_log(log, num_gyro, gyro_rate)
+
+    }
+
     // setup/reset plot and options
     reset()
-
 
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
@@ -1258,25 +1385,8 @@ function load(log_file) {
     filter_param_read()
 
     // Update ranges of start and end time
-    var start_time
-    var end_time
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if (Gyro_batch[i] == null) {
-            continue
-        }
-
-        const batch_start = Gyro_batch[i][0].sample_time
-        if ((start_time == null) || (batch_start < start_time)) {
-            start_time = batch_start
-        }
-
-        const batch_end = Gyro_batch[i][Gyro_batch[i].length - 1].sample_time
-        if ((end_time == null) || (batch_end > end_time)) {
-            end_time = batch_end
-        }
-    }
-    start_time = math.floor(start_time)
-    end_time = math.ceil(end_time)
+    start_time = math.floor(Gyro_batch.start_time)
+    end_time = math.ceil(Gyro_batch.end_time)
 
     var start_input = document.getElementById("TimeStart")
     start_input.disabled = false;
@@ -1336,10 +1446,9 @@ function load(log_file) {
             for (let j = 0; j < 3; j++) {
                 let fft_check = document.getElementById("Gyro" + Gyro_batch[i].sensor_num + "PostEst" + axis[j])
                 fft_check.disabled = false
-                if (!have_post) {
-                    // Show estimated by default if there is no post filter data
-                    fft_check.checked = true
-                }
+                // Show estimated by default if there is no post filter data
+                fft_check.checked = !have_post
+                fft_plot.data[get_FFT_data_index(Gyro_batch[i].sensor_num, 2, j)].visible = !have_post
             }
         }
     }
