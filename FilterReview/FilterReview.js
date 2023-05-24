@@ -646,32 +646,29 @@ function calculate() {
 function get_amplitude_scale() {
 
     const use_DB = document.getElementById("ScaleLog").checked;
-    const use_PSD = document.getElementById("SpectrumPSD").checked;
+    const use_PSD = document.getElementById("ScalePSD").checked;
 
     var ret = {}
-    if (use_DB) {
-        if (use_PSD) {
-            ret.fun = function (x) { return math.dotMultiply(math.log10(math.dotMultiply(x,x)), 10.0) } // 10 * log10(x.^2)
-            ret.label = "PSD (db)"
-        } else {
-            ret.fun = function (x) { return math.dotMultiply(math.log10(x), 10.0) } // 10 * log10(x)
-            ret.label = "Linear amplitude (db)"
-        }
-        ret.hover = function (axis) { return "%{" + axis + ":.2f} db" }
+    if (use_PSD) {
+        ret.fun = function (x) { return math.dotMultiply(math.log10(math.dotMultiply(x,x)), 10.0) } // 10 * log10(x.^2)
+        ret.label = "PSD (dB/Hz)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
+        ret.window_correction = function(correction) { return correction.energy * math.sqrt(1/2) }
+
+    } else if (use_DB) {
+        ret.fun = function (x) { return math.dotMultiply(math.log10(x), 20.0) } // 20 * log10(x)
+        ret.label = "Amplitude (dB)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
+        ret.correction_scale = 1.0
+        ret.window_correction = function(correction) { return correction.linear }
 
     } else {
-        if (use_PSD) {
-            ret.fun = function (x) { return math.dotMultiply(x,x) }
-            ret.label = "PSD"
-        } else {
-            ret.fun = function (x) { return x }
-            ret.label = "Linear amplitude"
-        }
+        ret.fun = function (x) { return x }
+        ret.label = "Amplitude"
         ret.hover = function (axis) { return "%{" + axis + ":.2f}" }
+        ret.window_correction = function(correction) { return correction.linear }
 
     }
-
-    ret.use_PSD = use_PSD
 
     return ret
 }
@@ -752,7 +749,7 @@ function redraw() {
         const plot_length = end_index - start_index
 
         // Windowing amplitude correction depends on spectrum of interest
-        const window_correction = amplitude_scale.use_PSD ? (Gyro_batch[i].FFT.correction.energy * math.sqrt(1/2)) : Gyro_batch[i].FFT.correction.linear
+        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
 
         // Take mean from start to end
         var fft_mean_x = 0
@@ -940,7 +937,7 @@ function redraw_Spectrogram() {
     Spectrogram.data[0].y = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
 
     // Windowing amplitude correction depends on spectrum of interest
-    const window_correction = amplitude_scale.use_PSD ? (Gyro_batch[batch_instance].FFT.correction.energy * math.sqrt(1/2)) : Gyro_batch[batch_instance].FFT.correction.linear
+    const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction)
 
     // Setup z data
     Spectrogram.data[0].z = []
