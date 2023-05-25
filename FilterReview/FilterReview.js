@@ -1,5 +1,10 @@
 // A js tool for plotting ArduPilot batch log data
 
+// Use browser-cjs to load fft lib
+// https://github.com/indutny/fft.js
+// Much faster than math.fft!
+const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
+
 // Generic Class to hold source for notch target
 class NotchTarget {
     constructor(log, msg_name, key_name, name, mode_value) {
@@ -406,8 +411,8 @@ class FFTTarget extends NotchTarget {
 }
 
 function complex_mul(C1, C2) {
-    let ret = [[], []]
     const len = C1[0].length
+    let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         const ac = C1[0][i] * C2[0][i]
         const bd = C1[1][i] * C2[1][i]
@@ -420,8 +425,8 @@ function complex_mul(C1, C2) {
 }
 
 function complex_div(C1, C2) {
-    let ret = [[], []]
     const len = C1[0].length
+    let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         const ac = C1[0][i] * C2[0][i]
         const bd = C1[1][i] * C2[1][i]
@@ -435,8 +440,8 @@ function complex_div(C1, C2) {
 }
 
 function complex_abs(C) {
-    let ret = []
     const len = C[0].length
+    let ret = new Array(len)
     for (let i = 0; i<len; i++) {
         ret[i] = ((C[0][i]**2) + (C[1][i]**2))**0.5
     }
@@ -444,8 +449,8 @@ function complex_abs(C) {
 }
 
 function complex_inverse(C) {
-    let ret = [[], []]
     const len = C[0].length
+    let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         const denominator = 1 / ((C[0][i]**2) + (C[1][i]**2))
         ret[0][i] = C[0][i] * denominator
@@ -455,8 +460,8 @@ function complex_inverse(C) {
 }
 
 function complex_square(C) {
-    let ret = [[], []]
     const len = C[0].length
+    let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         ret[0][i] = (C[0][i]**2) - (C[1][i]**2)
         ret[1][i] = C[0][i] * C[1][i] * 2
@@ -465,9 +470,9 @@ function complex_square(C) {
 }
 
 function exp_jw(freq, rate) {
-    let ret = [[], []]
     const scale = (2*math.pi) / rate
     const len = freq.length
+    let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         // e^(ic) = (cos c) + i(sin c)
         // no real component in jw
@@ -500,9 +505,9 @@ function DigitalBiquadFilter(freq) {
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
         // Division done at final step
-        let numerator = [[],[]]
-        let denominator = [[],[]]
         const len = Z1[0].length
+        let numerator = [new Array(len), new Array(len)]
+        let denominator = [new Array(len), new Array(len)]
         for (let i = 0; i<len; i++) {
             numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
             numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
@@ -546,9 +551,9 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
         // Division done at final step
-        let numerator = [[],[]]
-        let denominator = [[],[]]
         const len = Z1[0].length
+        let numerator = [new Array(len), new Array(len)]
+        let denominator = [new Array(len), new Array(len)]
         for (let i = 0; i<len; i++) {
             numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
             numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
@@ -675,17 +680,21 @@ function HarmonicNotchFilter(params) {
 
 // return hanning window array of given length (in tensorflow format)
 function hanning(len) {
-    const half = tf.scalar(0.5)
-    return tf.sub(half, tf.mul(half, tf.cos(tf.linspace(0, 2*math.PI, len))))
+    w = new Array(len)
+    const scale = (2*math.PI) / (len - 1)
+    for (let i=0; i<len; i++) {
+        w[i] = 0.5 - 0.5 * math.cos(scale * i)
+    }
+    return w
 }
 
 // Calculate correction factors for linear and energy spectrum (window in tensorflow format)
 // linear: 1 / mean(w)
 // energy: 1 / sqrt(mean(w.^2))
 function window_correction_factors(w) {
-    return { 
-        linear: 1/tf.mean(w).arraySync(),
-        energy: 1/tf.sqrt(tf.mean(tf.square(w))).arraySync()
+    return {
+        linear: 1/math.mean(w),
+        energy: 1/math.sqrt(math.mean(math.dotPow(w,2)))
     }
 }
 
@@ -704,54 +713,66 @@ function rfft_freq(len, d) {
     return freq
 }
 
-function run_fft(data, window_size, window_spacing, windowing_function) {
-    const num_points = data.x.length
+function run_fft(batch, window_size, window_spacing, windowing_function, fft) {
+    const num_points = batch.x.length
     const real_len = real_length(window_size)
+    const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
 
-    var fft_x = []
-    var fft_y = []
-    var fft_z = []
+    var fft_x = new Array(num_windows)
+    var fft_y = new Array(num_windows)
+    var fft_z = new Array(num_windows)
 
-    var center_sample = []
-
-    // Convert to tensorflow format for faster fft
-    const tf_data = tf.tensor2d([data.x, data.y, data.z])
+    var center_sample = new Array(num_windows)
 
     // Pre-allocate scale array.
     // double positive spectrum to account for discarded energy in the negative spectrum
     // Note that we don't scale the DC or Nyquist limit
     // normalize all points by the window size
-    var scale = []
-    scale[0] = 1 / window_size
+    const end_scale = 1 / window_size
+    const mid_scale = 2 / window_size
+    var scale = new Array(real_len)
+    scale[0] = end_scale
     for (var j=1;j<real_len-1;j++) {
-        scale[j] = 2 / window_size
+        scale[j] = mid_scale
     }
-    scale[real_len-1] = 1 / window_size
-    const tf_scale = tf.tensor1d(scale)
+    scale[real_len-1] = end_scale
 
-    const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
+    var result = [fft.createComplexArray(), fft.createComplexArray(), fft.createComplexArray()]
     for (var i=0;i<num_windows;i++) {
         // Calculate the start of each window
         const window_start = i * window_spacing
+        const window_end = window_start + window_size
 
         // Take average time for window
         center_sample[i] = window_start + window_size * 0.5
 
         // Get data and apply windowing function
-        const windowed_data = tf.mul(tf_data.slice([0, window_start], [-1, window_size]), windowing_function)
+        let x_windowed = batch.x.slice(window_start, window_end)
+        let y_windowed = batch.y.slice(window_start, window_end)
+        let z_windowed = batch.z.slice(window_start, window_end)
+        for (let j=0;j<window_size;j++) {
+            x_windowed[j] *= windowing_function[j]
+            y_windowed[j] *= windowing_function[j]
+            z_windowed[j] *= windowing_function[j]
+        }
 
         // Run fft
-        const p2 = windowed_data.rfft()
+        fft.realTransform(result[0], x_windowed)
+        fft.realTransform(result[1], y_windowed)
+        fft.realTransform(result[2], z_windowed)
 
-        // Take magnitude to give real number
-        const p1 = p2.abs()
+        fft_x[i] = new Array(real_len)
+        fft_y[i] = new Array(real_len)
+        fft_z[i] = new Array(real_len)
 
-        // Apply scale and convert back to js array
-        const result = tf.mul(p1, tf_scale).arraySync()
-
-        fft_x[i] = result[0]
-        fft_y[i] = result[1]
-        fft_z[i] = result[2]
+        // Take abs and apply scale
+        // fft.js uses interleaved complex numbers, [ real0, imaginary0, real1, imaginary1, ... ]
+        for (let j=0;j<real_len;j++) {
+            const index = j*2
+            fft_x[i][j] = ((result[0][index]**2 + result[0][index+1]**2)**0.5) * scale[j]
+            fft_y[i][j] = ((result[1][index]**2 + result[1][index+1]**2)**0.5) * scale[j]
+            fft_z[i][j] = ((result[2][index]**2 + result[2][index+1]**2)**0.5) * scale[j]
+        }
 
     }
 
@@ -800,6 +821,8 @@ function run_batch_fft(data_set) {
     // Get bins
     var bins = rfft_freq(window_size, sample_time)
 
+    const fft = new FFT_lib(window_size);
+
     var x = []
     var y = []
     var z = []
@@ -807,7 +830,7 @@ function run_batch_fft(data_set) {
     var time = []
 
     for (let i=0;i<num_batch;i++) {
-        var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function)
+        var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, fft)
 
         time.push(...math.add(data_set[i].sample_time, math.dotMultiply(sample_time, ret.center)))
         x.push(...ret.x)
@@ -1059,7 +1082,10 @@ function calculate_transfer_function() {
             continue
         }
 
-        const one = [math.ones(Gyro_batch[i].FFT.Z1[0].length)._data, math.zeros(Gyro_batch[i].FFT.Z1[0].length)._data]
+        const Z_len = Gyro_batch[i].FFT.Z1[0].length
+        let one = [new Array(Z_len), new Array(Z_len)]
+        one[0].fill(1)
+        one[1].fill(0)
 
         // Low pass does not change frequency in flight
         var H_static = { n: one, d: one }
