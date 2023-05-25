@@ -76,17 +76,14 @@ class NotchTarget {
         if ((Object.keys(this.data).length == 0) || (this.data.time == null)) {
             return
         }
-        const start_index = find_start_index(this.data.time)
-        const end_index = find_end_index(this.data.time)
         if (config.ref == 0) {
-            return { freq:[config.freq, config.freq], time:[this.data.time[start_index], this.data.time[end_index]] }
+            return { freq:[config.freq, config.freq], time:[this.data.time[start_index], this.data.time[this.data.time.length]] }
         }
-
         var freq = []
-        for (let j=start_index;j<end_index;j++) {
+        for (let j=0;j<this.data.value.length;j++) {
             freq.push(this.get_target_freq_index(config, j))
         }
-        return { freq:freq, time:this.data.time.slice(start_index, end_index) }
+        return { freq:freq, time:this.data.time }
     }
 
     get_interpolated_target_freq(instance, index, config) {
@@ -108,9 +105,7 @@ class StaticTarget extends NotchTarget {
     interpolate(instance, time) { }
 
     get_target_freq(config) {
-        const start_time = parseFloat(document.getElementById("TimeStart").value)
-        const end_time = parseFloat(document.getElementById("TimeEnd").value)
-        return { freq:[config.freq, config.freq], time:[start_time, end_time] }
+        return { freq:[config.freq, config.freq], time:[Gyro_batch.start_time, Gyro_batch.end_time] }
     }
 
     get_target_freq_time(config, time) {
@@ -278,15 +273,12 @@ class ESCTarget extends NotchTarget {
             let time = []
 
             for (let i = 0; i < this.data.length; i++) {
-                const start_index = find_start_index(this.data[i].time)
-                const end_index = find_end_index(this.data[i].time)
-
-                let inst_freq = this.data[i].freq.slice(start_index, end_index)
+                let inst_freq = this.data[i].freq
                 for (let j = 0; j < inst_freq.length; j++) {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(...this.data[i].time.slice(start_index, end_index))
+                time.push(...this.data[i].time)
                 freq.push(...inst_freq)
 
                 // Add NAN to remove line from end back to the start
@@ -298,15 +290,12 @@ class ESCTarget extends NotchTarget {
         }
 
         // Tracking average motor rpm
-        const start_index = find_start_index(this.data.avg_time)
-        const end_index = find_end_index(this.data.avg_time)
-
-        let freq = this.data.avg_freq.slice(start_index, end_index)
+        let freq = this.data.avg_freq
         for (let j = 0; j < freq.length; j++) {
             freq[j] = this.get_target(config, freq[j])
         }
 
-        return { freq:freq, time:this.data.avg_time.slice(start_index, end_index) }
+        return { freq:freq, time:this.data.avg_time }
     }
 }
 
@@ -392,15 +381,12 @@ class FFTTarget extends NotchTarget {
             let time = []
 
             for (let i = 0; i < this.data.length; i++) {
-                const start_index = find_start_index(this.data[i].time)
-                const end_index = find_end_index(this.data[i].time)
-
-                let inst_freq = this.data[i].freq.slice(start_index, end_index)
+                let inst_freq = this.data[i].freq
                 for (let j = 0; j < inst_freq.length; j++) {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(...this.data[i].time.slice(start_index, end_index))
+                time.push(...this.data[i].time)
                 freq.push(...inst_freq)
 
                 // Add NAN to remove line from end back to the start
@@ -411,15 +397,11 @@ class FFTTarget extends NotchTarget {
         }
 
         // Just center peak
-        const start_index = find_start_index(this.data.time)
-        const end_index = find_end_index(this.data.time)
-
-        let freq = this.data.value.slice(start_index, end_index)
+        let freq = this.data.value
         for (let j = 0; j < freq.length; j++) {
             freq[j] = this.get_target(config, freq[j])
         }
-
-        return { freq:freq, time:this.data.time.slice(start_index, end_index) }
+        return { freq:freq, time:this.data.time }
     }
 }
 
@@ -1334,19 +1316,15 @@ function redraw_Spectrogram() {
     // Setup axes
     Spectrogram.layout.yaxis.type = frequency_scale.type
     Spectrogram.layout.yaxis.title.text = frequency_scale.label
+    Spectrogram.layout.xaxis.autorange = false
+    Spectrogram.layout.xaxis.range = [ parseFloat(document.getElementById("TimeStart").value),
+                                       parseFloat(document.getElementById("TimeEnd").value)]
 
     Spectrogram.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} s<br>" + frequency_scale.hover("y") + "<br>" + amplitude_scale.hover("z")
     Spectrogram.data[0].colorbar.title.text = amplitude_scale.label
 
-    // Find the start and end index
-    const start_index = find_start_index(Gyro_batch[batch_instance].FFT.time)
-    const end_index = find_end_index(Gyro_batch[batch_instance].FFT.time)
-
-    // Number of windows to plot
-    const plot_length = end_index - start_index
-
     // Setup xy data (x and y swapped because transpose flag is set)
-    Spectrogram.data[0].x = Gyro_batch[batch_instance].FFT.time.slice(start_index, end_index)
+    Spectrogram.data[0].x = Gyro_batch[batch_instance].FFT.time
     Spectrogram.data[0].y = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
 
     // Windowing amplitude correction depends on spectrum of interest
@@ -1369,12 +1347,11 @@ function redraw_Spectrogram() {
 
     // Setup z data
     Spectrogram.data[0].z = []
-    for (j = 0; j<plot_length; j++) {
-        const index = start_index + j
+    for (j = 0; j<Gyro_batch[batch_instance].FFT[axis].length; j++) {
 
-        var amplitude = math.dotMultiply(Gyro_batch[batch_instance].FFT[axis][index], window_correction)
+        var amplitude = math.dotMultiply(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
         if (estimated) {
-            const attenuation = math.abs(Gyro_batch[batch_instance].FFT.H[index])
+            const attenuation = math.abs(Gyro_batch[batch_instance].FFT.H[j])
             amplitude = math.add(math.dotMultiply(math.subtract(amplitude, quantization_noise), attenuation), quantization_noise)
         }
         Spectrogram.data[0].z[j] = amplitude_scale.fun(amplitude)
