@@ -405,17 +405,48 @@ class FFTTarget extends NotchTarget {
     }
 }
 
+function complex_mul(C1, C2) {
+    const ac = math.dotMultiply(C1[0], C2[0])
+    const bd = math.dotMultiply(C1[1], C2[1])
+    const ad = math.dotMultiply(C1[0], C2[1])
+    const bc = math.dotMultiply(C1[1], C2[0])
+    return [math.subtract(ac, bd), math.add(ad, bc)]
+}
+
+function complex_div(C1, C2) {
+    const ac = math.dotMultiply(C1[0], C2[0])
+    const bd = math.dotMultiply(C1[1], C2[1])
+    const ad = math.dotMultiply(C1[0], C2[1])
+    const bc = math.dotMultiply(C1[1], C2[0])
+    const denominator = math.dotDivide(1, math.add(math.dotPow(C2[0],2), math.dotPow(C2[1],2)))
+    const re = math.dotMultiply(math.add(ac, bd), denominator)
+    const im =  math.dotMultiply(math.subtract(bc, ad), denominator)
+    return [re, im]
+}
+
+function complex_abs(C) {
+    const sum_sq = math.add(math.dotPow(C[0],2), math.dotPow(C[1],2))
+    return math.map(sum_sq, math.sqrt)
+}
+
+function complex_inverse(C) {
+    const denominator = math.dotDivide(1, math.add(math.dotPow(C[0],2), math.dotPow(C[1],2)))
+    return [math.dotMultiply(C[0], denominator), math.dotMultiply(C[1], math.dotMultiply(denominator, -1))]
+}
+
+function complex_square(C) {
+    return [math.subtract(math.dotPow(C[0],2), math.dotPow(C[1],2)), math.dotMultiply(math.dotMultiply(C[0], C[1]), 2)]
+}
+
 function DigitalBiquadFilter(freq) {
     this.target_freq = freq
 
     if (this.target_freq <= 0) {
-        this.transfer = function(sample_freq, Z, Z1, Z2) {
-            return 1
-        }
+        this.transfer = function(H, sample_freq, Z, Z1, Z2) { }
         return this;
     }
 
-    this.transfer = function(sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, sample_freq, Z, Z1, Z2) {
 
         const fr = sample_freq/this.target_freq;
         const ohm = Math.tan(Math.PI/fr);
@@ -428,14 +459,9 @@ function DigitalBiquadFilter(freq) {
         const a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
-        const b1z = math.dotMultiply(Z1, b1)
-        const b2z = math.dotMultiply(Z2, b2)
-        const a1z = math.dotMultiply(Z1, a1)
-        const a2z = math.dotMultiply(Z2, a2)
-
-        const numerator = math.add(b0, b1z, b2z)
-        const denominator = math.add(1, a1z, a2z)
-        return math.dotDivide(numerator, denominator)
+        // Division done at final step
+        H.n = complex_mul(H.n, math.add([[b0],[0]], math.dotMultiply(b1, Z1), math.dotMultiply(b2, Z2)))
+        H.d = complex_mul(H.d, math.add([[1],[0]],  math.dotMultiply(a1, Z1), math.dotMultiply(a2, Z2)))
     }
 
     return this
@@ -447,12 +473,12 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
     this.harmonic_mul = (harmonic_mul != null) ? harmonic_mul : 1
     this.Asq = Math.pow(10.0, -this.attenuation_dB / 40.0)**2
 
-    this.transfer = function(center, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, center, sample_freq, Z, Z1, Z2) {
         const center_freq_hz = center * this.harmonic_mul
 
         // check center frequency is in the allowable range
         if ((center_freq_hz <= 0.5 * this.bandwidth_hz) || (center_freq_hz >= 0.5 * sample_freq)) {
-            return 1
+            return
         }
 
         const octaves = Math.log2(center_freq_hz / (center_freq_hz - this.bandwidth_hz / 2.0)) * 2.0
@@ -468,14 +494,9 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
         const a2 =  1.0 - alpha
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
-        const b1z = math.dotMultiply(Z1, b1)
-        const b2z = math.dotMultiply(Z2, b2)
-        const a1z = math.dotMultiply(Z1, a1)
-        const a2z = math.dotMultiply(Z2, a2)
-
-        const numerator = math.add(b0, b1z, b2z)
-        const denominator = math.add(a0, a1z, a2z)
-        return math.dotDivide(numerator, denominator)
+        // Division done at final step
+        H.n = complex_mul(H.n, math.add([[b0],[0]], math.dotMultiply(b1, Z1), math.dotMultiply(b2, Z2)))
+        H.d = complex_mul(H.d, math.add([[a0],[0]], math.dotMultiply(a1, Z1), math.dotMultiply(a2, Z2)))
     }
 
     return this
@@ -494,7 +515,7 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
     }
 
-    this.transfer = function(center, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, center, sample_freq, Z, Z1, Z2) {
         center = center * this.harmonic
 
         // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
@@ -504,13 +525,11 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         const nyquist_limit = sample_freq * 0.48
         center = math.min(math.max(center, bandwidth_limit), nyquist_limit)
 
-        var H = this.notches[0].transfer(center*(1-notch_spread), sample_freq, Z, Z1, Z2)
-        H = math.dotMultiply(H, this.notches[1].transfer(center*(1+notch_spread), sample_freq, Z, Z1, Z2))
+        this.notches[0].transfer(H, center*(1-notch_spread), sample_freq, Z, Z1, Z2)
+        this.notches[1].transfer(H, center*(1+notch_spread), sample_freq, Z, Z1, Z2)
         if (this.notches.length == 3) {
-            H = math.dotMultiply(H, this.notches[2].transfer(center, sample_freq, Z, Z1, Z2))
+            this.notches[2].transfer(H, center, sample_freq, Z, Z1, Z2)
         }
-
-        return H
     }
 
     return this
@@ -541,9 +560,7 @@ function HarmonicNotchFilter(params) {
 
     if (!this.enabled()) {
         // Disabled
-        this.transfer = function(time, sample_freq, Z, Z1, Z2) {
-            return 1
-        }
+        this.transfer = function(H, instance, index, sample_freq, Z, Z1, Z2) { }
         return this
     }
     this.active = true
@@ -565,22 +582,19 @@ function HarmonicNotchFilter(params) {
         }
     }
 
-    this.transfer = function(instance, index, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, instance, index, sample_freq, Z, Z1, Z2) {
         // Get target frequencies from target
         const freq = this.tracking.get_interpolated_target_freq(instance, index, this.params)
 
-        var H_total = 1
         if (freq != null) {
             for (let i = 0; i<this.notches.length; i++) {
                 // Cycle over each notch
                 for (let j=0; j<freq.length; j++) {
                     // Run each notch multiple times for multi frequency motor/esc/fft tracking
-                    const H = this.notches[i].transfer(freq[j], sample_freq, Z, Z1, Z2)
-                    H_total = math.dotMultiply(H_total, H)
+                    this.notches[i].transfer(H, freq[j], sample_freq, Z, Z1, Z2)
                 }
             }
         }
-        return H_total
     }
 
     this.get_target_freq = function() {
@@ -961,16 +975,15 @@ function calculate() {
 
         // Calculate Z for transfer function
         // Z = e^jw
-        Gyro_batch[i].FFT.Z = math.map(math.dotMultiply(Gyro_batch[i].FFT.bins, math.complex(0,(2*math.pi)/Gyro_batch[i].gyro_rate)), math.exp)
+        // e^(ic) = (cos c) + i(sin c)
+        const jw = math.dotMultiply(Gyro_batch[i].FFT.bins, (2*math.pi)/Gyro_batch[i].gyro_rate)
+        Gyro_batch[i].FFT.Z = [math.map(jw, math.cos), math.map(jw, math.sin)]
 
-        // Pre calculate powers of Z
-        // pow seems not to work on complex arrays
-        Gyro_batch[i].FFT.Z1 = []
-        Gyro_batch[i].FFT.Z2 = []
-        for (let j = 0; j<Gyro_batch[i].FFT.Z.length; j++) {
-            Gyro_batch[i].FFT.Z1[j] = math.pow(Gyro_batch[i].FFT.Z[j], -1)
-            Gyro_batch[i].FFT.Z2[j] = math.pow(Gyro_batch[i].FFT.Z[j], -2)
-        }
+        // Z^-1
+        Gyro_batch[i].FFT.Z1 = complex_inverse(Gyro_batch[i].FFT.Z)
+
+        // Z^-2
+        Gyro_batch[i].FFT.Z2 = complex_inverse(complex_square(Gyro_batch[i].FFT.Z))
 
         // Interpolate tracking data to aline with FFT windows
         for (let j=0;j<tracking_methods.length;j++) {
@@ -987,12 +1000,13 @@ function calculate_transfer_function() {
         }
 
         // Low pass does not change frequency in flight
-        var H_static = filters.static.transfer(Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+        var H_static = { n: [[1],[0]], d: [[1],[0]] }
+        filters.static.transfer(H_static, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
 
         // Evaluate any static notch
         for (let k=0; k<filters.notch.length; k++) {
             if (filters.notch[k].enabled() && filters.notch[k].static()) {
-                H_static = math.dotMultiply(H_static, filters.notch[k].transfer(i, null, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2))
+                filters.notch[k].transfer(H_static, i, null, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
             }
         }
 
@@ -1000,14 +1014,14 @@ function calculate_transfer_function() {
         Gyro_batch[i].FFT.H = []
         for (let j = 0; j < Gyro_batch[i].FFT.time.length; j++) {
 
-            var H = H_static
+            var H = { n: H_static.n, d: H_static.d }
             for (let k=0; k<filters.notch.length; k++) {
                 if (filters.notch[k].enabled() && !filters.notch[k].static()) {
-                    H = math.dotMultiply(H, filters.notch[k].transfer(i, j, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2))
+                    filters.notch[k].transfer(H, i, j, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
                 }
             }
 
-            Gyro_batch[i].FFT.H[j] = H
+            Gyro_batch[i].FFT.H[j] = complex_div(H.n, H.d)
         }
     }
 }
@@ -1202,11 +1216,11 @@ function redraw() {
         fft_mean_x = 0
         fft_mean_y = 0
         fft_mean_z = 0
-        H_mean = 0
+        let H_mean = 0
         for (let j=start_index;j<end_index;j++) {
             H_mean = math.add(H_mean, Gyro_batch[i].FFT.H[j])
 
-            const attenuation = math.abs(Gyro_batch[i].FFT.H[j])
+            const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
 
             // Apply window correction
             const corrected_x = math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)
@@ -1251,8 +1265,8 @@ function redraw() {
 
         H_mean = math.dotMultiply(H_mean, 1 / plot_length)
 
-        Bode_amp.data[Gyro_batch[i].sensor_num].y = amplitude_scale.fun(math.abs(H_mean))
-        Bode_phase.data[Gyro_batch[i].sensor_num].y = unwrap_phase(math.dotMultiply(math.atan2(math.im(H_mean), math.re(H_mean)), 180/math.pi))
+        Bode_amp.data[Gyro_batch[i].sensor_num].y = amplitude_scale.fun(complex_abs(H_mean))
+        Bode_phase.data[Gyro_batch[i].sensor_num].y = unwrap_phase(math.dotMultiply(math.atan2(H_mean[1], H_mean[0]), 180/math.pi))
 
         Bode_amp.data[Gyro_batch[i].sensor_num].hovertemplate = bode_amp_hovertemplate
         Bode_phase.data[Gyro_batch[i].sensor_num].hovertemplate = bode_phase_hovertemplate
@@ -1351,7 +1365,7 @@ function redraw_Spectrogram() {
 
         var amplitude = math.dotMultiply(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
         if (estimated) {
-            const attenuation = math.abs(Gyro_batch[batch_instance].FFT.H[j])
+            const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
             amplitude = math.add(math.dotMultiply(math.subtract(amplitude, quantization_noise), attenuation), quantization_noise)
         }
         Spectrogram.data[0].z[j] = amplitude_scale.fun(amplitude)
