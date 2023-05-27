@@ -1573,7 +1573,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
 
             data_index++
             if (data_index >= log.messages.ISBD.N.length) {
-                console.log("sequence incomplete " + i + " of " + log.messages.ISBH.N.length-1)
+                console.log("Sequence incomplete " + i + " of " + (log.messages.ISBH.N.length-1) + ", Got " + (j+1) + " batches out of " + num_data_msg)
                 decode_complete = true
                 break
             }
