@@ -406,36 +406,76 @@ class FFTTarget extends NotchTarget {
 }
 
 function complex_mul(C1, C2) {
-    const ac = math.dotMultiply(C1[0], C2[0])
-    const bd = math.dotMultiply(C1[1], C2[1])
-    const ad = math.dotMultiply(C1[0], C2[1])
-    const bc = math.dotMultiply(C1[1], C2[0])
-    return [math.subtract(ac, bd), math.add(ad, bc)]
+    let ret = [[], []]
+    const len = C1[0].length
+    for (let i = 0; i<len; i++) {
+        const ac = C1[0][i] * C2[0][i]
+        const bd = C1[1][i] * C2[1][i]
+        const ad = C1[0][i] * C2[1][i]
+        const bc = C1[1][i] * C2[0][i]
+        ret[0][i] = ac - bd
+        ret[1][i] = ad + bc
+    }
+    return ret
 }
 
 function complex_div(C1, C2) {
-    const ac = math.dotMultiply(C1[0], C2[0])
-    const bd = math.dotMultiply(C1[1], C2[1])
-    const ad = math.dotMultiply(C1[0], C2[1])
-    const bc = math.dotMultiply(C1[1], C2[0])
-    const denominator = math.dotDivide(1, math.add(math.dotPow(C2[0],2), math.dotPow(C2[1],2)))
-    const re = math.dotMultiply(math.add(ac, bd), denominator)
-    const im =  math.dotMultiply(math.subtract(bc, ad), denominator)
-    return [re, im]
+    let ret = [[], []]
+    const len = C1[0].length
+    for (let i = 0; i<len; i++) {
+        const ac = C1[0][i] * C2[0][i]
+        const bd = C1[1][i] * C2[1][i]
+        const ad = C1[0][i] * C2[1][i]
+        const bc = C1[1][i] * C2[0][i]
+        const denominator = 1 / (C2[0][i]**2 + C2[1][i]**2)
+        ret[0][i] = (ac + bd) * denominator
+        ret[1][i] = (bc - ad) * denominator
+    }
+    return ret
 }
 
 function complex_abs(C) {
-    const sum_sq = math.add(math.dotPow(C[0],2), math.dotPow(C[1],2))
-    return math.map(sum_sq, math.sqrt)
+    let ret = []
+    const len = C[0].length
+    for (let i = 0; i<len; i++) {
+        ret[i] = ((C[0][i]**2) + (C[1][i]**2))**0.5
+    }
+    return ret
 }
 
 function complex_inverse(C) {
-    const denominator = math.dotDivide(1, math.add(math.dotPow(C[0],2), math.dotPow(C[1],2)))
-    return [math.dotMultiply(C[0], denominator), math.dotMultiply(C[1], math.dotMultiply(denominator, -1))]
+    let ret = [[], []]
+    const len = C[0].length
+    for (let i = 0; i<len; i++) {
+        const denominator = 1 / ((C[0][i]**2) + (C[1][i]**2))
+        ret[0][i] = C[0][i] * denominator
+        ret[1][i] = C[1][i] * -denominator
+    }
+    return ret
 }
 
 function complex_square(C) {
-    return [math.subtract(math.dotPow(C[0],2), math.dotPow(C[1],2)), math.dotMultiply(math.dotMultiply(C[0], C[1]), 2)]
+    let ret = [[], []]
+    const len = C[0].length
+    for (let i = 0; i<len; i++) {
+        ret[0][i] = (C[0][i]**2) - (C[1][i]**2)
+        ret[1][i] = C[0][i] * C[1][i] * 2
+    }
+    return ret
+}
+
+function exp_jw(freq, rate) {
+    let ret = [[], []]
+    const scale = (2*math.pi) / rate
+    const len = freq.length
+    for (let i = 0; i<len; i++) {
+        // e^(ic) = (cos c) + i(sin c)
+        // no real component in jw
+        const jw = freq[i] * scale
+        ret[0][i] = math.cos(jw)
+        ret[1][i] = math.sin(jw)
+    }
+    return ret
 }
 
 function DigitalBiquadFilter(freq) {
@@ -460,8 +500,19 @@ function DigitalBiquadFilter(freq) {
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
         // Division done at final step
-        H.n = complex_mul(H.n, math.add([[b0],[0]], math.dotMultiply(b1, Z1), math.dotMultiply(b2, Z2)))
-        H.d = complex_mul(H.d, math.add([[1],[0]],  math.dotMultiply(a1, Z1), math.dotMultiply(a2, Z2)))
+        let numerator = [[],[]]
+        let denominator = [[],[]]
+        const len = Z1[0].length
+        for (let i = 0; i<len; i++) {
+            numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
+            numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
+
+            denominator[0][i] = 1 + a1 * Z1[0][i] + a2 * Z2[0][i]
+            denominator[1][i] =     a1 * Z1[1][i] + a2 * Z2[1][i]
+        }
+
+        H.n = complex_mul(H.n, numerator)
+        H.d = complex_mul(H.d, denominator)
     }
 
     return this
@@ -471,7 +522,7 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
     this.attenuation_dB = attenuation_dB
     this.bandwidth_hz = bandwidth_hz
     this.harmonic_mul = (harmonic_mul != null) ? harmonic_mul : 1
-    this.Asq = Math.pow(10.0, -this.attenuation_dB / 40.0)**2
+    this.Asq = (10.0**(-this.attenuation_dB / 40.0))**2
 
     this.transfer = function(H, center, sample_freq, Z1, Z2) {
         const center_freq_hz = center * this.harmonic_mul
@@ -482,7 +533,7 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
         }
 
         const octaves = Math.log2(center_freq_hz / (center_freq_hz - this.bandwidth_hz / 2.0)) * 2.0
-        const Q = Math.sqrt(Math.pow(2.0, octaves)) / (Math.pow(2.0, octaves) - 1.0)
+        const Q = ((2.0**octaves)**0.5) / ((2.0**octaves) - 1.0)
 
         const omega = 2.0 * Math.PI * center_freq_hz / sample_freq
         const alpha = Math.sin(omega) / (2 * Q)
@@ -495,8 +546,19 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
 
         // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
         // Division done at final step
-        H.n = complex_mul(H.n, math.add([[b0],[0]], math.dotMultiply(b1, Z1), math.dotMultiply(b2, Z2)))
-        H.d = complex_mul(H.d, math.add([[a0],[0]], math.dotMultiply(a1, Z1), math.dotMultiply(a2, Z2)))
+        let numerator = [[],[]]
+        let denominator = [[],[]]
+        const len = Z1[0].length
+        for (let i = 0; i<len; i++) {
+            numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
+            numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
+
+            denominator[0][i] = a0 + a1 * Z1[0][i] + a2 * Z2[0][i]
+            denominator[1][i] =      a1 * Z1[1][i] + a2 * Z2[1][i]
+        }
+
+        H.n = complex_mul(H.n, numerator)
+        H.d = complex_mul(H.d, denominator)
     }
 
     return this
@@ -975,9 +1037,7 @@ function calculate() {
 
         // Calculate Z for transfer function
         // Z = e^jw
-        // e^(ic) = (cos c) + i(sin c)
-        const jw = math.dotMultiply(Gyro_batch[i].FFT.bins, (2*math.pi)/Gyro_batch[i].gyro_rate)
-        const Z = [math.map(jw, math.cos), math.map(jw, math.sin)]
+        const Z = exp_jw(Gyro_batch[i].FFT.bins, Gyro_batch[i].gyro_rate)
 
         // Z^-1
         Gyro_batch[i].FFT.Z1 = complex_inverse(Z)
@@ -999,8 +1059,10 @@ function calculate_transfer_function() {
             continue
         }
 
+        const one = [math.ones(Gyro_batch[i].FFT.Z1[0].length)._data, math.zeros(Gyro_batch[i].FFT.Z1[0].length)._data]
+
         // Low pass does not change frequency in flight
-        var H_static = { n: [[1],[0]], d: [[1],[0]] }
+        var H_static = { n: one, d: one }
         filters.static.transfer(H_static, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
 
         // Evaluate any static notch
