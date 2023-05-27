@@ -442,11 +442,11 @@ function DigitalBiquadFilter(freq) {
     this.target_freq = freq
 
     if (this.target_freq <= 0) {
-        this.transfer = function(H, sample_freq, Z, Z1, Z2) { }
+        this.transfer = function(H, sample_freq, Z1, Z2) { }
         return this;
     }
 
-    this.transfer = function(H, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, sample_freq, Z1, Z2) {
 
         const fr = sample_freq/this.target_freq;
         const ohm = Math.tan(Math.PI/fr);
@@ -473,7 +473,7 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
     this.harmonic_mul = (harmonic_mul != null) ? harmonic_mul : 1
     this.Asq = Math.pow(10.0, -this.attenuation_dB / 40.0)**2
 
-    this.transfer = function(H, center, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, center, sample_freq, Z1, Z2) {
         const center_freq_hz = center * this.harmonic_mul
 
         // check center frequency is in the allowable range
@@ -515,7 +515,7 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
     }
 
-    this.transfer = function(H, center, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, center, sample_freq, Z1, Z2) {
         center = center * this.harmonic
 
         // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
@@ -525,10 +525,10 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         const nyquist_limit = sample_freq * 0.48
         center = math.min(math.max(center, bandwidth_limit), nyquist_limit)
 
-        this.notches[0].transfer(H, center*(1-notch_spread), sample_freq, Z, Z1, Z2)
-        this.notches[1].transfer(H, center*(1+notch_spread), sample_freq, Z, Z1, Z2)
+        this.notches[0].transfer(H, center*(1-notch_spread), sample_freq, Z1, Z2)
+        this.notches[1].transfer(H, center*(1+notch_spread), sample_freq, Z1, Z2)
         if (this.notches.length == 3) {
-            this.notches[2].transfer(H, center, sample_freq, Z, Z1, Z2)
+            this.notches[2].transfer(H, center, sample_freq, Z1, Z2)
         }
     }
 
@@ -560,7 +560,7 @@ function HarmonicNotchFilter(params) {
 
     if (!this.enabled()) {
         // Disabled
-        this.transfer = function(H, instance, index, sample_freq, Z, Z1, Z2) { }
+        this.transfer = function(H, instance, index, sample_freq, Z1, Z2) { }
         return this
     }
     this.active = true
@@ -582,7 +582,7 @@ function HarmonicNotchFilter(params) {
         }
     }
 
-    this.transfer = function(H, instance, index, sample_freq, Z, Z1, Z2) {
+    this.transfer = function(H, instance, index, sample_freq, Z1, Z2) {
         // Get target frequencies from target
         const freq = this.tracking.get_interpolated_target_freq(instance, index, this.params)
 
@@ -591,7 +591,7 @@ function HarmonicNotchFilter(params) {
                 // Cycle over each notch
                 for (let j=0; j<freq.length; j++) {
                     // Run each notch multiple times for multi frequency motor/esc/fft tracking
-                    this.notches[i].transfer(H, freq[j], sample_freq, Z, Z1, Z2)
+                    this.notches[i].transfer(H, freq[j], sample_freq, Z1, Z2)
                 }
             }
         }
@@ -977,13 +977,13 @@ function calculate() {
         // Z = e^jw
         // e^(ic) = (cos c) + i(sin c)
         const jw = math.dotMultiply(Gyro_batch[i].FFT.bins, (2*math.pi)/Gyro_batch[i].gyro_rate)
-        Gyro_batch[i].FFT.Z = [math.map(jw, math.cos), math.map(jw, math.sin)]
+        const Z = [math.map(jw, math.cos), math.map(jw, math.sin)]
 
         // Z^-1
-        Gyro_batch[i].FFT.Z1 = complex_inverse(Gyro_batch[i].FFT.Z)
+        Gyro_batch[i].FFT.Z1 = complex_inverse(Z)
 
         // Z^-2
-        Gyro_batch[i].FFT.Z2 = complex_inverse(complex_square(Gyro_batch[i].FFT.Z))
+        Gyro_batch[i].FFT.Z2 = complex_inverse(complex_square(Z))
 
         // Interpolate tracking data to aline with FFT windows
         for (let j=0;j<tracking_methods.length;j++) {
@@ -1001,12 +1001,12 @@ function calculate_transfer_function() {
 
         // Low pass does not change frequency in flight
         var H_static = { n: [[1],[0]], d: [[1],[0]] }
-        filters.static.transfer(H_static, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+        filters.static.transfer(H_static, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
 
         // Evaluate any static notch
         for (let k=0; k<filters.notch.length; k++) {
             if (filters.notch[k].enabled() && filters.notch[k].static()) {
-                filters.notch[k].transfer(H_static, i, null, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+                filters.notch[k].transfer(H_static, i, null, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
             }
         }
 
@@ -1017,7 +1017,7 @@ function calculate_transfer_function() {
             var H = { n: H_static.n, d: H_static.d }
             for (let k=0; k<filters.notch.length; k++) {
                 if (filters.notch[k].enabled() && !filters.notch[k].static()) {
-                    filters.notch[k].transfer(H, i, j, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+                    filters.notch[k].transfer(H, i, j, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
                 }
             }
 
