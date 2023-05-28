@@ -910,11 +910,14 @@ function reset() {
     // Bode plot setup
     Bode_amp.data = []
     Bode_phase.data = []
-    for (let i=0;i<3;i++) {
-        // For each gyro
-        const name = "Gyro " + (i + 1)
-        Bode_amp.data[i] = { mode: "lines", name: name, meta: name }
-        Bode_phase.data[i] = { mode: "lines", name: name, meta: name }
+    const bode_type = ["HR", "Post est"]
+    for (let n=0;n<bode_type.length;n++) {
+        for (let i=0;i<3;i++) {
+            // For each gyro
+            const group = "Gyro " + (i + 1)
+            Bode_amp.data[i+n*3] = { mode: "lines", name: bode_type[n], meta: bode_type[n], legendgroup: i, legendgrouptitle: { text: group }, visible: n == 0 }
+            Bode_phase.data[i+n*3] = { mode: "lines", name: bode_type[n], meta: bode_type[n], legendgroup: i, legendgrouptitle: { text: group }, visible: n == 0 }
+        }
     }
 
     Bode_amp.layout = {
@@ -926,7 +929,7 @@ function reset() {
     }
     Bode_phase.layout = {
         xaxis: {title: {text: ""}, type: "linear"},
-        yaxis: {title: {text: "phase (deg)"}},
+        yaxis: {title: {text: "Phase (deg)"}},
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
@@ -1077,40 +1080,116 @@ function calculate() {
 
 function calculate_transfer_function() {
 
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].post_filter)) {
-            continue
-        }
+    function calc(index, time, rate, Z1, Z2) {
 
-        const Z_len = Gyro_batch[i].FFT.Z1[0].length
+        const Z_len = Z1[0].length
         let one = [new Array(Z_len), new Array(Z_len)]
         one[0].fill(1)
         one[1].fill(0)
 
         // Low pass does not change frequency in flight
         var H_static = { n: one, d: one }
-        filters.static.transfer(H_static, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+        filters.static.transfer(H_static, rate, Z1, Z2)
 
         // Evaluate any static notch
         for (let k=0; k<filters.notch.length; k++) {
             if (filters.notch[k].enabled() && filters.notch[k].static()) {
-                filters.notch[k].transfer(H_static, i, null, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+                filters.notch[k].transfer(H_static, index, null, rate, Z1, Z2)
             }
         }
 
         // Evaluate dynamic notches at each time step
-        Gyro_batch[i].FFT.H = []
-        for (let j = 0; j < Gyro_batch[i].FFT.time.length; j++) {
+        let ret_H = []
+        for (let j = 0; j < time.length; j++) {
 
             var H = { n: H_static.n, d: H_static.d }
             for (let k=0; k<filters.notch.length; k++) {
                 if (filters.notch[k].enabled() && !filters.notch[k].static()) {
-                    filters.notch[k].transfer(H, i, j, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+                    filters.notch[k].transfer(H, index, j, rate, Z1, Z2)
                 }
             }
 
-            Gyro_batch[i].FFT.H[j] = complex_div(H.n, H.d)
+            ret_H[j] = complex_div(H.n, H.d)
         }
+
+        return ret_H
+    }
+
+    // Run to match FFT time and freq for estimating post filter
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].post_filter)) {
+            continue
+        }
+        Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+    }
+
+    // Run higher resolution for bode plot
+    for (let i = 0; i < bode_data.length; i++) {
+        if (bode_data[i] == null) {
+            continue
+        }
+        bode_data[i].H = calc("bode", bode_data.time, bode_data[i].rate, bode_data[i].Z1, bode_data[i].Z2)
+    }
+
+}
+
+var bode_data = []
+function clear_bode_range() {
+    bode_data = []
+}
+
+function update_bode_range() {
+    if (Object.keys(bode_data).length != 0) {
+        // No need to re-calc
+        return
+    }
+
+    const time_step = parseFloat(document.getElementById("BodeTimeRes").value)
+    const freq_step = parseFloat(document.getElementById("BodeFreqRes").value)
+
+    bode_data.time = math.range(Gyro_batch.start_time, Gyro_batch.end_time, time_step , true)._data
+
+    // Interpolate tracking data
+    for (let j=0;j<tracking_methods.length;j++) {
+        tracking_methods[j].interpolate("bode", bode_data.time)
+    }
+
+    // Grab gyro and logging rates
+    var sample_rate = []
+    var max_freq = []
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
+            continue
+        }
+        const sensor = Gyro_batch[i].sensor_num
+
+        const gyro_rate = Gyro_batch[i].gyro_rate
+        if ((gyro_rate[sensor] != null) && (sample_rate[sensor] != gyro_rate)) {
+            console.log("Gyro " + sensor + " gyro rate mismatch, expected " + sample_rate[sensor] + " got " + gyro_rate)
+        }
+        sample_rate[sensor] = gyro_rate
+
+        const log_rate = Gyro_batch[i].FFT.average_sample_rate
+        if ((max_freq[sensor] == null) || (log_rate > max_freq[sensor])) {
+            max_freq[sensor] = log_rate
+        }
+    }
+
+    for (let i = 0; i < sample_rate.length; i++) {
+        if (sample_rate[i] == null) {
+            continue
+        }
+        // Coming 1hz back from the limit avoids numeral funny business that looks odd on the graph
+        const sample_nyquist = (0.5 * sample_rate[i]) - 1
+        const fft_max = max_freq[i] * 0.5
+
+        const freq = math.range(0, math.min(sample_nyquist, fft_max), freq_step, true)._data
+        const Z = exp_jw(freq, sample_rate[i])
+
+        bode_data[i] = { freq: freq,
+                         Z1: complex_inverse(Z),
+                         Z2: complex_inverse(complex_square(Z)),
+                         rate: sample_rate[i] }
     }
 }
 
@@ -1186,7 +1265,7 @@ function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
     var end_index
-    for (j = 0; j<time.length; j++) {
+    for (j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
             end_index = j
@@ -1195,7 +1274,13 @@ function find_end_index(time) {
     return end_index + 1
 }
 
-function unwrap_phase(phase) {
+function get_phase(H) {
+
+    phase = math.dotMultiply(math.atan2(H[1], H[0]), 180/math.pi)
+
+    if (document.getElementById("ScaleWrap").checked) {
+        return phase
+    }
 
     let phase_wrap = 0.0
     for (let i = 1; i < phase.length; i++) {
@@ -1213,26 +1298,23 @@ function unwrap_phase(phase) {
     return phase
 }
 
+var amplitude_scale
+var frequency_scale
 function redraw() {
 
     // Graph config
-    const amplitude_scale = get_amplitude_scale()
-    const frequency_scale = get_frequency_scale()
+    amplitude_scale = get_amplitude_scale()
+    frequency_scale = get_frequency_scale()
 
     // Setup axes
     fft_plot.layout.xaxis.type = frequency_scale.type
     fft_plot.layout.xaxis.title.text = frequency_scale.label
     fft_plot.layout.yaxis.title.text = amplitude_scale.label
 
-    Bode_amp.layout.xaxis.type = frequency_scale.type
-    Bode_amp.layout.xaxis.title.text = frequency_scale.label
-    Bode_amp.layout.yaxis.title.text = amplitude_scale.label
-    Bode_phase.layout.xaxis.type = frequency_scale.type
-    Bode_phase.layout.xaxis.title.text = frequency_scale.label
-
     const fft_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
-    const bode_amp_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
-    const bode_phase_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
+    for (let i = 0; i < fft_plot.data.length; i++) {
+        fft_plot.data[i].hovertemplate = fft_hovertemplate
+    }
 
     for (let i = 0; i < Gyro_batch.length; i++) {
         if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
@@ -1277,38 +1359,112 @@ function redraw() {
         fft_plot.data[Y_plot_index].x = scaled_bins
         fft_plot.data[Z_plot_index].x = scaled_bins
 
-        // Set hover over function
-        fft_plot.data[X_plot_index].hovertemplate = fft_hovertemplate
-        fft_plot.data[Y_plot_index].hovertemplate = fft_hovertemplate
-        fft_plot.data[Z_plot_index].hovertemplate = fft_hovertemplate
+    }
 
-        if (Gyro_batch[i].post_filter) {
+    Plotly.redraw("FFTPlot")
+
+    redraw_post_estimate_and_bode()
+
+    redraw_Spectrogram()
+
+}
+
+function redraw_post_estimate_and_bode() {
+
+    // Graph config
+    Bode_amp.layout.xaxis.type = frequency_scale.type
+    Bode_amp.layout.xaxis.title.text = frequency_scale.label
+    Bode_amp.layout.yaxis.title.text = amplitude_scale.label
+    Bode_phase.layout.xaxis.type = frequency_scale.type
+    Bode_phase.layout.xaxis.title.text = frequency_scale.label
+
+    if (document.getElementById("ScaleWrap").checked) {
+        Bode_phase.layout.yaxis.range = [-180, 180]
+        Bode_phase.layout.yaxis.fixedrange = true
+    } else {
+        Bode_phase.layout.yaxis.fixedrange = false
+    }
+
+
+
+    const bode_phase_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
+    for (let i = 0; i < Bode_amp.data.length; i++) {
+        Bode_amp.data[i].hovertemplate = bode_phase_hovertemplate
+    }
+
+    const bode_amp_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    for (let i = 0; i < Bode_phase.data.length; i++) {
+        Bode_phase.data[i].hovertemplate = bode_amp_hovertemplate
+    }
+
+    // Find the start and end index
+    var start_index = find_start_index(bode_data.time)
+    var end_index = find_end_index(bode_data.time)
+
+    for (let i = 0; i < bode_data.length; i++) {
+        if (bode_data[i] == null) {
             continue
         }
 
-        // Estimate filtered from pre-filter data
-        var quantization_noise
-        if (Gyro_batch.type == "batch") {
-            // white noise noise model
-            // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
-            // See also Analog Devices:
-            // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
-            // The 16 here is the number of bits in the batch log
-            quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
-
-        } else {
-            // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
-            quantization_noise = 0
-        }
-
-        fft_mean_x = 0
-        fft_mean_y = 0
-        fft_mean_z = 0
+        // Take mean of transfer function over time
         let H_mean = 0
         for (let j=start_index;j<end_index;j++) {
-            H_mean = math.add(H_mean, Gyro_batch[i].FFT.H[j])
+            H_mean = math.add(H_mean, bode_data[i].H[j])
+        }
+        H_mean = math.dotMultiply(H_mean, 1 / (end_index - start_index))
 
-            const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
+        const freq = frequency_scale.fun(bode_data[i].freq)
+
+        Bode_amp.data[i].x = freq
+        Bode_phase.data[i].x = freq
+
+        Bode_amp.data[i].y = amplitude_scale.fun(complex_abs(H_mean))
+        Bode_phase.data[i].y = get_phase(H_mean)
+
+        Bode_amp.data[i].hovertemplate = bode_amp_hovertemplate
+        Bode_phase.data[i].hovertemplate = bode_phase_hovertemplate
+    }
+
+    // Post filter estimate
+    var quantization_noise
+    if (Gyro_batch.type == "batch") {
+        // white noise noise model
+        // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
+        // See also Analog Devices:
+        // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
+        // The 16 here is the number of bits in the batch log
+        quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
+
+    } else {
+        // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
+        quantization_noise = 0
+    }
+
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || Gyro_batch[i].post_filter) {
+            continue
+        }
+
+        // Find the start and end index
+        start_index = find_start_index(Gyro_batch[i].FFT.time)
+        end_index = find_end_index(Gyro_batch[i].FFT.time)
+
+        // Windowing amplitude correction depends on spectrum of interest
+        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
+
+        // Number of windows to plot
+        const plot_length = end_index - start_index
+
+        // Estimate filtered from pre-filter data
+        let fft_mean_x = 0
+        let fft_mean_y = 0
+        let fft_mean_z = 0
+        let H_mean = 0
+        for (let j=start_index;j<end_index;j++) {
+            const H = Gyro_batch[i].FFT.H[j]
+            H_mean = math.add(H_mean, H)
+
+            const attenuation = complex_abs(H)
 
             // Apply window correction
             const corrected_x = math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)
@@ -1316,7 +1472,7 @@ function redraw() {
             const corrected_z = math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)
 
             // Subtract noise, apply transfer function, re-apply noise
-            // Strictly we need not bother noise, it makes the estimate less accurate
+            // Strictly we need not bother with noise, it makes the estimate less accurate
             // However it does result in a good match to logged post filter data making it easy to verify the estimates
             const filtered_x = math.add(math.dotMultiply(math.subtract(corrected_x, quantization_noise), attenuation), quantization_noise)
             const filtered_y = math.add(math.dotMultiply(math.subtract(corrected_y, quantization_noise), attenuation), quantization_noise)
@@ -1338,26 +1494,19 @@ function redraw() {
         fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
 
         // Set scaled x data
+        const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
         fft_plot.data[X_plot_index].x = scaled_bins
         fft_plot.data[Y_plot_index].x = scaled_bins
         fft_plot.data[Z_plot_index].x = scaled_bins
 
-        // Set hover over function
-        fft_plot.data[X_plot_index].hovertemplate = fft_hovertemplate
-        fft_plot.data[Y_plot_index].hovertemplate = fft_hovertemplate
-        fft_plot.data[Z_plot_index].hovertemplate = fft_hovertemplate
-
         // Bode plot
-        Bode_amp.data[Gyro_batch[i].sensor_num].x = scaled_bins
-        Bode_phase.data[Gyro_batch[i].sensor_num].x = scaled_bins
-
+        const bode_index = 3 + Gyro_batch[i].sensor_num
+        Bode_amp.data[bode_index].x = scaled_bins
+        Bode_phase.data[bode_index].x = scaled_bins
         H_mean = math.dotMultiply(H_mean, 1 / plot_length)
 
-        Bode_amp.data[Gyro_batch[i].sensor_num].y = amplitude_scale.fun(complex_abs(H_mean))
-        Bode_phase.data[Gyro_batch[i].sensor_num].y = unwrap_phase(math.dotMultiply(math.atan2(H_mean[1], H_mean[0]), 180/math.pi))
-
-        Bode_amp.data[Gyro_batch[i].sensor_num].hovertemplate = bode_amp_hovertemplate
-        Bode_phase.data[Gyro_batch[i].sensor_num].hovertemplate = bode_phase_hovertemplate
+        Bode_amp.data[bode_index].y = amplitude_scale.fun(complex_abs(H_mean))
+        Bode_phase.data[bode_index].y = get_phase(H_mean)
 
     }
 
@@ -1365,8 +1514,6 @@ function redraw() {
 
     Plotly.redraw("BodeAmp")
     Plotly.redraw("BodePhase")
-
-    redraw_Spectrogram()
 
 }
 
@@ -1533,6 +1680,22 @@ function update_hidden(checkbox) {
 
 }
 
+// Update lines that are shown in bode plots
+function update_bode_hidden(checkbox) {
+
+    var gyro_instance = parseFloat(checkbox.id.match(/\d+/g))
+    if (!checkbox.id.includes("HR")) {
+        gyro_instance += 3
+    }
+
+    Bode_amp.data[gyro_instance].visible = checkbox.checked
+    Bode_phase.data[gyro_instance].visible = checkbox.checked
+
+    Plotly.redraw("BodeAmp")
+    Plotly.redraw("BodePhase")
+
+}
+
 // Grab param from log
 function get_param_value(param_log, name) {
     var value
@@ -1564,16 +1727,19 @@ function get_HNotch_param_names() {
     return ret
 }
 
-function filter_param_change() {
+function filter_calculate() {
 
     // Read latest params
     filter_param_read()
+
+    // Update range of bode plot if changed
+    update_bode_range()
 
     // Update transfer function
     calculate_transfer_function()
 
     // Update plot
-    redraw()
+    redraw_post_estimate_and_bode()
 }
 
 function filter_param_read() {
@@ -1955,9 +2121,11 @@ function load(log_file) {
             Gyro_batch.have_pre = true
         } else {
             document.getElementById("SpecGyroPost").disabled = false
+            document.getElementById("BodeEstGyro" + Gyro_batch[i].sensor_num).disabled = false
             Gyro_batch.have_post = true
         }
         document.getElementById("SpecGyroInst" + Gyro_batch[i].sensor_num).disabled = false
+        document.getElementById("BodeHRGyro" + Gyro_batch[i].sensor_num).disabled = false
         document.getElementById("SpecGyroAxisX").checked = true
         document.getElementById("SpecGyroAxisY").disabled = false
         document.getElementById("SpecGyroAxisZ").disabled = false
@@ -1988,14 +2156,18 @@ function load(log_file) {
     // Calculate FFT
     calculate()
 
+    // Update the bode time and freq
+    update_bode_range()
+
     // Update transfer function from filter setting
     calculate_transfer_function()
 
     // Plot
     redraw()
 
-    // Enable the calculate button
+    // Enable the calculate buttons
     document.getElementById("calculate").disabled = false
+    document.getElementById("BodeCalculate").disabled = false
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
