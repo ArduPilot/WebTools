@@ -1648,33 +1648,60 @@ function redraw_Spectrogram() {
 }
 
 // Update lines that are shown in FFT plot
-function update_hidden(checkbox) {
+function update_hidden(source) {
 
-    const gyro_instance = parseFloat(checkbox.id.match(/\d+/g))
+    function get_index_from_id(id) {
+        const gyro_instance = parseFloat(id.match(/\d+/g))
 
-    const post_filter = checkbox.id.includes("Post")
-    const post_estimate = checkbox.id.includes("PostEst")
-
-    var pre_post_index = 0
-    if (post_estimate) {
-        pre_post_index = 2
-    } else if (post_filter) {
-        pre_post_index = 1
-    }
-
-    const axi = checkbox.id.substr(checkbox.id.length - 1)
-
-    let axi_index
-    for (let j=0;j<3;j++) {
-        if (axis[j] == axi) {
-            axi_index = j
-            break
+        const post_filter = id.includes("Post")
+        const post_estimate = id.includes("PostEst")
+    
+        var pre_post_index = 0
+        if (post_estimate) {
+            pre_post_index = 2
+        } else if (post_filter) {
+            pre_post_index = 1
         }
+    
+        const axi = id.substr(id.length - 1)
+    
+        let axi_index
+        for (let j=0;j<3;j++) {
+            if (axis[j] == axi) {
+                axi_index = j
+                break
+            }
+        }
+
+        return get_FFT_data_index(gyro_instance, pre_post_index, axi_index)
     }
 
-    const plot_index = get_FFT_data_index(gyro_instance, pre_post_index, axi_index)
+    if (source.constructor.name == "HTMLLegendElement") {
+        // Enable/disable multiple
+        // Get all child checkboxes
+        let checkboxes = source.parentElement.querySelectorAll("input[type=checkbox]")
+        var checked = 0
+        var enabled = 0
+        for (let i=0; i<checkboxes.length; i++) {
+            if (checkboxes[i].checked) {
+                checked++
+            }
+            if (checkboxes[i].disabled == false) {
+                enabled++
+            }
+        }
+        // Invert the majority
+        const check = checked < (enabled * 0.5)
+        for (let i=0; i<checkboxes.length; i++) {
+            if (checkboxes[i].disabled == false) {
+                checkboxes[i].checked = check
+                fft_plot.data[get_index_from_id(checkboxes[i].id)].visible = check
+            }
+        }
 
-    fft_plot.data[plot_index].visible = checkbox.checked
+    } else {
+        fft_plot.data[get_index_from_id(source.id)].visible = source.checked
+    }
 
     Plotly.redraw("FFTPlot")
 
