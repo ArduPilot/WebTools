@@ -1022,6 +1022,63 @@ function setup_plots() {
     plot = document.getElementById("Spectrogram")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Spectrogram.data, Spectrogram.layout, {displaylogo: false});
+
+    // Link axes ranges
+    function link_plot_axis_range(link) {
+        for (let i = 0; i<link.length; i++) {
+            const this_plot = link[i][0]
+            const this_axis_key = link[i][1]
+            const this_index = i
+            document.getElementById(this_plot).on('plotly_relayout', function(data) {
+                // This is seems not to be recursive because the second call sets with array rather than a object
+                const range_keys = [this_axis_key + 'axis.range[0]', this_axis_key + 'axis.range[1]']
+                if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
+                    var freq_range = [data[range_keys[0]], data[range_keys[1]]]
+                    for (let i = 0; i<link.length; i++) {
+                        if (i == this_index) {
+                            continue
+                        }
+                        link[i][2].layout[link[i][1] + "axis"].range = freq_range
+                        link[i][2].layout[link[i][1] + "axis"].autorange = false
+                        Plotly.redraw(link[i][0])
+                    }
+                }
+            })
+        }
+    }
+
+    // Link all frequency axis
+    link_plot_axis_range([["FFTPlot", "x", fft_plot],
+                            ["BodeAmp", "x", Bode_amp],
+                            ["BodePhase", "x", Bode_phase],
+                            ["Spectrogram", "y", Spectrogram]])
+
+    // Link all reset calls
+    const reset_link = [["FFTPlot", fft_plot],
+                        ["BodeAmp", Bode_amp],
+                        ["BodePhase", Bode_phase],
+                        ["Spectrogram", Spectrogram]]
+
+    for (let i = 0; i<reset_link.length; i++) {
+        const this_plot = reset_link[i][0]
+        const this_index = i
+        document.getElementById(this_plot).on('plotly_relayout', function(data) {
+            // This is seems not to be recursive because the second call sets with array rather than a object
+            const keys = ['yaxis.autorange', 'yaxis.autorange']
+            if ((data[keys[0]] !== undefined) && (data[keys[1]] !== undefined) && 
+                (data[keys[0]] == true) && (data[keys[1]] == true)) {
+
+                for (let i = 0; i<reset_link.length; i++) {
+                    if (i == this_index) {
+                        continue
+                    }
+                    reset_link[i][1].layout.xaxis.autorange = true
+                    reset_link[i][1].layout.yaxis.autorange = true
+                    Plotly.redraw(reset_link[i][0])
+                }
+            }
+        })
+    }
 }
 
 // Calculate if needed and re-draw, called from calculate button
