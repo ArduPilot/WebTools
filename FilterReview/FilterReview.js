@@ -849,32 +849,69 @@ function get_FFT_data_index(gyro_num, plot_type, axi) {
     return gyro_num*plot_types.length*axis.length + plot_type*axis.length + axi
 }
 
+// Attempt to put page back to for a new log
+function reset() {
+
+    document.getElementById("FFTWindow_per_batch").disabled = true
+    document.getElementById("FFTWindow_size").disabled = true
+    document.getElementById("TimeStart").disabled = true
+    document.getElementById("TimeEnd").disabled = true
+    document.getElementById("calculate").disabled = true
+
+    // Disable all plot selection checkboxes
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < axis.length; j++) {
+            const types = ["Pre", "Post", "PostEst"]
+            for (let n = 0; n < types.length; n++) {
+                let checkbox = document.getElementById("Gyro" + i + types[n] + axis[j])
+                checkbox.disabled = true
+                checkbox.checked = false
+            }
+        }
+        document.getElementById("SpecGyroInst" + i).disabled = true
+    }
+    document.getElementById("SpecGyroPre").disabled = true
+    document.getElementById("SpecGyroPost").disabled = true
+    document.getElementById("SpecGyroEstPost").disabled = true
+    for (let j = 0; j < axis.length; j++) {
+        document.getElementById("SpecGyroAxis" +  axis[j]).disabled = true
+    }
+
+    // Clear extra text
+    for (let i = 0; i < 3; i++) {
+        document.getElementById("Gyro" + i + "_info").innerHTML = ""
+        document.getElementById("Gyro" + i + "_FFT_infoA").innerHTML = "-"
+        document.getElementById("Gyro" + i + "_FFT_infoB").innerHTML = "-"
+    }
+
+    // Disable bode plots selection
+    for (let i = 0; i < 3; i++) {
+        document.getElementById("BodeHRGyro" + i).disabled = true
+        document.getElementById("BodeEstGyro" + i).disabled = true
+    }
+    document.getElementById("BodeCalculate").disabled = true
+
+    // Disable all params
+    document.getElementById("INS_GYRO_FILTER").disabled = true
+    const notch_params = get_HNotch_param_names()
+    for (let i = 0; i < notch_params.length; i++) {
+        for (param of Object.values(notch_params[i])) {
+            document.getElementById(param).disabled = true
+        }
+    }
+
+}
+
 // Setup plots with no data
 var Spectrogram = {}
 var fft_plot = {}
 var Bode_amp = {}
 var Bode_phase = {}
 const max_num_harmonics = 8
-function reset() {
+function setup_plots() {
 
-    // Disable all plot selection checkboxes
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            document.getElementById("Gyro" + i + "Pre" + axis[j]).disabled = true
-            document.getElementById("Gyro" + i + "Post" + axis[j]).disabled = true
-        }
-        document.getElementById("SpecGyroInst" + i).disabled = true
-    }
-    document.getElementById("SpecGyroPre").disabled = true
-    document.getElementById("SpecGyroPost").disabled = true
-    for (let j = 0; j < 3; j++) {
-        document.getElementById("SpecGyroAxis" +  axis[j]).disabled = true
-    }
-
-    // Clear extra text
-    document.getElementById("Gyro0_FFT_info").innerHTML = "<br><br><br>"
-    document.getElementById("Gyro1_FFT_info").innerHTML = "<br><br><br>"
-    document.getElementById("Gyro2_FFT_info").innerHTML = "<br><br><br>"
+    amplitude_scale = get_amplitude_scale()
+    frequency_scale = get_frequency_scale()
 
     // FFT plot setup
     fft_plot.data = []
@@ -896,8 +933,8 @@ function reset() {
     }
 
     fft_plot.layout = {
-        xaxis: {title: {text: ""}, type: "linear"},
-        yaxis: {title: {text: ""}},
+        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
+        yaxis: {title: {text: amplitude_scale.label }},
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
@@ -921,14 +958,14 @@ function reset() {
     }
 
     Bode_amp.layout = {
-        xaxis: {title: {text: ""}, type: "linear"},
-        yaxis: {title: {text: ""}},
+        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
+        yaxis: {title: {text: amplitude_scale.label }},
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
     }
     Bode_phase.layout = {
-        xaxis: {title: {text: ""}, type: "linear"},
+        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
         yaxis: {title: {text: "Phase (deg)"}},
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
@@ -976,7 +1013,7 @@ function reset() {
     // Define Layout
     Spectrogram.layout = {
         xaxis: {title: {text: "Time (s)"}},
-        yaxis: {title: {text: ""}, type: "linear"},
+        yaxis: {title: {text: frequency_scale.label }, type: "linear"},
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
@@ -1046,8 +1083,8 @@ function calculate() {
         sample_rate /= count
         window_size /= count
 
-        document.getElementById("Gyro" + i + "_FFT_info").innerHTML = "Logging rate : " + (sample_rate).toFixed(2) + " Hz<br><br>" +
-                                                                        "Frequency  resolution : " + (sample_rate/window_size).toFixed(2) + " Hz"
+        document.getElementById("Gyro" + i + "_FFT_infoA").innerHTML = (sample_rate).toFixed(2)
+        document.getElementById("Gyro" + i + "_FFT_infoB").innerHTML = (sample_rate/window_size).toFixed(2)
 
         if (set_batch_len_msg == false) {
             set_batch_len_msg = true
@@ -1301,6 +1338,9 @@ function get_phase(H) {
 var amplitude_scale
 var frequency_scale
 function redraw() {
+    if (Gyro_batch == null) {
+        return
+    }
 
     // Graph config
     amplitude_scale = get_amplitude_scale()
@@ -1370,6 +1410,9 @@ function redraw() {
 }
 
 function redraw_post_estimate_and_bode() {
+    if (Gyro_batch == null) {
+        return
+    }
 
     // Graph config
     Bode_amp.layout.xaxis.type = frequency_scale.type
@@ -1756,8 +1799,8 @@ function get_HNotch_param_names() {
 
 function filter_calculate() {
 
-    // Read latest params
-    filter_param_read()
+    // Load filters from params
+    load_filters()
 
     // Update range of bode plot if changed
     update_bode_range()
@@ -1769,19 +1812,9 @@ function filter_calculate() {
     redraw_post_estimate_and_bode()
 }
 
-function filter_param_read() {
+function load_filters() {
     filters = []
     const HNotch_params = get_HNotch_param_names()
-
-    for (let i = 0; i < HNotch_params.length; i++) {
-        // Enable all params in group if enable is set
-        const enable_input = parseFloat(document.getElementById(HNotch_params[i].enable).value) > 0
-        for (const [key, value] of Object.entries(HNotch_params[i])) {
-            if (key != "enable") {
-                document.getElementById(value).disabled = !enable_input
-            }
-        }
-    }
 
     // Load static
     filters.static = new DigitalBiquadFilter(parseFloat(document.getElementById("INS_GYRO_FILTER").value))
@@ -1795,7 +1828,21 @@ function filter_param_read() {
         }
         filters.notch.push(new HarmonicNotchFilter(params))
     }
+}
 
+// Update filter params extra info
+function filter_param_read() {
+    const HNotch_params = get_HNotch_param_names()
+
+    for (let i = 0; i < HNotch_params.length; i++) {
+        // Enable all params in group if enable is set
+        const enable_input = parseFloat(document.getElementById(HNotch_params[i].enable).value) > 0
+        for (const [key, value] of Object.entries(HNotch_params[i])) {
+            if (key != "enable") {
+                document.getElementById(value).disabled = !enable_input
+            }
+        }
+    }
 }
 
 // Load from batch logging messages
@@ -2006,6 +2053,9 @@ function load(log_file) {
 
     const start = performance.now()
 
+    // Reset buttons and labels
+    reset()
+
     var log = new DataflashParser()
     log.processData(log_file)
 
@@ -2016,7 +2066,6 @@ function load(log_file) {
     var num_gyro = 0
     var gyro_rate = []
     for (let i = 0; i < 3; i++) {
-        document.getElementById("Gyro" + i + "_info").innerHTML = "<br>"
         const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
         const ID = get_param_value(log.messages.PARM, ID_param)
         if ((ID != null) && (ID > 0)) {
@@ -2031,7 +2080,7 @@ function load(log_file) {
             }
 
             if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " @ " + math.round(gyro_rate[i]) + " Hz"
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + math.round(gyro_rate[i]) + " Hz"
             }
             num_gyro++
         }
@@ -2079,9 +2128,6 @@ function load(log_file) {
 
     }
 
-    // setup/reset plot and options
-    reset()
-
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
                         new ThrottleTarget(log),
@@ -2105,8 +2151,14 @@ function load(log_file) {
         document.getElementById("INS_GYRO_FILTER").value = value
     }
 
-    // Load filter params
+    // Enable top level filter params
+    document.getElementById("INS_GYRO_FILTER").disabled = false
+    document.getElementById("INS_HNTCH_ENABLE").disabled = false
+    document.getElementById("INS_HNTC2_ENABLE").disabled = false
+
+    // Load filters from params
     filter_param_read()
+    load_filters()
 
     // Update ranges of start and end time
     start_time = math.floor(Gyro_batch.start_time)
