@@ -1828,7 +1828,7 @@ function get_param_value(param_log, name) {
     var value
     for (let i = 0; i < param_log.Name.length; i++) {
         if (param_log.Name[i] === name) {
-            if ((value != null) && (value != PARM_log.Value[i])) {
+            if ((value != null) && (value != param_log.Value[i])) {
                 console.log("Param changed in flight: " + name)
             }
             value = param_log.Value[i]
