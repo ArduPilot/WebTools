@@ -96,42 +96,9 @@
     <h2 style="text-align:center">IMU Spectrum</h2>
 </td></tr></table>
 
-<div id="FFTPlot" style="width:1200px;height:450px"></div>
-
 <table>
     <tr>
-        <td style="width: 275px;"></td>
-        <td>
-            <fieldset style="width:300px;height:40px">
-                <legend>Amplitude scale</legend>
-                <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
-                <label for="ScaleLinear">Linear</label>
-                <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
-                <label for="ScaleLog">dB</label>
-                <input type="radio" id="ScalePSD" name="Scale" onchange="redraw()">
-                <label for="ScalePSD">Power Spectral Density</label>
-            </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:260px;height:40px">
-                <legend>Frequency scale</legend>
-                        <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
-                        <label for="freq_ScaleLinear">Linear</label>
-                        <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
-                        <label for="freq_ScaleLog">Log</label>
-                        &nbsp&nbsp&nbsp&nbsp
-                        <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
-                        <label for="freq_Scale_Hz">Hz</label>
-                        <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
-                        <label for="freq_Scale_RPM">RPM</label>
-                </table>
-            </fieldset>
-        </td>
-    </tr>
-</table>
-<table>
-    <tr>
-        <td style="width: 60px;"></td>
+        <td style="width: 50px;"></td>
         <td>
             <fieldset style="width:300px">
                 <legend ondblclick="update_hidden(this)">Gyro 1</legend>
@@ -276,81 +243,45 @@
     </tr>
 </table>
 
-<table><tr><td style="width:1200px">
-<h2 style="text-align:center">Frequency Response of Filters</h2>
-</td></tr></table>
+<div id="FFTPlot" style="width:1200px;height:450px"></div>
 
-<div id="BodeAmp" style="width:1200px;height:450px"></div>
-<div id="BodePhase" style="width:1200px;height:450px"></div>
+<table>
+    <tr>
+        <td style="width: 275px;"></td>
+        <td>
+            <fieldset style="width:300px;height:40px">
+                <legend>Amplitude scale</legend>
+                <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
+                <label for="ScaleLinear">Linear</label>
+                <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
+                <label for="ScaleLog">dB</label>
+                <input type="radio" id="ScalePSD" name="Scale" onchange="redraw()">
+                <label for="ScalePSD">Power Spectral Density</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:260px;height:40px">
+                <legend>Frequency scale</legend>
+                        <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
+                        <label for="freq_ScaleLinear">Linear</label>
+                        <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
+                        <label for="freq_ScaleLog">Log</label>
+                        &nbsp&nbsp&nbsp&nbsp
+                        <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
+                        <label for="freq_Scale_Hz">Hz</label>
+                        <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
+                        <label for="freq_Scale_RPM">RPM</label>
+                </table>
+            </fieldset>
+        </td>
+    </tr>
+</table>
 
 <table>
 <tr>
 <td style="width: 30px;"></td>
 <td>
     <fieldset style="width:1100px">
-        <legend>Bode plot options</legend>
-        <table>
-            <tr>
-                <td>
-                    <fieldset style="width:150px;height:80px">
-                        <legend>Phase scale</legend>
-                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" onchange="redraw_post_estimate_and_bode()" checked>
-                        <label for="ScaleUnWrap">un-wrapped</label><br>
-                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap"  onchange="redraw_post_estimate_and_bode()">
-                        <label for="ScaleWrap">±180</label><br>
-                </fieldset>
-                </td>
-                <td>
-                    <fieldset style="width:170px;height:80px">
-                        <legend>Resolution</legend>
-                        <table>
-                            <tr>
-                                <td style="width: 120x;">
-                                    <label for="BodeFreqRes">Frequency (Hz)</label><br><br>
-                                    <label for="BodeTimeRes">Time (s)</label>
-                                </td>
-                                <td>
-                                    <input id="BodeFreqRes" name="Frequency" type="number" min="0.1" step="0.1" value="0.5" onchange="clear_bode_range()" style="width:50px"/><br><br>
-                                    <input id="BodeTimeRes" name="Time" type="number" min="0.1" step="0.1" value="1" onchange="clear_bode_range()" style="width:50px"/>
-                                </td>
-                            </tr>
-                        </table>
-                    </fieldset>
-                </td>
-                <td>
-                    <fieldset style="width:120px;height:80px">
-                        <legend>High resolution</legend>
-                        <input type="checkbox" id="BodeHRGyro0" name="BodeHRGyro0" onchange="update_bode_hidden(this)">
-                        <label for="BodeHRGyro0">Gyro 1</label><br>
-    
-                        <input type="checkbox" id="BodeHRGyro1" name="BodeHRGyro1" onchange="update_bode_hidden(this)">
-                        <label for="BodeHRGyro1">Gyro 2</label><br>
-    
-                        <input type="checkbox" id="BodeHRGyro2" name="BodeHRGyro2" onchange="update_bode_hidden(this)">
-                        <label for="BodeHRGyro2">Gyro 3</label>
-                    </fieldset>
-                </td>
-                <td>
-                    <fieldset style="width:140px;height:80px">
-                        <legend>Post filter estimate</legend>
-                        <input type="checkbox" id="BodeEstGyro0" name="BodeEstGyro0" onchange="update_bode_hidden(this)">
-                        <label for="BodeEstGyro0">Gyro 1</label><br>
-    
-                        <input type="checkbox" id="BodeEstGyro1" name="BodeEstGyro1" onchange="update_bode_hidden(this)">
-                        <label for="BodeEstGyro1">Gyro 2</label><br>
-    
-                        <input type="checkbox" id="BodeEstGyro2" name="BodeEstGyro2" onchange="update_bode_hidden(this)">
-                        <label for="BodeEstGyro2">Gyro 3</label>
-                    </fieldset>
-                </td>
-                <td style="width: 10px;"></td>
-                <td>
-                    <input type="button" id="BodeCalculate" value="Calculate" onclick="filter_calculate()"><br><br><br>
-                </td>
-            </tr>
-        </table>
-</fieldset>
-<fieldset style="width:1100px">
     <legend>Low pass filter</legend>
     <p>
         <label class="parameter_input_label" for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
@@ -507,6 +438,40 @@
     </tr>
 </table>
 
+
+<table><tr><td style="width:1200px">
+<h2 style="text-align:center">Frequency Response of Filters</h2>
+</td></tr></table>
+
+<div id="Bode" style="width:1200px;height:900px"></div>
+
+<table>
+    <tr>
+        <td style="width:400px;"></td>
+        <td>
+            <fieldset style="width:125px">
+                <legend>Gyro instance</legend>
+                <input type="radio" id="BodeGyroInst0" name="BodeGyroInst" onchange="redraw_post_estimate_and_bode()">
+                <label for="BodeGyroInst0">1</label>
+
+                <input type="radio" id="BodeGyroInst1" name="BodeGyroInst" onchange="redraw_post_estimate_and_bode()">
+                <label for="BodeGyroInst1">2</label>
+
+                <input type="radio" id="BodeGyroInst2" name="BodeGyroInst" onchange="redraw_post_estimate_and_bode()">
+                <label for="BodeGyroInst2">3</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:175px;">
+                <legend>Phase scale</legend>
+                <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" onchange="redraw_post_estimate_and_bode()" checked>
+                <label for="ScaleUnWrap">un-wrapped</label>
+                <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap"  onchange="redraw_post_estimate_and_bode()">
+                <label for="ScaleWrap">±180</label>
+            </fieldset>
+        </td>
+    </tr>
+</table>
 
 
 

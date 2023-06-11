@@ -470,7 +470,7 @@ function complex_square(C) {
 }
 
 function exp_jw(freq, rate) {
-    const scale = (2*math.pi) / rate
+    const scale = (2*math.PI) / rate
     const len = freq.length
     let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
@@ -479,6 +479,24 @@ function exp_jw(freq, rate) {
         const jw = freq[i] * scale
         ret[0][i] = math.cos(jw)
         ret[1][i] = math.sin(jw)
+    }
+    return ret
+}
+
+function array_max(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = math.max(A[i], B[i])
+    }
+    return ret
+}
+
+function array_min(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = math.min(A[i], B[i])
     }
     return ret
 }
@@ -680,7 +698,7 @@ function HarmonicNotchFilter(params) {
 
 // return hanning window array of given length (in tensorflow format)
 function hanning(len) {
-    w = new Array(len)
+    let w = new Array(len)
     const scale = (2*math.PI) / (len - 1)
     for (let i=0; i<len; i++) {
         w[i] = 0.5 - 0.5 * math.cos(scale * i)
@@ -706,7 +724,7 @@ function real_length(len) {
 // Frequency bins for given fft length and sample period (real only)
 function rfft_freq(len, d) {
     const real_len = real_length(len)
-    freq = []
+    let freq =  new Array(real_len)
     for (var i=0;i<real_len;i++) {
         freq[i] = i / (len * d)
     }
@@ -869,6 +887,7 @@ function reset() {
             }
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
+        document.getElementById("BodeGyroInst" + i).disabled = true
     }
     document.getElementById("SpecGyroPre").disabled = true
     document.getElementById("SpecGyroPost").disabled = true
@@ -884,17 +903,6 @@ function reset() {
         document.getElementById("Gyro" + i + "_FFT_infoB").innerHTML = "-"
     }
 
-    // Disable bode plots selection
-    for (let i = 0; i < 3; i++) {
-        const BodeTypes = ["BodeHRGyro" , "BodeEstGyro"]
-        for (let n = 0; n < BodeTypes.length; n++) {
-            let checkbox = document.getElementById(BodeTypes[n] + i)
-            checkbox.disabled = true
-            checkbox.checked = false
-        }
-    }
-    document.getElementById("BodeCalculate").disabled = true
-
     // Disable all params
     document.getElementById("INS_GYRO_FILTER").disabled = true
     const notch_params = get_HNotch_param_names()
@@ -909,13 +917,9 @@ function reset() {
         fft_plot.data[i].x = []
         fft_plot.data[i].y = []
     }
-    for (let i = 0; i < Bode_amp.data.length; i++) {
-        Bode_amp.data[i].x = []
-        Bode_amp.data[i].y = []
-    }
-    for (let i = 0; i < Bode_phase.data.length; i++) {
-        Bode_phase.data[i].x = []
-        Bode_phase.data[i].y = []
+    for (let i = 0; i < Bode.data.length; i++) {
+        Bode.data[i].x = []
+        Bode.data[i].y = []
     }
     for (let i = 0; i < Spectrogram.data.length; i++) {
         Spectrogram.data[i].x = []
@@ -927,8 +931,7 @@ function reset() {
 // Setup plots with no data
 var Spectrogram = {}
 var fft_plot = {}
-var Bode_amp = {}
-var Bode_phase = {}
+var Bode = {}
 const max_num_harmonics = 8
 function setup_plots() {
 
@@ -955,8 +958,8 @@ function setup_plots() {
     }
 
     fft_plot.layout = {
-        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
-        yaxis: {title: {text: amplitude_scale.label }},
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
@@ -967,40 +970,45 @@ function setup_plots() {
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
 
     // Bode plot setup
-    Bode_amp.data = []
-    Bode_phase.data = []
-    const bode_type = ["HR", "Post est"]
-    for (let n=0;n<bode_type.length;n++) {
-        for (let i=0;i<3;i++) {
-            // For each gyro
-            const group = "Gyro " + (i + 1)
-            Bode_amp.data[i+n*3] = { mode: "lines", name: bode_type[n], meta: bode_type[n], legendgroup: i, legendgrouptitle: { text: group }, visible: n == 0 }
-            Bode_phase.data[i+n*3] = { mode: "lines", name: bode_type[n], meta: bode_type[n], legendgroup: i, legendgrouptitle: { text: group }, visible: n == 0 }
+    Bode.data = []
+
+
+
+    Bode.data[0] = { line: {color: "transparent"},
+                     fill: "toself", 
+                     type: "scatter",
+                     showlegend: false,
+                     hoverinfo: 'none' }
+
+    Bode.data[1] = { line: {color: "transparent"},
+                     fill: "toself",
+                     type: "scatter",
+                     showlegend: false,
+                     xaxis: 'x2',
+                     yaxis: 'y2',
+                     hoverinfo: 'none' }
+
+    Bode.data[2] = { mode: "lines", showlegend: false }
+    Bode.data[3] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2' }
+
+    Bode.layout = {
+        xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
+        xaxis2: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true },
+        yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true, domain: [0.52, 1] },
+        yaxis2: {title: {text: "Phase (deg)"}, zeroline: false, showline: true, mirror: true, domain: [0.0, 0.48], },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        grid: {
+            rows: 2,
+            columns: 1,
+            pattern: 'independent'
         }
     }
 
-    Bode_amp.layout = {
-        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
-        yaxis: {title: {text: amplitude_scale.label }},
-        showlegend: true,
-        legend: {itemclick: false, itemdoubleclick: false },
-        margin: { b: 50, l: 50, r: 50, t: 20 }
-    }
-    Bode_phase.layout = {
-        xaxis: {title: {text: frequency_scale.label }, type: "linear"},
-        yaxis: {title: {text: "Phase (deg)"}},
-        showlegend: true,
-        legend: {itemclick: false, itemdoubleclick: false },
-        margin: { b: 50, l: 50, r: 50, t: 20 }
-    }
-
-    plot = document.getElementById("BodeAmp")
+    plot = document.getElementById("Bode")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Bode_amp.data, Bode_amp.layout, {displaylogo: false});
-
-    plot = document.getElementById("BodePhase")
-    Plotly.purge(plot)
-    Plotly.newPlot(plot, Bode_phase.data, Bode_phase.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false});
 
     // Spectrogram setup
     // Add surface
@@ -1034,8 +1042,8 @@ function setup_plots() {
 
     // Define Layout
     Spectrogram.layout = {
-        xaxis: {title: {text: "Time (s)"}},
-        yaxis: {title: {text: frequency_scale.label }, type: "linear"},
+        xaxis: {title: {text: "Time (s)"}, zeroline: false, showline: true, mirror: true },
+        yaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true },
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 }
@@ -1050,18 +1058,20 @@ function setup_plots() {
         for (let i = 0; i<link.length; i++) {
             const this_plot = link[i][0]
             const this_axis_key = link[i][1]
+            const this_axis_index = link[i][2]
             const this_index = i
             document.getElementById(this_plot).on('plotly_relayout', function(data) {
                 // This is seems not to be recursive because the second call sets with array rather than a object
-                const range_keys = [this_axis_key + 'axis.range[0]', this_axis_key + 'axis.range[1]']
+                const axis_key = this_axis_key + 'axis' + this_axis_index
+                const range_keys = [axis_key + '.range[0]', axis_key + '.range[1]']
                 if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
                     var freq_range = [data[range_keys[0]], data[range_keys[1]]]
                     for (let i = 0; i<link.length; i++) {
                         if (i == this_index) {
                             continue
                         }
-                        link[i][2].layout[link[i][1] + "axis"].range = freq_range
-                        link[i][2].layout[link[i][1] + "axis"].autorange = false
+                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].range = freq_range
+                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].autorange = false
                         Plotly.redraw(link[i][0])
                     }
                 }
@@ -1070,15 +1080,14 @@ function setup_plots() {
     }
 
     // Link all frequency axis
-    link_plot_axis_range([["FFTPlot", "x", fft_plot],
-                            ["BodeAmp", "x", Bode_amp],
-                            ["BodePhase", "x", Bode_phase],
-                            ["Spectrogram", "y", Spectrogram]])
+    link_plot_axis_range([["FFTPlot", "x", "", fft_plot],
+                          ["Bode", "x", "", Bode],
+                          ["Bode", "x", "2", Bode],
+                          ["Spectrogram", "y", "", Spectrogram]])
 
     // Link all reset calls
     const reset_link = [["FFTPlot", fft_plot],
-                        ["BodeAmp", Bode_amp],
-                        ["BodePhase", Bode_phase],
+                        ["Bode", Bode],
                         ["Spectrogram", Spectrogram]]
 
     for (let i = 0; i<reset_link.length; i++) {
@@ -1086,17 +1095,34 @@ function setup_plots() {
         const this_index = i
         document.getElementById(this_plot).on('plotly_relayout', function(data) {
             // This is seems not to be recursive because the second call sets with array rather than a object
-            const keys = ['yaxis.autorange', 'yaxis.autorange']
-            if ((data[keys[0]] !== undefined) && (data[keys[1]] !== undefined) && 
-                (data[keys[0]] == true) && (data[keys[1]] == true)) {
+            const axis = ["xaxis","yaxis","xaxis2","yaxis2"]
+            var reset = false
+            for (let i = 0; i<axis.length; i++) {
+                const key = axis[i] + '.autorange'
+                if ((data[key] !== undefined) && (data[key] == true)) {
+                    reset = true
+                    break
+                }
+            }
+            if (reset) {
 
                 for (let i = 0; i<reset_link.length; i++) {
                     if (i == this_index) {
                         continue
                     }
-                    reset_link[i][1].layout.xaxis.autorange = true
-                    reset_link[i][1].layout.yaxis.autorange = true
-                    Plotly.redraw(reset_link[i][0])
+                    var redraw = false
+                    for (let j = 0; j<axis.length; j++) {
+                        if (reset_link[i][1].layout[axis[j]] == null) {
+                            continue
+                        }
+                        if (!reset_link[i][1].layout[axis[j]].fixedrange) {
+                            reset_link[i][1].layout[axis[j]].autorange = true
+                            redraw = true
+                        }
+                    }
+                    if (redraw) {
+                        Plotly.redraw(reset_link[i][0])
+                    }
                 }
             }
         })
@@ -1107,6 +1133,8 @@ function setup_plots() {
 function re_calc() {
 
     calculate()
+
+    load_filters()
 
     calculate_transfer_function()
 
@@ -1179,23 +1207,46 @@ function calculate() {
 
     // Update filter pre-calc values, speeds up changing the filters
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].post_filter)) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
             continue
         }
 
-        // Calculate Z for transfer function
-        // Z = e^jw
-        const Z = exp_jw(Gyro_batch[i].FFT.bins, Gyro_batch[i].gyro_rate)
+        if (!Gyro_batch[i].post_filter) {
+            // Calculate Z for transfer function
+            // Z = e^jw
+            const Z = exp_jw(Gyro_batch[i].FFT.bins, Gyro_batch[i].gyro_rate)
 
-        // Z^-1
-        Gyro_batch[i].FFT.Z1 = complex_inverse(Z)
+            // Z^-1
+            Gyro_batch[i].FFT.Z1 = complex_inverse(Z)
 
-        // Z^-2
-        Gyro_batch[i].FFT.Z2 = complex_inverse(complex_square(Z))
+            // Z^-2
+            Gyro_batch[i].FFT.Z2 = complex_inverse(complex_square(Z))
+        }
 
-        // Interpolate tracking data to aline with FFT windows
-        for (let j=0;j<tracking_methods.length;j++) {
-            tracking_methods[j].interpolate(i, Gyro_batch[i].FFT.time)
+        if (!Gyro_batch[i].post_filter || !Gyro_batch.have_post) {
+            // Also run a higher resolution frequency to give a nicer bode plot
+            // Need small steps for the phase unwrap to come out correctly
+            const freq_step = 0.05
+            const max_freq = Gyro_batch[i].FFT.bins[Gyro_batch[i].FFT.bins.length  - 1]
+
+            Gyro_batch[i].FFT.bode = []
+            Gyro_batch[i].FFT.bode.freq = math.range(0, max_freq, freq_step, true)._data
+
+            // Calculate Z for transfer function
+            // Z = e^jw
+            const bode_Z = exp_jw(Gyro_batch[i].FFT.bode.freq, Gyro_batch[i].gyro_rate)
+
+            // Z^-1
+            Gyro_batch[i].FFT.bode.Z1 = complex_inverse(bode_Z)
+
+            // Z^-2
+            Gyro_batch[i].FFT.bode.Z2 = complex_inverse(complex_square(bode_Z))
+
+
+            // Interpolate tracking data to aline with FFT windows
+            for (let j=0;j<tracking_methods.length;j++) {
+                tracking_methods[j].interpolate(i, Gyro_batch[i].FFT.time)
+            }
         }
     }
 }
@@ -1239,86 +1290,24 @@ function calculate_transfer_function() {
 
     // Run to match FFT time and freq for estimating post filter
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].post_filter)) {
-            continue
-        }
-        Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
-    }
-
-    // Update the bode time and freq
-    update_bode_range()
-
-    // Run higher resolution for bode plot
-    for (let i = 0; i < bode_data.length; i++) {
-        if (bode_data[i] == null) {
-            continue
-        }
-        bode_data[i].H = calc("bode", bode_data.time, bode_data[i].rate, bode_data[i].Z1, bode_data[i].Z2)
-    }
-
-}
-
-var bode_data = []
-function clear_bode_range() {
-    // Re-enable calculate button
-    document.getElementById("BodeCalculate").disabled = false
-    bode_data = []
-}
-
-function update_bode_range() {
-    if (Object.keys(bode_data).length != 0) {
-        // No need to re-calc
-        return
-    }
-
-    const time_step = parseFloat(document.getElementById("BodeTimeRes").value)
-    const freq_step = parseFloat(document.getElementById("BodeFreqRes").value)
-
-    bode_data.time = math.range(Gyro_batch.start_time, Gyro_batch.end_time, time_step , true)._data
-
-    // Interpolate tracking data
-    for (let j=0;j<tracking_methods.length;j++) {
-        tracking_methods[j].interpolate("bode", bode_data.time)
-    }
-
-    // Grab gyro and logging rates
-    var sample_rate = []
-    var max_freq = []
-    for (let i = 0; i < Gyro_batch.length; i++) {
         if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
             continue
         }
-        const sensor = Gyro_batch[i].sensor_num
+        if (Gyro_batch[i].FFT.Z1 != null) {
+            // Calc transfer functions for post filter estimate
+            Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
 
-        const gyro_rate = Gyro_batch[i].gyro_rate
-        if ((gyro_rate[sensor] != null) && (sample_rate[sensor] != gyro_rate)) {
-            console.log("Gyro " + sensor + " gyro rate mismatch, expected " + sample_rate[sensor] + " got " + gyro_rate)
         }
-        sample_rate[sensor] = gyro_rate
+        if (Gyro_batch[i].FFT.bode != null) {
+            // Use post filter if available
 
-        const log_rate = Gyro_batch[i].FFT.average_sample_rate
-        if ((max_freq[sensor] == null) || (log_rate > max_freq[sensor])) {
-            max_freq[sensor] = log_rate
+            // Higher frequency resolution for bode plot
+            Gyro_batch[i].FFT.bode.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.bode.Z1, Gyro_batch[i].FFT.bode.Z2)
         }
     }
 
-    for (let i = 0; i < sample_rate.length; i++) {
-        if (sample_rate[i] == null) {
-            continue
-        }
-        // Coming 1hz back from the limit avoids numeral funny business that looks odd on the graph
-        const sample_nyquist = (0.5 * sample_rate[i]) - 1
-        const fft_max = max_freq[i] * 0.5
-
-        const freq = math.range(0, math.min(sample_nyquist, fft_max), freq_step, true)._data
-        const Z = exp_jw(freq, sample_rate[i])
-
-        bode_data[i] = { freq: freq,
-                         Z1: complex_inverse(Z),
-                         Z2: complex_inverse(complex_square(Z)),
-                         rate: sample_rate[i] }
-    }
 }
+
 
 // Get configured amplitude scale
 function get_amplitude_scale() {
@@ -1403,22 +1392,50 @@ function find_end_index(time) {
 
 function get_phase(H) {
 
-    phase = math.dotMultiply(math.atan2(H[1], H[0]), 180/math.pi)
+    let phase = math.dotMultiply(math.atan2(H[1], H[0]), 180/math.pi)
+    const len = phase.length
 
-    if (document.getElementById("ScaleWrap").checked) {
+    // Notches result in large positive phase changes, bias the unwrap to do a better job
+    const neg_threshold = 45
+    const pos_threshold = 360 - neg_threshold
+
+    let unwrapped = new Array(len)
+
+    unwrapped[0] = phase[0]
+    for (let i = 1; i < len; i++) {
+        let phase_diff = phase[i] - phase[i-1]
+        if (phase_diff >= pos_threshold) {
+            phase_diff -= 360
+        } else if (phase_diff <= -neg_threshold) {
+            phase_diff += 360
+        }
+        unwrapped[i] = unwrapped[i-1] + phase_diff
+    }
+
+    return unwrapped
+}
+
+function phase_scale(phase) {
+
+    if (!document.getElementById("ScaleWrap").checked) {
         return phase
     }
 
-    let phase_wrap = 0.0
-    for (let i = 1; i < phase.length; i++) {
-        phase[i] += phase_wrap
-        const phase_diff = phase[i] - phase[i-1]
-        if (phase_diff > 180) {
-            phase_wrap -= 360.0
-            phase[i] -= 360.0;
-        } else if (phase_diff < -180) {
-            phase_wrap += 360.0
-            phase[i] += 360.0
+    // Wrap all arrays based on first
+    const arrays = phase.length
+    const len = phase[0].length
+    for (let i = 1; i < len; i++) {
+        if (phase[0][i] > 180) {
+            for (let j = 0; j < arrays; j++) {
+                phase[j][i] -= 360
+            }
+        } else if (phase[0][i] < -180) {
+            for (let j = 0; j < arrays; j++) {
+                phase[j][i] += 360
+            }
+        }
+        if (math.abs(phase[0][i]) > 180) {
+            i--
         }
     }
 
@@ -1504,60 +1521,6 @@ function redraw_post_estimate_and_bode() {
         return
     }
 
-    // Graph config
-    Bode_amp.layout.xaxis.type = frequency_scale.type
-    Bode_amp.layout.xaxis.title.text = frequency_scale.label
-    Bode_amp.layout.yaxis.title.text = amplitude_scale.label
-    Bode_phase.layout.xaxis.type = frequency_scale.type
-    Bode_phase.layout.xaxis.title.text = frequency_scale.label
-
-    if (document.getElementById("ScaleWrap").checked) {
-        Bode_phase.layout.yaxis.range = [-180, 180]
-        Bode_phase.layout.yaxis.fixedrange = true
-    } else {
-        Bode_phase.layout.yaxis.fixedrange = false
-    }
-
-
-
-    const bode_phase_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
-    for (let i = 0; i < Bode_amp.data.length; i++) {
-        Bode_amp.data[i].hovertemplate = bode_phase_hovertemplate
-    }
-
-    const bode_amp_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
-    for (let i = 0; i < Bode_phase.data.length; i++) {
-        Bode_phase.data[i].hovertemplate = bode_amp_hovertemplate
-    }
-
-    // Find the start and end index
-    var start_index = find_start_index(bode_data.time)
-    var end_index = find_end_index(bode_data.time)
-
-    for (let i = 0; i < bode_data.length; i++) {
-        if (bode_data[i] == null) {
-            continue
-        }
-
-        // Take mean of transfer function over time
-        let H_mean = 0
-        for (let j=start_index;j<end_index;j++) {
-            H_mean = math.add(H_mean, bode_data[i].H[j])
-        }
-        H_mean = math.dotMultiply(H_mean, 1 / (end_index - start_index))
-
-        const freq = frequency_scale.fun(bode_data[i].freq)
-
-        Bode_amp.data[i].x = freq
-        Bode_phase.data[i].x = freq
-
-        Bode_amp.data[i].y = amplitude_scale.fun(complex_abs(H_mean))
-        Bode_phase.data[i].y = get_phase(H_mean)
-
-        Bode_amp.data[i].hovertemplate = bode_amp_hovertemplate
-        Bode_phase.data[i].hovertemplate = bode_phase_hovertemplate
-    }
-
     // Post filter estimate
     var quantization_noise
     if (Gyro_batch.type == "batch") {
@@ -1574,30 +1537,26 @@ function redraw_post_estimate_and_bode() {
     }
 
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || Gyro_batch[i].post_filter) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.H == null)) {
             continue
         }
 
         // Find the start and end index
-        start_index = find_start_index(Gyro_batch[i].FFT.time)
-        end_index = find_end_index(Gyro_batch[i].FFT.time)
+        const start_index = find_start_index(Gyro_batch[i].FFT.time)
+        const end_index = find_end_index(Gyro_batch[i].FFT.time)
 
         // Windowing amplitude correction depends on spectrum of interest
         const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
 
-        // Number of windows to plot
-        const plot_length = end_index - start_index
+        // Scale factor to get mean from accumulated samples
+        const mean_scale = 1 / (end_index - start_index)
 
         // Estimate filtered from pre-filter data
         let fft_mean_x = 0
         let fft_mean_y = 0
         let fft_mean_z = 0
-        let H_mean = 0
         for (let j=start_index;j<end_index;j++) {
-            const H = Gyro_batch[i].FFT.H[j]
-            H_mean = math.add(H_mean, H)
-
-            const attenuation = complex_abs(H)
+            const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
 
             // Apply window correction
             const corrected_x = math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)
@@ -1622,9 +1581,9 @@ function redraw_post_estimate_and_bode() {
         Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
 
         // Set scaled y data
-        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
-        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
-        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
+        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, mean_scale)
+        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, mean_scale)
+        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, mean_scale)
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
@@ -1632,21 +1591,106 @@ function redraw_post_estimate_and_bode() {
         fft_plot.data[Y_plot_index].x = scaled_bins
         fft_plot.data[Z_plot_index].x = scaled_bins
 
-        // Bode plot
-        const bode_index = 3 + Gyro_batch[i].sensor_num
-        Bode_amp.data[bode_index].x = scaled_bins
-        Bode_phase.data[bode_index].x = scaled_bins
-        H_mean = math.dotMultiply(H_mean, 1 / plot_length)
-
-        Bode_amp.data[bode_index].y = amplitude_scale.fun(complex_abs(H_mean))
-        Bode_phase.data[bode_index].y = get_phase(H_mean)
-
     }
 
     Plotly.redraw("FFTPlot")
 
-    Plotly.redraw("BodeAmp")
-    Plotly.redraw("BodePhase")
+    // Graph config
+    Bode.layout.xaxis.type = frequency_scale.type
+    Bode.layout.xaxis2.type = frequency_scale.type
+    Bode.layout.xaxis2.title.text = frequency_scale.label
+
+    Bode.layout.yaxis.title.text = amplitude_scale.label
+
+    if (document.getElementById("ScaleWrap").checked) {
+        Bode.layout.yaxis2.range = [-180, 180]
+        Bode.layout.yaxis2.autorange = false
+        Bode.layout.yaxis2.fixedrange = true
+    } else {
+        Bode.layout.yaxis2.fixedrange = false
+        Bode.layout.yaxis2.autorange = true
+    }
+
+    const bode_amp_hovertemplate = "<extra></extra>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    //Bode.data[0].hovertemplate = bode_amp_hovertemplate
+    Bode.data[2].hovertemplate = bode_amp_hovertemplate
+
+    const bode_phase_hovertemplate = "<extra></extra>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
+    //Bode.data[1].hovertemplate = bode_phase_hovertemplate
+    Bode.data[3].hovertemplate = bode_phase_hovertemplate
+
+    // Work out which index to plot
+    var gyro_instance
+    if (document.getElementById("BodeGyroInst0").checked) {
+        gyro_instance = 0
+    } else if (document.getElementById("BodeGyroInst1").checked) {
+        gyro_instance = 1
+    } else {
+        gyro_instance = 2
+    }
+
+    var index
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.bode == null)) {
+            continue
+        }
+        if (Gyro_batch[i].sensor_num == gyro_instance) {
+            index = i
+        }
+    }
+
+    // Find the start and end index
+    const start_index = find_start_index(Gyro_batch[index].FFT.time)
+    const end_index = find_end_index(Gyro_batch[index].FFT.time)
+
+    // Scale factor to get mean from accumulated samples
+    const mean_scale = 1 / (end_index - start_index)
+
+    let Amp_mean = 0
+    let Phase_mean = 0
+    let Amp_max
+    let Amp_min
+    let Phase_max
+    let Phase_min
+    for (let j=start_index;j<end_index;j++) {
+        const H = Gyro_batch[index].FFT.bode.H[j]
+        const HR_att = complex_abs(H)
+        const HR_phase = get_phase(H)
+        Amp_mean = math.add(Amp_mean, HR_att)
+        Phase_mean = math.add(Phase_mean, HR_phase)
+
+        if (j > start_index) {
+            Amp_max = array_max(Amp_max, HR_att)
+            Amp_min = array_min(Amp_min, HR_att)
+            Phase_max = array_max(Phase_max, HR_phase)
+            Phase_min = array_min(Phase_min, HR_phase)
+        } else {
+            Amp_max = HR_att
+            Amp_min = HR_att
+            Phase_max = HR_phase
+            Phase_min = HR_phase
+        }
+    }
+
+    Amp_mean = math.dotMultiply(Amp_mean, mean_scale)
+    Phase_mean = math.dotMultiply(Phase_mean, mean_scale)
+
+    const scaled_bode_freq = frequency_scale.fun(Gyro_batch[index].FFT.bode.freq)
+    Bode.data[2].x = scaled_bode_freq
+    Bode.data[3].x = scaled_bode_freq
+
+    const scaled_phase = phase_scale([Phase_mean, Phase_max, Phase_min])
+    Bode.data[2].y = amplitude_scale.fun(Amp_mean)
+    Bode.data[3].y = scaled_phase[0]
+
+    const area_freq = [...scaled_bode_freq, ...scaled_bode_freq.toReversed()]
+    Bode.data[0].x = area_freq
+    Bode.data[0].y = amplitude_scale.fun([...Amp_max, ...Amp_min.toReversed()])
+
+    Bode.data[1].x = area_freq
+    Bode.data[1].y = [...scaled_phase[1], ...scaled_phase[2].toReversed()]
+
+    Plotly.redraw("Bode")
 
 }
 
@@ -1690,10 +1734,6 @@ function redraw_Spectrogram() {
     } else {
         axis = "z"
     }
-
-    // Get scales
-    const amplitude_scale = get_amplitude_scale()
-    const frequency_scale = get_frequency_scale()
 
     // Setup axes
     Spectrogram.layout.yaxis.type = frequency_scale.type
@@ -1840,22 +1880,6 @@ function update_hidden(source) {
 
 }
 
-// Update lines that are shown in bode plots
-function update_bode_hidden(checkbox) {
-
-    var gyro_instance = parseFloat(checkbox.id.match(/\d+/g))
-    if (!checkbox.id.includes("HR")) {
-        gyro_instance += 3
-    }
-
-    Bode_amp.data[gyro_instance].visible = checkbox.checked
-    Bode_phase.data[gyro_instance].visible = checkbox.checked
-
-    Plotly.redraw("BodeAmp")
-    Plotly.redraw("BodePhase")
-
-}
-
 // Grab param from log
 function get_param_value(param_log, name) {
     var value
@@ -1885,27 +1909,6 @@ function get_HNotch_param_names() {
                   options: prefix[i] + "OPTS"}
     }
     return ret
-}
-
-function filter_calculate() {
-    // Disable calculate button now it has been done
-    document.getElementById("BodeCalculate").disabled = true
-
-    // Load filters from params
-    load_filters()
-
-    // Update range of bode plot if changed
-    update_bode_range()
-
-    // Update transfer function
-    calculate_transfer_function()
-
-    // Update plot
-    redraw_post_estimate_and_bode()
-
-    // Update filter tracking lines
-    redraw_Spectrogram()
-
 }
 
 function load_filters() {
@@ -1940,8 +1943,8 @@ function filter_param_read() {
         }
     }
 
-    // Re-enable calculate button
-    document.getElementById("BodeCalculate").disabled = false
+    document.getElementById('calculate').disabled = false
+
 }
 
 // Load from batch logging messages
@@ -2304,12 +2307,10 @@ function load(log_file) {
             Gyro_batch.have_pre = true
         } else {
             document.getElementById("SpecGyroPost").disabled = false
-            document.getElementById("BodeEstGyro" + Gyro_batch[i].sensor_num).disabled = false
             Gyro_batch.have_post = true
         }
         document.getElementById("SpecGyroInst" + Gyro_batch[i].sensor_num).disabled = false
-        document.getElementById("BodeHRGyro" + Gyro_batch[i].sensor_num).disabled = false
-        document.getElementById("BodeHRGyro" + Gyro_batch[i].sensor_num).checked = true
+        document.getElementById("BodeGyroInst" + Gyro_batch[i].sensor_num).disabled = false
         document.getElementById("SpecGyroAxisX").checked = true
         document.getElementById("SpecGyroAxisY").disabled = false
         document.getElementById("SpecGyroAxisZ").disabled = false
@@ -2319,6 +2320,7 @@ function load(log_file) {
     document.getElementById("SpecGyroInst" + first_gyro).checked = true
     document.getElementById("SpecGyro" + (Gyro_batch.have_pre ? "Pre" : "Post")).checked = true
     document.getElementById("SpecGyroAxisX").disabled = false
+    document.getElementById("BodeGyroInst" + first_gyro).checked = true
 
     // Enable estimated post filter if there is pre filter data
     if (Gyro_batch.have_pre) {
@@ -2345,10 +2347,6 @@ function load(log_file) {
 
     // Plot
     redraw()
-
-    // Disable bode calculate button as its now upto date
-    document.getElementById("BodeCalculate").disabled = true
-
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
