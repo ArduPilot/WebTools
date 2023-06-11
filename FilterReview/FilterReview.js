@@ -886,8 +886,12 @@ function reset() {
 
     // Disable bode plots selection
     for (let i = 0; i < 3; i++) {
-        document.getElementById("BodeHRGyro" + i).disabled = true
-        document.getElementById("BodeEstGyro" + i).disabled = true
+        const BodeTypes = ["BodeHRGyro" , "BodeEstGyro"]
+        for (let n = 0; n < BodeTypes.length; n++) {
+            let checkbox = document.getElementById(BodeTypes[n] + i)
+            checkbox.disabled = true
+            checkbox.checked = false
+        }
     }
     document.getElementById("BodeCalculate").disabled = true
 
@@ -898,6 +902,24 @@ function reset() {
         for (param of Object.values(notch_params[i])) {
             document.getElementById(param).disabled = true
         }
+    }
+
+    // Clear all plot data
+    for (let i = 0; i < fft_plot.data.length; i++) {
+        fft_plot.data[i].x = []
+        fft_plot.data[i].y = []
+    }
+    for (let i = 0; i < Bode_amp.data.length; i++) {
+        Bode_amp.data[i].x = []
+        Bode_amp.data[i].y = []
+    }
+    for (let i = 0; i < Bode_phase.data.length; i++) {
+        Bode_phase.data[i].x = []
+        Bode_phase.data[i].y = []
+    }
+    for (let i = 0; i < Spectrogram.data.length; i++) {
+        Spectrogram.data[i].x = []
+        Spectrogram.data[i].y = []
     }
 
 }
@@ -1096,6 +1118,9 @@ function clear_calculation() {
     if (Gyro_batch == null) {
         return
     }
+    // Enable button to fix
+    document.getElementById("calculate").disabled = false
+
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
@@ -1106,6 +1131,9 @@ function clear_calculation() {
 
 // Re-run all FFT's
 function calculate() {
+    // Disable button, calculation is now upto date
+    document.getElementById("calculate").disabled = true
+
     let changed = false
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
@@ -1217,6 +1245,9 @@ function calculate_transfer_function() {
         Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
     }
 
+    // Update the bode time and freq
+    update_bode_range()
+
     // Run higher resolution for bode plot
     for (let i = 0; i < bode_data.length; i++) {
         if (bode_data[i] == null) {
@@ -1229,6 +1260,8 @@ function calculate_transfer_function() {
 
 var bode_data = []
 function clear_bode_range() {
+    // Re-enable calculate button
+    document.getElementById("BodeCalculate").disabled = false
     bode_data = []
 }
 
@@ -1855,6 +1888,8 @@ function get_HNotch_param_names() {
 }
 
 function filter_calculate() {
+    // Disable calculate button now it has been done
+    document.getElementById("BodeCalculate").disabled = true
 
     // Load filters from params
     load_filters()
@@ -1867,6 +1902,10 @@ function filter_calculate() {
 
     // Update plot
     redraw_post_estimate_and_bode()
+
+    // Update filter tracking lines
+    redraw_Spectrogram()
+
 }
 
 function load_filters() {
@@ -1900,6 +1939,9 @@ function filter_param_read() {
             }
         }
     }
+
+    // Re-enable calculate button
+    document.getElementById("BodeCalculate").disabled = false
 }
 
 // Load from batch logging messages
@@ -2267,6 +2309,7 @@ function load(log_file) {
         }
         document.getElementById("SpecGyroInst" + Gyro_batch[i].sensor_num).disabled = false
         document.getElementById("BodeHRGyro" + Gyro_batch[i].sensor_num).disabled = false
+        document.getElementById("BodeHRGyro" + Gyro_batch[i].sensor_num).checked = true
         document.getElementById("SpecGyroAxisX").checked = true
         document.getElementById("SpecGyroAxisY").disabled = false
         document.getElementById("SpecGyroAxisZ").disabled = false
@@ -2297,18 +2340,15 @@ function load(log_file) {
     // Calculate FFT
     calculate()
 
-    // Update the bode time and freq
-    update_bode_range()
-
     // Update transfer function from filter setting
     calculate_transfer_function()
 
     // Plot
     redraw()
 
-    // Enable the calculate buttons
-    document.getElementById("calculate").disabled = false
-    document.getElementById("BodeCalculate").disabled = false
+    // Disable bode calculate button as its now upto date
+    document.getElementById("BodeCalculate").disabled = true
+
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
