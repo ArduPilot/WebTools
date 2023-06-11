@@ -2119,6 +2119,11 @@ function load(log_file) {
     log.parseAtOffset('PARM')
     log.parseAtOffset('IMU')
 
+    if ((Object.keys(log.messages.PARM).length == 0) && (Object.keys(log.messages.IMU).length == 0)) {
+        alert("No params or IMU in log")
+        return
+    }
+
     // Try and decode device IDs and rate
     var num_gyro = 0
     var gyro_rate = []
@@ -2151,7 +2156,7 @@ function load(log_file) {
     const have_raw_log = Object.keys(log.messages.GYR).length > 0
 
     if (!have_batch_log && !have_raw_log) {
-        console.log("No Batch or raw data")
+        alert("No batch data or raw IMU found in log")
         return
     }
 
