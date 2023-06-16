@@ -935,8 +935,96 @@ function reset() {
 var Spectrogram = {}
 var fft_plot = {}
 var Bode = {}
+var flight_data = {}
 const max_num_harmonics = 8
 function setup_plots() {
+
+    const time_scale_label = "Time (s)"
+
+    // Setup flight data plot
+    const flight_data_plot = ["Roll", "Pitch", "Throttle", "Altitude"]
+    const flight_data_unit = ["deg",  "deg",   "",         "m"]
+    flight_data.data = []
+    for (let i=0;i<flight_data_plot.length;i++) {
+        let axi = "y"
+        if (i > 0) {
+            axi += (i+1)
+        }
+        flight_data.data[i] = { mode: "lines",
+                                name: flight_data_plot[i],
+                                meta: flight_data_plot[i],
+                                yaxis: axi,
+                                hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} " + flight_data_unit[i] }
+    }
+
+    flight_data.layout = {
+        xaxis: { title: {text: time_scale_label },
+                 domain: [0.07, 0.93],
+                 type: "linear", 
+                 zeroline: false, 
+                 showline: true, 
+                 mirror: true,
+                 rangeslider: {} },
+        showlegend: false,
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+
+    // Set axis to match line colors
+    var default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+
+    const flight_data_axis_pos = [0, 0.06, 0.94, 1]
+    for (let i=0;i<flight_data_plot.length;i++) {
+        let axi = "yaxis"
+        if (i > 0) {
+            axi += (i+1)
+        }
+        const side = i < 2 ? "left" : "right"
+        flight_data.layout[axi] = {title: { text: flight_data_plot[i] },
+                                            zeroline: false,
+                                            showline: true,
+                                            mirror: true,
+                                            side: side,
+                                            position: flight_data_axis_pos[i],
+                                            color: default_colors[i] }
+        if (i > 0) {
+            flight_data.layout[axi].overlaying = 'y'
+        }
+    }
+
+    var plot = document.getElementById("FlightData")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, flight_data.data, flight_data.layout, {displaylogo: false});
+
+    // Update start and end time based on range
+    document.getElementById("FlightData").on('plotly_relayout', function(data) {
+
+        function range_update(range) {
+            document.getElementById("TimeStart").value = math.floor(range[0])
+            document.getElementById("TimeEnd").value = math.ceil(range[1])
+            if (Gyro_batch != null) {
+                // If we have data then enable re-calculate on updated range
+                document.getElementById("calculate").disabled = false
+            }
+        }
+
+        if ((data['xaxis.range'] !== undefined)) {
+            range_update(data['xaxis.range'])
+            return
+        }
+
+        const range_keys = ['xaxis.range[0]', 'xaxis.range[1]']
+        if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
+            range_update([data[range_keys[0]], data[range_keys[1]]])
+            return
+        }
+
+        const auto_range_key = 'xaxis.autorange'
+        if ((data[auto_range_key] !== undefined) && (data[auto_range_key] == true)) {
+            range_update([Gyro_batch.start_time, Gyro_batch.end_time])
+        }
+
+    })
+
 
     amplitude_scale = get_amplitude_scale()
     frequency_scale = get_frequency_scale()
@@ -1073,7 +1161,7 @@ function setup_plots() {
 
     // Define Layout
     Spectrogram.layout = {
-        xaxis: {title: {text: "Time (s)"}, zeroline: false, showline: true, mirror: true },
+        xaxis: {title: {text: time_scale_label}, zeroline: false, showline: true, mirror: true },
         yaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true },
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
@@ -2121,6 +2209,17 @@ function filter_param_read() {
 
 }
 
+// Update flight data range and enable calculate when time range inputs are updated
+function time_range_changed() {
+
+    flight_data.layout.xaxis.range = [ parseFloat(document.getElementById("TimeStart").value),
+                                       parseFloat(document.getElementById("TimeEnd").value)]
+    flight_data.layout.xaxis.autorange = false
+    Plotly.redraw("FlightData")
+
+    document.getElementById('calculate').disabled = false
+}
+
 // Load from batch logging messages
 function load_from_batch(log, num_gyro, gyro_rate) {
     Gyro_batch = []
@@ -2521,6 +2620,26 @@ function load(log_file) {
 
     // Plot
     redraw()
+
+    // Plot flight data
+    log.parseAtOffset("ATT")
+
+    const ATT_time = math.dotMultiply(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+    flight_data.data[0].x = ATT_time
+    flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+
+    flight_data.data[1].x = ATT_time
+    flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+
+    flight_data.data[2].x = math.dotMultiply(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
+    flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+
+    log.parseAtOffset("POS")
+
+    flight_data.data[3].x = math.dotMultiply(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
+    flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+
+    Plotly.redraw("FlightData")
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
