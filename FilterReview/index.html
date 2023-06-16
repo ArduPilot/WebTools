@@ -75,9 +75,9 @@
                 <fieldset style="width:200px;height:80px">
                     <legend>Analysis time</legend>
                     <label for="TimeStart">Start (s)</label>
-                    <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="document.getElementById('calculate').disabled = false" style="width:50px"/><br><br>
+                    <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/><br><br>
                     <label for="TimeEnd">End (s)</label>
-                    <input id="TimeEnd" name="TimeEnd" type="number" min="0" step="1" value="0" onchange="document.getElementById('calculate').disabled = false" style="width:50px"/>
+                    <input id="TimeEnd" name="TimeEnd" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/>
                 </fieldset>
             </td>
             <td style="width: 10px;"></td>
@@ -91,6 +91,13 @@
 </td>
 </tr>
 </table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Flight Data</h2>
+</td></tr></table>
+
+<div id="FlightData" style="width:1200px;height:450px"></div>
+
 
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">IMU Spectrum</h2>
@@ -285,6 +292,10 @@
         </td>
     </tr>
 </table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Filter Configuration</h2>
+</td></tr></table>
 
 <table>
 <tr>
