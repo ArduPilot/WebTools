@@ -82,7 +82,7 @@ class NotchTarget {
             return
         }
         if (config.ref == 0) {
-            return { freq:[config.freq, config.freq], time:[this.data.time[start_index], this.data.time[this.data.time.length]] }
+            return { freq:[config.freq, config.freq], time:[this.data.time[0], this.data.time[this.data.time.length]] }
         }
         var freq = []
         for (let j=0;j<this.data.value.length;j++) {
