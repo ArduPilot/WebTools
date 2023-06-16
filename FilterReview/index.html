@@ -247,7 +247,7 @@
 
 <table>
     <tr>
-        <td style="width: 275px;"></td>
+        <td style="width: 150px;"></td>
         <td>
             <fieldset style="width:300px;height:40px">
                 <legend>Amplitude scale</legend>
@@ -262,16 +262,25 @@
         <td>
             <fieldset style="width:260px;height:40px">
                 <legend>Frequency scale</legend>
-                        <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
-                        <label for="freq_ScaleLinear">Linear</label>
-                        <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
-                        <label for="freq_ScaleLog">Log</label>
-                        &nbsp&nbsp&nbsp&nbsp
-                        <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
-                        <label for="freq_Scale_Hz">Hz</label>
-                        <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
-                        <label for="freq_Scale_RPM">RPM</label>
-                </table>
+                <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
+                <label for="freq_ScaleLinear">Linear</label>
+                <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
+                <label for="freq_ScaleLog">Log</label>
+                &nbsp&nbsp&nbsp&nbsp
+                <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
+                <label for="freq_Scale_Hz">Hz</label>
+                <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
+                <label for="freq_Scale_RPM">RPM</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:240px;height:40px">
+                <legend>Notch tracking</legend>
+                <input type="checkbox" id="Notch1Show" name="Notch1Show" onchange="update_hidden(this)">
+                <label for="Notch1Show">Show notch 1</label>
+
+                <input type="checkbox" id="Notch2Show" name="Notch2Show" onchange="update_hidden(this)">
+                <label for="Notch2Show">Show notch 2</label>
             </fieldset>
         </td>
     </tr>

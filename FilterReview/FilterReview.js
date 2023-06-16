@@ -283,12 +283,8 @@ class ESCTarget extends NotchTarget {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(...this.data[i].time)
-                freq.push(...inst_freq)
-
-                // Add NAN to remove line from end back to the start
-                time.push(NaN)
-                freq.push(NaN)
+                time.push(this.data[i].time)
+                freq.push(inst_freq)
             }
             return { freq:freq, time:time }
 
@@ -391,12 +387,8 @@ class FFTTarget extends NotchTarget {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(...this.data[i].time)
-                freq.push(...inst_freq)
-
-                // Add NAN to remove line from end back to the start
-                time.push(NaN)
-                freq.push(NaN)
+                time.push(this.data[i].time)
+                freq.push(inst_freq)
             }
             return { freq:freq, time:time }
         }
@@ -917,6 +909,10 @@ function reset() {
         fft_plot.data[i].x = []
         fft_plot.data[i].y = []
     }
+    for (let i = 0; i < fft_plot.layout.shapes.length; i++) {
+        fft_plot.layout.shapes[i].x0 = NaN
+        fft_plot.layout.shapes[i].x1 = NaN
+    }
     for (let i = 0; i < Bode.data.length; i++) {
         Bode.data[i].x = []
         Bode.data[i].y = []
@@ -924,6 +920,13 @@ function reset() {
     for (let i = 0; i < Spectrogram.data.length; i++) {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
+    }
+
+    // Reset FFT plot notch selection
+    for (let i = 0; i < 2; i++) {
+        let check = document.getElementById("Notch" + (i+1) + "Show")
+        check.disabled = true
+        check.checked = false
     }
 
 }
@@ -962,7 +965,37 @@ function setup_plots() {
         yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
         showlegend: true,
         legend: {itemclick: false, itemdoubleclick: false },
-        margin: { b: 50, l: 50, r: 50, t: 20 }
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        shapes: []
+    }
+
+    // Add tracking lines
+    // Two harmonic notch filters each with upto 8 harmonics
+    for (let i=0;i<2;i++) {
+        let dash = (i == 0) ? "solid" : "dot"
+        for (let j=0;j<max_num_harmonics;j++) {
+            // Mean line
+            fft_plot.layout.shapes.push({
+                type: 'line',
+                line: { dash: dash },
+                yref: 'paper',
+                y0: 0,
+                y1: 1,
+                visible: false,
+            })
+
+            // Range rectangle
+            fft_plot.layout.shapes.push({
+                type: 'rect',
+                line: { width: 0 },
+                yref: 'paper',
+                y0: 0,
+                y1: 1,
+                visible: false,
+                fillcolor: '#d3d3d3',
+                opacity: 0.4
+            })
+        }
     }
 
     var plot = document.getElementById("FFTPlot")
@@ -971,8 +1004,6 @@ function setup_plots() {
 
     // Bode plot setup
     Bode.data = []
-
-
 
     Bode.data[0] = { line: {color: "transparent"},
                      fill: "toself", 
@@ -1508,6 +1539,93 @@ function redraw() {
 
     }
 
+    // Update freq tracking lines
+
+    // Hide all
+    for (let i=0;i<fft_plot.layout.shapes.length;i++) {
+        fft_plot.layout.shapes[i].visible = false
+    }
+
+    for (let i=0;i<filters.notch.length;i++) {
+        if (filters.notch[i].active == false) {
+            continue
+        }
+
+        const fundamental = filters.notch[i].get_target_freq()
+
+        function get_mean_and_range(time, freq) {
+            // Find the start and end index
+            const start_index = find_start_index(time)
+            const end_index = find_end_index(time)
+
+            // Take mean and range from start to end
+            var mean = 0
+            var min = null
+            var max = null
+            for (let j=start_index;j<end_index;j++) {
+                mean += freq[j]
+                if ((min == null) || (freq[j] < min)) {
+                    min = freq[j]
+                }
+                if ((max == null) || (freq[j] > max)) {
+                    max = freq[j]
+                }
+            }
+            mean /= end_index - start_index
+
+            return { mean: mean, min:min, max:max}
+        }
+
+        var mean
+        var min
+        var max
+        if (!Array.isArray(fundamental.time[0])) {
+            // Single peak
+            let mean_range = get_mean_and_range(fundamental.time, fundamental.freq)
+            mean = mean_range.mean
+            min = mean_range.min
+            max = mean_range.max
+
+        } else {
+            // Combine multiple peaks
+            mean = 0
+            min = null
+            max = null
+            for (let j=0;j<fundamental.time.length;j++) {
+                let mean_range = get_mean_and_range(fundamental.time[j], fundamental.freq[j])
+                mean += mean_range.mean
+                if ((min == null) || (mean_range.min < min)) {
+                    min = mean_range.min
+                }
+                if ((max == null) || (mean_range.max > max)) {
+                    max = mean_range.max
+                }
+            }
+            mean /= fundamental.time.length
+        }
+
+        const show_notch = document.getElementById("Notch" + (i+1) + "Show").checked
+        for (let j=0;j<max_num_harmonics;j++) {
+            if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
+                continue
+            }
+            const harmonic_freq = frequency_scale.fun(mean * (j+1))
+
+            const line_index = (i*max_num_harmonics*2) + j*2
+            fft_plot.layout.shapes[line_index].visible = show_notch
+            fft_plot.layout.shapes[line_index].x0 = harmonic_freq
+            fft_plot.layout.shapes[line_index].x1 = harmonic_freq
+
+            const min_freq = frequency_scale.fun(min * (j+1))
+            const max_freq = frequency_scale.fun(max * (j+1))
+
+            const range_index = line_index + 1
+            fft_plot.layout.shapes[range_index].visible = show_notch
+            fft_plot.layout.shapes[range_index].x0 = min_freq
+            fft_plot.layout.shapes[range_index].x1 = max_freq
+        }
+    }
+
     Plotly.redraw("FFTPlot")
 
     redraw_post_estimate_and_bode()
@@ -1798,18 +1916,38 @@ function redraw_Spectrogram() {
         const Group_name = "Notch " + (i+1) + ": " + filters.notch[i].name()
         const fundamental = filters.notch[i].get_target_freq()
 
+        let time
+        let freq
+        if (!Array.isArray(fundamental.time[0])) {
+            // Single peak
+            time = fundamental.time
+            freq = fundamental.freq
+
+        } else {
+            // Tracking multiple peaks
+            time = []
+            freq = []
+
+            for (let j=0;j<fundamental.time.length;j++) {
+                time.push(...fundamental.time[j])
+                freq.push(...fundamental.freq[j])
+
+                // Add NAN to remove line from end back to the start
+                time.push(NaN)
+                freq.push(NaN)
+            }
+
+        }
+
         // Enable each harmonic
         for (let j=0;j<max_num_harmonics;j++) {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = math.dotMultiply(fundamental.freq, j+1)
-            if (harmonic_freq == null) {
-                break
-            }
+            const harmonic_freq = math.dotMultiply(freq, j+1)
 
             Spectrogram.data[plot_offset + j].visible = true
-            Spectrogram.data[plot_offset + j].x = fundamental.time
+            Spectrogram.data[plot_offset + j].x = time
             Spectrogram.data[plot_offset + j].y = frequency_scale.fun(harmonic_freq)
             Spectrogram.data[plot_offset + j].hovertemplate = tracking_hovertemplate
             Spectrogram.data[plot_offset + j].legendgrouptitle.text = Group_name
@@ -1846,6 +1984,10 @@ function update_hidden(source) {
             }
         }
 
+        if ((gyro_instance == null) || (axi_index == null)) {
+            return
+        }
+
         return get_FFT_data_index(gyro_instance, pre_post_index, axi_index)
     }
 
@@ -1873,7 +2015,37 @@ function update_hidden(source) {
         }
 
     } else {
-        fft_plot.data[get_index_from_id(source.id)].visible = source.checked
+        const index = get_index_from_id(source.id)
+        if (index != null) {
+            // fft line checkbox
+            fft_plot.data[index].visible = source.checked
+
+        } else {
+            // fft notch tracking
+            const notch_num = parseFloat(source.id.match(/\d+/g)) - 1
+
+            // Hide all
+            for (let j=0;j<max_num_harmonics;j++) {
+                const line_index = (notch_num*max_num_harmonics*2) + j*2
+                const range_index = line_index + 1
+                fft_plot.layout.shapes[line_index].visible = false
+                fft_plot.layout.shapes[range_index].visible = false
+            }
+
+            if (source.checked) {
+                // Show those that are enabled
+                for (let j=0;j<max_num_harmonics;j++) {
+                    if ((filters.notch[notch_num].harmonics() & (1<<j)) == 0) {
+                        continue
+                    }
+                    const line_index = (notch_num*max_num_harmonics*2) + j*2
+                    const range_index = line_index + 1
+                    fft_plot.layout.shapes[line_index].visible = true
+                    fft_plot.layout.shapes[range_index].visible = true
+                }
+            }
+        }
+
     }
 
     Plotly.redraw("FFTPlot")
@@ -1926,6 +2098,8 @@ function load_filters() {
             params[key] = parseFloat(document.getElementById(value).value)
         }
         filters.notch.push(new HarmonicNotchFilter(params))
+
+        document.getElementById("Notch" + (i+1) + "Show").disabled = !filters.notch[i].active
     }
 }
 
