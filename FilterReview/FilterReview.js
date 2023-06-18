@@ -1499,14 +1499,14 @@ function find_start_index(time) {
 function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
-    var end_index
+    var end_index = time.length
     for (j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
-            end_index = j
+            end_index = j + 1
         }
     }
-    return end_index + 1
+    return end_index
 }
 
 function get_phase(H) {
