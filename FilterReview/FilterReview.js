@@ -461,6 +461,15 @@ function complex_square(C) {
     return ret
 }
 
+function complex_phase(C) {
+    const len = C[0].length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = Math.atan2(C[1][i], C[0][i])
+    }
+    return ret
+}
+
 function exp_jw(freq, rate) {
     const scale = (2*Math.PI) / rate
     const len = freq.length
@@ -492,6 +501,48 @@ function array_min(A, B) {
     }
     return ret
 }
+
+function array_scale(A, scale) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] * scale
+    }
+    return ret
+}
+
+function array_mul(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] * B[i]
+    }
+    return ret
+}
+
+function array_offset(A, offset) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] + offset
+    }
+    return ret
+}
+
+function array_add(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] + B[i]
+    }
+    return ret
+}
+
+function array_log10(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = Math.log10(A[i])
     }
     return ret
 }
@@ -707,7 +758,7 @@ function hanning(len) {
 function window_correction_factors(w) {
     return {
         linear: 1/math.mean(w),
-        energy: 1/Math.sqrt(math.mean(math.dotPow(w,2)))
+        energy: 1/Math.sqrt(math.mean(array_mul(w,w)))
     }
 }
 
@@ -845,7 +896,7 @@ function run_batch_fft(data_set) {
     for (let i=0;i<num_batch;i++) {
         var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, fft)
 
-        time.push(...math.add(data_set[i].sample_time, math.dotMultiply(sample_time, ret.center)))
+        time.push(...array_offset(array_scale(ret.center, sample_time), data_set[i].sample_time))
         x.push(...ret.x)
         y.push(...ret.y)
         z.push(...ret.z)
@@ -1439,13 +1490,13 @@ function get_amplitude_scale() {
 
     var ret = {}
     if (use_PSD) {
-        ret.fun = function (x) { return math.dotMultiply(math.log10(math.dotMultiply(x,x)), 10.0) } // 10 * log10(x.^2)
+        ret.fun = function (x) { return array_scale(array_log10(array_mul(x,x)), 10.0) } // 10 * log10(x.^2)
         ret.label = "PSD (dB/Hz)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
         ret.window_correction = function(correction) { return correction.energy * Math.SQRT1_2 }
 
     } else if (use_DB) {
-        ret.fun = function (x) { return math.dotMultiply(math.log10(x), 20.0) } // 20 * log10(x)
+        ret.fun = function (x) { return array_scale(array_log10(x), 20.0) } // 20 * log10(x)
         ret.label = "Amplitude (dB)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
         ret.correction_scale = 1.0
@@ -1469,7 +1520,7 @@ function get_frequency_scale() {
 
     var ret = {}
     if (use_RPM) {
-        ret.fun = function (x) { return math.dotMultiply(x, 60.0) }
+        ret.fun = function (x) { return array_scale(x, 60.0) }
         ret.label = "RPM"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} RPM" }
 
@@ -1514,7 +1565,7 @@ function find_end_index(time) {
 
 function get_phase(H) {
 
-    let phase = math.dotMultiply(math.atan2(H[1], H[0]), 180/math.pi)
+    let phase = array_scale(complex_phase(H), 180/Math.PI)
     const len = phase.length
 
     // Notches result in large positive phase changes, bias the unwrap to do a better job
@@ -1601,14 +1652,15 @@ function redraw() {
         const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
 
         // Take mean from start to end
-        var fft_mean_x = 0
-        var fft_mean_y = 0
-        var fft_mean_z = 0
+        const fft_len = Gyro_batch[i].FFT.x[0].length
+        var fft_mean_x = (new Array(fft_len)).fill(0)
+        var fft_mean_y = (new Array(fft_len)).fill(0)
+        var fft_mean_z = (new Array(fft_len)).fill(0)
         for (let j=start_index;j<end_index;j++) {
             // Add to mean sum
-            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)))
-            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.y[j], window_correction)))
-            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.x[j], window_correction)))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.y[j], window_correction)))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.z[j], window_correction)))
         }
 
         let plot_type = Gyro_batch[i].post_filter ? 1 : 0
@@ -1618,9 +1670,9 @@ function redraw() {
         let Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 2)
 
         // Set scaled y data
-        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
-        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
-        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
+        fft_plot.data[X_plot_index].y = array_scale(fft_mean_x, 1 / plot_length)
+        fft_plot.data[Y_plot_index].y = array_scale(fft_mean_y, 1 / plot_length)
+        fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, 1 / plot_length)
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
@@ -1761,28 +1813,29 @@ function redraw_post_estimate_and_bode() {
         const mean_scale = 1 / (end_index - start_index)
 
         // Estimate filtered from pre-filter data
-        let fft_mean_x = 0
-        let fft_mean_y = 0
-        let fft_mean_z = 0
+        const fft_len = Gyro_batch[i].FFT.x[0].length
+        let fft_mean_x = (new Array(fft_len)).fill(0)
+        let fft_mean_y = (new Array(fft_len)).fill(0)
+        let fft_mean_z = (new Array(fft_len)).fill(0)
         for (let j=start_index;j<end_index;j++) {
             const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
 
             // Apply window correction
-            const corrected_x = math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)
-            const corrected_y = math.dotMultiply(Gyro_batch[i].FFT.y[j], window_correction)
-            const corrected_z = math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)
+            const corrected_x = array_scale(Gyro_batch[i].FFT.x[j], window_correction)
+            const corrected_y = array_scale(Gyro_batch[i].FFT.y[j], window_correction)
+            const corrected_z = array_scale(Gyro_batch[i].FFT.z[j], window_correction)
 
             // Subtract noise, apply transfer function, re-apply noise
             // Strictly we need not bother with noise, it makes the estimate less accurate
             // However it does result in a good match to logged post filter data making it easy to verify the estimates
-            const filtered_x = math.add(math.dotMultiply(math.subtract(corrected_x, quantization_noise), attenuation), quantization_noise)
-            const filtered_y = math.add(math.dotMultiply(math.subtract(corrected_y, quantization_noise), attenuation), quantization_noise)
-            const filtered_z = math.add(math.dotMultiply(math.subtract(corrected_z, quantization_noise), attenuation), quantization_noise)
+            const filtered_x = array_offset(array_mul(array_offset(corrected_x, -quantization_noise), attenuation), quantization_noise)
+            const filtered_y = array_offset(array_mul(array_offset(corrected_y, -quantization_noise), attenuation), quantization_noise)
+            const filtered_z = array_offset(array_mul(array_offset(corrected_z, -quantization_noise), attenuation), quantization_noise)
 
             // Add to mean sum
-            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(filtered_x))
-            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(filtered_y))
-            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(filtered_z))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(filtered_x))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(filtered_y))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(filtered_z))
         }
 
         X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
@@ -1790,9 +1843,9 @@ function redraw_post_estimate_and_bode() {
         Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
 
         // Set scaled y data
-        fft_plot.data[X_plot_index].y = math.dotMultiply(fft_mean_x, mean_scale)
-        fft_plot.data[Y_plot_index].y = math.dotMultiply(fft_mean_y, mean_scale)
-        fft_plot.data[Z_plot_index].y = math.dotMultiply(fft_mean_z, mean_scale)
+        fft_plot.data[X_plot_index].y = array_scale(fft_mean_x, mean_scale)
+        fft_plot.data[Y_plot_index].y = array_scale(fft_mean_y, mean_scale)
+        fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, mean_scale)
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
@@ -1855,8 +1908,9 @@ function redraw_post_estimate_and_bode() {
     // Scale factor to get mean from accumulated samples
     const mean_scale = 1 / (end_index - start_index)
 
-    let Amp_mean = 0
-    let Phase_mean = 0
+    const H_len = Gyro_batch[index].FFT.bode.H[0][0].length
+    let Amp_mean = (new Array(H_len)).fill(0)
+    let Phase_mean = (new Array(H_len)).fill(0)
     let Amp_max
     let Amp_min
     let Phase_max
@@ -1865,8 +1919,8 @@ function redraw_post_estimate_and_bode() {
         const H = Gyro_batch[index].FFT.bode.H[j]
         const HR_att = complex_abs(H)
         const HR_phase = get_phase(H)
-        Amp_mean = math.add(Amp_mean, HR_att)
-        Phase_mean = math.add(Phase_mean, HR_phase)
+        Amp_mean = array_add(Amp_mean, HR_att)
+        Phase_mean = array_add(Phase_mean, HR_phase)
 
         if (j > start_index) {
             Amp_max = array_max(Amp_max, HR_att)
@@ -1881,8 +1935,8 @@ function redraw_post_estimate_and_bode() {
         }
     }
 
-    Amp_mean = math.dotMultiply(Amp_mean, mean_scale)
-    Phase_mean = math.dotMultiply(Phase_mean, mean_scale)
+    Amp_mean = array_scale(Amp_mean, mean_scale)
+    Phase_mean = array_scale(Phase_mean, mean_scale)
 
     const scaled_bode_freq = frequency_scale.fun(Gyro_batch[index].FFT.bode.freq)
     Bode.data[2].x = scaled_bode_freq
@@ -1980,10 +2034,10 @@ function redraw_Spectrogram() {
     Spectrogram.data[0].z = []
     for (j = 0; j<Gyro_batch[batch_instance].FFT[axis].length; j++) {
 
-        var amplitude = math.dotMultiply(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
+        var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
         if (estimated) {
             const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
-            amplitude = math.add(math.dotMultiply(math.subtract(amplitude, quantization_noise), attenuation), quantization_noise)
+            amplitude = array_offset(array_mul(array_offset(amplitude, -quantization_noise), attenuation), quantization_noise)
         }
         Spectrogram.data[0].z[j] = amplitude_scale.fun(amplitude)
     }
@@ -2035,7 +2089,7 @@ function redraw_Spectrogram() {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = math.dotMultiply(freq, j+1)
+            const harmonic_freq = array_scale(freq, j+1)
 
             Spectrogram.data[plot_offset + j].visible = true
             Spectrogram.data[plot_offset + j].x = time
@@ -2295,9 +2349,9 @@ function load_from_batch(log, num_gyro, gyro_rate) {
 
         // Remove logging scale factor
         const mul = 1/log.messages.ISBH.mul[i]
-        x = math.dotMultiply(x, mul)
-        y = math.dotMultiply(y, mul)
-        z = math.dotMultiply(z, mul)
+        x = array_scale(x, mul)
+        y = array_scale(y, mul)
+        z = array_scale(z, mul)
 
         // Add to batches for this instance
         Gyro_batch[instance].push({ sample_time: log.messages.ISBH.SampleUS[i] / 1000000,
@@ -2628,7 +2682,7 @@ function load(log_file) {
     log.parseAtOffset("ATT")
 
     if (Object.keys(log.messages.ATT).length > 0) {
-        const ATT_time = math.dotMultiply(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
         flight_data.data[0].x = ATT_time
         flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
 
@@ -2637,13 +2691,13 @@ function load(log_file) {
     }
 
     if (Object.keys(log.messages.RATE).length > 0) {
-        flight_data.data[2].x = math.dotMultiply(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
+        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
         flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
     }
 
     log.parseAtOffset("POS")
     if (Object.keys(log.messages.POS).length > 0) {
-        flight_data.data[3].x = math.dotMultiply(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
+        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
     }
 
