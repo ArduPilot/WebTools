@@ -129,8 +129,8 @@ class ThrottleTarget extends NotchTarget {
     }
 
     get_target(config, AOut) {
-        const motors_throttle = math.max(0, AOut)
-        return config.freq * math.max(config.min_ratio, math.sqrt(motors_throttle / config.ref))
+        const motors_throttle = Math.max(0, AOut)
+        return config.freq * Math.max(config.min_ratio, Math.sqrt(motors_throttle / config.ref))
     }
 
     get_target_freq_index(config, index) {
@@ -146,7 +146,7 @@ class RPMTarget extends NotchTarget {
 
     get_target(config, rpm) {
         if (rpm > 0) {
-            return math.max(config.freq, rpm * config.ref * (1.0/60.0))
+            return Math.max(config.freq, rpm * config.ref * (1.0/60.0))
         }
         return config.freq
     }
@@ -263,7 +263,7 @@ class ESCTarget extends NotchTarget {
     }
 
     get_target(config, rpm) {
-        return math.max(rpm, config.freq)
+        return Math.max(rpm, config.freq)
     }
 
     get_target_freq(config) {
@@ -371,7 +371,7 @@ class FFTTarget extends NotchTarget {
     }
 
     get_target(config, rpm) {
-        return math.max(rpm, config.freq)
+        return Math.max(rpm, config.freq)
     }
 
     get_target_freq(config) {
@@ -462,15 +462,15 @@ function complex_square(C) {
 }
 
 function exp_jw(freq, rate) {
-    const scale = (2*math.PI) / rate
+    const scale = (2*Math.PI) / rate
     const len = freq.length
     let ret = [new Array(len), new Array(len)]
     for (let i = 0; i<len; i++) {
         // e^(ic) = (cos c) + i(sin c)
         // no real component in jw
         const jw = freq[i] * scale
-        ret[0][i] = math.cos(jw)
-        ret[1][i] = math.sin(jw)
+        ret[0][i] = Math.cos(jw)
+        ret[1][i] = Math.sin(jw)
     }
     return ret
 }
@@ -479,7 +479,7 @@ function array_max(A, B) {
     const len = A.length
     let ret = new Array(len)
     for (let i = 0; i<len; i++) {
-        ret[i] = math.max(A[i], B[i])
+        ret[i] = Math.max(A[i], B[i])
     }
     return ret
 }
@@ -488,7 +488,10 @@ function array_min(A, B) {
     const len = A.length
     let ret = new Array(len)
     for (let i = 0; i<len; i++) {
-        ret[i] = math.min(A[i], B[i])
+        ret[i] = Math.min(A[i], B[i])
+    }
+    return ret
+}
     }
     return ret
 }
@@ -600,7 +603,7 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
 
         const bandwidth_limit = this.bandwidth * 0.52
         const nyquist_limit = sample_freq * 0.48
-        center = math.min(math.max(center, bandwidth_limit), nyquist_limit)
+        center = Math.min(Math.max(center, bandwidth_limit), nyquist_limit)
 
         this.notches[0].transfer(H, center*(1-notch_spread), sample_freq, Z1, Z2)
         this.notches[1].transfer(H, center*(1+notch_spread), sample_freq, Z1, Z2)
@@ -691,9 +694,9 @@ function HarmonicNotchFilter(params) {
 // return hanning window array of given length (in tensorflow format)
 function hanning(len) {
     let w = new Array(len)
-    const scale = (2*math.PI) / (len - 1)
+    const scale = (2*Math.PI) / (len - 1)
     for (let i=0; i<len; i++) {
-        w[i] = 0.5 - 0.5 * math.cos(scale * i)
+        w[i] = 0.5 - 0.5 * Math.cos(scale * i)
     }
     return w
 }
@@ -704,13 +707,13 @@ function hanning(len) {
 function window_correction_factors(w) {
     return {
         linear: 1/math.mean(w),
-        energy: 1/math.sqrt(math.mean(math.dotPow(w,2)))
+        energy: 1/Math.sqrt(math.mean(math.dotPow(w,2)))
     }
 }
 
 // Length of real half of fft of len points
 function real_length(len) {
-    return math.floor(len / 2) + 1
+    return Math.floor(len / 2) + 1
 }
 
 // Frequency bins for given fft length and sample period (real only)
@@ -726,7 +729,7 @@ function rfft_freq(len, d) {
 function run_fft(batch, window_size, window_spacing, windowing_function, fft) {
     const num_points = batch.x.length
     const real_len = real_length(window_size)
-    const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
+    const num_windows = Math.floor((num_points-window_size)/window_spacing) + 1
 
     var fft_x = new Array(num_windows)
     var fft_y = new Array(num_windows)
@@ -812,17 +815,17 @@ function run_batch_fft(data_set) {
     var window_size
     if (Gyro_batch.type == "batch") {
         // Must have at least one window
-        const window_per_batch = math.max(parseInt(document.getElementById("FFTWindow_per_batch").value), 1)
+        const window_per_batch = Math.max(parseInt(document.getElementById("FFTWindow_per_batch").value), 1)
 
         // Calculate window size for given number of windows and overlap
-        window_size = math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
+        window_size = Math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
 
     } else {
-        window_size = math.min(parseInt(document.getElementById("FFTWindow_size").value), num_points)
+        window_size = Math.min(parseInt(document.getElementById("FFTWindow_size").value), num_points)
 
     }
 
-    const window_spacing = math.round(window_size * (1 - window_overlap))
+    const window_spacing = Math.round(window_size * (1 - window_overlap))
     const windowing_function = hanning(window_size)
 
     // Get windowing correction factors for use later when plotting
@@ -999,8 +1002,8 @@ function setup_plots() {
     document.getElementById("FlightData").on('plotly_relayout', function(data) {
 
         function range_update(range) {
-            document.getElementById("TimeStart").value = math.floor(range[0])
-            document.getElementById("TimeEnd").value = math.ceil(range[1])
+            document.getElementById("TimeStart").value = Math.floor(range[0])
+            document.getElementById("TimeEnd").value = Math.ceil(range[1])
             if (Gyro_batch != null) {
                 // If we have data then enable re-calculate on updated range
                 document.getElementById("calculate").disabled = false
@@ -1439,7 +1442,7 @@ function get_amplitude_scale() {
         ret.fun = function (x) { return math.dotMultiply(math.log10(math.dotMultiply(x,x)), 10.0) } // 10 * log10(x.^2)
         ret.label = "PSD (dB/Hz)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
-        ret.window_correction = function(correction) { return correction.energy * math.sqrt(1/2) }
+        ret.window_correction = function(correction) { return correction.energy * Math.SQRT1_2 }
 
     } else if (use_DB) {
         ret.fun = function (x) { return math.dotMultiply(math.log10(x), 20.0) } // 20 * log10(x)
@@ -1553,7 +1556,7 @@ function phase_scale(phase) {
                 phase[j][i] += 360
             }
         }
-        if (math.abs(phase[0][i]) > 180) {
+        if (Math.abs(phase[0][i]) > 180) {
             i--
         }
     }
@@ -1735,7 +1738,7 @@ function redraw_post_estimate_and_bode() {
         // See also Analog Devices:
         // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
         // The 16 here is the number of bits in the batch log
-        quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
+        quantization_noise = 1 / (Math.sqrt(3) * 2**(16-0.5))
 
     } else {
         // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
@@ -1965,7 +1968,7 @@ function redraw_Spectrogram() {
         // See also Analog Devices:
         // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
         // The 16 here is the number of bits in the batch log
-        quantization_noise = 1 / (math.sqrt(3) * 2**(16-0.5))
+        quantization_noise = 1 / (Math.sqrt(3) * 2**(16-0.5))
 
     } else {
         // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
@@ -2339,7 +2342,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         if (Gyro_batch[i] == null) {
             continue
         }
-        Gyro_batch[i].gyro_rate = math.max(gyro_rate[Gyro_batch[i].sensor_num], max_logging_rate[Gyro_batch[i].sensor_num])
+        Gyro_batch[i].gyro_rate = Math.max(gyro_rate[Gyro_batch[i].sensor_num], max_logging_rate[Gyro_batch[i].sensor_num])
     }
 
     // Grab full time range of batches
@@ -2396,7 +2399,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
         Gyro_batch[i].sensor_num = i
         Gyro_batch[i].post_filter = post_filter
-        Gyro_batch[i].gyro_rate = math.max(gyro_rate[i], sample_rate)
+        Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], sample_rate)
     }
 
     var start_time
@@ -2460,7 +2463,7 @@ function load(log_file) {
             }
 
             if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + math.round(gyro_rate[i]) + " Hz"
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + Math.round(gyro_rate[i]) + " Hz"
             }
             num_gyro++
         }
@@ -2541,8 +2544,8 @@ function load(log_file) {
     load_filters()
 
     // Update ranges of start and end time
-    start_time = math.floor(Gyro_batch.start_time)
-    end_time = math.ceil(Gyro_batch.end_time)
+    start_time = Math.floor(Gyro_batch.start_time)
+    end_time = Math.ceil(Gyro_batch.end_time)
 
     var start_input = document.getElementById("TimeStart")
     start_input.disabled = false;
