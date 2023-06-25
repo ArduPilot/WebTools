@@ -2624,20 +2624,25 @@ function load(log_file) {
     // Plot flight data
     log.parseAtOffset("ATT")
 
-    const ATT_time = math.dotMultiply(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
-    flight_data.data[0].x = ATT_time
-    flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+    if (Object.keys(log.messages.ATT).length > 0) {
+        const ATT_time = math.dotMultiply(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+        flight_data.data[0].x = ATT_time
+        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
 
-    flight_data.data[1].x = ATT_time
-    flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+        flight_data.data[1].x = ATT_time
+        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+    }
 
-    flight_data.data[2].x = math.dotMultiply(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-    flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+    if (Object.keys(log.messages.RATE).length > 0) {
+        flight_data.data[2].x = math.dotMultiply(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
+        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+    }
 
     log.parseAtOffset("POS")
-
-    flight_data.data[3].x = math.dotMultiply(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
-    flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    if (Object.keys(log.messages.POS).length > 0) {
+        flight_data.data[3].x = math.dotMultiply(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
+        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    }
 
     Plotly.redraw("FlightData")
 
