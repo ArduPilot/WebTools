@@ -24,9 +24,10 @@ class NotchTarget {
         }
 
         // Grab all given keys to data struct
-        this.data.time = []
-        this.data.value = []
-        for (var i=0; i < log.messages[msg_name].time_boot_ms.length; i++) {
+        const len = log.messages[msg_name].time_boot_ms.length
+        this.data.time = new Array(len)
+        this.data.value = new Array(len)
+        for (var i=0; i < len; i++) {
             this.data.time[i] = log.messages[msg_name].time_boot_ms[i] / 1000
             this.data.value[i] = log.messages[msg_name][key_name][i]
         }
@@ -84,9 +85,10 @@ class NotchTarget {
         if (config.ref == 0) {
             return { freq:[config.freq, config.freq], time:[this.data.time[0], this.data.time[this.data.time.length]] }
         }
-        var freq = []
-        for (let j=0;j<this.data.value.length;j++) {
-            freq.push(this.get_target_freq_index(config, j))
+        const len = this.data.value.length
+        var freq = new Array(len)
+        for (let j=0;j<len;j++) {
+            freq[j] = this.get_target_freq_index(config, j)
         }
         return { freq:freq, time:this.data.time }
     }
@@ -252,8 +254,9 @@ class ESCTarget extends NotchTarget {
 
         const dynamic = (config.options & (1<<1)) != 0
         if (dynamic) {
-            let ret = []
-            for (var j=0; j < this.data.length; j++) {
+            const len = this.data.length
+            let ret = new Array(len)
+            for (var j=0; j < len; j++) {
                 ret[j] = this.get_target(config, this.data.interpolated[instance][j][index])
             }
             return ret
@@ -274,17 +277,18 @@ class ESCTarget extends NotchTarget {
         const dynamic = (config.options & (1<<1)) != 0
         if (dynamic) {
             // Tracking individual motor RPM's
-            let freq = []
-            let time = []
+            const len = this.data.length
+            let freq = new Array(len)
+            let time = new Array(len)
 
-            for (let i = 0; i < this.data.length; i++) {
+            for (let i = 0; i < len; i++) {
                 let inst_freq = this.data[i].freq
                 for (let j = 0; j < inst_freq.length; j++) {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(this.data[i].time)
-                freq.push(inst_freq)
+                time[i] = this.data[i].time
+                freq[i] = inst_freq
             }
             return { freq:freq, time:time }
 
@@ -360,8 +364,9 @@ class FFTTarget extends NotchTarget {
 
         const dynamic = (config.options & (1<<1)) != 0
         if (dynamic) {
-            let ret = []
-            for (var j=0; j < this.data.length; j++) {
+            const len = this.data.length
+            let ret = new Array(len)
+            for (var j=0; j < len; j++) {
                 ret[j] = this.get_target(config, this.data.interpolated[instance][j][index])
             }
             return ret
@@ -378,17 +383,18 @@ class FFTTarget extends NotchTarget {
         const dynamic = (config.options & (1<<1)) != 0
         if (dynamic) {
             // Tracking multiple peaks
-            let freq = []
-            let time = []
+            const len = this.data.length
+            let freq = new Array(len)
+            let time = new Array(len)
 
-            for (let i = 0; i < this.data.length; i++) {
+            for (let i = 0; i < len; i++) {
                 let inst_freq = this.data[i].freq
                 for (let j = 0; j < inst_freq.length; j++) {
                     inst_freq[j] = this.get_target(config, inst_freq[j])
                 }
 
-                time.push(this.data[i].time)
-                freq.push(inst_freq)
+                time[i] = this.data[i].time
+                freq[i] = inst_freq
             }
             return { freq:freq, time:time }
         }
@@ -1445,8 +1451,9 @@ function calculate_transfer_function() {
         }
 
         // Evaluate dynamic notches at each time step
-        let ret_H = []
-        for (let j = 0; j < time.length; j++) {
+        const len = time.length
+        let ret_H = new Array(len)
+        for (let j = 0; j < len; j++) {
 
             var H = { n: H_static.n, d: H_static.d }
             for (let k=0; k<filters.notch.length; k++) {
@@ -2031,8 +2038,9 @@ function redraw_Spectrogram() {
 
 
     // Setup z data
-    Spectrogram.data[0].z = []
-    for (j = 0; j<Gyro_batch[batch_instance].FFT[axis].length; j++) {
+    const len = Gyro_batch[batch_instance].FFT[axis].length
+    Spectrogram.data[0].z = new Array(len)
+    for (j = 0; j<len; j++) {
 
         var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
         if (estimated) {
@@ -2212,8 +2220,8 @@ function get_param_value(param_log, name) {
 }
 
 function get_HNotch_param_names() {
-    prefix = ["INS_HNTCH_", "INS_HNTC2_"]
-    ret = []
+    let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
+    let ret = []
     for (let i = 0; i < prefix.length; i++) {
         ret[i] = {enable: prefix[i] + "ENABLE",
                   mode: prefix[i] + "MODE",
