@@ -5,6 +5,9 @@
 // Much faster than math.fft!
 const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
 
+var DataflashParser
+import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+
 // Generic Class to hold source for notch target
 class NotchTarget {
     constructor(log, msg_name, key_name, name, mode_value) {
@@ -2537,11 +2540,8 @@ function load(log_file) {
     // Reset buttons and labels
     reset()
 
-    var log = new DataflashParser()
-    log.processData(log_file)
-
-    log.parseAtOffset('PARM')
-    log.parseAtOffset('IMU')
+    let log = new DataflashParser()
+    log.processData(log_file, ['PARM', 'IMU'])
 
     if ((Object.keys(log.messages.PARM).length == 0) && (Object.keys(log.messages.IMU).length == 0)) {
         alert("No params or IMU in log")
