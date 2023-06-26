@@ -1311,6 +1311,8 @@ function setup_plots() {
 // Calculate if needed and re-draw, called from calculate button
 function re_calc() {
 
+    const start = performance.now()
+
     calculate()
 
     load_filters()
@@ -1318,6 +1320,9 @@ function re_calc() {
     calculate_transfer_function()
 
     redraw()
+
+    const end = performance.now();
+    console.log(`Re-calc took: ${end - start} ms`);
 }
 
 // Force full re-calc on next run, on window size change
