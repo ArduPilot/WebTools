@@ -955,6 +955,7 @@ function reset() {
     document.getElementById("TimeStart").disabled = true
     document.getElementById("TimeEnd").disabled = true
     document.getElementById("calculate").disabled = true
+    document.getElementById("calculate_filters").disabled = true
 
     // Disable all plot selection checkboxes
     for (let i = 0; i < 3; i++) {
@@ -1523,6 +1524,8 @@ function calculate_transfer_function() {
         }
     }
 
+    // Just updated, disable calc button
+    document.getElementById("calculate_filters").disabled = true
 }
 
 
@@ -2307,7 +2310,7 @@ function filter_param_read() {
         }
     }
 
-    document.getElementById('calculate').disabled = false
+    document.getElementById('calculate_filters').disabled = false
 
 }
 
@@ -2320,6 +2323,7 @@ function time_range_changed() {
     Plotly.redraw("FlightData")
 
     document.getElementById('calculate').disabled = false
+    document.getElementById('calculate_filters').disabled = false
 }
 
 // Load from batch logging messages
