@@ -557,11 +557,11 @@ function DigitalBiquadFilter(freq) {
     this.target_freq = freq
 
     if (this.target_freq <= 0) {
-        this.transfer = function(H, sample_freq, Z1, Z2) { }
+        this.transfer = function(Hn, Hd, sample_freq, Z1, Z2) { }
         return this;
     }
 
-    this.transfer = function(H, sample_freq, Z1, Z2) {
+    this.transfer = function(Hn, Hd, sample_freq, Z1, Z2) {
 
         const fr = sample_freq/this.target_freq;
         const ohm = Math.tan(Math.PI/fr);
@@ -573,21 +573,35 @@ function DigitalBiquadFilter(freq) {
         const a1 = 2.0*(ohm*ohm-1.0)/c;
         const a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
 
-        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
-        // Division done at final step
+        // Build transfer function and apply to H division done at final step
         const len = Z1[0].length
-        let numerator = [new Array(len), new Array(len)]
-        let denominator = [new Array(len), new Array(len)]
         for (let i = 0; i<len; i++) {
-            numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
-            numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
+            // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
+            const numerator_r = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
+            const numerator_i =      b1 * Z1[1][i] + b2 * Z2[1][i]
 
-            denominator[0][i] = 1 + a1 * Z1[0][i] + a2 * Z2[0][i]
-            denominator[1][i] =     a1 * Z1[1][i] + a2 * Z2[1][i]
+            const denominator_r = 1 + a1 * Z1[0][i] + a2 * Z2[0][i]
+            const denominator_i =     a1 * Z1[1][i] + a2 * Z2[1][i]
+
+            // This is just two instances of complex multiplication
+            // Reimplementing it inline here saves memory and is faster
+            const numerator_ac = Hn[0][i] * numerator_r
+            const numerator_bd = Hn[1][i] * numerator_i
+            const numerator_ad = Hn[0][i] * numerator_i
+            const numerator_bc = Hn[1][i] * numerator_r
+
+            Hn[0][i] = numerator_ac - numerator_bd
+            Hn[1][i] = numerator_ad + numerator_bc
+
+            const denominator_ac = Hd[0][i] * denominator_r
+            const denominator_bd = Hd[1][i] * denominator_i
+            const denominator_ad = Hd[0][i] * denominator_i
+            const denominator_bc = Hd[1][i] * denominator_r
+
+            Hd[0][i] = denominator_ac - denominator_bd
+            Hd[1][i] = denominator_ad + denominator_bc
         }
 
-        H.n = complex_mul(H.n, numerator)
-        H.d = complex_mul(H.d, denominator)
     }
 
     return this
@@ -599,7 +613,7 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
     this.harmonic_mul = (harmonic_mul != null) ? harmonic_mul : 1
     this.Asq = (10.0**(-this.attenuation_dB / 40.0))**2
 
-    this.transfer = function(H, center, sample_freq, Z1, Z2) {
+    this.transfer = function(Hn, Hd, center, sample_freq, Z1, Z2) {
         const center_freq_hz = center * this.harmonic_mul
 
         // check center frequency is in the allowable range
@@ -619,21 +633,35 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
         const a1 = b1
         const a2 =  1.0 - alpha
 
-        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
-        // Division done at final step
+        // Build transfer function and apply to H division done at final step
         const len = Z1[0].length
-        let numerator = [new Array(len), new Array(len)]
-        let denominator = [new Array(len), new Array(len)]
         for (let i = 0; i<len; i++) {
-            numerator[0][i] = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
-            numerator[1][i] =      b1 * Z1[1][i] + b2 * Z2[1][i]
+            // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
+            const numerator_r = b0 + b1 * Z1[0][i] + b2 * Z2[0][i]
+            const numerator_i =      b1 * Z1[1][i] + b2 * Z2[1][i]
 
-            denominator[0][i] = a0 + a1 * Z1[0][i] + a2 * Z2[0][i]
-            denominator[1][i] =      a1 * Z1[1][i] + a2 * Z2[1][i]
+            const denominator_r = a0 + a1 * Z1[0][i] + a2 * Z2[0][i]
+            const denominator_i =      a1 * Z1[1][i] + a2 * Z2[1][i]
+
+            // This is just two instances of complex multiplication
+            // Reimplementing it inline here saves memory and is faster
+            const numerator_ac = Hn[0][i] * numerator_r
+            const numerator_bd = Hn[1][i] * numerator_i
+            const numerator_ad = Hn[0][i] * numerator_i
+            const numerator_bc = Hn[1][i] * numerator_r
+
+            Hn[0][i] = numerator_ac - numerator_bd
+            Hn[1][i] = numerator_ad + numerator_bc
+
+            const denominator_ac = Hd[0][i] * denominator_r
+            const denominator_bd = Hd[1][i] * denominator_i
+            const denominator_ad = Hd[0][i] * denominator_i
+            const denominator_bc = Hd[1][i] * denominator_r
+
+            Hd[0][i] = denominator_ac - denominator_bd
+            Hd[1][i] = denominator_ad + denominator_bc
         }
 
-        H.n = complex_mul(H.n, numerator)
-        H.d = complex_mul(H.d, denominator)
     }
 
     return this
@@ -652,7 +680,7 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
     }
 
-    this.transfer = function(H, center, sample_freq, Z1, Z2) {
+    this.transfer = function(Hn, Hd, center, sample_freq, Z1, Z2) {
         center = center * this.harmonic
 
         // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
@@ -662,10 +690,10 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
         const nyquist_limit = sample_freq * 0.48
         center = Math.min(Math.max(center, bandwidth_limit), nyquist_limit)
 
-        this.notches[0].transfer(H, center*(1-notch_spread), sample_freq, Z1, Z2)
-        this.notches[1].transfer(H, center*(1+notch_spread), sample_freq, Z1, Z2)
+        this.notches[0].transfer(Hn, Hd, center*(1-notch_spread), sample_freq, Z1, Z2)
+        this.notches[1].transfer(Hn, Hd, center*(1+notch_spread), sample_freq, Z1, Z2)
         if (this.notches.length == 3) {
-            this.notches[2].transfer(H, center, sample_freq, Z1, Z2)
+            this.notches[2].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
         }
     }
 
@@ -697,7 +725,7 @@ function HarmonicNotchFilter(params) {
 
     if (!this.enabled()) {
         // Disabled
-        this.transfer = function(H, instance, index, sample_freq, Z1, Z2) { }
+        this.transfer = function(Hn, Hd, instance, index, sample_freq, Z1, Z2) { }
         return this
     }
     this.active = true
@@ -719,7 +747,7 @@ function HarmonicNotchFilter(params) {
         }
     }
 
-    this.transfer = function(H, instance, index, sample_freq, Z1, Z2) {
+    this.transfer = function(Hn, Hd, instance, index, sample_freq, Z1, Z2) {
         // Get target frequencies from target
         const freq = this.tracking.get_interpolated_target_freq(instance, index, this.params)
 
@@ -728,7 +756,7 @@ function HarmonicNotchFilter(params) {
                 // Cycle over each notch
                 for (let j=0; j<freq.length; j++) {
                     // Run each notch multiple times for multi frequency motor/esc/fft tracking
-                    this.notches[i].transfer(H, freq[j], sample_freq, Z1, Z2)
+                    this.notches[i].transfer(Hn, Hd, freq[j], sample_freq, Z1, Z2)
                 }
             }
         }
@@ -1444,14 +1472,16 @@ function calculate_transfer_function() {
         one[0].fill(1)
         one[1].fill(0)
 
+        let Hn_static = [one[0].slice(), one[1].slice()]
+        let Hd_static = [one[0].slice(), one[1].slice()]
+
         // Low pass does not change frequency in flight
-        var H_static = { n: one, d: one }
-        filters.static.transfer(H_static, rate, Z1, Z2)
+        filters.static.transfer(Hn_static, Hd_static, rate, Z1, Z2)
 
         // Evaluate any static notch
         for (let k=0; k<filters.notch.length; k++) {
             if (filters.notch[k].enabled() && filters.notch[k].static()) {
-                filters.notch[k].transfer(H_static, index, null, rate, Z1, Z2)
+                filters.notch[k].transfer(Hn_static, Hd_static, index, null, rate, Z1, Z2)
             }
         }
 
@@ -1460,14 +1490,16 @@ function calculate_transfer_function() {
         let ret_H = new Array(len)
         for (let j = 0; j < len; j++) {
 
-            var H = { n: H_static.n, d: H_static.d }
+            let Hn = [Hn_static[0].slice(), Hn_static[1].slice()]
+            let Hd = [Hd_static[0].slice(), Hd_static[1].slice()]
+
             for (let k=0; k<filters.notch.length; k++) {
                 if (filters.notch[k].enabled() && !filters.notch[k].static()) {
-                    filters.notch[k].transfer(H, index, j, rate, Z1, Z2)
+                    filters.notch[k].transfer(Hn, Hd, index, j, rate, Z1, Z2)
                 }
             }
 
-            ret_H[j] = complex_div(H.n, H.d)
+            ret_H[j] = complex_div(Hn, Hd)
         }
 
         return ret_H
