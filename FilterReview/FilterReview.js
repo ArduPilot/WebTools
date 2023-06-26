@@ -2573,6 +2573,11 @@ function load(log_file) {
 
     }
 
+    // Delete log data now it has been used
+    delete log.messages.ISBH
+    delete log.messages.ISBD
+    delete log.messages.GYR
+
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
                         new ThrottleTarget(log),
@@ -2595,6 +2600,36 @@ function load(log_file) {
     if (value != null) {
         document.getElementById("INS_GYRO_FILTER").value = value
     }
+
+    // Plot flight data from log
+    log.parseAtOffset("ATT")
+
+    if (Object.keys(log.messages.ATT).length > 0) {
+        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+        flight_data.data[0].x = ATT_time
+        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+
+        flight_data.data[1].x = ATT_time
+        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+    }
+
+    if (Object.keys(log.messages.RATE).length > 0) {
+        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
+        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+    }
+
+    log.parseAtOffset("POS")
+    if (Object.keys(log.messages.POS).length > 0) {
+        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
+        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    }
+
+    // Were now done with the log, delete it to save memory before starting caculations
+    delete log.buffer
+    delete log.data
+    delete log.messages
+    log_file = null
+    log = null
 
     // Enable top level filter params
     document.getElementById("INS_GYRO_FILTER").disabled = false
@@ -2685,29 +2720,6 @@ function load(log_file) {
 
     // Plot
     redraw()
-
-    // Plot flight data
-    log.parseAtOffset("ATT")
-
-    if (Object.keys(log.messages.ATT).length > 0) {
-        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
-        flight_data.data[0].x = ATT_time
-        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
-
-        flight_data.data[1].x = ATT_time
-        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
-    }
-
-    if (Object.keys(log.messages.RATE).length > 0) {
-        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
-    }
-
-    log.parseAtOffset("POS")
-    if (Object.keys(log.messages.POS).length > 0) {
-        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
-        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
-    }
 
     Plotly.redraw("FlightData")
 
