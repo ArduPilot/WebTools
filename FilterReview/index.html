@@ -301,13 +301,20 @@
 <tr>
 <td style="width: 30px;"></td>
 <td>
-    <fieldset style="width:1100px">
+    <fieldset style="width:532px;height:70px">
     <legend>Low pass filter</legend>
     <p>
         <label class="parameter_input_label" for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
         <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0" style="width: 100px" onchange="filter_param_read()"/>
     </p>
-</fieldset>
+    </fieldset>
+<td>
+    <fieldset style="width:532px;height:70px">
+    <legend>Setup</legend>
+    <p>
+        <input type="button" id="calculate_filters" value="Recalculate filters" onclick="re_calc()">
+    </p>
+    </fieldset>
 </td>
 </tr>
 </table>
