@@ -7,7 +7,7 @@
 <script type="text/javascript" src="FileSaver.js"></script>
 <script type="text/javascript" src={{url_for('static', filename='filters.js')}}></script>
 <script type="text/javascript" src={{url_for('static', filename='FileSaver.js')}}></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 <script src="https://unpkg.com/mathjs/lib/browser/math.js"></script>
 </head>
 <table style="width:1200px"><tr><td>
@@ -18,13 +18,18 @@
     <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
 </td></tr></table>
 
+<style>
+        div.plotly-notifier {
+        visibility: hidden;
+}
+</style>
+
 <h1>ArduPilot Filter Analysis</h1>
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load(); fill_docs(); update_all_hidden(); check_nyquist(); calculate_filter(); calculate_pid();">
-  <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
-  <canvas id="Phase" style="width:100%;max-width:1200px;"></canvas>
+<body onload="load(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid();">
+<div id="Bode" style="width:1200px;height:900px"></div>
 <p>
   <input type="button" id="calculate" value="Calculate">
   <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
@@ -78,15 +83,6 @@ ArduPilot 4.2 filter setup.
                         </td>
                 </tr>
         </table>
-        <p>
-                <label for="MaxFreq">Maximum Displayed Frequency</label>
-                <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150" onchange="check_nyquist();"/>
-                <label id="MaxFreq_warning"></label>
-	</p>
-        <p>
-                <label for="MaxPhaseLag">Maximum Displayed Phase Lag</label>
-                <input id="MaxPhaseLag" name="MaxPhaseLag" type="number" step="1" value="360"/>
-	</p>
 </fieldset>
 <fieldset style="max-width:1200px">
   <legend>INS Settings</legend>
@@ -218,8 +214,7 @@ ArduPilot 4.2 filter setup.
 
 <h2>PIDs</h2>
 <h3><label id="PID_title">Title</label></h3>
-<canvas id="PID_Attenuation" style="width:100%;max-width:1200px"></canvas>
-<canvas id="PID_Phase" style="width:100%;max-width:1200px"></canvas>
+<div id="BodePID" style="width:1200px;height:900px"></div>
 <p>
 <input type="button" id="CalculateRoll" value="Caculate Roll" onclick="calculate_pid(this.id);">
 <input type="button" id="CalculatePitch" value="Caculate Pitch" onclick="calculate_pid(this.id);">
@@ -281,15 +276,6 @@ ArduPilot 4.2 filter setup.
                                         </td>
                                 </tr>
                         </table> 
-                </p>
-                <p>
-                        <label for="PID_MaxFreq">Maximum Displayed Frequency</label>
-                        <input id="PID_MaxFreq" name="PID_MaxFreq" type="number" step="1" value="150" onchange="check_nyquist();"/>
-                        <label id="PID_MaxFreq_warning"></label>
-                </p>
-                <p>
-                        <label for="PID_MaxPhaseLag">Maximum Displayed Phase Lag</label>
-                        <input id="PID_MaxPhaseLag" name="PID_MaxPhaseLag" type="number" step="1" value="360"/>
                 </p>
         </fieldset>
         <fieldset style="max-width:1200px">
