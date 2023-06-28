@@ -247,10 +247,6 @@ function get_form(vname) {
     return v;
 }
 
-var chart_attenuation;
-var chart_phase;
-var freq_log_scale;
-
 function get_filters(sample_rate) {
     var filters = []
     filters.push(new HarmonicNotchFilter(sample_rate,
@@ -348,8 +344,10 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
 }
 
 function calculate_filter() {
+    const start = performance.now()
+
     var sample_rate = get_form("GyroSampleRate");
-    var freq_max = get_form("MaxFreq");
+    var freq_max = sample_rate * 0.5;
     var freq_step = 0.1;
     var filters = get_filters(sample_rate);
 
@@ -359,201 +357,55 @@ function calculate_filter() {
     setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
     var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
     setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
-    var min_atten = 0.0;
-    var max_atten = 1.0;
-    var atten_string = "Magnitude";
-    if (use_dB) {
-        max_atten = 0;
-        min_atten = -10;
-        atten_string = "Magnitude (dB)";
-    }
-    var freq_string = "Frequency (Hz)";
-    if (use_RPM) {
-        freq_string = "Frequency (RPM)";
-    }
 
     const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
 
     let X_scale = H.freq
     if (use_RPM) {
         X_scale = math.dotMultiply(X_scale, 60.0);
-        freq_max *= 60.0;
     }
 
-    // Format for chart.js
-    attenuation = []
-    phase_lag = []
-    for (let i = 1; i < H.freq.length; i++) {
-        attenuation.push({x:X_scale[i], y:H.attenuation[i]});
-        phase_lag.push({x:X_scale[i], y:H.phase[i]});
-    }
-
-    min_atten = math.floor(math.min(math.min(H.attenuation), min_atten))
-    max_atten = math.ceil(math.max(math.max(H.attenuation), max_atten))
-    let min_phase_lag = math.min(H.phase)
-    let max_phase_lag = math.max(H.phase)
-
-    if (unwrap_phase) {
-        min_phase_lag = math.floor((min_phase_lag-10)/10)*10;
-        min_phase_lag = math.min(math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
-        max_phase_lag = math.ceil((max_phase_lag+10)/10)*10;
-        max_phase_lag = math.min(get_form("MaxPhaseLag"), max_phase_lag);
-    } else {
-        min_phase_lag = -180;
-        max_phase_lag = 180; 
-    }
-
+    // Set scale type
     var freq_log = document.getElementById("freq_ScaleLog").checked;
     setCookie("feq_scale", freq_log ? "Log" : "Linear");
-    if ((freq_log_scale != null) && (freq_log_scale != freq_log)) {
-        // Scale changed, no easy way to update, delete chart and re-draw
-        chart_attenuation.clear();
-        chart_attenuation.destroy();
-        chart_attenuation = null;
-        chart_phase.clear();
-        chart_phase.destroy();
-        chart_phase = null;
-    }
-    freq_log_scale = freq_log;
+    Bode.layout.xaxis.type = freq_log ? "log" : "linear"
+    Bode.layout.xaxis2.type = freq_log ? "log" : "linear"
 
-    if (chart_attenuation) {
-        chart_attenuation.data.datasets[0].data = attenuation;
-        chart_attenuation.options.scales.xAxes[0].ticks.max = freq_max;
-        chart_attenuation.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        chart_attenuation.options.scales.yAxes[0].ticks.min = min_atten
-        chart_attenuation.options.scales.yAxes[0].ticks.max = max_atten;
-        chart_attenuation.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
-        chart_attenuation.update();
+    Bode.layout.xaxis2.title.text = use_RPM ? "Frequency (RPM)" : "Frequency (Hz)" 
+    Bode.layout.yaxis.title.text = use_dB ? "Magnitude (dB)" : "Magnitude"
+
+    // Set to fixed range for wrapped phase
+    if (!unwrap_phase) {
+        Bode.layout.yaxis2.range = [-180, 180]
+        Bode.layout.yaxis2.autorange = false
+        Bode.layout.yaxis2.fixedrange = true
     } else {
-        chart_attenuation = new Chart("Attenuation", {
-            type : "scatter",
-            data: {
-                datasets: [
-                    {
-                        label: 'Magnitude',
-                        yAxisID: 'Magnitude',
-                        pointRadius: 0,
-                        hitRadius: 8,
-                        borderColor: "rgba(0,0,255,1.0)",
-                        pointBackgroundColor: "rgba(0,0,255,1.0)",
-                        data: attenuation,
-                        showLine: true,
-                        fill: false
-                    },
-                ]
-            },
-            options: {
-                aspectRatio: 3,
-                legend: {display: false},
-                scales: {
-                    yAxes: [
-                        {
-                            scaleLabel: { display: true, labelString: atten_string },
-                            id: 'Magnitude',
-                            ticks: {min:min_atten, max:max_atten}
-                        },
-                    ],
-                    xAxes: [
-                        {
-                            type: (freq_log ? "logarithmic" : "linear"),
-                            scaleLabel: { display: true, labelString: freq_string },
-                            ticks:
-                            {
-                                min:0.0,
-                                max:freq_max,
-                                callback: function(value, index, ticks) {
-                                    return value;
-                                },
-                            }
-                        }
-                    ],
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            // round tooltip to two decimal places
-                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
-                        }
-                    }
-                 }
-            }
-        });
+        Bode.layout.yaxis2.fixedrange = false
+        Bode.layout.yaxis2.autorange = true
     }
 
+    // Set data
+    Bode.data[0].x = X_scale
+    Bode.data[0].y = H.attenuation
+    Bode.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
 
-    if (chart_phase) {
-        chart_phase.data.datasets[0].data = phase_lag;
-        chart_phase.options.scales.xAxes[0].ticks.max = freq_max;
-        chart_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        chart_phase.options.scales.yAxes[0].ticks.min = min_phase_lag;
-        chart_phase.options.scales.yAxes[0].ticks.max = max_phase_lag;
-        chart_phase.update();
-    } else {
-        chart_phase = new Chart("Phase", {
-            type : "scatter",
-            data: {
-                datasets: [
-                    {
-                        label: 'Phase',
-                        yAxisID: 'Phase',
-                        pointRadius: 0,
-                        hitRadius: 8,
-                        borderColor: "rgba(255,0,0,1.0)",
-                        pointBackgroundColor: "rgba(255,0,0,1.0)",
-                        data: phase_lag,
-                        showLine: true,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                aspectRatio: 3,
-                legend: {display: false},
-                scales: {
-                    yAxes: [
-                        {
-                            scaleLabel: { display: true, labelString: "Phase (deg)" },
-                            id: 'Phase',
-                            ticks: {min:min_phase_lag, max:max_phase_lag}
-                        }
-                    ],
-                    xAxes: [
-                        {
-                            type: (freq_log ? "logarithmic" : "linear"),
-                            scaleLabel: { display: true, labelString: freq_string },
-                            ticks:
-                            {
-                                min:0.0,
-                                max:freq_max,
-                                callback: function(value, index, ticks) {
-                                    return value;
-                                },
-                            }
-                        }
-                    ],
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            // round tooltip to two decimal places
-                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
-                        }
-                    }
-                 }
-            }
-        });
-    }
+
+    Bode.data[1].x = X_scale
+    Bode.data[1].y = H.phase
+    Bode.data[1].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+
+    Plotly.redraw("Bode")
+
+    const end = performance.now();
+    console.log(`Calc took: ${end - start} ms`);
 }
 
-var PID_attenuation;
-var PID_phase;
-var PID_freq_log_scale;
-
 function calculate_pid(axis_id) {
-    //var sample_rate = get_form("GyroSampleRate");
+    const start = performance.now()
+
     var PID_rate = get_form("SCHED_LOOP_RATE")
     var filters = []
-    var freq_max = get_form("PID_MaxFreq");
+    var freq_max = PID_rate * 0.5
     var freq_step = 0.1;
 
     // default to roll axis
@@ -577,26 +429,16 @@ function calculate_pid(axis_id) {
 
     var use_dB = document.getElementById("PID_ScaleLog").checked;
     setCookie("PID_Scale", use_dB ? "Log" : "Linear");
+
     var use_RPM =  document.getElementById("PID_freq_Scale_RPM").checked;
     setCookie("PID_feq_unit", use_RPM ? "RPM" : "Hz");
+
     var unwrap_phase = document.getElementById("PID_ScaleUnWrap").checked;
     setCookie("PID_PhaseScale", unwrap_phase ? "unwrap" : "wrap");
-    var min_atten = Infinity;
-    var max_atten = -Infinity;
-    var atten_string = "Gain";
-    if (use_dB) {
-        max_atten = 0;
-        min_atten = -10;
-        atten_string = "Gain (dB)";
-    }
-    var freq_string = "Frequency (Hz)";
-    if (use_RPM) {
-        freq_string = "Frequency (RPM)";
-    }
 
     var filter_groups = [ filters ]
     if (document.getElementById("PID_filtering_Post").checked) {
-        fast_sample_rate = get_form("GyroSampleRate");
+        let fast_sample_rate = get_form("GyroSampleRate");
         filter_groups.push(get_filters(fast_sample_rate))
         setCookie("filtering", "Post")
     } else {
@@ -608,181 +450,133 @@ function calculate_pid(axis_id) {
     let X_scale = H.freq
     if (use_RPM) {
         X_scale = math.dotMultiply(X_scale, 60.0);
-        freq_max *= 60.0
     }
 
-    // Format for chart.js
-    let attenuation = []
-    let phase_lag = []
-    for (let i = 1; i < H.freq.length; i++) {
-        attenuation.push({x:X_scale[i], y:H.attenuation[i]});
-        phase_lag.push({x:X_scale[i], y:H.phase[i]});
-    }
+    // Set scale type
+    var freq_log = document.getElementById("freq_ScaleLog").checked;
+    setCookie("feq_scale", freq_log ? "Log" : "Linear");
 
-    min_atten = math.floor(math.min(math.min(H.attenuation), min_atten))
-    max_atten = math.ceil(math.max(math.max(H.attenuation), max_atten))
-    let min_phase_lag = math.min(math.min(H.phase), 0)
-    let max_phase_lag = math.max(math.max(H.phase), 0)
+    BodePID.layout.xaxis.type = freq_log ? "log" : "linear"
+    BodePID.layout.xaxis2.type = freq_log ? "log" : "linear"
 
-    var mean_atten = (min_atten + max_atten) * 0.5;
-    var atten_range = Math.max((max_atten - min_atten) * 0.5 * 1.1, 1.0);
-    min_atten = mean_atten - atten_range;
-    max_atten = mean_atten + atten_range;
+    BodePID.layout.xaxis2.title.text = use_RPM ? "Frequency (RPM)" : "Frequency (Hz)" 
+    BodePID.layout.yaxis.title.text = use_dB ? "Gain (dB)" : "Gain"
 
-    if (unwrap_phase) {
-        min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
-        min_phase_lag = Math.min(Math.max(-get_form("PID_MaxPhaseLag"), min_phase_lag), 0);
-        max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
-        max_phase_lag = Math.min(get_form("PID_MaxPhaseLag"), max_phase_lag);
+    // Set to fixed range for wrapped phase
+    if (!unwrap_phase) {
+        BodePID.layout.yaxis2.range = [-180, 180]
+        BodePID.layout.yaxis2.autorange = false
+        BodePID.layout.yaxis2.fixedrange = true
     } else {
-        min_phase_lag = -180;
-        max_phase_lag = 180; 
+        BodePID.layout.yaxis2.fixedrange = false
+        BodePID.layout.yaxis2.autorange = true
     }
 
-    var freq_log = document.getElementById("PID_freq_ScaleLog").checked;
-    setCookie("PID_feq_scale", use_dB ? "Log" : "Linear");
-    if ((PID_freq_log_scale != null) && (PID_freq_log_scale != freq_log)) {
-        // Scale changed, no easy way to update, delete chart and re-draw
-        PID_attenuation.clear();
-        PID_attenuation.destroy();
-        PID_attenuation = null;
-        PID_phase.clear();
-        PID_phase.destroy();
-        PID_phase = null;
-    }
-    PID_freq_log_scale = freq_log;
+    // Set data
+    BodePID.data[0].x = X_scale
+    BodePID.data[0].y = H.attenuation
+    BodePID.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
 
-    if (PID_attenuation) {
-        PID_attenuation.data.datasets[0].data = attenuation;
-        PID_attenuation.options.scales.xAxes[0].ticks.max = freq_max;
-        PID_attenuation.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        PID_attenuation.options.scales.yAxes[0].ticks.min = min_atten
-        PID_attenuation.options.scales.yAxes[0].ticks.max = max_atten;
-        PID_attenuation.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
-        PID_attenuation.update();
-    } else {
-        PID_attenuation = new Chart("PID_Attenuation", {
-            type : "scatter",
-            data: {
-                datasets: [
-                    {
-                        label: 'Gain',
-                        yAxisID: 'Gain',
-                        pointRadius: 0,
-                        hitRadius: 8,
-                        borderColor: "rgba(0,0,255,1.0)",
-                        pointBackgroundColor: "rgba(0,0,255,1.0)",
-                        data: attenuation,
-                        showLine: true,
-                        fill: false
-                    },
-                ]
-            },
-            options: {
-                aspectRatio: 3,
-                legend: {display: false},
-                scales: {
-                    yAxes: [
-                        {
-                            scaleLabel: { display: true, labelString: atten_string },
-                            id: 'Gain',
-                            position: 'left',
-                            ticks: {min:min_atten, max:max_atten}
-                        },
-                    ],
-                    xAxes: [
-                        {
-                            type: (freq_log ? "logarithmic" : "linear"),
-                            scaleLabel: { display: true, labelString: freq_string },
-                            ticks:
-                            {
-                                min:0.0,
-                                max:freq_max,
-                                callback: function(value, index, ticks) {
-                                    return value;
-                                },
-                            }
-                        }
-                    ],
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            // round tooltip to two decimal places
-                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
-                        }
-                    }
-                }
-            }
-        });
-    }
 
-    
-    if (PID_phase) {
-        PID_phase.data.datasets[0].data = phase_lag;
-        PID_phase.options.scales.xAxes[0].ticks.max = freq_max;
-        PID_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        PID_phase.options.scales.yAxes[0].ticks.min = min_phase_lag;
-        PID_phase.options.scales.yAxes[0].ticks.max = max_phase_lag;
-        PID_phase.update();
-    } else {
-        PID_phase = new Chart("PID_Phase", {
-            type : "scatter",
-            data: {
-                datasets: [
-                    {
-                        label: 'PhaseLag',
-                        yAxisID: 'PhaseLag',
-                        pointRadius: 0,
-                        hitRadius: 8,
-                        borderColor: "rgba(255,0,0,1.0)",
-                        pointBackgroundColor: "rgba(255,0,0,1.0)",
-                        data: phase_lag,
-                        showLine: true,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                aspectRatio: 3,
-                legend: {display: false},
-                scales: {
-                    yAxes: [
-                        {
-                            scaleLabel: { display: true, labelString: "Phase (deg)" },
-                            id: 'PhaseLag',
-                            ticks: {min: min_phase_lag, max: max_phase_lag}
-                        }
-                    ],
-                    xAxes: [
-                        {
-                            type: (freq_log ? "logarithmic" : "linear"),
-                            scaleLabel: { display: true, labelString: freq_string },
-                            ticks:
-                            {
-                                min:0.0,
-                                max:freq_max,
-                                callback: function(value, index, ticks) {
-                                    return value;
-                                },
-                            }
-                        }
-                    ],
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            // round tooltip to two decimal places
-                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
-                        }
-                    }
-                }
-            }
-        });
-    }
+    BodePID.data[1].x = X_scale
+    BodePID.data[1].y = H.phase
+    BodePID.data[1].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+
+    Plotly.redraw("BodePID")
+
+    const end = performance.now();
+    console.log(`PID calc took: ${end - start} ms`);
 }
 
+var Bode = {}
+var BodePID = {}
 function load() {
+
+    // Bode plot setup
+    Bode.data = []
+
+    Bode.data[0] = { mode: "lines", showlegend: false, line: { color: '#1f77b4' } }
+    Bode.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' } }
+
+    Bode.layout = {
+        xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
+        xaxis2: {title: {text: "" }, type: "linear", zeroline: false, showline: true, mirror: true },
+        yaxis: {title: {text: "" }, zeroline: false, showline: true, mirror: true, domain: [0.52, 1] },
+        yaxis2: {title: {text: "Phase (deg)"}, zeroline: false, showline: true, mirror: true, domain: [0.0, 0.48], },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        grid: {
+            rows: 2,
+            columns: 1,
+            pattern: 'independent'
+        }
+    }
+
+    plot = document.getElementById("Bode")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false});
+
+    // PID Bode plot setup
+    BodePID.data = []
+
+    BodePID.data[0] = { mode: "lines", showlegend: false, line: { color: '#1f77b4' } }
+    BodePID.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' } }
+
+    BodePID.layout = {
+        xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
+        xaxis2: {title: {text: "" }, type: "linear", zeroline: false, showline: true, mirror: true },
+        yaxis: {title: {text: "" }, zeroline: false, showline: true, mirror: true, domain: [0.52, 1] },
+        yaxis2: {title: {text: "Phase (deg)"}, zeroline: false, showline: true, mirror: true, domain: [0.0, 0.48], },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        grid: {
+            rows: 2,
+            columns: 1,
+            pattern: 'independent'
+        }
+    }
+
+    plot = document.getElementById("BodePID")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, BodePID.data, BodePID.layout, {displaylogo: false});
+
+
+    // Link axes ranges
+    function link_plot_axis_range(link) {
+        for (let i = 0; i<link.length; i++) {
+            const this_plot = link[i][0]
+            const this_axis_key = link[i][1]
+            const this_axis_index = link[i][2]
+            const this_index = i
+            document.getElementById(this_plot).on('plotly_relayout', function(data) {
+                // This is seems not to be recursive because the second call sets with array rather than a object
+                const axis_key = this_axis_key + 'axis' + this_axis_index
+                const range_keys = [axis_key + '.range[0]', axis_key + '.range[1]']
+                if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
+                    var freq_range = [data[range_keys[0]], data[range_keys[1]]]
+                    for (let i = 0; i<link.length; i++) {
+                        if (i == this_index) {
+                            continue
+                        }
+                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].range = freq_range
+                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].autorange = false
+                        Plotly.redraw(link[i][0])
+                    }
+                }
+            })
+        }
+    }
+
+    // Link all frequency axis
+    link_plot_axis_range([["Bode", "x", "", Bode],
+                          ["Bode", "x", "2", Bode]])
+
+    link_plot_axis_range([["BodePID", "x", "", BodePID],
+                          ["BodePID", "x", "2", BodePID]])
+
+    // Load params
     var url_string = (window.location.href).toLowerCase();
     if (url_string.indexOf('?') == -1) {
         // no query params, load from cookies
@@ -1083,22 +877,5 @@ function update_hidden_mode()
             }
         }
         document.getElementById(mode_options[i][1]).hidden = hide;
-    }
-}
-
-function check_nyquist()
-{
-    var checks = [["GyroSampleRate", "MaxFreq", "MaxFreq_warning"],
-                  ["SCHED_LOOP_RATE", "PID_MaxFreq", "PID_MaxFreq_warning"]];
-
-    for (var i = 0; i < checks.length; i++) {
-        var freq_limit = get_form(checks[i][0]) * 0.5;
-        var sample_rate = document.getElementById(checks[i][1]);
-        if (parseFloat(sample_rate.value) > freq_limit) {
-            sample_rate.value = freq_limit;
-            document.getElementById(checks[i][2]).innerHTML = "Nyquist limit of half sample rate";
-        } else {
-            document.getElementById(checks[i][2]).innerHTML = "";
-        }
     }
 }
