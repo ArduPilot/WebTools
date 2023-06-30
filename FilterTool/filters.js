@@ -453,8 +453,8 @@ function calculate_pid(axis_id) {
     }
 
     // Set scale type
-    var freq_log = document.getElementById("freq_ScaleLog").checked;
-    setCookie("feq_scale", freq_log ? "Log" : "Linear");
+    var freq_log = document.getElementById("PID_freq_ScaleLog").checked;
+    setCookie("PID_feq_scale", freq_log ? "Log" : "Linear");
 
     BodePID.layout.xaxis.type = freq_log ? "log" : "linear"
     BodePID.layout.xaxis2.type = freq_log ? "log" : "linear"
