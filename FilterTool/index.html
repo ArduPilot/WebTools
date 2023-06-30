@@ -44,18 +44,18 @@ ArduPilot 4.2 filter setup.
                         <td>
                                 <fieldset style="width:150px">
                                         <legend>Magnitude scale</legend>
-                                        <input type="radio" id="ScaleLog" name="Scale" value="Log" checked>
+                                        <input type="radio" id="ScaleLog" name="Scale" value="Log" onchange="calculate_filter();" checked>
                                         <label for="ScaleLog">dB</label><br>
-                                        <input type="radio" id="ScaleLinear" name="Scale" value="Linear">
+                                        <input type="radio" id="ScaleLinear" name="Scale" value="Linear" onchange="calculate_filter();">
                                         <label for="ScaleLinear">Linear</label><br>
                                 </fieldset>
                         </td>
                         <td>
                                 <fieldset style="width:150px">
                                         <legend>Phase scale</legend>
-                                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" checked>
+                                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" onchange="calculate_filter();" checked>
                                         <label for="ScaleUnWrap">un-wrapped</label><br>
-                                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap">
+                                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap" onchange="calculate_filter();">
                                         <label for="ScaleWrap">±180</label><br>
                                 </fieldset>
                         </td>
@@ -65,15 +65,15 @@ ArduPilot 4.2 filter setup.
                                         <table>
                                                 <tr>
                                                         <td>
-                                                                <input type="radio" id="freq_ScaleLog" name="feq_scale" value="Log" checked>
+                                                                <input type="radio" id="freq_ScaleLog" name="feq_scale" value="Log" onchange="calculate_filter();" checked>
                                                                 <label for="freq_ScaleLog">Log</label><br>
-                                                                <input type="radio" id="freq_ScaleLinear" name="feq_scale" value="Linear">
+                                                                <input type="radio" id="freq_ScaleLinear" name="feq_scale" value="Linear" onchange="calculate_filter();">
                                                                 <label for="freq_ScaleLinear">Linear</label><br>
                                                         </td>
                                                         <td>
-                                                                <input type="radio" id="freq_Scale_Hz" name="feq_unit" value="Hz" checked>
+                                                                <input type="radio" id="freq_Scale_Hz" name="feq_unit" value="Hz" onchange="calculate_filter();" checked>
                                                                 <label for="freq_Scale_Hz">Hz</label><br>
-                                                                <input type="radio" id="freq_Scale_RPM" name="feq_unit" value="RPM">
+                                                                <input type="radio" id="freq_Scale_RPM" name="feq_unit" value="RPM" onchange="calculate_filter();">
                                                                 <label for="freq_Scale_RPM">RPM</label><br>
                                                         </td>
                                                 </tr>
@@ -87,7 +87,7 @@ ArduPilot 4.2 filter setup.
   <legend>INS Settings</legend>
         <p>
                 <label for="GyroSampleRate">Gyro Sample Rate</label>
-                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000" onchange="check_nyquist();"/>
+                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000"/>
 	</p>
         <p>
                 <label for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
@@ -228,18 +228,18 @@ ArduPilot 4.2 filter setup.
                                         <td>
                                                 <fieldset style="width:150px">
                                                         <legend>Gain scale</legend>
-                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log" checked>
+                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="calculate_pid();" checked>
                                                         <label for="PID_ScaleLog">dB</label><br>
-                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear">
+                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear" onchange="calculate_pid();">
                                                         <label for="PID_ScaleLinear">Linear</label><br>
                                                 </fieldset>
                                         </td>
                                         <td>
                                                 <fieldset style="width:150px">
                                                         <legend>Phase scale</legend>
-                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" checked>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" onchange="calculate_pid();" checked>
                                                         <label for="PID_ScaleUnWrap">un-wrapped</label><br>
-                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap">
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap"onchange="calculate_pid();" >
                                                         <label for="PID_ScaleWrap">±180</label><br>
                                                 </fieldset>
                                         </td>
@@ -249,15 +249,15 @@ ArduPilot 4.2 filter setup.
                                                         <table>
                                                                 <tr>
                                                                         <td>
-                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" checked>
+                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" onchange="calculate_pid();" checked>
                                                                                 <label for="PID_freq_ScaleLog">Log</label><br>
-                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear">
+                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear" onchange="calculate_pid();">
                                                                                 <label for="PID_freq_ScaleLinear">Linear</label><br>
                                                                         </td>
                                                                         <td>
-                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" checked>
+                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" onchange="calculate_pid();" checked>
                                                                                 <label for="PID_freq_Scale_Hz">Hz</label><br>
-                                                                                <input type="radio" id="PID_freq_Scale_RPM" name="PID_feq_unit" value="RPM">
+                                                                                <input type="radio" id="PID_freq_Scale_RPM" name="PID_feq_unit" value="RPM" onchange="calculate_pid();">
                                                                                 <label for="PID_freq_Scale_RPM">RPM</label><br>
                                                                         </td>
                                                                 </tr>
@@ -267,9 +267,9 @@ ArduPilot 4.2 filter setup.
                                         <td>
                                                 <fieldset style="width:150px">
                                                         <legend>Filtering</legend>
-                                                        <input type="radio" id="PID_filtering_Pre" name="filtering" value="Pre" checked>
+                                                        <input type="radio" id="PID_filtering_Pre" name="filtering" value="Pre" onchange="calculate_pid();" checked>
                                                         <label for="PID_filtering_Pre">Pre</label><br>
-                                                        <input type="radio" id="PID_filtering_Post" name="filtering" value="Post">
+                                                        <input type="radio" id="PID_filtering_Post" name="filtering" value="Post" onchange="calculate_pid();">
                                                         <label for="PID_filtering_Post">Post</label><br>
                                                 </fieldset>
                                         </td>
@@ -281,7 +281,7 @@ ArduPilot 4.2 filter setup.
         <legend>Loop Rate</legend>
                <p>
                         <label for="SCHED_LOOP_RATE">SCHED_LOOP_RATE</label>
-                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400" onchange="check_nyquist();"/>
+                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400"/>
                 </p>
         </fieldset>
         <fieldset style="max-width:1200px">
