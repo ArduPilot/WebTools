@@ -10,19 +10,30 @@ function PID(sample_rate,kP,kI,kD,filtE,filtD) {
 
     this.transfer = function(Z, Z1, Z2) {
         const E_trans = this.E_filter.transfer(Z, Z1, Z2)
-        const D_trans = math.dotMultiply(E_trans, this.D_filter.transfer(Z, Z1, Z2))
-
-        const P_term = math.dotMultiply(E_trans, this._kP)
+        const D_trans = complex_mul(E_trans, this.D_filter.transfer(Z, Z1, Z2))
 
         // I term is k*z / (z - 1)
-        const I = math.dotMultiply(E_trans, math.dotDivide(Z, math.subtract(Z, 1)))
-        const I_term = math.dotMultiply(I, this._kI/this.sample_rate)
+        const Z_less_one = [array_offset(Z[0], -1), Z[1].slice()]
+        const I = complex_mul(complex_div(Z,Z_less_one), E_trans)
+        const kI = this._kI/this.sample_rate
 
         // D term is k * (1 - Z^-1)
-        const D =  math.dotMultiply(D_trans, math.subtract(1, Z1))
-        const D_term = math.dotMultiply(D, this._kD*this.sample_rate)
+        const one_less_Z1 = [array_offset(array_scale(Z1[0],-1), 1), array_scale(Z1[1],-1)]
+        const D =  complex_mul(one_less_Z1, D_trans)
+        const kD = this._kD*this.sample_rate
 
-        return math.add(P_term, I_term, D_term)
+
+        const len = Z1[0].length
+        let ret = [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
+
+            // Multiply by gains and sum
+            ret[0][i] =  E_trans[0][i] * this._kP + I[0][i] * kI + D[0][i] * kD
+            ret[1][i] =  E_trans[1][i] * this._kP + I[1][i] * kI + D[1][i] * kD
+
+        }
+
+        return ret
     }
     return this;
 }
@@ -39,15 +50,21 @@ function LPF_1P(sample_rate,cutoff) {
 
     if (cutoff <= 0) {
         this.transfer = function(Z, Z1, Z2) {
-            return math.ones(Z.length)._data
+            const len = Z1[0].length
+            return [new Array(len).fill(1), new Array(len).fill(0)]
         }
         return this;
     }
     this.alpha = calc_lowpass_alpha_dt(1.0/sample_rate,cutoff)
     this.transfer = function(Z, Z1, Z2) {
         // H(z) = a/(1-(1-a)*z^-1)
-        const denominator = math.subtract(1, math.dotMultiply(Z1, 1 - this.alpha))
-        return math.dotDivide(this.alpha, denominator)
+        const len = Z1[0].length
+
+        const numerator = [new Array(len).fill(this.alpha), new Array(len).fill(0)]
+        const denominator = [array_offset(array_scale(Z1[0], this.alpha-1),1), 
+                                          array_scale(Z1[1], this.alpha-1)]
+
+        return complex_div(numerator, denominator)
     }
     return this;
 }
@@ -57,7 +74,8 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
 
     if (cutoff_freq <= 0) {
         this.transfer = function(Z, Z1, Z2) {
-            return math.ones(Z.length)._data
+            const len = Z1[0].length
+            return [new Array(len).fill(1), new Array(len).fill(0)]
         }
         return this;
     }
@@ -74,15 +92,19 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
 
     this.transfer = function(Z, Z1, Z2) {
 
-        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(1 + a1*z^-1 + a2*z^-2)
-        const b1z = math.dotMultiply(Z1, this.b1)
-        const b2z = math.dotMultiply(Z2, this.b2)
-        const a1z = math.dotMultiply(Z1, this.a1)
-        const a2z = math.dotMultiply(Z2, this.a2)
+        const len = Z1[0].length
+        let numerator =  [new Array(len), new Array(len)]
+        let denominator =  [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
+            // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
+            numerator[0][i] =   this.b0 + this.b1 * Z1[0][i] + this.b2 * Z2[0][i]
+            numerator[1][i] =             this.b1 * Z1[1][i] + this.b2 * Z2[1][i]
 
-        const numerator = math.add(this.b0, b1z, b2z)
-        const denominator = math.add(1, a1z, a2z)
-        return math.dotDivide(numerator, denominator)
+            denominator[0][i] =       1 + this.a1 * Z1[0][i] + this.a2 * Z2[0][i]
+            denominator[1][i] =           this.a1 * Z1[1][i] + this.a2 * Z2[1][i]
+        }
+
+        return complex_div(numerator, denominator)
     }
 
     return this;
@@ -131,20 +153,25 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
 
     this.transfer = function(Z, Z1, Z2) {
         if (!this.initialised) {
-            return math.ones(Z.length)._data
+            const len = Z1[0].length
+            return [new Array(len).fill(1), new Array(len).fill(0)]
         }
 
-        // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
         const a0 = 1 / this.a0_inv
 
-        const b1z = math.dotMultiply(Z1, this.b1)
-        const b2z = math.dotMultiply(Z2, this.b2)
-        const a1z = math.dotMultiply(Z1, this.a1)
-        const a2z = math.dotMultiply(Z2, this.a2)
+        const len = Z1[0].length
+        let numerator =  [new Array(len), new Array(len)]
+        let denominator =  [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
+            // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
+            numerator[0][i] =   this.b0 + this.b1 * Z1[0][i] + this.b2 * Z2[0][i]
+            numerator[1][i] =             this.b1 * Z1[1][i] + this.b2 * Z2[1][i]
 
-        const numerator = math.add(this.b0, b1z, b2z)
-        const denominator = math.add(a0, a1z, a2z)
-        return math.dotDivide(numerator, denominator)
+            denominator[0][i] =      a0 + this.a1 * Z1[0][i] + this.a2 * Z2[0][i]
+            denominator[1][i] =           this.a1 * Z1[1][i] + this.a2 * Z2[1][i]
+        }
+
+        return complex_div(numerator, denominator)
     }
 
     return this;
@@ -165,7 +192,9 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
 
     if (enable <= 0) {
         this.transfer = function(Z, Z1, Z2) {
-            return math.ones(Z.length)._data
+            const len = Z1[0].length
+            return [new Array(len).fill(1), new Array(len).fill(0)]
+
         }
         return this;
     }
@@ -206,7 +235,7 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
                 var notch_spread = bandwidth_hz / (32.0 * notch_center);
 
                 // adjust the fundamental center frequency to be in the allowable range
-                notch_center = math.min(math.max(notch_center, bandwidth_limit), nyquist_limit)
+                notch_center = Math.min(Math.max(notch_center, bandwidth_limit), nyquist_limit)
 
                 if (composite_notches != 2) {
                     // only enable the filter if its center frequency is below the nyquist frequency
@@ -232,10 +261,11 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     }
 
     this.transfer = function(Z, Z1, Z2) {
-        var H_total = math.ones(Z.length)._data
+        const len = Z1[0].length
+        var H_total = [new Array(len).fill(1), new Array(len).fill(0)]
         for (n in this.notches) {
             const H = this.notches[n].transfer(Z, Z1, Z2);
-            H_total = math.dotMultiply(H_total, H)
+            H_total = complex_mul(H_total, H)
         }
         return H_total;
     }
@@ -280,7 +310,8 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
     const freq = math.range(freq_step, freq_max, freq_step, true)._data
 
     // Start with unity transfer function, input = output
-    var H_total = math.ones(freq.length)._data
+    const len = freq.length
+    var H_total = [new Array(len).fill(1), new Array(len).fill(0)]
 
     for (let i = 0; i < filter_groups.length; i++) {
         // Allow for batches at different sample rates
@@ -295,33 +326,30 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
 
         // Calculate Z for transfer function
         // Z = e^jw
-        const Z = math.map(math.dotMultiply(freq, math.complex(0,(2*math.pi)/sample_rate)), math.exp)
+        const Z = exp_jw(freq, sample_rate)
 
-        // Pre calculate powers of Z
-        // pow seems not to work on complex arrays
-        let Z1 = []
-        let Z2 = []
-        for (let j = 0; j<Z.length; j++) {
-            Z1[j] = math.pow(Z[j], -1)
-            Z2[j] = math.pow(Z[j], -2)
-        }
+        // Z^-1
+        const Z1 = complex_inverse(Z)
+
+        // Z^-2
+        const Z2 = complex_inverse(complex_square(Z))
 
         // Apply all transfer functions
         for (let filter of filters) {
             const H = filter.transfer(Z, Z1, Z2)
-            H_total = math.dotMultiply(H_total, H)
+            H_total = complex_mul(H_total, H)
         }
     }
 
-    let attenuation = math.abs(H_total)
+    let attenuation = complex_abs(H_total)
 
     // Convert to decibels
     if (use_dB) {
-        attenuation = math.dotMultiply(math.log10(attenuation), 20.0)
+        attenuation = array_scale(array_log10(attenuation), 20.0)
     }
 
     // Calculate phase in deg
-    let phase = math.dotMultiply(math.atan2(math.im(H_total), math.re(H_total)), 180/math.pi)
+    let phase = array_scale(complex_phase(H_total), 180/Math.PI)
 
     if (unwrap_phase) {
         // Unwrap phase if required
@@ -362,7 +390,7 @@ function calculate_filter() {
 
     let X_scale = H.freq
     if (use_RPM) {
-        X_scale = math.dotMultiply(X_scale, 60.0);
+        X_scale = array_scale(X_scale, 60.0);
     }
 
     // Set scale type
@@ -449,7 +477,7 @@ function calculate_pid(axis_id) {
 
     let X_scale = H.freq
     if (use_RPM) {
-        X_scale = math.dotMultiply(X_scale, 60.0);
+        X_scale = array_scale(X_scale, 60.0);
     }
 
     // Set scale type
