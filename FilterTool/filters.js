@@ -428,6 +428,8 @@ function calculate_filter() {
     console.log(`Calc took: ${end - start} ms`);
 }
 
+// default to roll axis
+var last_axis = "CalculateRoll"
 function calculate_pid(axis_id) {
     const start = performance.now()
 
@@ -436,17 +438,22 @@ function calculate_pid(axis_id) {
     var freq_max = PID_rate * 0.5
     var freq_step = 0.1;
 
-    // default to roll axis
-    var axis_prefix = "ATC_RAT_RLL_";
+    if (axis_id == null) {
+        axis_id = last_axis
+    }
+
+    var axis_prefix;
     if (axis_id ==  "CalculatePitch") {
-        var axis_prefix = "ATC_RAT_PIT_";
+        axis_prefix = "ATC_RAT_PIT_";
         document.getElementById("PID_title").innerHTML = "Pitch axis";
     } else if (axis_id ==  "CalculateYaw") {
-        var axis_prefix = "ATC_RAT_YAW_";
+        axis_prefix = "ATC_RAT_YAW_";
         document.getElementById("PID_title").innerHTML = "Yaw axis";
     } else {
+        axis_prefix = "ATC_RAT_RLL_";
         document.getElementById("PID_title").innerHTML = "Roll axis";
     }
+    last_axis = axis_id
 
     filters.push(new PID(PID_rate,
                         get_form(axis_prefix + "P"),
