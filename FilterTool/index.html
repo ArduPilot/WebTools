@@ -42,7 +42,7 @@ ArduPilot 4.2 filter setup.
         <table>
                 <tr>
                         <td>
-                                <fieldset style="width:150px">
+                                <fieldset style="width:150px; height:70px">
                                         <legend>Magnitude scale</legend>
                                         <input type="radio" id="ScaleLog" name="Scale" value="Log" onchange="calculate_filter();" checked>
                                         <label for="ScaleLog">dB</label><br>
@@ -51,7 +51,7 @@ ArduPilot 4.2 filter setup.
                                 </fieldset>
                         </td>
                         <td>
-                                <fieldset style="width:150px">
+                                <fieldset style="width:150px; height:70px">
                                         <legend>Phase scale</legend>
                                         <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" onchange="calculate_filter();" checked>
                                         <label for="ScaleUnWrap">un-wrapped</label><br>
@@ -60,7 +60,7 @@ ArduPilot 4.2 filter setup.
                                 </fieldset>
                         </td>
                         <td>
-                                <fieldset style="width:150px">
+                                <fieldset style="width:150px; height:70px">
                                         <legend>Frequency scale</legend>
                                         <table>
                                                 <tr>
@@ -78,6 +78,13 @@ ArduPilot 4.2 filter setup.
                                                         </td>
                                                 </tr>
                                         </table>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:220px; height:70px">
+                                        <legend>Options</legend>
+                                        <input type="checkbox" id="ShowComponents" name="ShowComponents" onchange="calculate_filter()">
+                                        <label for="ShowComponents">Show individual filters</label>
                                 </fieldset>
                         </td>
                 </tr>
@@ -226,7 +233,7 @@ ArduPilot 4.2 filter setup.
                         <table>
                                 <tr>
                                         <td>
-                                                <fieldset style="width:150px">
+                                                <fieldset style="width:150px; height:70px">
                                                         <legend>Gain scale</legend>
                                                         <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="calculate_pid();" checked>
                                                         <label for="PID_ScaleLog">dB</label><br>
@@ -235,7 +242,7 @@ ArduPilot 4.2 filter setup.
                                                 </fieldset>
                                         </td>
                                         <td>
-                                                <fieldset style="width:150px">
+                                                <fieldset style="width:150px; height:70px">
                                                         <legend>Phase scale</legend>
                                                         <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" onchange="calculate_pid();" checked>
                                                         <label for="PID_ScaleUnWrap">un-wrapped</label><br>
@@ -244,7 +251,7 @@ ArduPilot 4.2 filter setup.
                                                 </fieldset>
                                         </td>
                                         <td>
-                                                <fieldset style="width:150px">
+                                                <fieldset style="width:150px; height:70px">
                                                         <legend>Frequency scale</legend>
                                                         <table>
                                                                 <tr>
@@ -265,12 +272,19 @@ ArduPilot 4.2 filter setup.
                                                 </fieldset>
                                         </td>
                                         <td>
-                                                <fieldset style="width:150px">
+                                                <fieldset style="width:150px; height:70px">
                                                         <legend>Filtering</legend>
                                                         <input type="radio" id="PID_filtering_Pre" name="filtering" value="Pre" onchange="calculate_pid();" checked>
                                                         <label for="PID_filtering_Pre">Pre</label><br>
                                                         <input type="radio" id="PID_filtering_Post" name="filtering" value="Post" onchange="calculate_pid();">
                                                         <label for="PID_filtering_Post">Post</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:220px; height:70px">
+                                                        <legend>Options</legend>
+                                                        <input type="checkbox" id="PID_ShowComponents" name="PID_ShowComponents" onchange="calculate_pid()">
+                                                        <label for="PID_ShowComponents">Show individual components</label>
                                                 </fieldset>
                                         </td>
                                 </tr>
