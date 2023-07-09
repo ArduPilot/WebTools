@@ -106,6 +106,28 @@ class NotchTarget {
     have_data() {
         return Object.keys(this.data).length > 0
     }
+
+    get_mean_value(time, value) {
+        // Find the start and end index
+        const start_index = find_start_index(time)
+        const end_index = find_end_index(time)
+
+        // Take mean from start to end
+        var mean = 0
+        for (let j=start_index;j<end_index;j++) {
+            mean += value[j]
+        }
+        mean /= (end_index - start_index)
+
+        return mean
+    }
+
+    get_mean() {
+        if (this.have_data()) {
+            return this.get_mean_value(this.data.time, this.data.value)
+        }
+    }
+
 }
 
 // Tracking mode specific classes
@@ -311,6 +333,23 @@ class ESCTarget extends NotchTarget {
 
         return { freq:freq, time:this.data.avg_time }
     }
+
+    get_mean() {
+        if (!this.have_data()) {
+            return
+        }
+        const mean_freq = this.get_mean_value(this.data.avg_time, this.data.avg_freq)
+        if (mean_freq != undefined) {
+            return mean_freq * 60
+        }
+    }
+
+    get_num_motors() {
+        if (this.have_data()) {
+            return this.data.length
+        }
+    }
+
 }
 
 class FFTTarget extends NotchTarget {
@@ -828,6 +867,7 @@ function reset() {
     document.getElementById("TimeEnd").disabled = true
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
+    document.getElementById("OpenFilterTool").disabled = true
 
     // Disable all plot selection checkboxes
     for (let i = 0; i < 3; i++) {
@@ -2198,6 +2238,70 @@ function time_range_changed() {
     document.getElementById('calculate_filters').disabled = false
 }
 
+// build url and query string for current params and open filter tool in new window
+function open_in_filter_tool() {
+
+    // Assume same base
+    let url =  new URL(window.location.href);
+    url.pathname = '/FilterTool'
+
+    // Add all params
+    let items = document.getElementsByTagName("input");
+    for (let item of items) {
+        if (item.id.startsWith("INS_")) {
+            url.searchParams.append(item.name, item.value);
+        }
+    }
+
+    // Add sample rate for sensor show in bode plot
+    let gyro_instance
+    if (document.getElementById("BodeGyroInst0").checked) {
+        gyro_instance = 0
+    } else if (document.getElementById("BodeGyroInst1").checked) {
+        gyro_instance = 1
+    } else {
+        gyro_instance = 2
+    }
+
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if (Gyro_batch[i] == null) {
+            continue
+        }
+        if (Gyro_batch[i].sensor_num == gyro_instance) {
+            url.searchParams.append("GYRO_SAMPLE_RATE", Math.round(Gyro_batch[i].gyro_rate));
+            break
+        }
+    }
+
+    // Get values for tracking
+    const mean_throttle = tracking_methods[1].get_mean()
+    if (mean_throttle != undefined) {
+        url.searchParams.append("Throttle", mean_throttle);
+    }
+
+    const mean_rpm1 = tracking_methods[2].get_mean()
+    if (mean_rpm1 != undefined) {
+        url.searchParams.append("RPM1", mean_rpm1);
+    }
+
+    const mean_esc = tracking_methods[3].get_mean()
+    if (mean_esc != undefined) {
+        url.searchParams.append("ESC_RPM", mean_esc);
+        url.searchParams.append("NUM_MOTORS", tracking_methods[3].get_num_motors());
+    }
+
+    // Filter tool does not support FFT tracking (4)
+
+    const mean_rpm2 = tracking_methods[5].get_mean()
+    if (mean_rpm2 != undefined) {
+        url.searchParams.append("RPM2", mean_rpm2);
+    }
+
+
+    window.open(url.toString());
+
+}
+
 // Load from batch logging messages
 function load_from_batch(log, num_gyro, gyro_rate) {
     Gyro_batch = []
@@ -2534,6 +2638,9 @@ function load(log_file) {
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
     }
 
+    Plotly.redraw("FlightData")
+
+
     // Were now done with the log, delete it to save memory before starting caculations
     delete log.buffer
     delete log.data
@@ -2631,7 +2738,7 @@ function load(log_file) {
     // Plot
     redraw()
 
-    Plotly.redraw("FlightData")
+    document.getElementById("OpenFilterTool").disabled = false
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);

@@ -474,7 +474,7 @@
 
 <table>
     <tr>
-        <td style="width:400px;"></td>
+        <td style="width:350px;"></td>
         <td>
             <fieldset style="width:125px">
                 <legend>Gyro instance</legend>
@@ -496,6 +496,10 @@
                 <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap"  onchange="redraw_post_estimate_and_bode()">
                 <label for="ScaleWrap">±180</label>
             </fieldset>
+        </td>
+        <td style="width:10px;"></td>
+        <td>
+            <input type="button" id="OpenFilterTool" value="Open in filter tool" onclick="open_in_filter_tool()">
         </td>
     </tr>
 </table>
