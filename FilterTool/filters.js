@@ -8,29 +8,66 @@ function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     this.E_filter = new LPF_1P(sample_rate, filtE)
     this.D_filter = new LPF_1P(sample_rate, filtD)
 
-    this.transfer = function(Z, Z1, Z2) {
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
         const E_trans = this.E_filter.transfer(Z, Z1, Z2)
         const D_trans = complex_mul(E_trans, this.D_filter.transfer(Z, Z1, Z2))
 
         // I term is k*z / (z - 1)
         const Z_less_one = [array_offset(Z[0], -1), Z[1].slice()]
-        const I = complex_mul(complex_div(Z,Z_less_one), E_trans)
+        const I_comp = complex_mul(complex_div(Z,Z_less_one), E_trans)
         const kI = this._kI/this.sample_rate
 
         // D term is k * (1 - Z^-1)
         const one_less_Z1 = [array_offset(array_scale(Z1[0],-1), 1), array_scale(Z1[1],-1)]
-        const D =  complex_mul(one_less_Z1, D_trans)
+        const D_comp =  complex_mul(one_less_Z1, D_trans)
         const kD = this._kD*this.sample_rate
 
 
         const len = Z1[0].length
         let ret = [new Array(len), new Array(len)]
+        let P = [new Array(len), new Array(len)]
+        let I = [new Array(len), new Array(len)]
+        let D = [new Array(len), new Array(len)]
         for (let i = 0; i<len; i++) {
 
-            // Multiply by gains and sum
-            ret[0][i] =  E_trans[0][i] * this._kP + I[0][i] * kI + D[0][i] * kD
-            ret[1][i] =  E_trans[1][i] * this._kP + I[1][i] * kI + D[1][i] * kD
+            // Store components
+            P[0][i] = E_trans[0][i] * this._kP
+            P[1][i] = E_trans[1][i] * this._kP
 
+            I[0][i] = I_comp[0][i] * kI
+            I[1][i] = I_comp[1][i] * kI
+
+            D[0][i] = D_comp[0][i] * kD
+            D[1][i] = D_comp[1][i] * kD
+
+            // Sum of components
+            ret[0][i] = P[0][i] + I[0][i] + D[0][i]
+            ret[1][i] = P[1][i] + I[1][i] + D[1][i]
+
+        }
+
+
+        this.attenuation = complex_abs(ret)
+        this.P_attenuation = complex_abs(P)
+        this.I_attenuation = complex_abs(I)
+        this.D_attenuation = complex_abs(D)
+
+        this.phase = array_scale(complex_phase(ret), 180/Math.PI)
+        this.P_phase = array_scale(complex_phase(P), 180/Math.PI)
+        this.I_phase = array_scale(complex_phase(I), 180/Math.PI)
+        this.D_phase = array_scale(complex_phase(D), 180/Math.PI)
+
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+            this.P_attenuation = array_scale(array_log10(this.P_attenuation), 20.0)
+            this.I_attenuation = array_scale(array_log10(this.I_attenuation), 20.0)
+            this.D_attenuation = array_scale(array_log10(this.D_attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+            this.P_phase = unwrap(this.P_phase)
+            this.I_phase = unwrap(this.I_phase)
+            this.D_phase = unwrap(this.D_phase)
         }
 
         return ret
@@ -73,12 +110,14 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
     this.sample_rate = sample_freq
 
     if (cutoff_freq <= 0) {
-        this.transfer = function(Z, Z1, Z2) {
+        this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
             const len = Z1[0].length
             return [new Array(len).fill(1), new Array(len).fill(0)]
         }
+        this.enabled = false
         return this;
     }
+    this.enabled = true
 
     var fr = sample_freq/cutoff_freq;
     var ohm = Math.tan(Math.PI/fr);
@@ -90,7 +129,7 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
     this.a1 = 2.0*(ohm*ohm-1.0)/c;
     this.a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
 
-    this.transfer = function(Z, Z1, Z2) {
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
 
         const len = Z1[0].length
         let numerator =  [new Array(len), new Array(len)]
@@ -104,7 +143,18 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
             denominator[1][i] =           this.a1 * Z1[1][i] + this.a2 * Z2[1][i]
         }
 
-        return complex_div(numerator, denominator)
+        const H = complex_div(numerator, denominator)
+
+        this.attenuation = complex_abs(H)
+        this.phase = array_scale(complex_phase(H), 180/Math.PI)
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+
+        return H
     }
 
     return this;
@@ -191,13 +241,15 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     }
 
     if (enable <= 0) {
-        this.transfer = function(Z, Z1, Z2) {
+        this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
             const len = Z1[0].length
             return [new Array(len).fill(1), new Array(len).fill(0)]
 
         }
+        this.enabled = false
         return this;
     }
+    this.enabled = true
 
     if (mode == 0) {
         // fixed notch
@@ -260,13 +312,23 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
         }
     }
 
-    this.transfer = function(Z, Z1, Z2) {
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
         const len = Z1[0].length
         var H_total = [new Array(len).fill(1), new Array(len).fill(0)]
         for (n in this.notches) {
             const H = this.notches[n].transfer(Z, Z1, Z2);
             H_total = complex_mul(H_total, H)
         }
+
+        this.attenuation = complex_abs(H_total)
+        this.phase = array_scale(complex_phase(H_total), 180/Math.PI)
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+
         return H_total;
     }
 }
@@ -304,6 +366,30 @@ function get_filters(sample_rate) {
     return filters;
 }
 
+// Unwrap phase by looking for jumps of larger than 180 deg
+function unwrap(phase) {
+    const len = phase.length
+
+    // Notches result in large positive phase changes, bias the unwrap to do a better job
+    const neg_threshold = 45
+    const pos_threshold = 360 - neg_threshold
+
+    let unwrapped = new Array(len)
+
+    unwrapped[0] = phase[0]
+    for (let i = 1; i < len; i++) {
+        let phase_diff = phase[i] - phase[i-1];
+        if (phase_diff > pos_threshold) {
+            phase_diff -= 360.0;
+        } else if (phase_diff < -neg_threshold) {
+            phase_diff += 360.0;
+        }
+        unwrapped[i] = unwrapped[i-1] + phase_diff
+    }
+
+    return unwrapped
+}
+
 function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase) {
 
     // Not sure why range does not return expected array, _data gets us the array
@@ -336,35 +422,19 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
 
         // Apply all transfer functions
         for (let filter of filters) {
-            const H = filter.transfer(Z, Z1, Z2)
+            const H = filter.transfer(Z, Z1, Z2, use_dB, unwrap_phase)
             H_total = complex_mul(H_total, H)
         }
     }
 
+    // Calculate total filter transfer function
     let attenuation = complex_abs(H_total)
-
-    // Convert to decibels
+    let phase = array_scale(complex_phase(H_total), 180/Math.PI)
     if (use_dB) {
         attenuation = array_scale(array_log10(attenuation), 20.0)
     }
-
-    // Calculate phase in deg
-    let phase = array_scale(complex_phase(H_total), 180/Math.PI)
-
     if (unwrap_phase) {
-        // Unwrap phase if required
-        let phase_wrap = 0.0;
-        for (let i = 1; i < freq.length; i++) {
-            phase[i] += phase_wrap
-            const phase_diff = phase[i] - phase[i-1];
-            if (phase_diff > 180) {
-                phase_wrap -= 360.0;
-                phase[i] -= 360.0;
-            } else if (phase_diff < -180) {
-                phase_wrap += 360.0;
-                phase[i] += 360.0;
-            }
-        }
+        phase = unwrap(phase)
     }
 
     // Return attenuation and phase
@@ -386,6 +456,18 @@ function calculate_filter() {
     var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
     setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
 
+    var Show_Components = document.getElementById("ShowComponents").checked;
+    setCookie("ShowComponents", Show_Components ? "true" : "false");
+
+    // Count individual filters, don't show components if only single filter is enabled
+    let num_enabled = 0
+    for (let i = 0; i < filters.length; i++) {
+        if (filters[i].enabled) {
+            num_enabled++
+        }
+    }
+    Show_Components &&= (num_enabled > 1)
+
     const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
 
     let X_scale = H.freq
@@ -402,6 +484,8 @@ function calculate_filter() {
     Bode.layout.xaxis2.title.text = use_RPM ? "Frequency (RPM)" : "Frequency (Hz)" 
     Bode.layout.yaxis.title.text = use_dB ? "Magnitude (dB)" : "Magnitude"
 
+    Bode.layout.showlegend = Show_Components
+
     // Set to fixed range for wrapped phase
     if (!unwrap_phase) {
         Bode.layout.yaxis2.range = [-180, 180]
@@ -412,15 +496,33 @@ function calculate_filter() {
         Bode.layout.yaxis2.autorange = true
     }
 
-    // Set data
+    const meta = Show_Components ? "%{meta}<br>" : ""
+    const amp_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
+    const phase_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+
+    // Set data for total
     Bode.data[0].x = X_scale
     Bode.data[0].y = H.attenuation
-    Bode.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
-
+    Bode.data[0].hovertemplate = amp_template
 
     Bode.data[1].x = X_scale
     Bode.data[1].y = H.phase
-    Bode.data[1].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+    Bode.data[1].hovertemplate = phase_template
+
+    // Individual components
+    for (let i = 0; i < filters.length; i++) {
+        const index = 2*(i+1)
+
+        Bode.data[index].visible = filters[i].enabled && Show_Components
+        Bode.data[index].x = X_scale
+        Bode.data[index].y = filters[i].attenuation
+        Bode.data[index].hovertemplate = amp_template
+
+        Bode.data[index + 1].visible = filters[i].enabled && Show_Components
+        Bode.data[index + 1].x = X_scale
+        Bode.data[index + 1].y = filters[i].phase
+        Bode.data[index + 1].hovertemplate = phase_template
+    }
 
     Plotly.redraw("Bode")
 
@@ -436,7 +538,7 @@ function calculate_pid(axis_id) {
     var PID_rate = get_form("SCHED_LOOP_RATE")
     var filters = []
     var freq_max = PID_rate * 0.5
-    var freq_step = 0.1;
+    var freq_step = 0.05;
 
     if (axis_id == null) {
         axis_id = last_axis
@@ -471,10 +573,21 @@ function calculate_pid(axis_id) {
     var unwrap_phase = document.getElementById("PID_ScaleUnWrap").checked;
     setCookie("PID_PhaseScale", unwrap_phase ? "unwrap" : "wrap");
 
+    const Show_Components = document.getElementById("PID_ShowComponents").checked;
+    setCookie("PID_ShowComponents", Show_Components ? "true" : "false");
+
     var filter_groups = [ filters ]
+    var gyro_H
     if (document.getElementById("PID_filtering_Post").checked) {
         let fast_sample_rate = get_form("GyroSampleRate");
-        filter_groups.push(get_filters(fast_sample_rate))
+        let gyro_filters = get_filters(fast_sample_rate)
+
+        if (Show_Components) {
+            // Evaluate gyro filter on its own
+            gyro_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
+        }
+
+        filter_groups.push(gyro_filters)
         setCookie("filtering", "Post")
     } else {
         setCookie("filtering", "Pre")
@@ -497,6 +610,8 @@ function calculate_pid(axis_id) {
     BodePID.layout.xaxis2.title.text = use_RPM ? "Frequency (RPM)" : "Frequency (Hz)" 
     BodePID.layout.yaxis.title.text = use_dB ? "Gain (dB)" : "Gain"
 
+    BodePID.layout.showlegend = Show_Components
+
     // Set to fixed range for wrapped phase
     if (!unwrap_phase) {
         BodePID.layout.yaxis2.range = [-180, 180]
@@ -507,15 +622,67 @@ function calculate_pid(axis_id) {
         BodePID.layout.yaxis2.autorange = true
     }
 
-    // Set data
+    const meta = Show_Components ? "%{meta}<br>" : ""
+    const amp_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
+    const phase_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+
+
+    // Total
     BodePID.data[0].x = X_scale
     BodePID.data[0].y = H.attenuation
-    BodePID.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
-
+    BodePID.data[0].hovertemplate = amp_template
 
     BodePID.data[1].x = X_scale
     BodePID.data[1].y = H.phase
-    BodePID.data[1].hovertemplate = "<extra></extra>" + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
+    BodePID.data[1].hovertemplate = phase_template
+
+    // Gyro filters
+    const show_gyro = (gyro_H != undefined) && Show_Components
+    BodePID.data[2].visible = show_gyro
+    BodePID.data[2].x = X_scale
+    BodePID.data[2].hovertemplate = amp_template
+
+    BodePID.data[3].visible = show_gyro
+    BodePID.data[3].x = X_scale
+    BodePID.data[3].hovertemplate = phase_template
+
+    if (show_gyro) {
+        BodePID.data[2].y = gyro_H.attenuation
+        BodePID.data[3].y = gyro_H.phase
+    }
+
+    // P
+    BodePID.data[4].visible = Show_Components
+    BodePID.data[4].x = X_scale
+    BodePID.data[4].y = filter_groups[0][0].P_attenuation
+    BodePID.data[4].hovertemplate = amp_template
+
+    BodePID.data[5].visible = Show_Components
+    BodePID.data[5].x = X_scale
+    BodePID.data[5].y = filter_groups[0][0].P_phase
+    BodePID.data[5].hovertemplate = phase_template
+
+    // I
+    BodePID.data[6].visible = Show_Components
+    BodePID.data[6].x = X_scale
+    BodePID.data[6].y = filter_groups[0][0].I_attenuation
+    BodePID.data[6].hovertemplate = amp_template
+
+    BodePID.data[7].visible = Show_Components
+    BodePID.data[7].x = X_scale
+    BodePID.data[7].y = filter_groups[0][0].I_phase
+    BodePID.data[7].hovertemplate = phase_template
+
+    // D
+    BodePID.data[8].visible = Show_Components
+    BodePID.data[8].x = X_scale
+    BodePID.data[8].y = filter_groups[0][0].D_attenuation
+    BodePID.data[8].hovertemplate = amp_template
+
+    BodePID.data[9].visible = Show_Components
+    BodePID.data[9].x = X_scale
+    BodePID.data[9].y = filter_groups[0][0].D_phase
+    BodePID.data[9].hovertemplate = phase_template
 
     Plotly.redraw("BodePID")
 
@@ -530,8 +697,21 @@ function load() {
     // Bode plot setup
     Bode.data = []
 
-    Bode.data[0] = { mode: "lines", showlegend: false, line: { color: '#1f77b4' } }
-    Bode.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' } }
+    let name = "Combined"
+    Bode.data[0] = { mode: "lines", line: { color: '#1f77b4' }, name: name, meta: name }
+    Bode.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' }, name: name, meta: name }
+
+    name = "Notch 1"
+    Bode.data[2] = { mode: "lines", line: { color: '#ff7f0e' }, name: name, meta: name }
+    Bode.data[3] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#ff7f0e' }, name: name, meta: name }
+
+    name = "Notch 2"
+    Bode.data[4] = { mode: "lines", line: { color: '#2ca02c' }, name: name, meta: name }
+    Bode.data[5] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#2ca02c' }, name: name, meta: name }
+
+    name = "Gyro low pass"
+    Bode.data[6] = { mode: "lines", line: { color: '#d62728' }, name: name, meta: name }
+    Bode.data[7] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#d62728' }, name: name, meta: name }
 
     Bode.layout = {
         xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
@@ -555,8 +735,25 @@ function load() {
     // PID Bode plot setup
     BodePID.data = []
 
-    BodePID.data[0] = { mode: "lines", showlegend: false, line: { color: '#1f77b4' } }
-    BodePID.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' } }
+    name = "Combined"
+    BodePID.data[0] = { mode: "lines", line: { color: '#1f77b4' }, name: name, meta: name }
+    BodePID.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' }, name: name, meta: name }
+
+    name = "Gyro filters"
+    BodePID.data[2] = { mode: "lines", line: { color: '#ff7f0e' }, name: name, meta: name }
+    BodePID.data[3] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#ff7f0e' }, name: name, meta: name }
+
+    name = "Proportional"
+    BodePID.data[4] = { mode: "lines", line: { color: '#2ca02c' }, name: name, meta: name }
+    BodePID.data[5] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#2ca02c' }, name: name, meta: name }
+
+    name = "Integral"
+    BodePID.data[6] = { mode: "lines", line: { color: '#d62728' }, name: name, meta: name }
+    BodePID.data[7] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#d62728' }, name: name, meta: name }
+
+    name = "Derivative"
+    BodePID.data[8] = { mode: "lines", line: { color: '#9467bd' }, name: name, meta: name }
+    BodePID.data[9] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#9467bd' }, name: name, meta: name }
 
     BodePID.layout = {
         xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
@@ -625,13 +822,18 @@ function load() {
     for (var j = 0; j<sections.length; j++) {
         var items = document.forms[sections[j]].getElementsByTagName("input");
         for (var i=-0;i<items.length;i++) {
-            var name = items[i].name.toLowerCase();
+            let name = items[i].name.toLowerCase();
             if (params.has(name)) {
                 if (items[i].type == "radio") {
                     // only checked buttons are included
                     if (items[i].value.toLowerCase() == params.get(name)) {
                         items[i].checked = true;
                     }
+                    continue;
+                }
+                if (items[i].type == "checkbox") {
+                    let val = params.get(name)
+                    items[i].checked = val === 'true'
                     continue;
                 }
                 var value = parseFloat(params.get(name));
@@ -661,6 +863,10 @@ function get_link() {
         for (var i=-0;i<items.length;i++) {
             if (items[i].type == "radio" && !items[i].checked) {
                 // Only add checked radio buttons
+                continue;
+            }
+            if (items[i].type == "checkbox") {
+                url.searchParams.append(items[i].name, items[i].checked);
                 continue;
             }
             url.searchParams.append(items[i].name, items[i].value);
@@ -708,6 +914,10 @@ function load_cookies() {
                 if (inputs[v].value == getCookie(name)) {
                     inputs[v].checked = true;
                 }
+                continue;
+            }
+            if (inputs[v].type == "checkbox") {
+                inputs[v].checked = getCookie(name) === 'true'
                 continue;
             }
             inputs[v].value = parseFloat(getCookie(name,inputs[v].value));
