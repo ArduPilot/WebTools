@@ -71,8 +71,7 @@ class NotchTarget {
     }
 
     interpolate(instance, time) {
-        if (Object.keys(this.data).length == 0) {
-            // No data
+        if (!this.have_data()) {
             return
         }
         if (this.data.interpolated == null) {
@@ -82,7 +81,7 @@ class NotchTarget {
     }
 
     get_target_freq(config) {
-        if ((Object.keys(this.data).length == 0) || (this.data.time == null)) {
+        if (!this.have_data() || (this.data.time == null)) {
             return
         }
         if (config.ref == 0) {
@@ -102,6 +101,10 @@ class NotchTarget {
         }
 
         return [this.get_target(config, this.data.interpolated[instance][index])]
+    }
+
+    have_data() {
+        return Object.keys(this.data).length > 0
     }
 }
 
@@ -125,6 +128,10 @@ class StaticTarget extends NotchTarget {
 
     get_interpolated_target_freq(instance, index, config) {
         return [config.freq]
+    }
+
+    have_data() {
+        return true
     }
 }
 
@@ -236,8 +243,7 @@ class ESCTarget extends NotchTarget {
     }
 
     interpolate(instance, time) {
-        if (Object.keys(this.data).length == 0) {
-            // No data
+        if (!this.have_data()) {
             return
         }
         if (this.data.interpolated == null) {
@@ -273,7 +279,7 @@ class ESCTarget extends NotchTarget {
     }
 
     get_target_freq(config) {
-        if (this.data.length == 0) {
+        if (!this.have_data()) {
             return
         }
 
@@ -346,8 +352,7 @@ class FFTTarget extends NotchTarget {
     }
 
     interpolate(instance, time) {
-        if (Object.keys(this.data).length == 0) {
-            // No data
+        if (!this.have_data()) {
             return
         }
         if (this.data.interpolated == null) {
@@ -383,6 +388,10 @@ class FFTTarget extends NotchTarget {
     }
 
     get_target_freq(config) {
+        if (!this.have_data()) {
+            return
+        }
+
         const dynamic = (config.options & (1<<1)) != 0
         if (dynamic) {
             // Tracking multiple peaks
@@ -561,7 +570,6 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
 
 
 function HarmonicNotchFilter(params) {
-    this.active = false
     this.params = params
 
     // Find tracking source
@@ -569,12 +577,19 @@ function HarmonicNotchFilter(params) {
     for (let j=0;j<tracking_methods.length;j++) {
         if (this.params.mode == tracking_methods[j].mode_value) {
             this.tracking = tracking_methods[j]
+            if (!this.tracking.have_data()) {
+                alert("No tracking data available for " + this.tracking.name + " notch")
+            }
             break
         }
     }
 
+    if (this.tracking == null) {
+        alert("Unsupported notch mode " + this.params.mode)
+    }
+
     this.enabled = function() {
-        return (this.params.enable > 0) && (this.tracking != null)
+        return (this.params.enable > 0) && (this.tracking != null) && this.tracking.have_data()
     }
 
     this.static = function() {
@@ -586,7 +601,6 @@ function HarmonicNotchFilter(params) {
         this.transfer = function(Hn, Hd, instance, index, sample_freq, Z1, Z2) { }
         return this
     }
-    this.active = true
 
     const triple = (this.params.options & 16) != 0
     const double = (this.params.options & 1) != 0
@@ -1595,7 +1609,7 @@ function redraw() {
     }
 
     for (let i=0;i<filters.notch.length;i++) {
-        if (filters.notch[i].active == false) {
+        if (!filters.notch[i].enabled()) {
             continue
         }
 
@@ -1960,7 +1974,7 @@ function redraw_Spectrogram() {
         }
 
         // Filter not setup
-        if (filters.notch[i].active == false) {
+        if (!filters.notch[i].enabled()) {
             continue
         }
 
@@ -2150,7 +2164,7 @@ function load_filters() {
         }
         filters.notch.push(new HarmonicNotchFilter(params))
 
-        document.getElementById("Notch" + (i+1) + "Show").disabled = !filters.notch[i].active
+        document.getElementById("Notch" + (i+1) + "Show").disabled = !filters.notch[i].enabled()
     }
 }
 
