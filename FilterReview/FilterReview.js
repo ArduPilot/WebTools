@@ -2243,7 +2243,7 @@ function open_in_filter_tool() {
 
     // Assume same base
     let url =  new URL(window.location.href);
-    url.pathname = '/FilterTool'
+    url.pathname = url.pathname.replace('FilterReview','FilterTool')
 
     // Add all params
     let items = document.getElementsByTagName("input");
