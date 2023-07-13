@@ -2459,7 +2459,14 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
     // Load in a one massive batch
     for (let i = 0; i < 3; i++) {
-        const instance_name = "GYR[" + i + "]"
+        var instance_name = "GYR[" + i + "]"
+        if (log.messages[instance_name] == null) {
+            // Try single gyro instance
+            if (!Array.from(log.messages.GYR.I).every((x) => x == i)) {
+                continue
+            }
+            instance_name = "GYR"
+        }
         if (log.messages[instance_name].length == 0) {
             continue
         }
@@ -2530,12 +2537,26 @@ function load(log_file) {
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
 
+            // Defualt to 1000Hz
+            gyro_rate[i] = 1000
+
             if (log.messages.IMU != null) {
-                // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
-                gyro_rate[i] = math.mean(Array.from(log.messages["IMU[" + i + "]"].GHz))
-            } else {
-                // Use default
-                gyro_rate[i] = 1000
+                let msg_key
+                const instance_key = "IMU[" + i + "]"
+                if (log.messages[instance_key] != null) {
+                    // Multiple IMU instances
+                    msg_key = instance_key
+
+                } else if (Array.from(log.messages.IMU.I).every((x) => x == i)) {
+                    // Single instance
+                    msg_key = "IMU"
+
+                }
+                if (msg_key != null) {
+                    // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
+                    gyro_rate[i] = math.mean(Array.from(log.messages[msg_key].GHz))
+                }
+
             }
 
             if (decoded != null) {
