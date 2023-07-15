@@ -873,6 +873,8 @@ function reset() {
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
     document.getElementById("OpenFilterTool").disabled = true
+    document.getElementById("SaveParams").disabled = true
+    document.getElementById("LoadParams").disabled = true
 
     // Disable all plot selection checkboxes
     for (let i = 0; i < 3; i++) {
@@ -2390,6 +2392,41 @@ function open_in_filter_tool() {
 
 }
 
+function save_parameters() {
+    var params = "";
+    var inputs = document.getElementsByTagName("input")
+    for (const v in inputs) {
+        var name = "" + inputs[v].name;
+        if (name.startsWith("INS_")) {
+            var value = inputs[v].value;
+            params += name + "," + value + "\n";
+        }
+    }
+    var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, "filter.param");
+}
+
+async function load_parameters(file) {
+    var text = await file.text();
+    var lines = text.split('\n');
+    for (i in lines) {
+        var line = lines[i];
+        v = line.split(/[\s,=\t]+/);
+        if (v.length >= 2) {
+            var vname = v[0];
+            var value = v[1];
+            var fvar = document.getElementById(vname);
+            if (fvar) {
+                fvar.value = value;
+                console.log("set " + vname + "=" + value);
+            }
+        }
+    }
+
+    filter_param_read();
+    re_calc();
+}
+
 // Load from batch logging messages
 function load_from_batch(log, num_gyro, gyro_rate) {
     Gyro_batch = []
@@ -2848,6 +2885,8 @@ function load(log_file) {
     redraw()
 
     document.getElementById("OpenFilterTool").disabled = false
+    document.getElementById("SaveParams").disabled = false
+    document.getElementById("LoadParams").disabled = false
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
