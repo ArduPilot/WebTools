@@ -1066,7 +1066,7 @@ function setup_plots() {
             // Each type of plot
             for (let j=0;j<axis.length;j++) {
                 // For each axis
-                const name = axis[j] + " " + plot_types[n]
+                const name = (i+1) + " " + axis[j] + " " + plot_types[n]
                 fft_plot.data[get_FFT_data_index(i, n, j)] = { mode: "lines",
                                                                 name: name,
                                                                 // this extra data allows us to put the name in the hover tool tip
