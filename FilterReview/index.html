@@ -422,9 +422,9 @@
 
 <table>
     <tr>
-        <td style="width: 240px;"></td>
+        <td style="width: 100px;"></td>
         <td>
-            <fieldset style="width:125px">
+            <fieldset style="width:125px;height:40px">
                 <legend>Gyro instance</legend>
                 <input type="radio" id="SpecGyroInst0" name="SpecGyroInst" onchange="redraw_Spectrogram()">
                 <label for="SpecGyroInst0">1</label>
@@ -437,7 +437,7 @@
             </fieldset>
         </td>
         <td>
-            <fieldset style="width:350px">
+            <fieldset style="width:350px;height:40px">
                 <legend>Filtering</legend>
                 <input type="radio" id="SpecGyroPre" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
                 <label for="SpecGyroPre">Pre-filter</label>
@@ -450,7 +450,7 @@
             </fieldset>
         </td>
         <td>
-            <fieldset style="width:125px">
+            <fieldset style="width:125px;height:40px">
                 <legend>Axis</legend>
                 <input type="radio" id="SpecGyroAxisX" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
                 <label for="SpecGyroAxisX">X</label>
@@ -460,6 +460,16 @@
 
                 <input type="radio" id="SpecGyroAxisZ" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
                 <label for="SpecGyroAxisZ">Z</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:240px;height:40px">
+                <legend>Notch tracking</legend>
+                <input type="checkbox" id="SpecNotch1Show" name="SpecNotch1Show" onchange="update_hidden_spec(this)">
+                <label for="SpecNotch1Show">Show notch 1</label>
+
+                <input type="checkbox" id="SpecNotch2Show" name="SpecNotch2Show" onchange="update_hidden_spec(this)">
+                <label for="SpecNotch2Show">Show notch 2</label>
             </fieldset>
         </td>
     </tr>
