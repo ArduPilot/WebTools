@@ -928,6 +928,11 @@ function reset() {
         let check = document.getElementById("Notch" + (i+1) + "Show")
         check.disabled = true
         check.checked = false
+
+        check = document.getElementById("SpecNotch" + (i+1) + "Show")
+        check.disabled = true
+        check.checked = true
+    }
     }
 
 }
@@ -1146,7 +1151,7 @@ function setup_plots() {
         let Group_name = "Notch " + (i+1)
         let dash = (i == 0) ? "solid" : "dot"
         for (let j=0;j<max_num_harmonics;j++) {
-            let name = (j == 0) ? "Fundamental" : "Harmonic " + j
+            let name = (j == 0) ? "Fundamental" : "Harmonic " + (j+1)
             Spectrogram.data.push({
                 type:"scatter",
                 mode: "lines",
@@ -2045,13 +2050,14 @@ function redraw_Spectrogram() {
         }
 
         // Enable each harmonic
+        const show_notch = document.getElementById("SpecNotch" + (i+1) + "Show").checked
         for (let j=0;j<max_num_harmonics;j++) {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
             const harmonic_freq = array_scale(freq, j+1)
 
-            Spectrogram.data[plot_offset + j].visible = true
+            Spectrogram.data[plot_offset + j].visible = show_notch
             Spectrogram.data[plot_offset + j].x = time
             Spectrogram.data[plot_offset + j].y = frequency_scale.fun(harmonic_freq)
             Spectrogram.data[plot_offset + j].hovertemplate = tracking_hovertemplate
@@ -2061,6 +2067,31 @@ function redraw_Spectrogram() {
     }
 
     Plotly.redraw("Spectrogram")
+}
+
+// update lines show on spectrogram
+function update_hidden_spec(source) {
+
+    const notch_num = parseFloat(source.id.match(/\d+/g)) - 1
+    const plot_offset = notch_num * max_num_harmonics + 1
+
+    // Hide all
+    for (let j=0;j<max_num_harmonics;j++) {
+        Spectrogram.data[plot_offset + j].visible = false
+    }
+
+    if (source.checked) {
+        // Show those that are enabled
+        for (let j=0;j<max_num_harmonics;j++) {
+            if ((filters.notch[notch_num].harmonics() & (1<<j)) == 0) {
+                continue
+            }
+            Spectrogram.data[plot_offset + j].visible = true
+        }
+    }
+
+    Plotly.redraw("Spectrogram")
+
 }
 
 // Update lines that are shown in FFT plot
@@ -2205,6 +2236,7 @@ function load_filters() {
         filters.notch.push(new HarmonicNotchFilter(params))
 
         document.getElementById("Notch" + (i+1) + "Show").disabled = !filters.notch[i].enabled()
+        document.getElementById("SpecNotch" + (i+1) + "Show").disabled = !filters.notch[i].enabled()
     }
 }
 
