@@ -9,6 +9,7 @@
 <script type="text/javascript" src="DecodeDevID.js"></script>
 <script type="text/javascript" src="FilterReview.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -313,6 +314,9 @@
     <legend>Setup</legend>
     <p>
         <input type="button" id="calculate_filters" value="Recalculate filters" onclick="re_calc()">
+        <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
+        <button class="styleClass" id="LoadParams" onclick="document.getElementById('LoadParamsbase').click()">Load Parameters</button>
+        <input type='file' id="LoadParamsbase" style="display:none" onchange="load_parameters(this.files[0]);">
     </p>
     </fieldset>
 </td>
