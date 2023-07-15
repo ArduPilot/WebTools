@@ -85,7 +85,7 @@ class NotchTarget {
             return
         }
         if (config.ref == 0) {
-            return { freq:[config.freq, config.freq], time:[this.data.time[0], this.data.time[this.data.time.length]] }
+            return { freq:[config.freq, config.freq], time:[this.data.time[0], this.data.time[this.data.time.length-1]] }
         }
         const len = this.data.value.length
         var freq = new Array(len)
