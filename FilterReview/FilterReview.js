@@ -933,6 +933,24 @@ function reset() {
         check.disabled = true
         check.checked = true
     }
+
+    // Set param defaults that are none 0
+    const defualts = [{name: "_FREQ",   value: 80},
+                      {name: "_BW",     value: 40},
+                      {name: "_ATT",    value: 40},
+                      {name: "_HMNCS",  value: 3},
+                      {name: "_MODE",   value: 1},
+                      {name: "_FM_RAT", value: 1}]
+
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 0; i < HNotch_params.length; i++) {
+        for (const param of Object.values(HNotch_params[i])) {
+            for (const defualt of defualts) {
+                if (param.endsWith(defualt.name)) {
+                    document.getElementById(param).value = defualt.value
+                }
+            }
+        }
     }
 
 }
