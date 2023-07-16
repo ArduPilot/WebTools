@@ -1741,15 +1741,15 @@ function redraw() {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = frequency_scale.fun(mean * (j+1))
+            const harmonic_freq = frequency_scale.fun([mean * (j+1)])[0]
 
             const line_index = (i*max_num_harmonics*2) + j*2
             fft_plot.layout.shapes[line_index].visible = show_notch
             fft_plot.layout.shapes[line_index].x0 = harmonic_freq
             fft_plot.layout.shapes[line_index].x1 = harmonic_freq
 
-            const min_freq = frequency_scale.fun(min * (j+1))
-            const max_freq = frequency_scale.fun(max * (j+1))
+            const min_freq = frequency_scale.fun([min * (j+1)])[0]
+            const max_freq = frequency_scale.fun([max * (j+1)])[0]
 
             const range_index = line_index + 1
             fft_plot.layout.shapes[range_index].visible = show_notch
