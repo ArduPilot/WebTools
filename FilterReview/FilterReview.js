@@ -905,6 +905,7 @@ function reset() {
 
     // Disable all params
     document.getElementById("INS_GYRO_FILTER").disabled = true
+    document.getElementById("SCHED_LOOP_RATE").disabled = true
     const notch_params = get_HNotch_param_names()
     for (let i = 0; i < notch_params.length; i++) {
         for (param of Object.values(notch_params[i])) {
@@ -1524,6 +1525,63 @@ function get_frequency_scale() {
     return ret
 }
 
+function get_alias_obj(FFT) {
+
+    let obj = {}
+    if (document.getElementById("Aliasing_none").checked) {
+        // No aliasing, directly return passed in values
+        obj.len = FFT.x[0].length
+        obj.bins = FFT.bins
+        obj.apply_amp = function(x) { return x }
+        return obj
+    }
+
+    const nyquist = parseFloat(document.getElementById("SCHED_LOOP_RATE").value) * 0.5
+
+    // Re-sample frequencies to make for easy folding
+    // Array from 0 to sample rate, and points to end at exactly sample rate
+    // Use smaller steps to maintain amplitude in interpolation
+    obj.len = Math.ceil(nyquist / (0.1*(FFT.average_sample_rate/FFT.window_size))) + 1
+    const re_sample_dt = (nyquist / (obj.len-1))
+    obj.bins = new Array(obj.len)
+    for (let i = 0; i<obj.len; i++) {
+        obj.bins[i] = i * re_sample_dt
+    }
+
+    // Pre-calculate linear interpolation index's and scale factors
+    const total_bins = Math.floor(FFT.bins[FFT.bins.length-1]/re_sample_dt)
+    let interp = {index: new Array(total_bins), scale: new Array(total_bins)}
+    let index = 0
+    for (let i = 0; i<total_bins; i++) {
+        const bin = i * re_sample_dt
+        if (bin > FFT.bins[index+1]) {
+            index += 1
+        }
+        interp.index[i] = index
+        interp.scale[i] = (bin - FFT.bins[index]) / (FFT.bins[index+1] - FFT.bins[index])
+    }
+
+    // Interpolate to new frequency bins and fold down
+    const start = document.getElementById("Aliasing_only").checked ? obj.len : 0
+    obj.apply_amp = function (amp) {
+        let ret = new Array(obj.len).fill(0)
+        const reflect_len = (obj.len-1) * 2
+        for (let i = start; i<total_bins; i++) {
+            // Interpolate amplitude to new bins
+            const pre_amp = amp[interp.index[i]]
+            const post_amp = amp[interp.index[i]+1]
+            const lerp_amp = pre_amp + (post_amp - pre_amp) * interp.scale[i]
+
+            // fold down
+            const index = Math.abs(i - reflect_len * Math.round(i/reflect_len))
+            ret[index] += lerp_amp
+        }
+        return ret
+    }
+
+    return obj
+}
+
 // Look through time array and return first index before start time
 function find_start_index(time) {
     const start_time = parseFloat(document.getElementById("TimeStart").value)
@@ -1640,16 +1698,19 @@ function redraw() {
         // Windowing amplitude correction depends on spectrum of interest
         const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
 
+        // Get alias helper to fold down frequencies, if enabled
+        let alias = get_alias_obj(Gyro_batch[i].FFT)
+
         // Take mean from start to end
-        const fft_len = Gyro_batch[i].FFT.x[0].length
+        const fft_len = alias.len
         var fft_mean_x = (new Array(fft_len)).fill(0)
         var fft_mean_y = (new Array(fft_len)).fill(0)
         var fft_mean_z = (new Array(fft_len)).fill(0)
         for (let j=start_index;j<end_index;j++) {
             // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.x[j], window_correction)))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.y[j], window_correction)))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(array_scale(Gyro_batch[i].FFT.z[j], window_correction)))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.x[j], window_correction))))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.y[j], window_correction))))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.z[j], window_correction))))
         }
 
         let plot_type = Gyro_batch[i].post_filter ? 1 : 0
@@ -1664,7 +1725,7 @@ function redraw() {
         fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, 1 / plot_length)
 
         // Set scaled x data
-        const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
+        const scaled_bins = frequency_scale.fun(alias.bins)
         fft_plot.data[X_plot_index].x = scaled_bins
         fft_plot.data[Y_plot_index].x = scaled_bins
         fft_plot.data[Z_plot_index].x = scaled_bins
@@ -1801,8 +1862,11 @@ function redraw_post_estimate_and_bode() {
         // Scale factor to get mean from accumulated samples
         const mean_scale = 1 / (end_index - start_index)
 
+        // Get alias helper to fold down frequencies, if enabled
+        let alias = get_alias_obj(Gyro_batch[i].FFT)
+
         // Estimate filtered from pre-filter data
-        const fft_len = Gyro_batch[i].FFT.x[0].length
+        const fft_len = alias.len
         let fft_mean_x = (new Array(fft_len)).fill(0)
         let fft_mean_y = (new Array(fft_len)).fill(0)
         let fft_mean_z = (new Array(fft_len)).fill(0)
@@ -1822,9 +1886,9 @@ function redraw_post_estimate_and_bode() {
             const filtered_z = array_offset(array_mul(array_offset(corrected_z, -quantization_noise), attenuation), quantization_noise)
 
             // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(filtered_x))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(filtered_y))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(filtered_z))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(alias.apply_amp(filtered_x)))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(alias.apply_amp(filtered_y)))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(alias.apply_amp(filtered_z)))
         }
 
         X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
@@ -1837,7 +1901,7 @@ function redraw_post_estimate_and_bode() {
         fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, mean_scale)
 
         // Set scaled x data
-        const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
+        const scaled_bins = frequency_scale.fun(alias.bins)
         fft_plot.data[X_plot_index].x = scaled_bins
         fft_plot.data[Y_plot_index].x = scaled_bins
         fft_plot.data[Z_plot_index].x = scaled_bins
@@ -1997,9 +2061,12 @@ function redraw_Spectrogram() {
     Spectrogram.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} s<br>" + frequency_scale.hover("y") + "<br>" + amplitude_scale.hover("z")
     Spectrogram.data[0].colorbar.title.text = amplitude_scale.label
 
+    // Get alias helper to fold down frequencies, if enabled
+    let alias = get_alias_obj(Gyro_batch[batch_instance].FFT) 
+
     // Setup xy data (x and y swapped because transpose flag is set)
     Spectrogram.data[0].x = Gyro_batch[batch_instance].FFT.time
-    Spectrogram.data[0].y = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
+    Spectrogram.data[0].y = frequency_scale.fun(alias.bins)
 
     // Windowing amplitude correction depends on spectrum of interest
     const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction)
@@ -2029,7 +2096,7 @@ function redraw_Spectrogram() {
             const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
             amplitude = array_offset(array_mul(array_offset(amplitude, -quantization_noise), attenuation), quantization_noise)
         }
-        Spectrogram.data[0].z[j] = amplitude_scale.fun(amplitude)
+        Spectrogram.data[0].z[j] = amplitude_scale.fun(alias.apply_amp(amplitude))
     }
 
     // Setup tracking lines
@@ -2756,9 +2823,13 @@ function load(log_file) {
             }
         }
     }
-    const value = get_param_value(log.messages.PARM, "INS_GYRO_FILTER")
-    if (value != null) {
-        document.getElementById("INS_GYRO_FILTER").value = value
+
+    const other_params = ["INS_GYRO_FILTER", "SCHED_LOOP_RATE"]
+    for (const param of other_params) {
+        const value = get_param_value(log.messages.PARM, param)
+        if (value != null) {
+            document.getElementById(param).value = value
+        }
     }
 
     // Plot flight data from log
@@ -2796,6 +2867,7 @@ function load(log_file) {
 
     // Enable top level filter params
     document.getElementById("INS_GYRO_FILTER").disabled = false
+    document.getElementById("SCHED_LOOP_RATE").disabled = false
     document.getElementById("INS_HNTCH_ENABLE").disabled = false
     document.getElementById("INS_HNTC2_ENABLE").disabled = false
 
