@@ -255,7 +255,6 @@
 
 <table>
     <tr>
-        <td style="width: 150px;"></td>
         <td>
             <fieldset style="width:300px;height:40px">
                 <legend>Amplitude scale</legend>
@@ -291,6 +290,17 @@
                 <label for="Notch2Show">Show notch 2</label>
             </fieldset>
         </td>
+        <td>
+            <fieldset style="width:240px;height:40px">
+                <legend>Loop Rate Aliasing</legend>
+                <input type="radio" id="Aliasing_none" name="Aliasing" onchange="redraw()" checked>
+                <label for="Aliasing_none">Hide</label>
+                <input type="radio" id="Aliasing_on" name="Aliasing" onchange="redraw()">
+                <label for="Aliasing_on">Show</label>
+                <input type="radio" id="Aliasing_only" name="Aliasing" onchange="redraw()">
+                <label for="Aliasing_only">Aliasing only</label>
+            </fieldset>
+        </td>
     </tr>
 </table>
 
@@ -302,15 +312,25 @@
 <tr>
 <td style="width: 30px;"></td>
 <td>
-    <fieldset style="width:532px;height:70px">
-    <legend>Low pass filter</legend>
+    <fieldset style="width:300px;height:70px">
+    <legend>Low Pass Filter</legend>
     <p>
         <label class="parameter_input_label" for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
         <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0" style="width: 100px" onchange="filter_param_read()"/>
     </p>
     </fieldset>
+</td>
 <td>
-    <fieldset style="width:532px;height:70px">
+    <fieldset style="width:300px;height:70px">
+    <legend>Loop Rate</legend>
+    <p>
+        <label class="parameter_input_label" for="LOOP_RATE">SCHED_LOOP_RATE</label>
+        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" min="25" value="400" style="width: 100px" onchange="filter_param_read()"/>
+    </p>
+    </fieldset>
+</td>
+<td>
+    <fieldset style="width:428px;height:70px">
     <legend>Setup</legend>
     <p>
         <input type="button" id="calculate_filters" value="Recalculate filters" onclick="re_calc()">
