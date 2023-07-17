@@ -1040,22 +1040,25 @@ function fill_docs()
                 bits.push("Fundamental");
             }
             if (ival & 2) {
-                bits.push("1st Harmonic");
-            }
-            if (ival & 4) {
                 bits.push("2nd Harmonic");
             }
-            if (ival & 8) {
+            if (ival & 4) {
                 bits.push("3rd Harmonic");
             }
-            if (ival & 16) {
+            if (ival & 8) {
                 bits.push("4th Harmonic");
             }
-            if (ival & 32) {
+            if (ival & 16) {
                 bits.push("5th Harmonic");
             }
-            if (ival & 64) {
+            if (ival & 32) {
                 bits.push("6th Harmonic");
+            }
+            if (ival & 64) {
+                bits.push("7th Harmonic");
+            }
+            if (ival & 128) {
+                bits.push("8th Harmonic");
             }
             doc.innerHTML = bits.join(", ");
         }
