@@ -838,7 +838,7 @@ function load() {
                 }
                 var value = parseFloat(params.get(name));
                 if (!isNaN(value)) {
-                    items[i].value = value;
+                    parameter_set_value(items[i].name, value)
                 }
             }
         }
@@ -920,7 +920,7 @@ function load_cookies() {
                 inputs[v].checked = getCookie(name) === 'true'
                 continue;
             }
-            inputs[v].value = parseFloat(getCookie(name,inputs[v].value));
+            parameter_set_value(name, parseFloat(getCookie(name,inputs[v].value)))
         }
     }
 }
@@ -936,15 +936,22 @@ function clear_cookies() {
 }
 
 function save_parameters() {
-    var params = "";
-    var inputs = document.forms["params"].getElementsByTagName("input");
-    for (const v in inputs) {
-        var name = "" + inputs[v].name;
-        if (name.startsWith("INS_")) {
-            var value = inputs[v].value;
-            params += name + "," + value + "\n";
+
+    function save_from_elements(inputs) {
+        var params = "";
+        for (const v in inputs) {
+            var name = "" + inputs[v].id;
+            if (name.startsWith("INS_")) {
+                var value = inputs[v].value;
+                params += name + "," + value + "\n";
+            }
         }
+        return params
     }
+
+    var params = save_from_elements(document.forms["params"].getElementsByTagName("input"))
+    params += save_from_elements(document.forms["params"].getElementsByTagName("select"))
+
     var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
     saveAs(blob, "filter.param");
 }
@@ -959,111 +966,13 @@ async function load_parameters(file) {
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];
-            var fvar = document.getElementById(vname);
-            if (fvar) {
-                fvar.value = value;
+            if (parameter_set_value(vname, value)) {
                 console.log("set " + vname + "=" + value);
             }
         }
     }
-    fill_docs();
     update_all_hidden();
     calculate_filter();
-}
-
-function fill_docs()
-{
-    var inputs = document.forms["params"].getElementsByTagName("input");
-    for (const v in inputs) {
-        var name = inputs[v].name;
-        var doc = document.getElementById(name + ".doc");
-        if (!doc) {
-            continue;
-        }
-        if (inputs[v].onchange == null) {
-            inputs[v].onchange = fill_docs;
-        }
-        var value = parseFloat(inputs[v].value);
-        if (name.endsWith("_ENABLE")) {
-            if (value >= 1) {
-                doc.innerHTML = "Enabled";
-            } else {
-                doc.innerHTML = "Disabled";
-            }
-        } else if (name.endsWith("_MODE")) {
-            switch (Math.floor(value)) {
-            case 0:
-                doc.innerHTML = "Fixed notch";
-                break;
-            case 1:
-                doc.innerHTML = "Throttle";
-                break;
-            case 2:
-                doc.innerHTML = "RPM Sensor 1";
-                break;
-            case 3:
-                doc.innerHTML = "ESC Telemetry";
-                break;
-            case 4:
-                doc.innerHTML = "Dynamic FFT";
-                break;
-            case 5:
-                doc.innerHTML = "RPM Sensor 2";
-                break;
-            default:
-                doc.innerHTML = "INVALID";
-                break;
-            }
-        } else if (name.endsWith("_OPTS")) {
-            var ival = Math.floor(value);
-            var bits = [];
-            if (ival & 1) {
-                bits.push("Double Notch");
-            }
-            if (ival & 2) {
-                bits.push("Dynamic Harmonic");
-            }
-            if (ival & 4) {
-                bits.push("Loop Rate");
-            }
-            if (ival & 8) {
-                bits.push("All IMUs Rate");
-            }
-            if ((ival & 16) && (ival & 1) == 0) {
-                bits.push("Triple Notch");
-            }
-            doc.innerHTML = bits.join(", ");
-        } else if (name.endsWith("_HMNCS")) {
-            var ival = Math.floor(value);
-            var bits = [];
-            if (ival & 1) {
-                bits.push("Fundamental");
-            }
-            if (ival & 2) {
-                bits.push("2nd Harmonic");
-            }
-            if (ival & 4) {
-                bits.push("3rd Harmonic");
-            }
-            if (ival & 8) {
-                bits.push("4th Harmonic");
-            }
-            if (ival & 16) {
-                bits.push("5th Harmonic");
-            }
-            if (ival & 32) {
-                bits.push("6th Harmonic");
-            }
-            if (ival & 64) {
-                bits.push("7th Harmonic");
-            }
-            if (ival & 128) {
-                bits.push("8th Harmonic");
-            }
-            doc.innerHTML = bits.join(", ");
-        }
-
-    }
 }
 
 // update all hidden params, to be called at init
@@ -1097,7 +1006,7 @@ function update_hidden(enable_param)
             continue;
         }
         if (key.startsWith(prefix)) {
-            inputs[i].hidden = !enabled;
+            parameter_set_disable(key, !enabled)
         }
     }
 
