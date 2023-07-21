@@ -904,12 +904,12 @@ function reset() {
     }
 
     // Disable all params
-    document.getElementById("INS_GYRO_FILTER").disabled = true
-    document.getElementById("SCHED_LOOP_RATE").disabled = true
+    parameter_set_disable("INS_GYRO_FILTER", true)
+    parameter_set_disable("SCHED_LOOP_RATE", true)
     const notch_params = get_HNotch_param_names()
     for (let i = 0; i < notch_params.length; i++) {
         for (param of Object.values(notch_params[i])) {
-            document.getElementById(param).disabled = true
+            parameter_set_disable(param, true)
         }
     }
 
@@ -955,7 +955,7 @@ function reset() {
         for (const param of Object.values(HNotch_params[i])) {
             for (const defualt of defualts) {
                 if (param.endsWith(defualt.name)) {
-                    document.getElementById(param).value = defualt.value
+                    parameter_set_value(param, defualt.value)
                 }
             }
         }
@@ -2341,7 +2341,7 @@ function filter_param_read() {
         const enable_input = parseFloat(document.getElementById(HNotch_params[i].enable).value) > 0
         for (const [key, value] of Object.entries(HNotch_params[i])) {
             if (key != "enable") {
-                document.getElementById(value).disabled = !enable_input
+                parameter_set_disable(value, !enable_input)
             }
         }
     }
@@ -2403,12 +2403,15 @@ function open_in_filter_tool() {
     url.pathname = url.pathname.replace('FilterReview','FilterTool')
 
     // Add all params
-    let items = document.getElementsByTagName("input");
-    for (let item of items) {
-        if (item.id.startsWith("INS_")) {
-            url.searchParams.append(item.name, item.value);
+    function add_from_tags(url, items) {
+        for (let item of items) {
+            if (item.id.startsWith("INS_")) {
+                url.searchParams.append(item.name, item.value);
+            }
         }
     }
+    add_from_tags(url, document.getElementsByTagName("input"))
+    add_from_tags(url, document.getElementsByTagName("select"))
 
     // Add sample rate for sensor show in bode plot
     let gyro_instance
@@ -2460,15 +2463,22 @@ function open_in_filter_tool() {
 }
 
 function save_parameters() {
-    var params = "";
-    var inputs = document.getElementsByTagName("input")
-    for (const v in inputs) {
-        var name = "" + inputs[v].name;
-        if (name.startsWith("INS_")) {
-            var value = inputs[v].value;
-            params += name + "," + value + "\n";
+
+    function save_from_elements(inputs) {
+        var params = "";
+        for (const v in inputs) {
+            var name = "" + inputs[v].id;
+            if (name.startsWith("INS_")) {
+                var value = inputs[v].value;
+                params += name + "," + value + "\n";
+            }
         }
+        return params
     }
+
+    var params = save_from_elements(document.getElementsByTagName("input"))
+    params += save_from_elements(document.getElementsByTagName("select"))
+
     var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
     saveAs(blob, "filter.param");
 }
@@ -2482,9 +2492,7 @@ async function load_parameters(file) {
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];
-            var fvar = document.getElementById(vname);
-            if (fvar) {
-                fvar.value = value;
+            if (parameter_set_value(vname, value)) {
                 console.log("set " + vname + "=" + value);
             }
         }
@@ -2819,7 +2827,7 @@ function load(log_file) {
         for (const param of Object.values(HNotch_params[i])) {
             const value = get_param_value(log.messages.PARM, param)
             if (value != null) {
-                document.getElementById(param).value = value
+                parameter_set_value(param, value)
             }
         }
     }
@@ -2828,7 +2836,7 @@ function load(log_file) {
     for (const param of other_params) {
         const value = get_param_value(log.messages.PARM, param)
         if (value != null) {
-            document.getElementById(param).value = value
+            parameter_set_value(param, value)
         }
     }
 
@@ -2866,10 +2874,10 @@ function load(log_file) {
     log = null
 
     // Enable top level filter params
-    document.getElementById("INS_GYRO_FILTER").disabled = false
-    document.getElementById("SCHED_LOOP_RATE").disabled = false
-    document.getElementById("INS_HNTCH_ENABLE").disabled = false
-    document.getElementById("INS_HNTC2_ENABLE").disabled = false
+    parameter_set_disable("INS_GYRO_FILTER", false)
+    parameter_set_disable("SCHED_LOOP_RATE", false)
+    parameter_set_disable("INS_HNTCH_ENABLE", false)
+    parameter_set_disable("INS_HNTC2_ENABLE", false)
 
     // Load filters from params
     filter_param_read()

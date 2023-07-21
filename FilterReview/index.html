@@ -10,6 +10,7 @@
 <script type="text/javascript" src="FilterReview.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -323,7 +324,7 @@
     <fieldset style="width:300px;height:70px">
     <legend>Loop Rate</legend>
     <p>
-        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" min="25" value="400" style="width: 100px" onchange="filter_param_read()"/>
+        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" min="25" value="400" style="width: 100px" data-paramValues="false" onchange="filter_param_read()"/>
     </p>
     </fieldset>
 </td>
@@ -517,6 +518,14 @@
 <script>
     setup_plots()
     reset()
+
+    let params = ["SCHED_LOOP_RATE", "INS_GYRO_FILTER"]
+    const HNotch_params = get_HNotch_param_names()
+    for (Hnotch of HNotch_params) {
+        params.push(...Object.values(Hnotch))
+    }
+
+    load_param_inputs("params.json", params)
 
     function readFile(e) {
         const file = e.files[0]
