@@ -1953,6 +1953,9 @@ function redraw_post_estimate_and_bode() {
             index = i
         }
     }
+    if (index == null) {
+        return
+    }
 
     // Find the start and end index
     const start_index = find_start_index(Gyro_batch[index].FFT.time)
