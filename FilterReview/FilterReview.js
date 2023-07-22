@@ -204,14 +204,16 @@ class ESCTarget extends NotchTarget {
 
         // Individual RPM
         var instances = 0
+        var instance_map = []
         for (let i=0;i<16;i++) {
             const inst_msg = msg + "[" + i + "]"
             if (log.messages[inst_msg] != null) {
-                this.data[i] = { time:[], freq:[] }
+                this.data[instances] = { time:[], freq:[] }
                 for (var j=0; j < log.messages[inst_msg].time_boot_ms.length; j++) {
-                    this.data[i].time[j] = log.messages[inst_msg].time_boot_ms[j] / 1000
-                    this.data[i].freq[j] = log.messages[inst_msg].RPM[j] / 60
+                    this.data[instances].time[j] = log.messages[inst_msg].time_boot_ms[j] / 1000
+                    this.data[instances].freq[j] = log.messages[inst_msg].RPM[j] / 60
                 }
+                instance_map[i] = instances
                 instances++
             }
         }
@@ -225,7 +227,7 @@ class ESCTarget extends NotchTarget {
         }
         for (let i=0;i<log.messages[msg].length;i++) {
             // Update instance
-            const instance = log.messages[msg][i].Instance
+            const instance = instance_map[log.messages[msg][i].Instance]
             const time_ms = log.messages[msg][i].time_boot_ms
             inst[instance].rpm = log.messages[msg][i].RPM
             inst[instance].time_ms = time_ms
