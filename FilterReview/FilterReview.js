@@ -1481,23 +1481,29 @@ function get_amplitude_scale() {
 
     var ret = {}
     if (use_PSD) {
-        ret.fun = function (x) { return array_scale(array_log10(array_mul(x,x)), 10.0) } // 10 * log10(x.^2)
+        ret.fun = function (x) { return array_mul(x,x) } // x.^2
+        ret.scale = function (x) { return array_scale(array_log10(x), 10.0) } // 10 * log10(x)
         ret.label = "PSD (dB/Hz)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
-        ret.window_correction = function(correction) { return correction.energy * Math.SQRT1_2 }
+        ret.window_correction = function(correction, resolution) { return ((correction.energy**2) * 0.5) / resolution }
+        ret.quantization_correction = function(correction) { return 1 / (correction.energy * Math.SQRT1_2) }
 
     } else if (use_DB) {
-        ret.fun = function (x) { return array_scale(array_log10(x), 20.0) } // 20 * log10(x)
+        ret.fun = function (x) { return x }
+        ret.scale = function (x) { return array_scale(array_log10(x), 20.0) } // 20 * log10(x)
         ret.label = "Amplitude (dB)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
         ret.correction_scale = 1.0
-        ret.window_correction = function(correction) { return correction.linear }
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(correction) { return 1 / correction.linear }
 
     } else {
         ret.fun = function (x) { return x }
+        ret.scale = function (x) { return x }
         ret.label = "Amplitude"
         ret.hover = function (axis) { return "%{" + axis + ":.2f}" }
-        ret.window_correction = function(correction) { return correction.linear }
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(correction) { return 1 / correction.linear }
 
     }
 
@@ -1601,7 +1607,7 @@ function find_start_index(time) {
 function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
-    var end_index = time.length
+    var end_index = 0
     for (j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
@@ -1691,39 +1697,45 @@ function redraw() {
 
         // Find the start and end index
         const start_index = find_start_index(Gyro_batch[i].FFT.time)
-        const end_index = find_end_index(Gyro_batch[i].FFT.time)
-
-        // Number of windows to plot
-        const plot_length = end_index - start_index
-
-        // Windowing amplitude correction depends on spectrum of interest
-        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
-
-        // Get alias helper to fold down frequencies, if enabled
-        let alias = get_alias_obj(Gyro_batch[i].FFT)
+        const end_index = find_end_index(Gyro_batch[i].FFT.time)+1
 
         // Take mean from start to end
-        const fft_len = alias.len
+        const fft_len = Gyro_batch[i].FFT.x[0].length
         var fft_mean_x = (new Array(fft_len)).fill(0)
         var fft_mean_y = (new Array(fft_len)).fill(0)
         var fft_mean_z = (new Array(fft_len)).fill(0)
         for (let j=start_index;j<end_index;j++) {
             // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.x[j], window_correction))))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.y[j], window_correction))))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(alias.apply_amp(array_scale(Gyro_batch[i].FFT.z[j], window_correction))))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(Gyro_batch[i].FFT.x[j]))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(Gyro_batch[i].FFT.y[j]))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(Gyro_batch[i].FFT.z[j]))
         }
 
-        let plot_type = Gyro_batch[i].post_filter ? 1 : 0
+        // Number of windows averaged
+        const mean_length = end_index - start_index
 
+        // Windowing amplitude correction depends on spectrum of interest and resolution
+        const FFT_resolution = Gyro_batch[i].FFT.average_sample_rate/Gyro_batch[i].FFT.window_size
+        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
+
+        // Apply window correction and divide by lenght to take mean
+        const corrected_x = array_scale(fft_mean_x, window_correction / mean_length)
+        const corrected_y = array_scale(fft_mean_y, window_correction / mean_length)
+        const corrected_z = array_scale(fft_mean_z, window_correction / mean_length)
+
+        // Get alias helper to fold down frequencies, if enabled
+        let alias = get_alias_obj(Gyro_batch[i].FFT)
+
+        // Get indexs for the lines to be plotted
+        let plot_type = Gyro_batch[i].post_filter ? 1 : 0
         let X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 0)
         let Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 1)
         let Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, plot_type, 2)
 
-        // Set scaled y data
-        fft_plot.data[X_plot_index].y = array_scale(fft_mean_x, 1 / plot_length)
-        fft_plot.data[Y_plot_index].y = array_scale(fft_mean_y, 1 / plot_length)
-        fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, 1 / plot_length)
+        // Apply aliasing and selected scale, set to y axis
+        fft_plot.data[X_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_x))
+        fft_plot.data[Y_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_y))
+        fft_plot.data[Z_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_z))
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(alias.bins)
@@ -1750,7 +1762,7 @@ function redraw() {
         function get_mean_and_range(time, freq) {
             // Find the start and end index
             const start_index = find_start_index(time)
-            const end_index = find_end_index(time)
+            const end_index = find_end_index(time)+1
 
             // Take mean and range from start to end
             var mean = 0
@@ -1853,53 +1865,57 @@ function redraw_post_estimate_and_bode() {
             continue
         }
 
+        // Windowing amplitude correction depends on spectrum of interest and resolution
+        const FFT_resolution = Gyro_batch[i].FFT.average_sample_rate/Gyro_batch[i].FFT.window_size
+        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
+
+        // Scale quantization by the window correction factor so correction can be applyed later
+        const quantization_correction = quantization_noise * amplitude_scale.quantization_correction(Gyro_batch[i].FFT.correction)
+
         // Find the start and end index
         const start_index = find_start_index(Gyro_batch[i].FFT.time)
-        const end_index = find_end_index(Gyro_batch[i].FFT.time)
-
-        // Windowing amplitude correction depends on spectrum of interest
-        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction)
-
-        // Scale factor to get mean from accumulated samples
-        const mean_scale = 1 / (end_index - start_index)
-
-        // Get alias helper to fold down frequencies, if enabled
-        let alias = get_alias_obj(Gyro_batch[i].FFT)
+        const end_index = find_end_index(Gyro_batch[i].FFT.time)+1
 
         // Estimate filtered from pre-filter data
-        const fft_len = alias.len
+        const fft_len = Gyro_batch[i].FFT.x[0].length
         let fft_mean_x = (new Array(fft_len)).fill(0)
         let fft_mean_y = (new Array(fft_len)).fill(0)
         let fft_mean_z = (new Array(fft_len)).fill(0)
         for (let j=start_index;j<end_index;j++) {
             const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
 
-            // Apply window correction
-            const corrected_x = array_scale(Gyro_batch[i].FFT.x[j], window_correction)
-            const corrected_y = array_scale(Gyro_batch[i].FFT.y[j], window_correction)
-            const corrected_z = array_scale(Gyro_batch[i].FFT.z[j], window_correction)
-
             // Subtract noise, apply transfer function, re-apply noise
             // Strictly we need not bother with noise, it makes the estimate less accurate
             // However it does result in a good match to logged post filter data making it easy to verify the estimates
-            const filtered_x = array_offset(array_mul(array_offset(corrected_x, -quantization_noise), attenuation), quantization_noise)
-            const filtered_y = array_offset(array_mul(array_offset(corrected_y, -quantization_noise), attenuation), quantization_noise)
-            const filtered_z = array_offset(array_mul(array_offset(corrected_z, -quantization_noise), attenuation), quantization_noise)
+            const filtered_x = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.x[j], -quantization_correction), attenuation), quantization_correction)
+            const filtered_y = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.y[j], -quantization_correction), attenuation), quantization_correction)
+            const filtered_z = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.z[j], -quantization_correction), attenuation), quantization_correction)
 
             // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(alias.apply_amp(filtered_x)))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(alias.apply_amp(filtered_y)))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(alias.apply_amp(filtered_z)))
+            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(filtered_x))
+            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(filtered_y))
+            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(filtered_z))
         }
 
+        // Number of windows averaged
+        const mean_length = end_index - start_index
+
+        const corrected_x = array_scale(fft_mean_x, window_correction / mean_length)
+        const corrected_y = array_scale(fft_mean_y, window_correction / mean_length)
+        const corrected_z = array_scale(fft_mean_z, window_correction / mean_length)
+
+        // Get alias helper to fold down frequencies, if enabled
+        let alias = get_alias_obj(Gyro_batch[i].FFT)
+
+        // Get indexs for the lines to be plotted
         X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
         Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
         Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
 
-        // Set scaled y data
-        fft_plot.data[X_plot_index].y = array_scale(fft_mean_x, mean_scale)
-        fft_plot.data[Y_plot_index].y = array_scale(fft_mean_y, mean_scale)
-        fft_plot.data[Z_plot_index].y = array_scale(fft_mean_z, mean_scale)
+        // Apply aliasing and selected scale, set to y axis
+        fft_plot.data[X_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_x))
+        fft_plot.data[Y_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_y))
+        fft_plot.data[Z_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_z))
 
         // Set scaled x data
         const scaled_bins = frequency_scale.fun(alias.bins)
@@ -1960,7 +1976,7 @@ function redraw_post_estimate_and_bode() {
 
     // Find the start and end index
     const start_index = find_start_index(Gyro_batch[index].FFT.time)
-    const end_index = find_end_index(Gyro_batch[index].FFT.time)
+    const end_index = find_end_index(Gyro_batch[index].FFT.time)+1
 
     // Scale factor to get mean from accumulated samples
     const mean_scale = 1 / (end_index - start_index)
@@ -2000,12 +2016,12 @@ function redraw_post_estimate_and_bode() {
     Bode.data[3].x = scaled_bode_freq
 
     const scaled_phase = phase_scale([Phase_mean, Phase_max, Phase_min])
-    Bode.data[2].y = amplitude_scale.fun(Amp_mean)
+    Bode.data[2].y = amplitude_scale.scale(Amp_mean)
     Bode.data[3].y = scaled_phase[0]
 
     const area_freq = [...scaled_bode_freq, ...scaled_bode_freq.toReversed()]
     Bode.data[0].x = area_freq
-    Bode.data[0].y = amplitude_scale.fun([...Amp_max, ...Amp_min.toReversed()])
+    Bode.data[0].y = amplitude_scale.scale([...Amp_max, ...Amp_min.toReversed()])
 
     Bode.data[1].x = area_freq
     Bode.data[1].y = [...scaled_phase[1], ...scaled_phase[2].toReversed()]
@@ -2073,7 +2089,8 @@ function redraw_Spectrogram() {
     Spectrogram.data[0].y = frequency_scale.fun(alias.bins)
 
     // Windowing amplitude correction depends on spectrum of interest
-    const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction)
+    const FFT_resolution = Gyro_batch[batch_instance].FFT.average_sample_rate/Gyro_batch[batch_instance].FFT.window_size
+    const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction, FFT_resolution)
 
     var quantization_noise
     if (Gyro_batch.type == "batch") {
@@ -2100,7 +2117,7 @@ function redraw_Spectrogram() {
             const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
             amplitude = array_offset(array_mul(array_offset(amplitude, -quantization_noise), attenuation), quantization_noise)
         }
-        Spectrogram.data[0].z[j] = amplitude_scale.fun(alias.apply_amp(amplitude))
+        Spectrogram.data[0].z[j] = amplitude_scale.scale(amplitude_scale.fun(alias.apply_amp(amplitude)))
     }
 
     // Setup tracking lines
