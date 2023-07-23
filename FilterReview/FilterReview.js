@@ -689,7 +689,7 @@ function HarmonicNotchFilter(params) {
     return this
 }
 
-// return hanning window array of given length (in tensorflow format)
+// return hanning window array of given length
 function hanning(len) {
     let w = new Array(len)
     const scale = (2*Math.PI) / (len - 1)
@@ -699,7 +699,7 @@ function hanning(len) {
     return w
 }
 
-// Calculate correction factors for linear and energy spectrum (window in tensorflow format)
+// Calculate correction factors for linear and energy spectrum
 // linear: 1 / mean(w)
 // energy: 1 / sqrt(mean(w.^2))
 function window_correction_factors(w) {
