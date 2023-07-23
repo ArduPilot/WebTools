@@ -1071,11 +1071,10 @@ function setup_plots() {
             // Each type of plot
             for (let j=0;j<axis.length;j++) {
                 // For each axis
-                const name = (i+1) + " " + axis[j] + " " + plot_types[n]
                 fft_plot.data[get_FFT_data_index(i, n, j)] = { mode: "lines",
-                                                                name: name,
+                                                                name: axis[j] + " " + plot_types[n],
                                                                 // this extra data allows us to put the name in the hover tool tip
-                                                                meta: name,
+                                                                meta: (i+1) + " " + axis[j] + " " + plot_types[n],
                                                                 legendgroup: i,
                                                                 legendgrouptitle: { text: "Gyro " + (i+1) } }
             }
