@@ -421,7 +421,7 @@ class FFTTarget extends NotchTarget {
             return ret
         }
         
-        return [this.get_target(config, this.data.interpolated[instance].avg_freq[index])]
+        return [this.get_target(config, this.data.interpolated[instance].value[index])]
     }
 
     get_target(config, rpm) {
