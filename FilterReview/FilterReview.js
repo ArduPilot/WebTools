@@ -795,16 +795,18 @@ function run_batch_fft(data_set) {
     const num_points = data_set[0].x.length
 
     var sample_rate_sum = 0
+    var sample_rate_count = 0
     for (let i=0;i<num_batch;i++) {
-        if ((data_set[i].x.length != num_points) || (data_set[i].y.length != num_points) || (data_set[i].z.length != num_points)) {
-            console.log("Uneven batch sizes")
-            return
+        if (data_set[i].x.length < window_size) {
+            // Log section is too short, skip
+            continue
         }
+        sample_rate_count++
         sample_rate_sum += data_set[0].sample_rate
     }
 
     // Average sample time
-    const sample_time = num_batch / sample_rate_sum
+    const sample_time = sample_rate_count / sample_rate_sum
 
 
     // Hard code 50% overlap
@@ -846,6 +848,10 @@ function run_batch_fft(data_set) {
     var time = []
 
     for (let i=0;i<num_batch;i++) {
+        if (data_set[i].x.length < window_size) {
+            // Log section is too short, skip
+            continue
+        }
         var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, fft)
 
         time.push(...array_offset(array_scale(ret.center, sample_time), data_set[i].sample_time))
@@ -1340,7 +1346,7 @@ function calculate() {
         let window_size = 0
         let count = 0
         for (let j = 0; j < Gyro_batch.length; j++) {
-            if ((Gyro_batch[j] == null) || Gyro_batch[j].sensor_num != i) {
+            if ((Gyro_batch[j] == null) || (Gyro_batch[j].sensor_num != i) || (Gyro_batch[j].FFT == null)) {
                 continue
             }
             sample_rate += Gyro_batch[j].FFT.average_sample_rate
@@ -2678,7 +2684,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
     const post_filter = (INS_LOG_BAT_OPT & (1 << 1)) != 0
 
-    // Load in a one massive batch
+    // Load in a one massive batch, split for large gaps in log
     for (let i = 0; i < 3; i++) {
         var instance_name = "GYR[" + i + "]"
         if (log.messages[instance_name] == null) {
@@ -2694,15 +2700,40 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
         Gyro_batch[i] = []
 
-        // Assume a constant sample rate for the FFT
-        const sample_rate = 1000000 / math.mean(math.diff(Array.from(log.messages[instance_name].SampleUS)))
+        const time = Array.from(log.messages[instance_name].SampleUS)
+        const X = Array.from(log.messages[instance_name].GyrX)
+        const Y = Array.from(log.messages[instance_name].GyrY)
+        const Z = Array.from(log.messages[instance_name].GyrZ)
 
-        // Use first sample time as stamp for this "batch"
-        Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[0] / 1000000,
-                             sample_rate: sample_rate,
-                             x: Array.from(log.messages[instance_name].GyrX),
-                             y: Array.from(log.messages[instance_name].GyrY),
-                             z: Array.from(log.messages[instance_name].GyrZ)})
+        let sample_rate_sum = 0
+        let sample_rate_count = 0
+        let batch_start = 0
+        let count = 0
+        const len = time.length
+        for (let j = 1; j < len; j++) {
+            // Take running average of sample time, split into batches for large gaps
+            // Use threshold of 5 times the avarage gap seen so far. Might want to make this more strict in the future
+            count++
+            if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1))) {
+                const sample_rate = 1000000 / ((time[j-1] - time[batch_start]) / count)
+                sample_rate_sum += sample_rate
+                sample_rate_count++
+
+                Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[batch_start] / 1000000,
+                                     sample_rate: sample_rate,
+                                     x: X.slice(batch_start, j-i),
+                                     y: Y.slice(batch_start, j-i),
+                                     z: Z.slice(batch_start, j-i) })
+
+                // Start the next batch from this point
+                batch_start = j
+                count = 0
+            }
+
+        }
+
+        // Assume a constant sample rate for the FFT
+        const sample_rate = sample_rate_sum / sample_rate_count
 
         Gyro_batch[i].sensor_num = i
         Gyro_batch[i].post_filter = post_filter
@@ -2720,7 +2751,8 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
             start_time = batch_start
         }
 
-        const batch_end = batch_start + (Gyro_batch[i][0].x.length / Gyro_batch[i][0].sample_rate)
+        const last_batch = Gyro_batch[i].length - 1
+        const batch_end = Gyro_batch[i][last_batch].sample_time + (Gyro_batch[i][last_batch].x.length / Gyro_batch[i][last_batch].sample_rate)
         if ((end_time == null) || (batch_end > end_time)) {
             end_time = batch_end
         }
