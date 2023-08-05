@@ -1852,20 +1852,6 @@ function redraw_post_estimate_and_bode() {
     }
 
     // Post filter estimate
-    var quantization_noise
-    if (Gyro_batch.type == "batch") {
-        // white noise noise model
-        // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
-        // See also Analog Devices:
-        // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
-        // The 16 here is the number of bits in the batch log
-        quantization_noise = 1 / (Math.sqrt(3) * 2**(16-0.5))
-
-    } else {
-        // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
-        quantization_noise = 0
-    }
-
     for (let i = 0; i < Gyro_batch.length; i++) {
         if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.H == null)) {
             continue
@@ -1876,7 +1862,7 @@ function redraw_post_estimate_and_bode() {
         const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
 
         // Scale quantization by the window correction factor so correction can be applyed later
-        const quantization_correction = quantization_noise * amplitude_scale.quantization_correction(Gyro_batch[i].FFT.correction)
+        const quantization_correction = Gyro_batch.quantization_noise * amplitude_scale.quantization_correction(Gyro_batch[i].FFT.correction)
 
         // Find the start and end index
         const start_index = find_start_index(Gyro_batch[i].FFT.time)
@@ -2098,21 +2084,6 @@ function redraw_Spectrogram() {
     const FFT_resolution = Gyro_batch[batch_instance].FFT.average_sample_rate/Gyro_batch[batch_instance].FFT.window_size
     const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction, FFT_resolution)
 
-    var quantization_noise
-    if (Gyro_batch.type == "batch") {
-        // white noise noise model
-        // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
-        // See also Analog Devices:
-        // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
-        // The 16 here is the number of bits in the batch log
-        quantization_noise = 1 / (Math.sqrt(3) * 2**(16-0.5))
-
-    } else {
-        // Raw logging uses floats, quantization noise probably negligible (not yet investigated)
-        quantization_noise = 0
-    }
-
-
     // Setup z data
     const len = Gyro_batch[batch_instance].FFT[axis].length
     Spectrogram.data[0].z = new Array(len)
@@ -2121,7 +2092,7 @@ function redraw_Spectrogram() {
         var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
         if (estimated) {
             const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
-            amplitude = array_offset(array_mul(array_offset(amplitude, -quantization_noise), attenuation), quantization_noise)
+            amplitude = array_offset(array_mul(array_offset(amplitude, -Gyro_batch.quantization_noise), attenuation), Gyro_batch.quantization_noise)
         }
         Spectrogram.data[0].z[j] = amplitude_scale.scale(amplitude_scale.fun(alias.apply_amp(amplitude)))
     }
@@ -2534,6 +2505,13 @@ function load_from_batch(log, num_gyro, gyro_rate) {
     Gyro_batch = []
     Gyro_batch.type = "batch"
 
+    // white noise noise model
+    // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
+    // See also Analog Devices:
+    // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
+    // The 16 here is the number of bits in the batch log
+    Gyro_batch.quantization_noise = 1 / (Math.sqrt(3) * 2**(16-0.5))
+
     // Assign batches to each sensor
     // Only interested in gyro here
     const IMU_SENSOR_TYPE_GYRO = 1
@@ -2679,6 +2657,9 @@ function load_from_batch(log, num_gyro, gyro_rate) {
 function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch = []
     Gyro_batch.type = "raw"
+
+    // logging floats, quantization noise probably negligible (not yet investigated)
+    Gyro_batch.quantization_noise = 0
 
     // Work out if logging is pre/post from param value
     const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
