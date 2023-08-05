@@ -821,7 +821,7 @@ function run_batch_fft(data_set) {
         window_size = Math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
 
     } else {
-        window_size = Math.min(parseInt(document.getElementById("FFTWindow_size").value), num_points)
+        window_size = parseInt(document.getElementById("FFTWindow_size").value)
 
     }
 
@@ -2077,24 +2077,63 @@ function redraw_Spectrogram() {
     let alias = get_alias_obj(Gyro_batch[batch_instance].FFT) 
 
     // Setup xy data (x and y swapped because transpose flag is set)
-    Spectrogram.data[0].x = Gyro_batch[batch_instance].FFT.time
     Spectrogram.data[0].y = frequency_scale.fun(alias.bins)
+    Spectrogram.data[0].x = []
+
+    // look for gaps and add null
+    const time_len = Gyro_batch[batch_instance].FFT.time.length
+    let count = 0
+    let last_time = Gyro_batch[batch_instance].FFT.time[0]
+    let section_start = Gyro_batch[batch_instance].FFT.time[0]
+    let skip_flag = []
+    for (let j = 0; j < time_len; j++) {
+        count++
+        const this_time = Gyro_batch[batch_instance].FFT.time[j]
+        const this_dt = this_time - last_time
+        const average_dt = (this_time - section_start) / count
+
+        if (this_dt > average_dt * 2.5) {
+            // Add a gap
+            count = 0;
+            // start gap where next sample would have been expected
+            Spectrogram.data[0].x.push(last_time + average_dt)
+            skip_flag.push(true)
+
+            // End gap when previous sample would be expected
+            Spectrogram.data[0].x.push(this_time - average_dt)
+            skip_flag.push(true)
+
+            section_start = this_time
+        }
+
+        Spectrogram.data[0].x.push(this_time)
+        skip_flag.push(false)
+        last_time = this_time
+    }
 
     // Windowing amplitude correction depends on spectrum of interest
     const FFT_resolution = Gyro_batch[batch_instance].FFT.average_sample_rate/Gyro_batch[batch_instance].FFT.window_size
     const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction, FFT_resolution)
 
     // Setup z data
-    const len = Gyro_batch[batch_instance].FFT[axis].length
+    const len = Spectrogram.data[0].x.length
+    const num_bins = Spectrogram.data[0].y.length
     Spectrogram.data[0].z = new Array(len)
+    let index = 0
     for (j = 0; j<len; j++) {
+        if (skip_flag[j] == true) {
+            // Add null Z values, this results in a blank section in the plot
+            Spectrogram.data[0].z[j] = new Array(num_bins)
+            continue
+        }
 
-        var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][j], window_correction)
+        var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][index], window_correction)
         if (estimated) {
-            const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[j])
+            const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[index])
             amplitude = array_offset(array_mul(array_offset(amplitude, -Gyro_batch.quantization_noise), attenuation), Gyro_batch.quantization_noise)
         }
         Spectrogram.data[0].z[j] = amplitude_scale.scale(amplitude_scale.fun(alias.apply_amp(amplitude)))
+        index++
     }
 
     // Setup tracking lines
@@ -2682,9 +2721,6 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
         Gyro_batch[i] = []
 
         const time = Array.from(log.messages[instance_name].SampleUS)
-        const X = Array.from(log.messages[instance_name].GyrX)
-        const Y = Array.from(log.messages[instance_name].GyrY)
-        const Z = Array.from(log.messages[instance_name].GyrZ)
 
         let sample_rate_sum = 0
         let sample_rate_count = 0
@@ -2692,19 +2728,23 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
         let count = 0
         const len = time.length
         for (let j = 1; j < len; j++) {
-            // Take running average of sample time, split into batches for large gaps
-            // Use threshold of 5 times the avarage gap seen so far. Might want to make this more strict in the future
+            // Take running average of sample time, split into batches for gaps
+            // Use threshold of 5 times the avarage gap seen so far.
+            // This should mean we get a new batch after two missed meassages
             count++
             if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1))) {
-                const sample_rate = 1000000 / ((time[j-1] - time[batch_start]) / count)
-                sample_rate_sum += sample_rate
-                sample_rate_count++
+                if (count >= 64) {
+                    // Must have at least 64 samples in each batch
+                    const sample_rate = 1000000 / ((time[j-1] - time[batch_start]) / count)
+                    sample_rate_sum += sample_rate
+                    sample_rate_count++
 
-                Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[batch_start] / 1000000,
-                                     sample_rate: sample_rate,
-                                     x: X.slice(batch_start, j-i),
-                                     y: Y.slice(batch_start, j-i),
-                                     z: Z.slice(batch_start, j-i) })
+                    Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[batch_start] / 1000000,
+                                        sample_rate: sample_rate,
+                                        x: Array.from(log.messages[instance_name].GyrX.slice(batch_start, j-i)),
+                                        y: Array.from(log.messages[instance_name].GyrY.slice(batch_start, j-i)),
+                                        z: Array.from(log.messages[instance_name].GyrZ.slice(batch_start, j-i)) })
+                }
 
                 // Start the next batch from this point
                 batch_start = j
