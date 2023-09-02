@@ -171,3 +171,13 @@ function array_log10(A) {
     }
     return ret
 }
+
+function array_all_equal(A, val) {
+    const len = A.length
+    for (let i = 0; i < len; i++) {
+        if (A[i] != val) {
+            return false
+        }
+    }
+    return true
+}
