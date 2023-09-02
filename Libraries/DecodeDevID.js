@@ -123,23 +123,23 @@ function get(lookup, index) {
     return "Unknown"
 }
 
-var type
+var type_str
 var name
 switch (type) {
     case DEVICE_TYPE_COMPASS:
-        type = "Compass"
+        type_str = "Compass"
         name = get(compass_types, devtype)
         break
     case DEVICE_TYPE_IMU:
-        type = "IMU: "
+        type_str = "IMU: "
         name = get(imu_types, devtype)
         break
     case DEVICE_TYPE_BARO:
-        type = "Baro"
+        type_str = "Baro"
         name = get(baro_types, devtype)
         break
     case DEVICE_TYPE_AIRSPEED:
-        type = "Airspeed"
+        type_str = "Airspeed"
         name = get(airspeed_types, devtype)
         break
     default:
@@ -151,9 +151,9 @@ const bus_type_string = get(bustypes, bus_type)
 
 if (bus_type == 3) {
     // dronecan devtype represents sensor_id
-    return { type: type, bus_type: bus_type_string, bus: bus, address: address, sensor_id: devtype-1, name: name }
+    return { type: type_str, bus_type: bus_type_string, bus_type_index: bus_type, bus: bus, address: address, sensor_id: devtype-1, name: name }
 }
 
-return { type: type, bus_type: bus_type_string, bus: bus, address: address, devtype: devtype, name: name }
+return { type: type_str, bus_type: bus_type_string, bus_type_index: bus_type, bus: bus, address: address, devtype: devtype, name: name }
 
 }
