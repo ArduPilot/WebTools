@@ -6,6 +6,7 @@
 <script type="text/javascript" src="HardwareReport.js"></script>
 <script type="text/javascript" src="../Libraries/DecodeDevID.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 
 </head>
@@ -57,6 +58,29 @@
 
 <h3 hidden>Position offsets</h3>
 <div id="POS_OFFSETS" style="width:800px;height:800px"></div>
+
+<h3 hidden>Temperature</h3>
+<div id="Temperature" style="width:800px;height:400px"></div>
+
+<h3 hidden>Board Voltage</h3>
+<div id="Board_Voltage" style="width:800px;height:400px"></div>
+
+<h3 hidden>CPU</h3>
+<h4 hidden>Load</h4>
+<div id="performance_load" style="width:800px;height:400px"></div>
+
+<h4 hidden>Free memory</h4>
+<div id="performance_mem" style="width:800px;height:400px"></div>
+
+<h4 hidden>Loop times</h4>
+<div id="performance_time" style="width:800px;height:400px"></div>
+
+<h3 hidden>Stack</h3>
+<h4 hidden>Free memory</h4>
+<div id="stack_mem" style="width:800px;height:400px"></div>
+
+<h4 hidden>Memory usage</h4>
+<div id="stack_pct" style="width:800px;height:400px"></div>
 
 <h3>Parameters</h3>
 <p>
