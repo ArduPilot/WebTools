@@ -873,10 +873,11 @@ let params = {}
 let defaults = {}
 function load_log(log_file) {
     let log = new DataflashParser()
-    log.processData(log_file, ['PARM', 'CAND', 'VER', 'MSG'])
+    log.processData(log_file, ['PARM', 'CAND', 'VER', 'MSG', 'HEAT', 'POWR', 'MCU', 'IMU', 'PM', 'STAK'])
 
-    if ('CAND' in log.messages) {
+    if (('CAND' in log.messages) && (Object.keys(log.messages.CAND).length > 0)) {
         load_can(log.messages.CAND)
+        delete log.messages.CAND
     }
 
     for (let i = 0; i < log.messages.PARM.Name.length; i++) {
@@ -886,6 +887,7 @@ function load_log(log_file) {
             defaults[log.messages.PARM.Name[i]] = default_val
         }
     }
+    delete log.messages.PARM
 
     if (Object.keys(params).length > 0) {
         document.getElementById("SaveAllParams").hidden = false
@@ -898,15 +900,16 @@ function load_log(log_file) {
 
     load_params()
 
-    const have_msg = 'MSG' in log.messages
+    const have_msg = ('MSG' in log.messages) && (Object.keys(log.messages.MSG).length > 0)
     let flight_controller = null
     let board_id = null
 
-    if ('VER' in log.messages) {
+    if (('VER' in log.messages) && (Object.keys(log.messages.VER).length > 0)) {
         // Assume version does not change, just use first msg
         const fw_string = log.messages.VER.FWS[0]
         const hash = log.messages.VER.GH[0].toString(16)
         board_id = log.messages.VER.APJ[0]
+        delete log.messages.VER
 
         let section = document.getElementById("VER")
         section.hidden = false
@@ -956,6 +959,183 @@ function load_log(log_file) {
         }
     }
 
+    const have_HEAT = ('HEAT' in log.messages) && (Object.keys(log.messages.HEAT).length > 0)
+    const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
+    const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
+    const have_MCU = ('MCU' in log.messages) && (Object.keys(log.messages.MCU).length > 0)
+    const have_IMU = ('IMU' in log.messages) && (Object.keys(log.messages.IMU).length > 0)
+    if (have_HEAT || have_POWR_temp || have_MCU || have_IMU) {
+        let plot = document.getElementById("Temperature")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+
+        if (have_HEAT) {
+            const time = array_scale(Array.from(log.messages.HEAT.time_boot_ms), 1 / 1000)
+
+            Temperature.data[0].x = time
+            Temperature.data[0].y = Array.from(log.messages.HEAT.Targ)
+
+            Temperature.data[1].x =time
+            Temperature.data[1].y = Array.from(log.messages.HEAT.Temp)
+        }
+
+        if (have_MCU) {
+            Temperature.data[2].x = array_scale(Array.from(log.messages.MCU.time_boot_ms), 1 / 1000)
+            Temperature.data[2].y = Array.from(log.messages.MCU.MTemp)
+
+        } else if (have_POWR_temp) {
+            Temperature.data[2].x = array_scale(Array.from(log.messages.POWR.time_boot_ms), 1 / 1000)
+            Temperature.data[2].y = Array.from(log.messages.POWR.MTemp)
+
+        }
+
+        if (have_IMU) {
+            let have_instance = false
+            for (let i = 0; i < max_num_ins; i++) {
+                const inst_name = "IMU[" + i + "]"
+                if (inst_name in log.messages) {
+                    have_instance = true
+
+                    Temperature.data[3+i].x = array_scale(Array.from(log.messages[inst_name].time_boot_ms), 1 / 1000)
+                    Temperature.data[3+i].y = Array.from(log.messages[inst_name].T)
+                }
+            }
+
+            if (!have_instance) {
+                const instance = log.messages.IMU.I[0]
+                Temperature.data[3+instance].x = array_scale(Array.from(log.messages.IMU.time_boot_ms), 1 / 1000)
+                Temperature.data[3+instance].y = Array.from(log.messages.IMU.T)
+            }
+        }
+
+        Plotly.redraw(plot)
+    }
+
+    // Voltage plot
+    if (have_POWR || have_MCU) {
+        let plot = document.getElementById("Board_Voltage")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+
+        if (have_POWR) {
+            const time = array_scale(Array.from(log.messages.POWR.time_boot_ms), 1 / 1000)
+
+            Board_Voltage.data[1].x = time
+            Board_Voltage.data[1].y = Array.from(log.messages.POWR.VServo)
+
+            Board_Voltage.data[2].x = time
+            Board_Voltage.data[2].y = Array.from(log.messages.POWR.Vcc)
+
+            if (!have_MCU && ('MVolt' in log.messages.POWR)) {
+                Board_Voltage.data[3].x = time
+                Board_Voltage.data[3].y = Array.from(log.messages.POWR.MVolt)
+
+                Board_Voltage.data[0].x = [...time, ...time.toReversed()]
+                Board_Voltage.data[0].y = [...Array.from(log.messages.POWR.MVmax), ...Array.from(log.messages.POWR.MVmin).toReversed()]
+            }
+        }
+
+        if (have_MCU) {
+            const time = array_scale(Array.from(log.messages.MCU.time_boot_ms), 1 / 1000)
+
+            Board_Voltage.data[3].x = time
+            Board_Voltage.data[3].y = Array.from(log.messages.MCU.MVolt)
+
+            Board_Voltage.data[0].x = [...time, ...time.toReversed()]
+            Board_Voltage.data[0].y = [...Array.from(log.messages.MCU.MVmax), ...Array.from(log.messages.MCU.MVmin).toReversed()]
+
+        }
+
+        Plotly.redraw(plot)
+    }
+    delete log.messages.POWR
+    delete log.messages.MCU
+
+    // Performance
+    if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
+        // Load
+        let plot = document.getElementById("performance_load")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+        plot.previousElementSibling.previousElementSibling.hidden = false
+
+        const time = array_scale(Array.from(log.messages.PM.time_boot_ms), 1 / 1000)
+
+        performance_load.data[0].x = time
+        performance_load.data[0].y = array_scale(Array.from(log.messages.PM.Load), 1 / 10)
+        
+        Plotly.redraw(plot)
+
+        // Memory
+        plot = document.getElementById("performance_mem")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+
+        performance_mem.data[0].x = time
+        performance_mem.data[0].y = Array.from(log.messages.PM.Mem)
+
+        Plotly.redraw(plot)
+
+        // Time
+        plot = document.getElementById("performance_time")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+
+        performance_time.data[0].x = time
+        performance_time.data[0].y = array_inverse(array_scale(Array.from(log.messages.PM.MaxT), 1 / 1000000))
+
+        performance_time.data[1].x = time
+        performance_time.data[1].y = Array.from(log.messages.PM.LR)
+
+        Plotly.redraw(plot)
+
+    }
+    delete log.messages.PM
+
+    if (('STAK' in log.messages) && (Object.keys(log.messages.STAK).length > 0)) {
+        let stack = []
+        for (let i = 0; i <= 255; i++) {
+            const name = "STAK[" + i + "]"
+            if (name in log.messages) {
+                // Assume id, priority and name do not change
+                stack.push({ id: i, 
+                             priority: log.messages[name].Pri[0],
+                             name: log.messages[name].Name[0],
+                             time: array_scale(Array.from(log.messages[name].time_boot_ms), 1 / 1000),
+                             total_size: Array.from(log.messages[name].Total),
+                             free: Array.from(log.messages[name].Free)})
+            }
+        }
+
+        // Sort by priority, most important first
+        stack.sort((a, b) => { return b.priority - a.priority })
+
+        stack_mem.data = []
+        stack_pct.data = []
+
+        for (let i = 0; i < stack.length; i++) {
+            stack_mem.data.push({ mode: 'lines', x: stack[i].time, y: stack[i].free, name: stack[i].name, meta: stack[i].name, hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B" })
+
+            const mem_pct = array_scale(array_div(array_sub(stack[i].total_size, stack[i].free), stack[i].total_size), 100)
+            stack_pct.data.push({ mode: 'lines', x: stack[i].time, y: mem_pct, name: stack[i].name, meta: stack[i].name, hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} %" })
+        }
+
+        plot = document.getElementById("stack_mem")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+        plot.previousElementSibling.previousElementSibling.hidden = false
+        Plotly.purge(plot)
+        Plotly.newPlot(plot, stack_mem.data, stack_mem.layout, {displaylogo: false});
+
+        plot = document.getElementById("stack_pct")
+        plot.hidden = false
+        plot.previousElementSibling.hidden = false
+        Plotly.purge(plot)
+        Plotly.newPlot(plot, stack_pct.data, stack_pct.layout, {displaylogo: false});
+
+    }
+    delete log.messages.STAK
+
 }
 
 async function load(e) {
@@ -980,6 +1160,13 @@ async function load(e) {
 }
 
 let Sensor_Offset = {}
+let Temperature = {}
+let Board_Voltage = {}
+let performance_load = {}
+let performance_mem = {}
+let performance_time = {}
+let stack_mem = {}
+let stack_pct = {}
 function reset() {
 
     function setup_section(section) {
@@ -1144,33 +1331,34 @@ function reset() {
 
     // Pos offsets plot setup
     Sensor_Offset.data = []
+    const offset_hover = "<extra></extra>%{meta}<br>X: %{x:.2f} m<br>Y: %{y:.2f} m<br>Z: %{z:.2f} m"
 
     let name = "GC"
-    Sensor_Offset.data[0] = { x: [0], y: [0], z: [0], mode: "markers", type: 'scatter3d', name: name, meta: name, marker: {color: 'rgb(0,0,0)'}, showlegend: false }
+    Sensor_Offset.data[0] = { x: [0], y: [0], z: [0], mode: "markers", type: 'scatter3d', name: name, meta: name, marker: {color: 'rgb(0,0,0)'}, showlegend: false, hovertemplate: "<extra></extra>CG"}
 
     for (let i = 0; i < max_num_ins; i++) {
         name = "IMU " + (i+1)
-        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false })
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_gps; i++) {
         name = "GPS " + (i+1)
-        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false })
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_rangefinder; i++) {
         name = "Rangefinder " + (i+1)
-        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false })
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_flow; i++) {
         name = "FLOW " + (i+1)
-        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false })
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_viso; i++) {
         name = "VISO " + (i+1)
-        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false })
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     const origin_size = 0.2
@@ -1191,9 +1379,9 @@ function reset() {
     Sensor_Offset.data.push({type: 'scatter3d', mode: 'lines', x: [0,0], y: [0,0], z: [0,origin_size], showlegend: false, hoverinfo: "none", line: {color: z_color, width: 10 }})
 
     Sensor_Offset.layout = {
-        scene: { xaxis: {title: { text: "X offset (forward)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
-                 yaxis: {title: { text: "Y offset (right)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
-                 zaxis: {title: { text: "Z offset (down)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+        scene: { xaxis: {title: { text: "X offset, forward (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+                 yaxis: {title: { text: "Y offset, right (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+                 zaxis: {title: { text: "Z offset, down (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
                  aspectratio: { x:0.75, y:0.75, z:0.75 },
                  camera: {eye: { x:-1.25, y:1.25, z:1.25 }}},
         showlegend: true,
@@ -1206,6 +1394,141 @@ function reset() {
     Plotly.newPlot(plot, Sensor_Offset.data, Sensor_Offset.layout, {displaylogo: false});
     plot.hidden = true
     plot.previousElementSibling.hidden = true
+
+    // Temperature plot
+    const time_scale_label = "Time (s)"
+    const temp_hover_tmmplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} °C"
+    Temperature.data = []
+
+    name = "heater target"
+    Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
+
+    name = "heater actual"
+    Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
+
+    name = "MCU"
+    Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
+    for (let i = 0; i < max_num_ins; i++) {
+        name = "IMU " + (i+1)
+        Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
+    }
+
+    Temperature.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Temperature (°C)" } }
+                         }
+
+    plot = document.getElementById("Temperature")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, Temperature.data, Temperature.layout, {displaylogo: false});
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+
+    // Voltages
+    const voltage_hover_tmmplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} V"
+    Board_Voltage.data = []
+
+    Board_Voltage.data.push({ line: {color: "transparent"}, fill: "toself", type: "scatter", showlegend: false, hoverinfo: 'none' })
+
+    name = "servo"
+    Board_Voltage.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: voltage_hover_tmmplate })
+
+    name = "board"
+    Board_Voltage.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: voltage_hover_tmmplate })
+
+    name = "MCU"
+    Board_Voltage.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: voltage_hover_tmmplate })
+
+    Board_Voltage.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                             margin: { b: 50, l: 50, r: 50, t: 20 },
+                             xaxis: { title: {text: time_scale_label } },
+                             yaxis: { title: {text: "Voltage" }, rangemode: "tozero" } }
+
+    plot = document.getElementById("Board_Voltage")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, Board_Voltage.data, Board_Voltage.layout, {displaylogo: false});
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+
+    // Performace load
+    performance_load.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} %" }]
+
+    performance_load.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Load (%)" } }
+                         }
+
+    plot = document.getElementById("performance_load")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, performance_load.data, performance_load.layout, {displaylogo: false});
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+    plot.previousElementSibling.previousElementSibling.hidden = true
+
+    // Performace memory
+    performance_mem.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B" }]
+
+    performance_mem.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 60, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Free memory (bytes)" } }
+                         }
+
+    plot = document.getElementById("performance_mem")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, performance_mem.data, performance_mem.layout, {displaylogo: false});
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+
+    // Performace time
+    const performance_time_hover = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} Hz"
+
+    performance_time.data = []
+
+    name = "Worst"
+    performance_time.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: performance_time_hover })
+
+    name = "Average"
+    performance_time.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: performance_time_hover })
+
+    performance_time.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Loop rate (Hz)" } }
+                         }
+
+    plot = document.getElementById("performance_time")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, performance_time.data, performance_time.layout, {displaylogo: false});
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+
+    // Stack
+    // Memory
+    stack_mem.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Free memory (bytes)" } }
+                         }
+
+    plot = document.getElementById("stack_mem")
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+    plot.previousElementSibling.previousElementSibling.hidden = true
+
+    // Percentage
+    stack_pct.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Memory usage (%)" } }
+                         }
+
+    plot = document.getElementById("stack_pct")
+    plot.hidden = true
+    plot.previousElementSibling.hidden = true
+    plot.previousElementSibling.previousElementSibling.hidden = true
 
 }
 
