@@ -217,7 +217,7 @@ function get_ins_param_names(index) {
 
 let ins
 const max_num_ins = 5
-function load_ins() {
+function load_ins(log) {
 
     function get_instance(params, index) {
         const names = get_ins_param_names(index)
@@ -259,6 +259,27 @@ function load_ins() {
     for (let i = 0; i < max_num_ins; i++) {
         ins[i] = get_instance(params, i)
     }
+    if (log != null) {
+        log.parseAtOffset("IMU")
+        let found_instance = false
+        for (let i = 0; i < max_num_ins; i++) {
+            if (ins[i] != null) {
+                const name = "IMU[" + i + "]"
+                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
+                    found_instance = true
+                    ins[i].acc_all_healthy = array_all_equal(log.messages[name].AH, 1)
+                    ins[i].gyro_all_healthy = array_all_equal(log.messages[name].GH, 1)
+                }
+            }
+        }
+        if (!found_instance && (Object.keys(log.messages.IMU).length > 0)) {
+            const instance = log.messages.IMU.I[0]
+            if (ins[instance] != null) {
+                ins[instance].acc_all_healthy = array_all_equal(log.messages.IMU.AH, 1)
+                ins[instance].gyro_all_healthy = array_all_equal(log.messages.IMU.GH, 1)
+            }
+        }
+    }
 
     function print_ins(inst, params) {
         let fieldset = document.createElement("fieldset")
@@ -299,6 +320,16 @@ function load_ins() {
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Position offset: " + (param_array_configured(params.pos, 0.0) ? "\u2705" : "\u274C")))
+
+        if ("acc_all_healthy" in params) {
+            fieldset.appendChild(document.createElement("br"))
+            fieldset.appendChild(document.createTextNode("Accel health: " + (params.gyro_all_healthy ? "\u2705" : "\u274C")))
+        }
+
+        if ("acc_all_healthy" in params) {
+            fieldset.appendChild(document.createElement("br"))
+            fieldset.appendChild(document.createTextNode("Gyro health: " + (params.acc_all_healthy ? "\u2705" : "\u274C")))
+        }
 
         return fieldset
     }
@@ -357,7 +388,7 @@ function get_compass_param_names(index) {
 }
 
 let compass
-function load_compass() {
+function load_compass(log) {
 
     function get_instance(params, prio_id_name) {
         if (!(prio_id_name in params) || (params[prio_id_name] == 0)) {
@@ -410,6 +441,26 @@ function load_compass() {
         }
     }
 
+    if (log != null) {
+        log.parseAtOffset("MAG")
+        let found_instance = false
+        for (let i = 0; i < 3; i++) {
+            if (compass[i] != null) {
+                const name = "MAG[" + i + "]"
+                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
+                    found_instance = true
+                    compass[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
+                }
+            }
+        }
+        if (!found_instance && (Object.keys(log.messages.MAG).length > 0)) {
+            const instance = log.messages.MAG.I[0]
+            if (compass[instance] != null) {
+                compass[instance].all_healthy = array_all_equal(log.messages.MAG.Health, 1)
+            }
+        }
+    }
+
     function print_compass(inst, params) {
         let fieldset = document.createElement("fieldset")
 
@@ -435,6 +486,11 @@ function load_compass() {
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Motor calibration: " + (params.motor_set ? "\u2705" : "\u274C")))
+
+        if ("all_healthy" in params) {
+            fieldset.appendChild(document.createElement("br"))
+            fieldset.appendChild(document.createTextNode("Health: " + (params.all_healthy ? "\u2705" : "\u274C")))
+        }
 
         return fieldset
     }
@@ -476,7 +532,7 @@ function get_baro_param_names(index) {
 }
 
 let baro
-function load_baro() {
+function load_baro(log) {
 
     for (let i = 0; i < 3; i++) {
         const names = get_baro_param_names(i)
@@ -496,6 +552,26 @@ function load_baro() {
         }
     }
 
+    if (log != null) {
+        log.parseAtOffset("BARO")
+        let found_instance = false
+        for (let i = 0; i < 3; i++) {
+            if (compass[i] != null) {
+                const name = "BARO[" + i + "]"
+                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
+                    found_instance = true
+                    baro[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
+                }
+            }
+        }
+        if (!found_instance && (Object.keys(log.messages.BARO).length > 0)) {
+            const instance = log.messages.BARO.I[0]
+            if (baro[instance] != null) {
+                baro[instance].all_healthy = array_all_equal(log.messages.BARO.Health, 1)
+            }
+        }
+    }
+
     function print_baro(inst, params) {
         let fieldset = document.createElement("fieldset")
 
@@ -508,6 +584,11 @@ function load_baro() {
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Wind compensation: " + (params.wind_cmp ? "\u2705" : "\u274C")))
+
+        if ("all_healthy" in params) {
+            fieldset.appendChild(document.createElement("br"))
+            fieldset.appendChild(document.createTextNode("Health: " + (params.all_healthy ? "\u2705" : "\u274C")))
+        }
 
         return fieldset
     }
@@ -562,7 +643,7 @@ function get_airspeed_param_names(index) {
 }
 
 let airspeed
-function load_airspeed() {
+function load_airspeed(log) {
 
     for (let i = 0; i < 2; i++) {
         const names = get_airspeed_param_names(i)
@@ -572,6 +653,26 @@ function load_airspeed() {
                 continue
             }
             airspeed[i] = { id: id, use: params[names.use] }
+        }
+    }
+
+    if (log != null) {
+        log.parseAtOffset("ARSP")
+        let found_instance = false
+        for (let i = 0; i < 2; i++) {
+            if (airspeed[i] != null) {
+                const name = "ARSP[" + i + "]"
+                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
+                    found_instance = true
+                    airspeed[i].all_healthy = array_all_equal(log.messages[name].H, 1)
+                }
+            }
+        }
+        if (!found_instance && (Object.keys(log.messages.ARSP).length > 0)) {
+            const instance = log.messages.ARSP.I[0]
+            if (airspeed[instance] != null) {
+                airspeed[instance].all_healthy = array_all_equal(log.messages.ARSP.H, 1)
+            }
         }
     }
 
@@ -587,6 +688,11 @@ function load_airspeed() {
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Use: " + (params.use ? "\u2705" : "\u274C")))
+
+        if ("all_healthy" in params) {
+            fieldset.appendChild(document.createElement("br"))
+            fieldset.appendChild(document.createTextNode("Health: " + (params.all_healthy ? "\u2705" : "\u274C")))
+        }
 
         return fieldset
     }
@@ -789,11 +895,11 @@ function update_minimal_config() {
     }
 }
 
-function load_params() {
-    load_ins()
-    load_compass()
-    load_baro()
-    load_airspeed()
+function load_params(log) {
+    load_ins(log)
+    load_compass(log)
+    load_baro(log)
+    load_airspeed(log)
     load_gps()
     load_flow()
 
@@ -898,7 +1004,7 @@ function load_log(log_file) {
         document.getElementById("param_base_changed").checked = true
     }
 
-    load_params()
+    load_params(log)
 
     const have_msg = ('MSG' in log.messages) && (Object.keys(log.messages.MSG).length > 0)
     let flight_controller = null
