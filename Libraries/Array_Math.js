@@ -109,11 +109,29 @@ function array_scale(A, scale) {
     return ret
 }
 
+function array_inverse(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = 1 / A[i]
+    }
+    return ret
+}
+
 function array_mul(A, B) {
     const len = A.length
     let ret = new Array(len)
     for (let i = 0; i<len; i++) {
         ret[i] = A[i] * B[i]
+    }
+    return ret
+}
+
+function array_div(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] / B[i]
     }
     return ret
 }
@@ -132,6 +150,15 @@ function array_add(A, B) {
     let ret = new Array(len)
     for (let i = 0; i<len; i++) {
         ret[i] = A[i] + B[i]
+    }
+    return ret
+}
+
+function array_sub(A, B) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = A[i] - B[i]
     }
     return ret
 }
