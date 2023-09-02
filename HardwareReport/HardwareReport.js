@@ -335,7 +335,6 @@ function load_ins(log) {
     }
 
     let ins_section = document.getElementById("INS")
-    ins_section.previousElementSibling.hidden = false
 
     let table = document.createElement("table")
     ins_section.appendChild(table)
@@ -343,6 +342,7 @@ function load_ins(log) {
     for (let i = 0; i < ins.length; i++) {
         if (ins[i] != null) {
             ins_section.hidden = false
+            ins_section.previousElementSibling.hidden = false
             let colum = document.createElement("td")
 
             colum.appendChild(print_ins(i+1, ins[i]))
@@ -496,7 +496,6 @@ function load_compass(log) {
     }
 
     let section = document.getElementById("COMPASS")
-    section.previousElementSibling.hidden = false
 
     section.appendChild(document.createTextNode("Enabled: " + (params["COMPASS_ENABLE"] ? "\u2705" : "\u274C")))
     section.appendChild(document.createElement("br"))
@@ -507,6 +506,7 @@ function load_compass(log) {
     for (let i = 0; i < compass.length; i++) {
         if (compass[i] != null) {
             section.hidden = false
+            section.previousElementSibling.hidden = false
             let colum = document.createElement("td")
 
             colum.appendChild(print_compass(i+1, compass[i]))
@@ -867,6 +867,12 @@ function update_minimal_config() {
     if (Object.keys(params).length == 0) {
         return
     }
+    document.forms["params"].hidden = false
+    document.forms["params"].previousElementSibling.hidden = false
+    document.forms["params"].previousElementSibling.previousElementSibling.hidden = false
+    document.getElementById("SaveMinimalParams").hidden = false
+    document.getElementById("ParametersHeading").hidden = false
+
     const changed = document.getElementById("param_base_changed").checked
 
     let inputs = document.forms["params"].getElementsByTagName("input");
