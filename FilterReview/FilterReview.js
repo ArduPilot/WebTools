@@ -163,6 +163,9 @@ class ThrottleTarget extends NotchTarget {
     }
 
     get_target(config, AOut) {
+        if (config.ref == 0) {
+            return config.freq
+        }
         const motors_throttle = Math.max(0, AOut)
         return config.freq * Math.max(config.min_ratio, Math.sqrt(motors_throttle / config.ref))
     }
@@ -179,6 +182,9 @@ class RPMTarget extends NotchTarget {
     }
 
     get_target(config, rpm) {
+        if (config.ref == 0) {
+            return config.freq
+        }
         if (rpm > 0) {
             return Math.max(config.freq, rpm * config.ref * (1.0/60.0))
         }
@@ -299,6 +305,9 @@ class ESCTarget extends NotchTarget {
     }
 
     get_target(config, rpm) {
+        if (config.ref == 0) {
+            return config.freq
+        }
         return Math.max(rpm, config.freq)
     }
 
@@ -425,6 +434,9 @@ class FFTTarget extends NotchTarget {
     }
 
     get_target(config, rpm) {
+        if (config.ref == 0) {
+            return config.freq
+        }
         return Math.max(rpm, config.freq)
     }
 
@@ -3027,7 +3039,22 @@ function load(log_file) {
             }
         }
     }
+
+    // If no primary display the first sensor the is data for in spectogram
+    if (primary_gyro == null) {
+        primary_gyro = first_gyro
+    }
+
+    // Default spectrograph to primary sensor, pre if available and X axis
+    document.getElementById("SpecGyroInst" + primary_gyro).checked = true
+    document.getElementById("BodeGyroInst" + primary_gyro).checked = true
+
+    document.getElementById("SpecGyro" + (Gyro_batch.have_pre ? "Pre" : "Post")).checked = true
     document.getElementById("SpecGyroEstPost").disabled = !Gyro_batch.have_pre
+    document.getElementById("SpecGyroAxisX").checked = true
+    document.getElementById("SpecGyroAxisX").disabled = false
+    document.getElementById("SpecGyroAxisY").disabled = false
+    document.getElementById("SpecGyroAxisZ").disabled = false
 
     // Calculate FFT
     calculate()
