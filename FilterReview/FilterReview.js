@@ -908,6 +908,11 @@ function reset() {
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
         document.getElementById("BodeGyroInst" + i).disabled = true
+
+        let fieldset = document.getElementById("Gyro" + i)
+        fieldset.style["border-color"] = "rgb(192, 192, 192)"
+        fieldset.firstElementChild.innerHTML = "Gyro " + (i+1)
+
     }
     document.getElementById("SpecGyroPre").disabled = true
     document.getElementById("SpecGyroPost").disabled = true
@@ -2951,6 +2956,33 @@ function load(log_file) {
 
     Plotly.redraw("FlightData")
 
+    // Try and work out which is the primary sensor
+    let primary_gyro = 0
+    const AHRS_EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
+    const EK3_PRIMARY = get_param_value(log.messages.PARM, "EK3_PRIMARY")
+    if ((AHRS_EKF_TYPE == 3) && (EK3_PRIMARY != null)) {
+        primary_gyro = EK3_PRIMARY
+
+        // Add label to primary
+        let fieldset = document.getElementById("Gyro" + primary_gyro)
+        fieldset.style["border-color"] = "rgb(0, 255, 0)"
+        fieldset.firstElementChild.innerHTML += " - Primary"
+    }
+
+    // Make sure we have data for the primary sensor
+    let have_primary = false
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if (Gyro_batch[i] == null) {
+            continue
+        }
+        if (Gyro_batch[i].sensor_num == primary_gyro) {
+            have_primary = true
+            break
+        }
+    }
+    if (!have_primary) {
+        primary_gyro = null
+    }
 
     // Were now done with the log, delete it to save memory before starting caculations
     delete log.buffer
@@ -2993,11 +3025,16 @@ function load(log_file) {
         if (Gyro_batch[i] == null) {
             continue
         }
+        let show_batch = true
+        if ((primary_gyro != null) && (Gyro_batch[i].sensor_num != primary_gyro)) {
+            show_batch = false
+        }
         const prepost = Gyro_batch[i].post_filter ? "Post" : "Pre"
         for (let j = 0; j < 3; j++) {
             var fft_check = document.getElementById("Gyro" + Gyro_batch[i].sensor_num + prepost + axis[j])
             fft_check.disabled = false
-            fft_check.checked = true
+            fft_check.checked = show_batch
+            fft_plot.data[get_FFT_data_index(Gyro_batch[i].sensor_num, Gyro_batch[i].post_filter ? 1 : 0, j)].visible = show_batch
         }
 
         // Track which sensors are present for spectrogram
@@ -3013,16 +3050,7 @@ function load(log_file) {
         }
         document.getElementById("SpecGyroInst" + Gyro_batch[i].sensor_num).disabled = false
         document.getElementById("BodeGyroInst" + Gyro_batch[i].sensor_num).disabled = false
-        document.getElementById("SpecGyroAxisX").checked = true
-        document.getElementById("SpecGyroAxisY").disabled = false
-        document.getElementById("SpecGyroAxisZ").disabled = false
     }
-
-    // Default spectrograph to first sensor, pre if available and X axis
-    document.getElementById("SpecGyroInst" + first_gyro).checked = true
-    document.getElementById("SpecGyro" + (Gyro_batch.have_pre ? "Pre" : "Post")).checked = true
-    document.getElementById("SpecGyroAxisX").disabled = false
-    document.getElementById("BodeGyroInst" + first_gyro).checked = true
 
     // Enable estimated post filter if there is pre filter data
     if (Gyro_batch.have_pre) {
@@ -3030,12 +3058,16 @@ function load(log_file) {
             if (Gyro_batch[i] == null) {
                 continue
             }
+            let show_batch = !Gyro_batch.have_post
+            if ((primary_gyro != null) && (Gyro_batch[i].sensor_num != primary_gyro)) {
+                show_batch = false
+            }
             for (let j = 0; j < 3; j++) {
                 let fft_check = document.getElementById("Gyro" + Gyro_batch[i].sensor_num + "PostEst" + axis[j])
                 fft_check.disabled = false
                 // Show estimated by default if there is no post filter data
-                fft_check.checked = !Gyro_batch.have_post
-                fft_plot.data[get_FFT_data_index(Gyro_batch[i].sensor_num, 2, j)].visible = !Gyro_batch.have_post
+                fft_check.checked = show_batch
+                fft_plot.data[get_FFT_data_index(Gyro_batch[i].sensor_num, 2, j)].visible = show_batch
             }
         }
     }
