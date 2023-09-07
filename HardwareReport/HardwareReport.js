@@ -994,9 +994,11 @@ function load_log(log_file) {
 
     for (let i = 0; i < log.messages.PARM.Name.length; i++) {
         params[log.messages.PARM.Name[i]] = log.messages.PARM.Value[i]
-        const default_val = log.messages.PARM.Default[i]
-        if (!isNaN(default_val)) {
-            defaults[log.messages.PARM.Name[i]] = default_val
+        if ("Default" in log.messages.PARM) {
+            const default_val = log.messages.PARM.Default[i]
+            if (!isNaN(default_val)) {
+                defaults[log.messages.PARM.Name[i]] = default_val
+            }
         }
     }
     delete log.messages.PARM
@@ -1196,8 +1198,10 @@ function load_log(log_file) {
         performance_time.data[0].x = time
         performance_time.data[0].y = array_inverse(array_scale(Array.from(log.messages.PM.MaxT), 1 / 1000000))
 
-        performance_time.data[1].x = time
-        performance_time.data[1].y = Array.from(log.messages.PM.LR)
+        if ("LR" in log.messages.PM) {
+            performance_time.data[1].x = time
+            performance_time.data[1].y = Array.from(log.messages.PM.LR)
+        }
 
         Plotly.redraw(plot)
 
