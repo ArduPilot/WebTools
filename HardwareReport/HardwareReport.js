@@ -372,7 +372,7 @@ function get_compass_param_names(index) {
         motor += index
         scale += index
         orient += index
-        external += index
+        external = "COMPASS_EXTERN" + index
         id += index
     }
 
@@ -422,6 +422,7 @@ function load_compass(log) {
 
         return { id: id,
                  use: params[names.use],
+                 external: params[names.external],
                  offsets_set: param_array_configured(offsets, 0.0),
                  matrix_set: param_array_configured(diagonals, 1.0) | param_array_configured(off_diagonals, 0.0),
                  motor_set: param_array_configured(motor, 0.0),
@@ -477,6 +478,9 @@ function load_compass(log) {
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Use: " + (params.use ? "\u2705" : "\u274C")))
+
+        fieldset.appendChild(document.createElement("br"))
+        fieldset.appendChild(document.createTextNode("External: " + ((params.external > 0) ? "\u2705" : "\u274C")))
 
         fieldset.appendChild(document.createElement("br"))
         fieldset.appendChild(document.createTextNode("Calibrated: " + (params.offsets_set ? "\u2705" : "\u274C")))
