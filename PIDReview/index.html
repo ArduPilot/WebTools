@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot PID Review Tool</title>
+<script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
+<script src="https://unpkg.com/mathjs/lib/browser/math.js"></script>
+<script src="https://unpkg.com/browser-cjs/require.min.js"></script>
+<script type="text/javascript" src="PIDReview.js"></script>
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+
+</head>
+<table style="width:1200px"><tr><td>
+    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+    <br>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<table><tr><td style="width:1200px">
+<h1 style="text-align:center">ArduPilot PID Review Tool</h1>
+</td></tr></table>
+
+<body>
+
+<style>
+    div.plotly-notifier {
+        visibility: hidden;
+    }
+
+    label.parameter_input_label {
+        display: inline-block;
+        width: 165px;
+        margin:5px 0px;
+    }
+</style>
+
+<table>
+<tr>
+<td style="width: 30px;"></td>
+<td>
+<fieldset style="width:1100px">
+    <legend>Setup</legend>
+    <table>
+        <td>
+            <fieldset style="width:200px;height:80px">
+                <legend>FFT Settings</legend>
+                <table>
+                    <td style="width: 125px;">
+                        <label for="FFTWindow_size">Window size</label>
+                    </td>
+                    <td>
+                        <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="window_size_inc(event); clear_calculation()" style="width:50px"/>
+                    </td>
+                </table>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:200px;height:80px">
+                <legend>Analysis time</legend>
+                <label for="TimeStart">Start (s)</label>
+                <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/><br><br>
+                <label for="TimeEnd">End (s)</label>
+                <input id="TimeEnd" name="TimeEnd" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:200px;height:80px">
+                <legend>Axis</legend>
+                <table>
+                    <td>
+                        <input type="radio" id="type_PIDR" name="Axis">
+                        <label for="type_PIDR">PIDR</label><br>
+                        <input type="radio" id="type_PIDP" name="Axis">
+                        <label for="type_PIDP">PIDP</label><br>
+                        <input type="radio" id="type_PIDY" name="Axis">
+                        <label for="type_PIDY">PIDY</label><br>
+                    </td>
+                    <td>
+                        <input type="radio" id="type_PIQR" name="Axis">
+                        <label for="type_PIQR">PIQR</label><br>
+                        <input type="radio" id="type_PIQP" name="Axis">
+                        <label for="type_PIQP">PIQP</label><br>
+                        <input type="radio" id="type_PIQY" name="Axis">
+                        <label for="type_PIQY">PIQY</label><br>
+                    </td>
+                </table>
+            </fieldset>
+        </td>
+        <td style="width: 10px;"></td>
+        <td>
+            <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
+            <input type="button" id="calculate" value="Calculate" onclick="re_calc()">
+        </td>
+    </table>
+</fieldset>
+</td>
+</tr>
+</table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Flight Data</h2>
+</td></tr></table>
+
+<div id="FlightData" style="width:1200px;height:450px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Time domain</h2>
+</td></tr></table>
+
+<div id="TimePlot" style="width:1200px;height:450px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Frequency domain</h2>
+</td></tr></table>
+
+<table>
+    <tr>
+        <td style="width: 50px;"></td>
+        <td>
+            <fieldset style="width:300px">
+                <legend>PID</legend>
+                <p>
+                    <fieldset style="width:300px">
+                        <legend ondblclick="update_hidden(this)">Inputs</legend>
+                        <input type="checkbox" id="PIDX_target" onchange="update_hidden(this)">
+                        <label for="PIDX_target">Target</label>
+
+                        <input type="checkbox" id="PIDX_actual" onchange="update_hidden(this)">
+                        <label for="PIDX_actual">Actual</label>
+
+                        <input type="checkbox" id="PIDX_error" onchange="update_hidden(this)">
+                        <label for="PIDX_error">Error</label>
+                    </fieldset>
+                </p>
+                <p>
+                    <fieldset style="width:300px">
+                        <legend ondblclick="update_hidden(this)">Components</legend>
+                        <input type="checkbox" id="PIDX_P" onchange="update_hidden(this)">
+                        <label for="PIDX_P">P</label>
+
+                        <input type="checkbox" id="PIDX_I" onchange="update_hidden(this)">
+                        <label for="PIDX_I">I</label>
+
+                        <input type="checkbox" id="PIDX_D" onchange="update_hidden(this)">
+                        <label for="PIDX_D">D</label>
+
+                        <input type="checkbox" id="PIDX_FF" onchange="update_hidden(this)">
+                        <label for="PIDX_FF">FF</label>
+                    </fieldset>
+                </p>
+                <p>
+                    <fieldset style="width:300px">
+                        <legend ondblclick="update_hidden(this)">Output</legend>
+                        <input type="checkbox" id="PIDX_sum_P" onchange="update_hidden(this)">
+                        <label for="PIDX_P">PID + FF</label>
+                    </fieldset>
+                </p>
+                Logging rate: <label id="FFT_infoA"></label> Hz<br><br>
+                Frequency resolution: <label id="FFT_infoB"></label> Hz
+             </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:600px; min-height:300px">
+                <legend ondblclick="update_hidden(this)">Tests</legend>
+
+            </fieldset>
+        </td>
+    </tr>
+</table>
+
+<div id="FFTPlot" style="width:1200px;height:450px"></div>
+
+<table>
+    <tr>
+        <td>
+            <fieldset style="width:300px;height:40px">
+                <legend>Amplitude scale</legend>
+                <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
+                <label for="ScaleLinear">Linear</label>
+                <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
+                <label for="ScaleLog">dB</label>
+                <input type="radio" id="ScalePSD" name="Scale" onchange="redraw()">
+                <label for="ScalePSD">Power Spectral Density</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:260px;height:40px">
+                <legend>Frequency scale</legend>
+                <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
+                <label for="freq_ScaleLinear">Linear</label>
+                <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
+                <label for="freq_ScaleLog">Log</label>
+                &nbsp&nbsp&nbsp&nbsp
+                <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
+                <label for="freq_Scale_Hz">Hz</label>
+                <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
+                <label for="freq_Scale_RPM">RPM</label>
+            </fieldset>
+        </td>
+    </tr>
+</table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">PID Spectrogram</h2>
+</td></tr></table>
+
+<div id="Spectrogram" style="width:1200px;height:450px"></div>
+
+<table>
+    <tr>
+        <td style="width: 100px;"></td>
+        <td>
+            <fieldset style="width:125px;height:40px">
+                <legend>Gyro instance</legend>
+                <input type="radio" id="SpecGyroInst0" name="SpecGyroInst" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroInst0">1</label>
+
+                <input type="radio" id="SpecGyroInst1" name="SpecGyroInst" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroInst1">2</label>
+
+                <input type="radio" id="SpecGyroInst2" name="SpecGyroInst" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroInst2">3</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:350px;height:40px">
+                <legend>Filtering</legend>
+                <input type="radio" id="SpecGyroPre" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroPre">Pre-filter</label>
+
+                <input type="radio" id="SpecGyroPost" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroPost">Post-filter</label>
+
+                <input type="radio" id="SpecGyroEstPost" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroEstPost">Estimated post-filter</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:125px;height:40px">
+                <legend>Axis</legend>
+                <input type="radio" id="SpecGyroAxisX" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroAxisX">X</label>
+
+                <input type="radio" id="SpecGyroAxisY" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroAxisY">Y</label>
+
+                <input type="radio" id="SpecGyroAxisZ" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
+                <label for="SpecGyroAxisZ">Z</label>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:240px;height:40px">
+                <legend>Notch tracking</legend>
+                <input type="checkbox" id="SpecNotch1Show" name="SpecNotch1Show" onchange="update_hidden_spec(this)">
+                <label for="SpecNotch1Show">Show notch 1</label>
+
+                <input type="checkbox" id="SpecNotch2Show" name="SpecNotch2Show" onchange="update_hidden_spec(this)">
+                <label for="SpecNotch2Show">Show notch 2</label>
+            </fieldset>
+        </td>
+    </tr>
+</table>
+
+</body>
+
+<script>
+    setup_plots()
+    reset()
+
+    function readFile(e) {
+        const file = e.files[0]
+        if (file == null) {
+            return
+        }
+        let reader = new FileReader()
+        reader.onload = function (e) {
+            load(reader.result)
+        }
+        reader.readAsArrayBuffer(file)
+    }
+
+</script>
