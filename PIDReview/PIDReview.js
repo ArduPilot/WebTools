@@ -43,16 +43,16 @@ function rfft_freq(len, d) {
     return freq
 }
 
-function run_fft(batch, window_size, window_spacing, windowing_function, fft) {
-    const num_points = batch.x.length
+function run_fft(data, keys, window_size, window_spacing, windowing_function, fft) {
+    const num_points = data[keys[0]].length
     const real_len = real_length(window_size)
     const num_windows = Math.floor((num_points-window_size)/window_spacing) + 1
 
-    var fft_x = new Array(num_windows)
-    var fft_y = new Array(num_windows)
-    var fft_z = new Array(num_windows)
-
-    var center_sample = new Array(num_windows)
+    // Allocate for each window
+    var ret = { center: new Array(num_windows) }
+    for (const key of keys) {
+        ret[key] = new Array(num_windows)
+    }
 
     // Pre-allocate scale array.
     // double positive spectrum to account for discarded energy in the negative spectrum
@@ -67,47 +67,43 @@ function run_fft(batch, window_size, window_spacing, windowing_function, fft) {
     }
     scale[real_len-1] = end_scale
 
-    var result = [fft.createComplexArray(), fft.createComplexArray(), fft.createComplexArray()]
+    var result = fft.createComplexArray()
     for (var i=0;i<num_windows;i++) {
         // Calculate the start of each window
         const window_start = i * window_spacing
         const window_end = window_start + window_size
 
         // Take average time for window
-        center_sample[i] = window_start + window_size * 0.5
+        ret.center[i] = window_start + window_size * 0.5
 
-        // Get data and apply windowing function
-        let x_windowed = batch.x.slice(window_start, window_end)
-        let y_windowed = batch.y.slice(window_start, window_end)
-        let z_windowed = batch.z.slice(window_start, window_end)
-        for (let j=0;j<window_size;j++) {
-            x_windowed[j] *= windowing_function[j]
-            y_windowed[j] *= windowing_function[j]
-            z_windowed[j] *= windowing_function[j]
+        for (const key of keys) {
+
+            // Get data and apply windowing function
+            var windowed = data[key].slice(window_start, window_end)
+            for (let j=0;j<window_size;j++) {
+                windowed[j] *= windowing_function[j]
+            }
+
+            // Run fft
+            fft.realTransform(result, windowed)
+
+            // Allocate for result
+            ret[key][i] = new Array(real_len)
+
+            // Take abs and apply scale
+            // fft.js uses interleaved complex numbers, [ real0, imaginary0, real1, imaginary1, ... ]
+            for (let j=0;j<real_len;j++) {
+                const index = j*2
+                ret[key][i][j] = ((result[index]**2 + result[index+1]**2)**0.5) * scale[j]
+            }
         }
-
-        // Run fft
-        fft.realTransform(result[0], x_windowed)
-        fft.realTransform(result[1], y_windowed)
-        fft.realTransform(result[2], z_windowed)
-
-        fft_x[i] = new Array(real_len)
-        fft_y[i] = new Array(real_len)
-        fft_z[i] = new Array(real_len)
-
-        // Take abs and apply scale
-        // fft.js uses interleaved complex numbers, [ real0, imaginary0, real1, imaginary1, ... ]
-        for (let j=0;j<real_len;j++) {
-            const index = j*2
-            fft_x[i][j] = ((result[0][index]**2 + result[0][index+1]**2)**0.5) * scale[j]
-            fft_y[i][j] = ((result[1][index]**2 + result[1][index+1]**2)**0.5) * scale[j]
-            fft_z[i][j] = ((result[2][index]**2 + result[2][index+1]**2)**0.5) * scale[j]
-        }
-
     }
 
-    return {x:fft_x, y:fft_y, z:fft_z, center:center_sample}
+    return ret
 }
+
+// Keys in data object to run FFT of
+const fft_keys = ["Tar", "Act", "Err", "P", "I", "D", "FF", "Out"]
 
 function run_batch_fft(data_set) {
 
@@ -115,70 +111,74 @@ function run_batch_fft(data_set) {
     const window_size = parseInt(document.getElementById("FFTWindow_size").value)
     if (!Number.isInteger(Math.log2(window_size))) {
         alert('Window size must be a power of two')
-        throw new Error();
+        throw new Error()
     }
+
+    const num_sets = data_set.length
 
     // Hard code 50% overlap
     const window_overlap = 0.5
     const window_spacing = Math.round(window_size * (1 - window_overlap))
 
-
     // Get windowing function and correction factors for use later when plotting
     const windowing_function = hanning(window_size)
     const window_correction = window_correction_factors(windowing_function)
 
-    // Get bins
-    var bins = rfft_freq(window_size, sample_time)
-
     // FFT library
     const fft = new FFT_lib(window_size);
 
-    for (let j=0; j<2; j++) {
-
+    // Calculate average sample time
+    var sample_rate_sum = 0
+    var sample_rate_count = 0
+    for (let j=0; j<num_sets; j++) {
         const num_batch = data_set.length
-
-        // Calculate average sample time
-        var sample_rate_sum = 0
-        var sample_rate_count = 0
         for (let i=0;i<num_batch;i++) {
-            if (data_set[i].x.length < window_size) {
+            if (data_set[j][i][fft_keys[0]].length < window_size) {
                 // Log section is too short, skip
                 continue
             }
             sample_rate_count++
-            sample_rate_sum += data_set[0].sample_rate
+            sample_rate_sum += data_set[j][i].sample_rate
         }
-        const sample_time = sample_rate_count / sample_rate_sum
+    }
+    const sample_time = sample_rate_count / sample_rate_sum
 
-        var x = []
-        var y = []
-        var z = []
+    for (let j=0; j<num_sets; j++) {
+        data_set[j].FFT = { time: [] }
+        for (const key of fft_keys) {
+            data_set[j].FFT[key] = []
+        }
 
-        var time = []
-
+        const num_batch = data_set[j].length
         for (let i=0;i<num_batch;i++) {
-            if (data_set[i].x.length < window_size) {
+            if (data_set[j][i].Tar.length < window_size) {
                 // Log section is too short, skip
                 continue
             }
-            var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, fft)
+            var ret = run_fft(data_set[j][i], fft_keys, window_size, window_spacing, windowing_function, fft)
 
-            time.push(...array_offset(array_scale(ret.center, sample_time), data_set[i].sample_time))
-            x.push(...ret.x)
-            y.push(...ret.y)
-            z.push(...ret.z)
-
+            data_set[j].FFT.time.push(...array_offset(array_scale(ret.center, sample_time), data_set[j][i].time[0]))
+            for (const key of fft_keys) {
+                data_set[j].FFT[key].push(...ret[key])
+            }
         }
     }
 
-    return { bins: bins, time: time, average_sample_rate: 1/sample_time, window_size: window_size, correction: window_correction, x: x, y: y, z: z}
+    // Get bins and other useful stuff
+    data_set.FFT = { bins: rfft_freq(window_size, sample_time),
+                     average_sample_rate: 1/sample_time,
+                     window_size: window_size,
+                     correction: window_correction }
+
 }
 
 // Get index into FFT data array
-var axis = ["X" , "Y", "Z"]
-var plot_types = ["Pre-filter", "Post-filter", "Estimated post"]
-function get_FFT_data_index(gyro_num, plot_type, axi) {
-    return gyro_num*plot_types.length*axis.length + plot_type*axis.length + axi
+function get_axis_index() {
+    for (let i = 0; i < PID_log_messages.length; i++) {
+        if (document.getElementById("type_" + PID_log_messages[i].id).checked) {
+            return i
+        }
+    }
 }
 
 // Attempt to put page back to for a new log
@@ -193,9 +193,13 @@ function reset() {
     }
 
     // Clear all plot data
-    for (let i = 0; i < time_domain.data.length; i++) {
-        time_domain.data[i].x = []
-        time_domain.data[i].y = []
+    for (let i = 0; i < TimeInputs.data.length; i++) {
+        TimeInputs.data[i].x = []
+        TimeInputs.data[i].y = []
+    }
+    for (let i = 0; i < TimeOutputs.data.length; i++) {
+        TimeOutputs.data[i].x = []
+        TimeOutputs.data[i].y = []
     }
     for (let i = 0; i < fft_plot.data.length; i++) {
         fft_plot.data[i].x = []
@@ -208,15 +212,28 @@ function reset() {
 
     document.getElementById("calculate").disabled = true
 
+    // Disable key checkboxes by default
+    for (const key of fft_keys) {
+        const checkbox = document.getElementById("PIDX_" + key)
+        checkbox.checked = false
+        checkbox.disabled = true
+    }
+
+    // Check target and actual
+    document.getElementById("PIDX_Tar").checked = true
+    document.getElementById("PIDX_Act").checked = true
+
+    // Show output on spectrogram by default
+    document.getElementById("Spec_Out").checked = true
+
 }
 
 // Setup plots with no data
 var flight_data = {}
-var time_domain = {}
+var TimeInputs = {}
+var TimeOutputs = {}
 var fft_plot = {}
 var Spectrogram = {}
-var Bode = {}
-const max_num_harmonics = 8
 function setup_plots() {
 
     const time_scale_label = "Time (s)"
@@ -300,30 +317,49 @@ function setup_plots() {
 
         const auto_range_key = 'xaxis.autorange'
         if ((data[auto_range_key] !== undefined) && (data[auto_range_key] == true)) {
-            range_update([Gyro_batch.start_time, Gyro_batch.end_time])
+            range_update([PID_log_messages.start_time, PID_log_messages.end_time])
         }
 
     })
 
     // Time domain plot
-    const pid_items = ["Target","Actual","Error","P","I","D","FF","Output"]
+    const pid_inputs = ["Target","Actual","Error"]
 
-    time_domain.data = []
-    for (const item of pid_items) {
-        time_domain.data.push({ mode: "lines",
+    TimeInputs.data = []
+    for (const item of pid_inputs) {
+        TimeInputs.data.push({ mode: "lines",
                                 name: item,
                                 meta: item,
                                 hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}" })
     }
 
-    time_domain.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+    TimeInputs.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
                                 margin: { b: 50, l: 50, r: 50, t: 20 },
                                 xaxis: { title: {text: time_scale_label } },
                                 yaxis: { title: {text: "" } }}
 
-    var plot = document.getElementById("TimePlot")
+    var plot = document.getElementById("TimeInputs")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, time_domain.data, time_domain.layout, {displaylogo: false})
+    Plotly.newPlot(plot, TimeInputs.data, TimeInputs.layout, {displaylogo: false})
+
+
+    const pid_outputs = ["P","I","D","FF","Output"]
+    TimeOutputs.data = []
+    for (const item of pid_outputs) {
+        TimeOutputs.data.push({ mode: "lines",
+                                name: item,
+                                meta: item,
+                                hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}" })
+    }
+
+    TimeOutputs.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                                margin: { b: 50, l: 50, r: 50, t: 20 },
+                                xaxis: { title: {text: time_scale_label } },
+                                yaxis: { title: {text: "" } }}
+
+    var plot = document.getElementById("TimeOutputs")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, TimeOutputs.data, TimeOutputs.layout, {displaylogo: false})
 
 
     amplitude_scale = get_amplitude_scale()
@@ -331,22 +367,6 @@ function setup_plots() {
 
     // FFT plot setup
     fft_plot.data = []
-    for (let i=0;i<3;i++) {
-        // For each gyro
-        for (let n=0;n<plot_types.length;n++) {
-            // Each type of plot
-            for (let j=0;j<axis.length;j++) {
-                // For each axis
-                fft_plot.data[get_FFT_data_index(i, n, j)] = { mode: "lines",
-                                                                name: axis[j] + " " + plot_types[n],
-                                                                // this extra data allows us to put the name in the hover tool tip
-                                                                meta: (i+1) + " " + axis[j] + " " + plot_types[n],
-                                                                legendgroup: i,
-                                                                legendgrouptitle: { text: "Gyro " + (i+1) } }
-            }
-        }
-    }
-
     fft_plot.layout = {
         xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
         yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
@@ -368,26 +388,6 @@ function setup_plots() {
         zsmooth: "best",
         hovertemplate: ""
     }]
-
-    // Add tracking lines
-    // Two harmonic notch filters each with upto 8 harmonics
-    for (let i=0;i<2;i++) {
-        let Group_name = "Notch " + (i+1)
-        let dash = (i == 0) ? "solid" : "dot"
-        for (let j=0;j<max_num_harmonics;j++) {
-            let name = (j == 0) ? "Fundamental" : "Harmonic " + (j+1)
-            Spectrogram.data.push({
-                type:"scatter",
-                mode: "lines",
-                line: { width: 4, dash: dash },
-                visible: false,
-                name: name,
-                meta: Group_name + "<br>" + name,
-                legendgroup: i,
-                legendgrouptitle: { text: "" }
-            })
-        }
-    }
 
     // Define Layout
     Spectrogram.layout = {
@@ -432,8 +432,16 @@ function setup_plots() {
     link_plot_axis_range([["FFTPlot", "x", "", fft_plot],
                           ["Spectrogram", "y", "", Spectrogram]])
 
+    // Link time axis
+    link_plot_axis_range([["TimeInputs", "x", "", TimeInputs],
+                          ["TimeOutputs", "x", "", TimeOutputs],
+                          ["Spectrogram", "x", "", Spectrogram]])
+
+
     // Link all reset calls
-    const reset_link = [["FFTPlot", fft_plot],
+    const reset_link = [["TimeInputs", TimeInputs],
+                        ["TimeOutputs", TimeOutputs],
+                        ["FFTPlot", fft_plot],
                         ["Spectrogram", Spectrogram]]
 
     for (let i = 0; i<reset_link.length; i++) {
@@ -475,16 +483,50 @@ function setup_plots() {
     }
 }
 
+// Add data sets to FFT plot
+const plot_types = ["Target", "Actual", "Error", "P", "I", "D", "FF", "Output"]
+function get_FFT_data_index(set_num, plot_type) {
+    return set_num*plot_types.length + plot_type
+}
+
+function setup_FFT_data() {
+
+    const PID = PID_log_messages[get_axis_index()]
+
+    // Add group for each param set
+    const num_sets = PID.params.sets.length
+    for (let i = 0; i < num_sets; i++) {
+        for (let j = 0; j < plot_types.length; j++) {
+            const index = get_FFT_data_index(i, j)
+
+            // Add set number if multiple sets
+            var meta_prefix = ""
+            if (num_sets > 1) {
+                meta_prefix = (i+1) + " "
+            }
+
+            // For each axis
+            fft_plot.data[index] = { mode: "lines",
+                                     name: plot_types[j],
+                                     meta: meta_prefix + plot_types[j],
+                                     hovertemplate: "" }
+
+            // Add legend groups if multiple sets
+            if (num_sets > 1) {
+                fft_plot.data[index].legendgroup = i
+                fft_plot.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
+            }
+        }
+    }
+
+}
+
 // Calculate if needed and re-draw, called from calculate button
 function re_calc() {
 
     const start = performance.now()
 
     calculate()
-
-    load_filters()
-
-    calculate_transfer_function()
 
     redraw()
 
@@ -494,17 +536,20 @@ function re_calc() {
 
 // Force full re-calc on next run, on window size change
 function clear_calculation() {
-    if (Gyro_batch == null) {
+    if (PID_log_messages == null) {
         return
     }
     // Enable button to fix
     document.getElementById("calculate").disabled = false
 
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if (Gyro_batch[i] == null) {
+    for (let i = 0; i < PID_log_messages.length; i++) {
+        if ((PID_log_messages[i] == null) || (PID_log_messages[i].sets == null)) {
             continue
         }
-        Gyro_batch[i].FFT = null
+        for (const set of PID_log_messages[i].sets) {
+            set.FFT = null
+        }
+        PID_log_messages[i].sets.FFT = null
     }
 }
 
@@ -513,48 +558,13 @@ function calculate() {
     // Disable button, calculation is now upto date
     document.getElementById("calculate").disabled = true
 
-    let changed = false
     for (let i = 0; i < PID_log_messages.length; i++) {
         if (!PID_log_messages[i].have_data) {
             continue
         }
-        if (PID_log_messages[i].FFT == null) {
-            PID_log_messages[i].FFT = run_batch_fft(PID_log_messages[i])
-            changed = true
-        }
-    }
-    if (!changed) {
-        return
+        run_batch_fft(PID_log_messages[i].sets)
     }
 
-    // Set FFT info
-    var set_batch_len_msg = false
-    for (let i = 0; i < 3; i++) {
-        let sample_rate = 0
-        let window_size = 0
-        let count = 0
-        for (let j = 0; j < Gyro_batch.length; j++) {
-            if ((Gyro_batch[j] == null) || (Gyro_batch[j].sensor_num != i) || (Gyro_batch[j].FFT == null)) {
-                continue
-            }
-            sample_rate += Gyro_batch[j].FFT.average_sample_rate
-            window_size += Gyro_batch[j].FFT.window_size
-            count++
-        }
-        if (count == 0) {
-            continue
-        }
-        sample_rate /= count
-        window_size /= count
-
-        document.getElementById("Gyro" + i + "_FFT_infoA").innerHTML = (sample_rate).toFixed(2)
-        document.getElementById("Gyro" + i + "_FFT_infoB").innerHTML = (sample_rate/window_size).toFixed(2)
-
-        if (set_batch_len_msg == false) {
-            set_batch_len_msg = true
-            document.getElementById("FFTWindow_size").value = window_size
-        }
-    }
 }
 
 // Get configured amplitude scale
@@ -644,56 +654,73 @@ function find_end_index(time) {
     return end_index
 }
 
-function get_phase(H) {
+function add_param_sets() {
+    let fieldset = document.getElementById("test_sets")
 
-    let phase = array_scale(complex_phase(H), 180/Math.PI)
-    const len = phase.length
+    // Remove all children
+    fieldset.replaceChildren(fieldset.children[0])
 
-    // Notches result in large positive phase changes, bias the unwrap to do a better job
-    const neg_threshold = 45
-    const pos_threshold = 360 - neg_threshold
+    const PID = PID_log_messages[get_axis_index()]
 
-    let unwrapped = new Array(len)
+    // Add table
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
 
-    unwrapped[0] = phase[0]
-    for (let i = 1; i < len; i++) {
-        let phase_diff = phase[i] - phase[i-1]
-        if (phase_diff >= pos_threshold) {
-            phase_diff -= 360
-        } else if (phase_diff <= -neg_threshold) {
-            phase_diff += 360
-        }
-        unwrapped[i] = unwrapped[i-1] + phase_diff
+    fieldset.appendChild(table)
+
+    // Add headers
+    let header = document.createElement("tr")
+    table.appendChild(header)
+
+    function set_cell_style(cell) {
+        cell.style.border = "1px solid #000"
+        cell.style.padding = "8px"
     }
 
-    return unwrapped
-}
+    let item = document.createElement("th")
+    header.appendChild(item)
+    item.appendChild(document.createTextNode("Show"))
+    set_cell_style(item)
 
-function phase_scale(phase) {
+    const names = get_PID_param_names(PID.params.prefix)
+    for (const [name, param_string] of Object.entries(names)) {
+        let item = document.createElement("th")
+        header.appendChild(item)
+        set_cell_style(item)
 
-    if (!document.getElementById("ScaleWrap").checked) {
-        return phase
+        item.appendChild(document.createTextNode(name.replace("_", " ")))
+        item.setAttribute('title', param_string)
     }
 
-    // Wrap all arrays based on first
-    const arrays = phase.length
-    const len = phase[0].length
-    for (let i = 1; i < len; i++) {
-        if (phase[0][i] > 180) {
-            for (let j = 0; j < arrays; j++) {
-                phase[j][i] -= 360
-            }
-        } else if (phase[0][i] < -180) {
-            for (let j = 0; j < arrays; j++) {
-                phase[j][i] += 360
-            }
-        }
-        if (Math.abs(phase[0][i]) > 180) {
-            i--
+    // Add line for each param set
+    const num_sets = PID.params.sets.length
+    for (let i = 0; i < num_sets; i++) {
+        const set = PID.params.sets[i]
+
+        let row = document.createElement("tr")
+        table.appendChild(row)
+
+        let item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item)
+
+        let checkbox = document.createElement("input")
+        checkbox.setAttribute('type', "checkbox")
+        checkbox.setAttribute('id', "set_selection_" + i)
+        checkbox.setAttribute('onchange', "update_hidden(this)")
+        checkbox.checked = true
+        checkbox.disabled = num_sets == 1
+        item.appendChild(checkbox)
+
+        for (const name of Object.keys(names)) {
+            let item = document.createElement("td")
+            row.appendChild(item)
+            set_cell_style(item)
+
+            item.appendChild(document.createTextNode(set[name].toFixed(4)))
         }
     }
 
-    return phase
 }
 
 var amplitude_scale
@@ -703,38 +730,64 @@ function redraw() {
         return
     }
 
-    const PID = PID_log_messages[0]
+    const PID = PID_log_messages[get_axis_index()]
 
-    // Time domain plot
-    for (let i = 0; i < time_domain.data.length; i++) {
-        time_domain.data[i].x = []
-        time_domain.data[i].y = []
+    // Time domain plots
+    for (let i = 0; i < TimeInputs.data.length; i++) {
+        TimeInputs.data[i].x = []
+        TimeInputs.data[i].y = []
+    }
+    for (let i = 0; i < TimeOutputs.data.length; i++) {
+        TimeOutputs.data[i].x = []
+        TimeOutputs.data[i].y = []
     }
     for (const set of PID.sets) {
         for (let i = 0; i < set.length; i++) {
             if (i > 0) {
                 // Push NaN to show gap in data
-                for (let j = 0; j < time_domain.data.length; j++) {
-                    time_domain.data[j].x.push(NaN)
-                    time_domain.data[j].y.push(NaN)
+                for (let j = 0; j < TimeInputs.data.length; j++) {
+                    TimeInputs.data[j].x.push(NaN)
+                    TimeInputs.data[j].y.push(NaN)
+                }
+                for (let j = 0; j < TimeOutputs.data.length; j++) {
+                    TimeOutputs.data[j].x.push(NaN)
+                    TimeOutputs.data[j].y.push(NaN)
                 }
             }
             // Same x axis for all
-            for (let j = 0; j < time_domain.data.length; j++) {
-                time_domain.data[j].x.push(...set[i].time)
+            for (let j = 0; j < TimeInputs.data.length; j++) {
+                TimeInputs.data[j].x.push(...set[i].time)
             }
-            time_domain.data[0].y.push(...set[i].Tar)
-            time_domain.data[1].y.push(...set[i].Act)
-            time_domain.data[2].y.push(...set[i].Err)
-            time_domain.data[3].y.push(...set[i].P)
-            time_domain.data[4].y.push(...set[i].I)
-            time_domain.data[5].y.push(...set[i].D)
-            time_domain.data[6].y.push(...set[i].FF)
+            TimeInputs.data[0].y.push(...set[i].Tar)
+            TimeInputs.data[1].y.push(...set[i].Act)
+            TimeInputs.data[2].y.push(...set[i].Err)
+
+            for (let j = 0; j < TimeOutputs.data.length; j++) {
+                TimeOutputs.data[j].x.push(...set[i].time)
+            }
+            TimeOutputs.data[0].y.push(...set[i].P)
+            TimeOutputs.data[1].y.push(...set[i].I)
+            TimeOutputs.data[2].y.push(...set[i].D)
+            TimeOutputs.data[3].y.push(...set[i].FF)
+            TimeOutputs.data[4].y.push(...set[i].Out)
         }
     }
-    Plotly.redraw("TimePlot")
 
-    return
+    // Set X axis to selected time range
+    const time_range = [ parseFloat(document.getElementById("TimeStart").value), parseFloat(document.getElementById("TimeEnd").value) ]
+
+    TimeInputs.layout.xaxis.autorange = false
+    TimeInputs.layout.xaxis.range = time_range
+
+    TimeOutputs.layout.xaxis.autorange = false
+    TimeOutputs.layout.xaxis.range = time_range
+
+    Plotly.redraw("TimeInputs")
+    Plotly.redraw("TimeOutputs")
+
+    // Populate logging rate and frequency resolution
+    document.getElementById("FFT_infoA").innerHTML = (PID.sets.FFT.average_sample_rate).toFixed(2)
+    document.getElementById("FFT_infoB").innerHTML = (PID.sets.FFT.average_sample_rate / PID.sets.FFT.window_size).toFixed(2)
 
     // Graph config
     amplitude_scale = get_amplitude_scale()
@@ -750,263 +803,76 @@ function redraw() {
         fft_plot.data[i].hovertemplate = fft_hovertemplate
     }
 
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
+    // Windowing amplitude correction depends on spectrum of interest and resolution
+    const FFT_resolution = PID.sets.FFT.average_sample_rate/PID.sets.FFT.window_size
+    const window_correction = amplitude_scale.window_correction(PID.sets.FFT.correction, FFT_resolution)
+
+     // Set scaled x data
+    const scaled_bins = frequency_scale.fun(PID.sets.FFT.bins)
+
+    const num_sets = PID.sets.length
+    for (let i = 0; i < num_sets; i++) {
+        const set = PID.sets[i]
+        if (set.FFT == null) {
             continue
         }
+        const show_set = document.getElementById("set_selection_" + i).checked
 
         // Find the start and end index
-        const start_index = find_start_index(Gyro_batch[i].FFT.time)
-        const end_index = find_end_index(Gyro_batch[i].FFT.time)+1
-
-        // Take mean from start to end
-        const fft_len = Gyro_batch[i].FFT.x[0].length
-        var fft_mean_x = (new Array(fft_len)).fill(0)
-        var fft_mean_y = (new Array(fft_len)).fill(0)
-        var fft_mean_z = (new Array(fft_len)).fill(0)
-        for (let j=start_index;j<end_index;j++) {
-            // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(Gyro_batch[i].FFT.x[j]))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(Gyro_batch[i].FFT.y[j]))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(Gyro_batch[i].FFT.z[j]))
-        }
+        const start_index = find_start_index(set.FFT.time)
+        const end_index = find_end_index(set.FFT.time)+1
 
         // Number of windows averaged
         const mean_length = end_index - start_index
 
-        // Windowing amplitude correction depends on spectrum of interest and resolution
-        const FFT_resolution = Gyro_batch[i].FFT.average_sample_rate/Gyro_batch[i].FFT.window_size
-        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
+        for (let j = 0; j < fft_keys.length; j++) {
+            const key = fft_keys[j]
 
-        // Apply window correction and divide by lenght to take mean
-        const corrected_x = array_scale(fft_mean_x, window_correction / mean_length)
-        const corrected_y = array_scale(fft_mean_y, window_correction / mean_length)
-        const corrected_z = array_scale(fft_mean_z, window_correction / mean_length)
+            var mean = (new Array(set.FFT[key][0].length)).fill(0)
+            for (let k=start_index;k<end_index;k++) {
+                // Add to mean sum
+                mean = array_add(mean, amplitude_scale.fun(set.FFT[key][k]))
+            }
 
-        // Apply aliasing and selected scale, set to y axis
-        fft_plot.data[X_plot_index].y = amplitude_scale.scale(corrected_x)
-        fft_plot.data[Y_plot_index].y = amplitude_scale.scale(corrected_y)
-        fft_plot.data[Z_plot_index].y = amplitude_scale.scale(corrected_z)
+            // Apply window correction and divide by length to take mean
+            const corrected = array_scale(mean, window_correction / mean_length)
 
-        // Set scaled x data
-        const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
-        fft_plot.data[X_plot_index].x = scaled_bins
-        fft_plot.data[Y_plot_index].x = scaled_bins
-        fft_plot.data[Z_plot_index].x = scaled_bins
+            // Find the plot index
+            const plot_index = get_FFT_data_index(i, j)
 
+            // Apply selected scale, set to y axis
+            fft_plot.data[plot_index].y = amplitude_scale.scale(corrected)
+
+            // Set bins
+            fft_plot.data[plot_index].x = scaled_bins
+
+            // Work out if we should show this line
+            const show_key = document.getElementById("PIDX_" + key).checked
+            fft_plot.data[plot_index].visible = show_set && show_key
+
+        }
     }
 
     Plotly.redraw("FFTPlot")
-
-    redraw_post_estimate_and_bode()
 
     redraw_Spectrogram()
 
 }
 
-function redraw_post_estimate_and_bode() {
-    if (Gyro_batch == null) {
-        return
-    }
-
-    // Post filter estimate
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.H == null)) {
-            continue
-        }
-
-        // Windowing amplitude correction depends on spectrum of interest and resolution
-        const FFT_resolution = Gyro_batch[i].FFT.average_sample_rate/Gyro_batch[i].FFT.window_size
-        const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
-
-        // Scale quantization by the window correction factor so correction can be applyed later
-        const quantization_correction = Gyro_batch.quantization_noise * amplitude_scale.quantization_correction(Gyro_batch[i].FFT.correction)
-
-        // Find the start and end index
-        const start_index = find_start_index(Gyro_batch[i].FFT.time)
-        const end_index = find_end_index(Gyro_batch[i].FFT.time)+1
-
-        // Estimate filtered from pre-filter data
-        const fft_len = Gyro_batch[i].FFT.x[0].length
-        let fft_mean_x = (new Array(fft_len)).fill(0)
-        let fft_mean_y = (new Array(fft_len)).fill(0)
-        let fft_mean_z = (new Array(fft_len)).fill(0)
-        for (let j=start_index;j<end_index;j++) {
-            const attenuation = complex_abs(Gyro_batch[i].FFT.H[j])
-
-            // Subtract noise, apply transfer function, re-apply noise
-            // Strictly we need not bother with noise, it makes the estimate less accurate
-            // However it does result in a good match to logged post filter data making it easy to verify the estimates
-            const filtered_x = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.x[j], -quantization_correction), attenuation), quantization_correction)
-            const filtered_y = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.y[j], -quantization_correction), attenuation), quantization_correction)
-            const filtered_z = array_offset(array_mul(array_offset(Gyro_batch[i].FFT.z[j], -quantization_correction), attenuation), quantization_correction)
-
-            // Add to mean sum
-            fft_mean_x = array_add(fft_mean_x, amplitude_scale.fun(filtered_x))
-            fft_mean_y = array_add(fft_mean_y, amplitude_scale.fun(filtered_y))
-            fft_mean_z = array_add(fft_mean_z, amplitude_scale.fun(filtered_z))
-        }
-
-        // Number of windows averaged
-        const mean_length = end_index - start_index
-
-        const corrected_x = array_scale(fft_mean_x, window_correction / mean_length)
-        const corrected_y = array_scale(fft_mean_y, window_correction / mean_length)
-        const corrected_z = array_scale(fft_mean_z, window_correction / mean_length)
-
-        // Get alias helper to fold down frequencies, if enabled
-        let alias = get_alias_obj(Gyro_batch[i].FFT)
-
-        // Get indexs for the lines to be plotted
-        X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
-        Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
-        Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
-
-        // Apply aliasing and selected scale, set to y axis
-        fft_plot.data[X_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_x))
-        fft_plot.data[Y_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_y))
-        fft_plot.data[Z_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_z))
-
-        // Set scaled x data
-        const scaled_bins = frequency_scale.fun(alias.bins)
-        fft_plot.data[X_plot_index].x = scaled_bins
-        fft_plot.data[Y_plot_index].x = scaled_bins
-        fft_plot.data[Z_plot_index].x = scaled_bins
-
-    }
-
-    Plotly.redraw("FFTPlot")
-
-    // Graph config
-    Bode.layout.xaxis.type = frequency_scale.type
-    Bode.layout.xaxis2.type = frequency_scale.type
-    Bode.layout.xaxis2.title.text = frequency_scale.label
-
-    Bode.layout.yaxis.title.text = amplitude_scale.label
-
-    if (document.getElementById("ScaleWrap").checked) {
-        Bode.layout.yaxis2.range = [-180, 180]
-        Bode.layout.yaxis2.autorange = false
-        Bode.layout.yaxis2.fixedrange = true
-    } else {
-        Bode.layout.yaxis2.fixedrange = false
-        Bode.layout.yaxis2.autorange = true
-    }
-
-    const bode_amp_hovertemplate = "<extra></extra>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
-    //Bode.data[0].hovertemplate = bode_amp_hovertemplate
-    Bode.data[2].hovertemplate = bode_amp_hovertemplate
-
-    const bode_phase_hovertemplate = "<extra></extra>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
-    //Bode.data[1].hovertemplate = bode_phase_hovertemplate
-    Bode.data[3].hovertemplate = bode_phase_hovertemplate
-
-    // Work out which index to plot
-    var gyro_instance
-    if (document.getElementById("BodeGyroInst0").checked) {
-        gyro_instance = 0
-    } else if (document.getElementById("BodeGyroInst1").checked) {
-        gyro_instance = 1
-    } else {
-        gyro_instance = 2
-    }
-
-    var index
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.bode == null)) {
-            continue
-        }
-        if (Gyro_batch[i].sensor_num == gyro_instance) {
-            index = i
-        }
-    }
-    if (index == null) {
-        return
-    }
-
-    // Find the start and end index
-    const start_index = find_start_index(Gyro_batch[index].FFT.time)
-    const end_index = find_end_index(Gyro_batch[index].FFT.time)+1
-
-    // Scale factor to get mean from accumulated samples
-    const mean_scale = 1 / (end_index - start_index)
-
-    const H_len = Gyro_batch[index].FFT.bode.H[0][0].length
-    let Amp_mean = (new Array(H_len)).fill(0)
-    let Phase_mean = (new Array(H_len)).fill(0)
-    let Amp_max
-    let Amp_min
-    let Phase_max
-    let Phase_min
-    for (let j=start_index;j<end_index;j++) {
-        const H = Gyro_batch[index].FFT.bode.H[j]
-        const HR_att = complex_abs(H)
-        const HR_phase = get_phase(H)
-        Amp_mean = array_add(Amp_mean, HR_att)
-        Phase_mean = array_add(Phase_mean, HR_phase)
-
-        if (j > start_index) {
-            Amp_max = array_max(Amp_max, HR_att)
-            Amp_min = array_min(Amp_min, HR_att)
-            Phase_max = array_max(Phase_max, HR_phase)
-            Phase_min = array_min(Phase_min, HR_phase)
-        } else {
-            Amp_max = HR_att
-            Amp_min = HR_att
-            Phase_max = HR_phase
-            Phase_min = HR_phase
-        }
-    }
-
-    Amp_mean = array_scale(Amp_mean, mean_scale)
-    Phase_mean = array_scale(Phase_mean, mean_scale)
-
-    const scaled_bode_freq = frequency_scale.fun(Gyro_batch[index].FFT.bode.freq)
-    Bode.data[2].x = scaled_bode_freq
-    Bode.data[3].x = scaled_bode_freq
-
-    const scaled_phase = phase_scale([Phase_mean, Phase_max, Phase_min])
-    Bode.data[2].y = amplitude_scale.scale(Amp_mean)
-    Bode.data[3].y = scaled_phase[0]
-
-    const area_freq = [...scaled_bode_freq, ...scaled_bode_freq.toReversed()]
-    Bode.data[0].x = area_freq
-    Bode.data[0].y = amplitude_scale.scale([...Amp_max, ...Amp_min.toReversed()])
-
-    Bode.data[1].x = area_freq
-    Bode.data[1].y = [...scaled_phase[1], ...scaled_phase[2].toReversed()]
-
-    Plotly.redraw("Bode")
-
-}
-
 function redraw_Spectrogram() {
-
-    // Work out which index to plot
-    var gyro_instance
-    if (document.getElementById("SpecGyroInst0").checked) {
-        gyro_instance = 0
-    } else if (document.getElementById("SpecGyroInst1").checked) {
-        gyro_instance = 1
-    } else {
-        gyro_instance = 2
-    }
-    const post_filter = document.getElementById("SpecGyroPost").checked
-    const estimated = document.getElementById("SpecGyroEstPost").checked
-
-    const batch_instance = find_instance(gyro_instance, post_filter)
-    if (batch_instance == null) {
-        console.log("Could not find matching dataset")
+    if ((PID_log_messages == null) || !PID_log_messages.have_data) {
         return
     }
 
-    var axis
-    if (document.getElementById("SpecGyroAxisX").checked) {
-        axis = "x"
-    } else if (document.getElementById("SpecGyroAxisY").checked) {
-        axis = "y"
-    } else {
-        axis = "z"
+    const PID = PID_log_messages[get_axis_index()]
+
+    // Work which to plot
+    var plot_key
+    for (const key of fft_keys) {
+        if (document.getElementById("Spec_" + key).checked) {
+            plot_key = key
+            break
+        }
     }
 
     // Setup axes
@@ -1019,187 +885,94 @@ function redraw_Spectrogram() {
     Spectrogram.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} s<br>" + frequency_scale.hover("y") + "<br>" + amplitude_scale.hover("z")
     Spectrogram.data[0].colorbar.title.text = amplitude_scale.label
 
-    // Get alias helper to fold down frequencies, if enabled
-    let alias = get_alias_obj(Gyro_batch[batch_instance].FFT) 
-
     // Setup xy data (x and y swapped because transpose flag is set)
-    Spectrogram.data[0].y = frequency_scale.fun(alias.bins)
+    Spectrogram.data[0].y = frequency_scale.fun(PID.sets.FFT.bins)
     Spectrogram.data[0].x = []
-
-    // look for gaps and add null
-    const time_len = Gyro_batch[batch_instance].FFT.time.length
-    let count = 0
-    let last_time = Gyro_batch[batch_instance].FFT.time[0]
-    let section_start = Gyro_batch[batch_instance].FFT.time[0]
-    let skip_flag = []
-    for (let j = 0; j < time_len; j++) {
-        count++
-        const this_time = Gyro_batch[batch_instance].FFT.time[j]
-        const this_dt = this_time - last_time
-        const average_dt = (this_time - section_start) / count
-
-        if (this_dt > average_dt * 2.5) {
-            // Add a gap
-            count = 0;
-            // start gap where next sample would have been expected
-            Spectrogram.data[0].x.push(last_time + average_dt)
-            skip_flag.push(true)
-
-            // End gap when previous sample would be expected
-            Spectrogram.data[0].x.push(this_time - average_dt)
-            skip_flag.push(true)
-
-            section_start = this_time
-        }
-
-        Spectrogram.data[0].x.push(this_time)
-        skip_flag.push(false)
-        last_time = this_time
-    }
+    Spectrogram.data[0].z = []
 
     // Windowing amplitude correction depends on spectrum of interest
-    const FFT_resolution = Gyro_batch[batch_instance].FFT.average_sample_rate/Gyro_batch[batch_instance].FFT.window_size
-    const window_correction = amplitude_scale.window_correction(Gyro_batch[batch_instance].FFT.correction, FFT_resolution)
+    const FFT_resolution = PID.sets.FFT.average_sample_rate/PID.sets.FFT.window_size
+    const window_correction = amplitude_scale.window_correction(PID.sets.FFT.correction, FFT_resolution)
 
-    // Setup z data
-    const len = Spectrogram.data[0].x.length
     const num_bins = Spectrogram.data[0].y.length
-    Spectrogram.data[0].z = new Array(len)
-    let index = 0
-    for (j = 0; j<len; j++) {
-        if (skip_flag[j] == true) {
-            // Add null Z values, this results in a blank section in the plot
-            Spectrogram.data[0].z[j] = new Array(num_bins)
+    const num_sets = PID.sets.length
+    for (let i = 0; i < num_sets; i++) {
+        const set = PID.sets[i]
+        if (set.FFT == null) {
             continue
         }
 
-        var amplitude = array_scale(Gyro_batch[batch_instance].FFT[axis][index], window_correction)
-        if (estimated) {
-            const attenuation = complex_abs(Gyro_batch[batch_instance].FFT.H[index])
-            amplitude = array_offset(array_mul(array_offset(amplitude, -Gyro_batch.quantization_noise), attenuation), Gyro_batch.quantization_noise)
-        }
-        Spectrogram.data[0].z[j] = amplitude_scale.scale(amplitude_scale.fun(alias.apply_amp(amplitude)))
-        index++
-    }
+        // look for gaps and add null
+        const time_len = set.FFT.time.length
+        let count = 0
+        let last_time = set.FFT.time[0]
+        let section_start = set.FFT.time[0]
+        let skip_flag = []
+        for (let j = 0; j < time_len; j++) {
+            count++
+            const this_time = set.FFT.time[j]
+            const this_dt = this_time - last_time
+            const average_dt = (this_time - section_start) / count
 
-    // Setup tracking lines
-    const tracking_hovertemplate = "<extra></extra>%{meta}<br>" +  "%{x:.2f} s<br>" + frequency_scale.hover("y")
-    for (let i=0;i<filters.notch.length;i++) {
-        // Plus one for the spectrogram plot
-        const plot_offset = i * max_num_harmonics + 1
+            if (this_dt > average_dt * 2.5) {
+                // Add a gap
+                count = 0;
+                // start gap where next sample would have been expected
+                Spectrogram.data[0].x.push(last_time + average_dt)
+                skip_flag.push(true)
 
-        // Hide all
-        for (let j=0;j<max_num_harmonics;j++) {
-            Spectrogram.data[plot_offset + j].visible = false
-        }
+                // End gap when previous sample would be expected
+                Spectrogram.data[0].x.push(this_time - average_dt)
+                skip_flag.push(true)
 
-        // Filter not setup
-        if (!filters.notch[i].enabled()) {
-            continue
-        }
-
-        const Group_name = "Notch " + (i+1) + ": " + filters.notch[i].name()
-        const fundamental = filters.notch[i].get_target_freq()
-
-        let time
-        let freq
-        if (!Array.isArray(fundamental.time[0])) {
-            // Single peak
-            time = fundamental.time
-            freq = fundamental.freq
-
-        } else {
-            // Tracking multiple peaks
-            time = []
-            freq = []
-
-            for (let j=0;j<fundamental.time.length;j++) {
-                time.push(...fundamental.time[j])
-                freq.push(...fundamental.freq[j])
-
-                // Add NAN to remove line from end back to the start
-                time.push(NaN)
-                freq.push(NaN)
+                section_start = this_time
             }
 
+            Spectrogram.data[0].x.push(this_time)
+            skip_flag.push(false)
+            last_time = this_time
         }
 
-        // Enable each harmonic
-        const show_notch = document.getElementById("SpecNotch" + (i+1) + "Show").checked
-        for (let j=0;j<max_num_harmonics;j++) {
-            if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
-                continue
+        // Setup z data
+        const len = skip_flag.length
+        for (j = 0; j<len; j++) {
+            if (skip_flag[j] == true) {
+                // Add null Z values, this results in a blank section in the plot
+                Spectrogram.data[0].z.push(new Array(num_bins))
+
+            } else {
+                const amplitude = array_scale(set.FFT[plot_key][j], window_correction)
+                Spectrogram.data[0].z.push(amplitude_scale.scale(amplitude_scale.fun(amplitude)))
             }
-            const harmonic_freq = array_scale(freq, j+1)
-
-            Spectrogram.data[plot_offset + j].visible = show_notch
-            Spectrogram.data[plot_offset + j].x = time
-            Spectrogram.data[plot_offset + j].y = frequency_scale.fun(harmonic_freq)
-            Spectrogram.data[plot_offset + j].hovertemplate = tracking_hovertemplate
-            Spectrogram.data[plot_offset + j].legendgrouptitle.text = Group_name
-        }
-
-    }
-
-    Plotly.redraw("Spectrogram")
-}
-
-// update lines show on spectrogram
-function update_hidden_spec(source) {
-
-    const notch_num = parseFloat(source.id.match(/\d+/g)) - 1
-    const plot_offset = notch_num * max_num_harmonics + 1
-
-    // Hide all
-    for (let j=0;j<max_num_harmonics;j++) {
-        Spectrogram.data[plot_offset + j].visible = false
-    }
-
-    if (source.checked) {
-        // Show those that are enabled
-        for (let j=0;j<max_num_harmonics;j++) {
-            if ((filters.notch[notch_num].harmonics() & (1<<j)) == 0) {
-                continue
-            }
-            Spectrogram.data[plot_offset + j].visible = true
         }
     }
 
     Plotly.redraw("Spectrogram")
-
 }
 
 // Update lines that are shown in FFT plot
 function update_hidden(source) {
 
-    function get_index_from_id(id) {
-        const gyro_instance = parseFloat(id.match(/\d+/g))
+    function set_all_from_id(id, set_to) {
 
-        const post_filter = id.includes("Post")
-        const post_estimate = id.includes("PostEst")
-    
-        var pre_post_index = 0
-        if (post_estimate) {
-            pre_post_index = 2
-        } else if (post_filter) {
-            pre_post_index = 1
-        }
-    
-        const axi = id.substr(id.length - 1)
-    
-        let axi_index
-        for (let j=0;j<3;j++) {
-            if (axis[j] == axi) {
-                axi_index = j
+        var index
+        for (let j = 0; j < fft_keys.length; j++) {
+            const key = fft_keys[j]
+            if (id.endsWith(key)) {
+                index = j
                 break
             }
         }
 
-        if ((gyro_instance == null) || (axi_index == null)) {
-            return
+        var i = index
+        var set = 0
+        while (i < fft_plot.data.length) {
+            const show_set = document.getElementById("set_selection_" + set).checked
+            fft_plot.data[index].visible = set_to && show_set
+            i += fft_keys.length
+            set += 1
         }
 
-        return get_FFT_data_index(gyro_instance, pre_post_index, axi_index)
     }
 
     if (source.constructor.name == "HTMLLegendElement") {
@@ -1219,19 +992,20 @@ function update_hidden(source) {
         // Invert the majority
         const check = checked < (enabled * 0.5)
         for (let i=0; i<checkboxes.length; i++) {
-            if (checkboxes[i].disabled == false) {
-                checkboxes[i].checked = check
-                fft_plot.data[get_index_from_id(checkboxes[i].id)].visible = check
-            }
+            set_all_from_id(checkboxes[i].id, check)
+            checkboxes[i].checked = check
+        }
+
+    } else if (source.id.startsWith("set_selection_")) {
+        const set = parseFloat(source.id.match(/\d+/g))
+        const check = source.checked
+        for (let j = 0; j < fft_keys.length; j++) {
+            const show_key = document.getElementById("PIDX_" + fft_keys[j]).checked
+            fft_plot.data[get_FFT_data_index(set, j)].visible = check && show_key
         }
 
     } else {
-        const index = get_index_from_id(source.id)
-        if (index != null) {
-            // fft line checkbox
-            fft_plot.data[index].visible = source.checked
-
-        }
+        set_all_from_id(source.id, source.checked)
     }
 
     Plotly.redraw("FFTPlot")
@@ -1281,73 +1055,6 @@ function window_size_inc(event) {
     }
     event.target.value = 2**new_exponent
     last_window_size = event.target.value
-}
-
-// build url and query string for current params and open filter tool in new window
-function open_in_filter_tool() {
-
-    // Assume same base
-    let url =  new URL(window.location.href);
-    url.pathname = url.pathname.replace('FilterReview','FilterTool')
-
-    // Add all params
-    function add_from_tags(url, items) {
-        for (let item of items) {
-            if (item.id.startsWith("INS_")) {
-                url.searchParams.append(item.name, item.value);
-            }
-        }
-    }
-    add_from_tags(url, document.getElementsByTagName("input"))
-    add_from_tags(url, document.getElementsByTagName("select"))
-
-    // Add sample rate for sensor show in bode plot
-    let gyro_instance
-    if (document.getElementById("BodeGyroInst0").checked) {
-        gyro_instance = 0
-    } else if (document.getElementById("BodeGyroInst1").checked) {
-        gyro_instance = 1
-    } else {
-        gyro_instance = 2
-    }
-
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if (Gyro_batch[i] == null) {
-            continue
-        }
-        if (Gyro_batch[i].sensor_num == gyro_instance) {
-            url.searchParams.append("GYRO_SAMPLE_RATE", Math.round(Gyro_batch[i].gyro_rate));
-            break
-        }
-    }
-
-    // Get values for tracking
-    const mean_throttle = tracking_methods[1].get_mean()
-    if (mean_throttle != undefined) {
-        url.searchParams.append("Throttle", mean_throttle);
-    }
-
-    const mean_rpm1 = tracking_methods[2].get_mean()
-    if (mean_rpm1 != undefined) {
-        url.searchParams.append("RPM1", mean_rpm1);
-    }
-
-    const mean_esc = tracking_methods[3].get_mean()
-    if (mean_esc != undefined) {
-        url.searchParams.append("ESC_RPM", mean_esc);
-        url.searchParams.append("NUM_MOTORS", tracking_methods[3].get_num_motors());
-    }
-
-    // Filter tool does not support FFT tracking (4)
-
-    const mean_rpm2 = tracking_methods[5].get_mean()
-    if (mean_rpm2 != undefined) {
-        url.searchParams.append("RPM2", mean_rpm2);
-    }
-
-
-    window.open(url.toString());
-
 }
 
 function get_PID_param_names(prefix) {
@@ -1510,7 +1217,12 @@ function load(log_file) {
         delete log.messages[id]
 
         if (have_data) {
-            document.getElementById("type_" + id).disabled = false
+            let ele = document.getElementById("type_" + id)
+            ele.disabled = false
+            if (!PID_log_messages.have_data) {
+                // This is the first item to have data, select it
+                ele.checked = true
+            }
             PID_log_messages[i].have_data = true
             PID_log_messages.have_data = true
         }
@@ -1555,6 +1267,22 @@ function load(log_file) {
     log_file = null
     log = null
 
+    // Caculate output
+    for (var PID of PID_log_messages) {
+        if (!PID.have_data) {
+            continue
+        }
+        for (var set of PID.sets) {
+            for (var batch of set) {
+                const len = batch.P.length
+                batch.Out = new Array(len)
+                for (let i = 0; i<len; i++) {
+                    batch.Out[i] = batch.P[i] + batch.I[i] + batch.D[i] + batch.FF[i]
+                }
+            }
+        }
+    }
+
     // Update ranges of start and end time
     start_time = Math.floor(PID_log_messages.start_time)
     end_time = Math.ceil(PID_log_messages.end_time)
@@ -1572,10 +1300,21 @@ function load(log_file) {
     end_input.max = end_time
 
     // Calculate FFT
-    //calculate()
+    calculate()
+
+    // Show param values
+    add_param_sets()
+
+    // Setup FFT data
+    setup_FFT_data()
 
     // Plot
     redraw()
+
+    // Enable key checkboxes
+    for (const key of fft_keys) {
+        document.getElementById("PIDX_" + key).disabled = false
+    }
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);

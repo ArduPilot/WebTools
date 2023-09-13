@@ -70,19 +70,19 @@
                 <legend>Axis</legend>
                 <table>
                     <td>
-                        <input type="radio" id="type_PIDR" name="Axis">
+                        <input type="radio" id="type_PIDR" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIDR">PIDR</label><br>
-                        <input type="radio" id="type_PIDP" name="Axis">
+                        <input type="radio" id="type_PIDP" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIDP">PIDP</label><br>
-                        <input type="radio" id="type_PIDY" name="Axis">
+                        <input type="radio" id="type_PIDY" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIDY">PIDY</label><br>
                     </td>
                     <td>
-                        <input type="radio" id="type_PIQR" name="Axis">
+                        <input type="radio" id="type_PIQR" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIQR">PIQR</label><br>
-                        <input type="radio" id="type_PIQP" name="Axis">
+                        <input type="radio" id="type_PIQP" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIQP">PIQP</label><br>
-                        <input type="radio" id="type_PIQY" name="Axis">
+                        <input type="radio" id="type_PIQY" name="Axis" onchange=add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIQY">PIQY</label><br>
                     </td>
                 </table>
@@ -109,7 +109,8 @@
     <h2 style="text-align:center">Time domain</h2>
 </td></tr></table>
 
-<div id="TimePlot" style="width:1200px;height:450px"></div>
+<div id="TimeInputs" style="width:1200px;height:450px"></div>
+<div id="TimeOutputs" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">Frequency domain</h2>
@@ -124,14 +125,14 @@
                 <p>
                     <fieldset style="width:300px">
                         <legend ondblclick="update_hidden(this)">Inputs</legend>
-                        <input type="checkbox" id="PIDX_target" onchange="update_hidden(this)">
-                        <label for="PIDX_target">Target</label>
+                        <input type="checkbox" id="PIDX_Tar" onchange="update_hidden(this)">
+                        <label for="PIDX_Tar">Target</label>
 
-                        <input type="checkbox" id="PIDX_actual" onchange="update_hidden(this)">
-                        <label for="PIDX_actual">Actual</label>
+                        <input type="checkbox" id="PIDX_Act" onchange="update_hidden(this)">
+                        <label for="PIDX_Act">Actual</label>
 
-                        <input type="checkbox" id="PIDX_error" onchange="update_hidden(this)">
-                        <label for="PIDX_error">Error</label>
+                        <input type="checkbox" id="PIDX_Err" onchange="update_hidden(this)">
+                        <label for="PIDX_Err">Error</label>
                     </fieldset>
                 </p>
                 <p>
@@ -153,8 +154,8 @@
                 <p>
                     <fieldset style="width:300px">
                         <legend ondblclick="update_hidden(this)">Output</legend>
-                        <input type="checkbox" id="PIDX_sum_P" onchange="update_hidden(this)">
-                        <label for="PIDX_P">PID + FF</label>
+                        <input type="checkbox" id="PIDX_Out" onchange="update_hidden(this)">
+                        <label for="PIDX_Out">PID + FF</label>
                     </fieldset>
                 </p>
                 Logging rate: <label id="FFT_infoA"></label> Hz<br><br>
@@ -162,9 +163,8 @@
              </fieldset>
         </td>
         <td>
-            <fieldset style="width:600px; min-height:300px">
-                <legend ondblclick="update_hidden(this)">Tests</legend>
-
+            <fieldset style="width:600px; min-height:300px" id="test_sets">
+                <legend>Tests</legend>
             </fieldset>
         </td>
     </tr>
@@ -173,33 +173,32 @@
 <div id="FFTPlot" style="width:1200px;height:450px"></div>
 
 <table>
-    <tr>
-        <td>
-            <fieldset style="width:300px;height:40px">
-                <legend>Amplitude scale</legend>
-                <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
-                <label for="ScaleLinear">Linear</label>
-                <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
-                <label for="ScaleLog">dB</label>
-                <input type="radio" id="ScalePSD" name="Scale" onchange="redraw()">
-                <label for="ScalePSD">Power Spectral Density</label>
-            </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:260px;height:40px">
-                <legend>Frequency scale</legend>
-                <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
-                <label for="freq_ScaleLinear">Linear</label>
-                <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
-                <label for="freq_ScaleLog">Log</label>
-                &nbsp&nbsp&nbsp&nbsp
-                <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
-                <label for="freq_Scale_Hz">Hz</label>
-                <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
-                <label for="freq_Scale_RPM">RPM</label>
-            </fieldset>
-        </td>
-    </tr>
+    <td style="width: 250px;"></td>
+    <td>
+        <fieldset style="width:300px;height:40px">
+            <legend>Amplitude scale</legend>
+            <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
+            <label for="ScaleLinear">Linear</label>
+            <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
+            <label for="ScaleLog">dB</label>
+            <input type="radio" id="ScalePSD" name="Scale" onchange="redraw()">
+            <label for="ScalePSD">Power Spectral Density</label>
+        </fieldset>
+    </td>
+    <td>
+        <fieldset style="width:260px;height:40px">
+            <legend>Frequency scale</legend>
+            <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
+            <label for="freq_ScaleLinear">Linear</label>
+            <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
+            <label for="freq_ScaleLog">Log</label>
+            &nbsp&nbsp&nbsp&nbsp
+            <input type="radio" id="freq_Scale_Hz" name="feq_unit" onchange="redraw()" checked>
+            <label for="freq_Scale_Hz">Hz</label>
+            <input type="radio" id="freq_Scale_RPM" name="feq_unit" onchange="redraw()">
+            <label for="freq_Scale_RPM">RPM</label>
+        </fieldset>
+    </td>
 </table>
 
 <table><tr><td style="width:1200px">
@@ -209,58 +208,35 @@
 <div id="Spectrogram" style="width:1200px;height:450px"></div>
 
 <table>
-    <tr>
-        <td style="width: 100px;"></td>
-        <td>
-            <fieldset style="width:125px;height:40px">
-                <legend>Gyro instance</legend>
-                <input type="radio" id="SpecGyroInst0" name="SpecGyroInst" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroInst0">1</label>
+    <td style="width: 375px;"></td>
+    <td>
+        <fieldset style="width:450px;height:40px">
+            <legend>PID component</legend>
+            <input type="radio" id="Spec_Tar" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_Tar">Target</label>
 
-                <input type="radio" id="SpecGyroInst1" name="SpecGyroInst" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroInst1">2</label>
+            <input type="radio" id="Spec_Act" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_Act">Actual</label>
 
-                <input type="radio" id="SpecGyroInst2" name="SpecGyroInst" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroInst2">3</label>
-            </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:350px;height:40px">
-                <legend>Filtering</legend>
-                <input type="radio" id="SpecGyroPre" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroPre">Pre-filter</label>
+            <input type="radio" id="Spec_Err" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_Err">Error</label>
 
-                <input type="radio" id="SpecGyroPost" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroPost">Post-filter</label>
+            <input type="radio" id="Spec_P" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_P">P</label>
 
-                <input type="radio" id="SpecGyroEstPost" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroEstPost">Estimated post-filter</label>
-            </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:125px;height:40px">
-                <legend>Axis</legend>
-                <input type="radio" id="SpecGyroAxisX" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroAxisX">X</label>
+            <input type="radio" id="Spec_I" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_I">I</label>
 
-                <input type="radio" id="SpecGyroAxisY" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroAxisY">Y</label>
+            <input type="radio" id="Spec_D" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_D">D</label>
 
-                <input type="radio" id="SpecGyroAxisZ" name="SpecGyroAxis" onchange="redraw_Spectrogram()">
-                <label for="SpecGyroAxisZ">Z</label>
-            </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:240px;height:40px">
-                <legend>Notch tracking</legend>
-                <input type="checkbox" id="SpecNotch1Show" name="SpecNotch1Show" onchange="update_hidden_spec(this)">
-                <label for="SpecNotch1Show">Show notch 1</label>
+            <input type="radio" id="Spec_FF" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_FF">FF</label>
 
-                <input type="checkbox" id="SpecNotch2Show" name="SpecNotch2Show" onchange="update_hidden_spec(this)">
-                <label for="SpecNotch2Show">Show notch 2</label>
-            </fieldset>
-        </td>
-    </tr>
+            <input type="radio" id="Spec_Out" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_Out">Output</label>
+        </fieldset>
+    </td>
 </table>
 
 </body>
