@@ -88,13 +88,14 @@ function run_fft(data, keys, window_size, window_spacing, windowing_function, ff
             fft.realTransform(result, windowed)
 
             // Allocate for result
-            ret[key][i] = new Array(real_len)
+            ret[key][i] = [new Array(real_len), new Array(real_len)]
 
-            // Take abs and apply scale
+            // Apply scale and convert complex format
             // fft.js uses interleaved complex numbers, [ real0, imaginary0, real1, imaginary1, ... ]
             for (let j=0;j<real_len;j++) {
                 const index = j*2
-                ret[key][i][j] = ((result[index]**2 + result[index+1]**2)**0.5) * scale[j]
+                ret[key][i][0][j] = result[index]   * scale[j]
+                ret[key][i][1][j] = result[index+1] * scale[j]
             }
         }
     }
@@ -205,6 +206,10 @@ function reset() {
         fft_plot.data[i].x = []
         fft_plot.data[i].y = []
     }
+    for (let i = 0; i < step_plot.data.length; i++) {
+        step_plot.data[i].x = []
+        step_plot.data[i].y = []
+    }
     for (let i = 0; i < Spectrogram.data.length; i++) {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
@@ -233,6 +238,7 @@ var flight_data = {}
 var TimeInputs = {}
 var TimeOutputs = {}
 var fft_plot = {}
+var step_plot = {}
 var Spectrogram = {}
 function setup_plots() {
 
@@ -357,7 +363,7 @@ function setup_plots() {
                                 xaxis: { title: {text: time_scale_label } },
                                 yaxis: { title: {text: "" } }}
 
-    var plot = document.getElementById("TimeOutputs")
+    plot = document.getElementById("TimeOutputs")
     Plotly.purge(plot)
     Plotly.newPlot(plot, TimeOutputs.data, TimeOutputs.layout, {displaylogo: false})
 
@@ -375,9 +381,23 @@ function setup_plots() {
         margin: { b: 50, l: 50, r: 50, t: 20 },
     }
 
-    var plot = document.getElementById("FFTPlot")
+    plot = document.getElementById("FFTPlot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
+
+    // Step response setup
+    step_plot.data = []
+    step_plot.layout = {
+        xaxis: {title: {text: "Time (s)" }, zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: "Response" }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+
+    plot = document.getElementById("step_plot")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, step_plot.data, step_plot.layout, {displaylogo: false});
 
     // Spectrogram setup
     // Add surface
@@ -442,6 +462,7 @@ function setup_plots() {
     const reset_link = [["TimeInputs", TimeInputs],
                         ["TimeOutputs", TimeOutputs],
                         ["FFTPlot", fft_plot],
+                        ["step_plot", step_plot],
                         ["Spectrogram", Spectrogram]]
 
     for (let i = 0; i<reset_link.length; i++) {
@@ -517,6 +538,21 @@ function setup_FFT_data() {
                 fft_plot.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
             }
         }
+
+        // Each set gets mean step response and individual
+        const name = "Test " + (i+1)
+        const step_index = i*2
+        step_plot.data[step_index] = { mode: "lines",
+                                       name: name,
+                                       meta: name,
+                                       hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}",
+                                       showlegend: num_sets > 1 }
+
+        step_plot.data[step_index + 1] = { mode: "lines",
+                                           line: {color: "rgba(100, 100, 100, 0.2)"},
+                                           hoverinfo: 'none',
+                                           showlegend: false }
+
     }
 
 }
@@ -828,10 +864,10 @@ function redraw() {
         for (let j = 0; j < fft_keys.length; j++) {
             const key = fft_keys[j]
 
-            var mean = (new Array(set.FFT[key][0].length)).fill(0)
+            var mean = (new Array(set.FFT[key][0][0].length)).fill(0)
             for (let k=start_index;k<end_index;k++) {
                 // Add to mean sum
-                mean = array_add(mean, amplitude_scale.fun(set.FFT[key][k]))
+                mean = array_add(mean, amplitude_scale.fun(complex_abs(set.FFT[key][k])))
             }
 
             // Apply window correction and divide by length to take mean
@@ -857,6 +893,7 @@ function redraw() {
 
     redraw_Spectrogram()
 
+    redraw_step()
 }
 
 function redraw_Spectrogram() {
@@ -935,20 +972,160 @@ function redraw_Spectrogram() {
 
         // Setup z data
         const len = skip_flag.length
+        let index = 0
         for (j = 0; j<len; j++) {
             if (skip_flag[j] == true) {
                 // Add null Z values, this results in a blank section in the plot
                 Spectrogram.data[0].z.push(new Array(num_bins))
 
             } else {
-                const amplitude = array_scale(set.FFT[plot_key][j], window_correction)
+                const amplitude = array_scale(complex_abs(set.FFT[plot_key][index]), window_correction)
                 Spectrogram.data[0].z.push(amplitude_scale.scale(amplitude_scale.fun(amplitude)))
+                index++
             }
         }
     }
 
     Plotly.redraw("Spectrogram")
 }
+
+// Redraw step response
+function redraw_step() {
+    if ((PID_log_messages == null) || !PID_log_messages.have_data) {
+        return
+    }
+
+    const PID = PID_log_messages[get_axis_index()]
+
+    // FFT library
+    const window_size = PID.sets.FFT.window_size
+    const real_len = real_length(window_size)
+    const fft = new FFT_lib(window_size);
+    var transfer_function = fft.createComplexArray()
+    var impulse_response = fft.createComplexArray()  
+
+    // Only plot the first 0.5s of the step
+    const sample_time = 1 / PID.sets.FFT.average_sample_rate
+    const step_end_index = Math.ceil(0.5 / sample_time)
+
+    // Expected to reach steady state after 0.2s
+    const step_steady_state_index = Math.ceil(0.2 / sample_time)
+
+    // Create time array
+    var time = new Array(step_end_index)
+    for (let j=0;j<step_end_index;j++) {
+        time[j] = j * sample_time
+    }
+
+    const num_sets = PID.sets.length
+    for (let i = 0; i < num_sets; i++) {
+        const set = PID.sets[i]
+        if (set.FFT == null) {
+            continue
+        }
+
+        const plot_index = i*2
+        step_plot.data[plot_index+1].x = []
+        step_plot.data[plot_index+1].y = []
+
+        // Find the start and end index
+        const start_index = find_start_index(set.FFT.time)
+        const end_index = find_end_index(set.FFT.time)+1
+
+        var Step_mean = (new Array(step_end_index)).fill(0)
+        var mean_count = 0
+        var X = [ new Array(window_size), new Array(window_size) ]
+        var Y = [ new Array(window_size), new Array(window_size) ]
+        for (let k=start_index;k<end_index;k++) {
+            // Recreate double sided spectrum
+
+            // DC
+            X[0][0] = set.FFT.Tar[k][0][0]
+            X[1][0] = set.FFT.Tar[k][1][0]
+            Y[0][0] = set.FFT.Act[k][0][0]
+            Y[1][0] = set.FFT.Act[k][1][0]
+
+            // Nyquist
+            X[0][real_len-1] = set.FFT.Tar[k][0][real_len-1]
+            X[1][real_len-1] = set.FFT.Tar[k][1][real_len-1]
+            Y[0][real_len-1] = set.FFT.Act[k][0][real_len-1]
+            Y[1][real_len-1] = set.FFT.Act[k][1][real_len-1]
+
+            // Everything else is added in two places
+            // Divide by 2 to return to double sided
+            for (let j=1;j<real_len-1;j++) {
+                X[0][j] = set.FFT.Tar[k][0][j] * 0.5
+                X[1][j] = set.FFT.Tar[k][1][j] * 0.5
+                Y[0][j] = set.FFT.Act[k][0][j] * 0.5
+                Y[1][j] = set.FFT.Act[k][1][j] * 0.5
+
+                const rhs_index = window_size - j
+                X[0][rhs_index] = set.FFT.Tar[k][0][j] *  0.5
+                X[1][rhs_index] = set.FFT.Tar[k][1][j] * -0.5
+                Y[0][rhs_index] = set.FFT.Act[k][0][j] *  0.5
+                Y[1][rhs_index] = set.FFT.Act[k][1][j] * -0.5
+            }
+
+            const Pyx = complex_mul(Y, complex_conj(X))
+            var Pxx = complex_mul(X, complex_conj(X))
+
+            // Add SNR estimate
+            Pxx[0] = array_offset(Pxx[0], 0.0001)
+
+            const H = complex_div(Pyx, Pxx)
+
+            // Populate transfer function in fft.js interleaved complex format
+            for (let j=0;j<window_size;j++) {
+                const index = j*2
+                transfer_function[index]   = H[0][j]
+                transfer_function[index+1] = H[1][j]
+            }
+
+            // Run inverse FFT
+            fft.inverseTransform(impulse_response, transfer_function)
+
+            // Integrate impulse to get step response
+            var step = new Array(step_end_index)
+            step[0] = impulse_response[0]
+            for (let j=1;j<step_end_index;j++) {
+                // Just real component
+                step[j] = step[j - 1] + impulse_response[j*2]
+            }
+
+            // Check if response seems reasonable
+            const steady_state = step.slice(step_steady_state_index)
+            if ((Math.max(...steady_state) > 3) || (Math.min(...steady_state) < 0.5)) {
+                // Bad result, ignore
+                continue
+            }
+
+            // Good result, add to mean
+            mean_count += 1
+            Step_mean = array_add(Step_mean, step)
+
+            // add to plot of all
+            step_plot.data[plot_index+1].x.push(...time)
+            step_plot.data[plot_index+1].y.push(...step)
+
+            // Add NaN to remove line back to start
+            step_plot.data[plot_index+1].x.push(NaN)
+            step_plot.data[plot_index+1].y.push(NaN)
+        }
+
+        if (mean_count <= 0) {
+            // No good steps, skip this set
+            continue
+        }
+
+        // Plot mean
+        step_plot.data[plot_index].x = time
+        step_plot.data[plot_index].y = array_scale(Step_mean, 1 / mean_count)
+
+    }
+
+    Plotly.redraw("step_plot")
+
+} 
 
 // Update lines that are shown in FFT plot
 function update_hidden(source) {

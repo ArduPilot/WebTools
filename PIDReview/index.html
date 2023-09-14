@@ -82,7 +82,7 @@
                         <label for="type_PIQR">PIQR</label><br>
                         <input type="radio" id="type_PIQP" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIQP">PIQP</label><br>
-                        <input type="radio" id="type_PIQY" name="Axis" onchange=add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIQY" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIQY">PIQY</label><br>
                     </td>
                 </table>
@@ -200,6 +200,12 @@
         </fieldset>
     </td>
 </table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Step Response</h2>
+</td></tr></table>
+
+<div id="step_plot" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">PID Spectrogram</h2>
