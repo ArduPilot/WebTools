@@ -68,6 +68,10 @@ function complex_phase(C) {
     return ret
 }
 
+function complex_conj(C) {
+    return [ C[0].slice(), array_scale(C[1], -1) ]
+}
+
 function exp_jw(freq, rate) {
     const scale = (2*Math.PI) / rate
     const len = freq.length
