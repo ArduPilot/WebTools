@@ -408,6 +408,15 @@ function setup_plots() {
         margin: { b: 50, l: 50, r: 50, t: 20 },
     }
 
+    // Step response 1.0 line
+    step_plot.layout.shapes = [{ type: 'line',
+                                line: { dash: "dot" },
+                                xref: 'paper',
+                                x0: 0,
+                                x1: 1,
+                                y0: 1,
+                                y1: 1 }]
+
     plot = document.getElementById("step_plot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, step_plot.data, step_plot.layout, {displaylogo: false});
@@ -1153,11 +1162,15 @@ function redraw_step() {
                 Y[1][rhs_index] = set.FFT.Act[k][1][j] * -0.5
             }
 
+            // Step response calculation taken from PID-Analyzer/PIDtoolbox
             const Pyx = complex_mul(Y, complex_conj(X))
             var Pxx = complex_mul(X, complex_conj(X))
 
             // Add SNR estimate
-            Pxx[0] = array_offset(Pxx[0], 0.0001)
+            // value from PIDtoolbox
+            // PID-Analyzer uses array to bias towards lower frequencies
+            const SN = 10000
+            Pxx[0] = array_offset(Pxx[0], 1 / SN)
 
             const H = complex_div(Pyx, Pxx)
 
@@ -1209,6 +1222,9 @@ function redraw_step() {
         step_plot.data[plot_index].y = array_scale(Step_mean, 1 / mean_count)
 
     }
+
+    step_plot.layout.yaxis.range = [0, 2]
+    step_plot.layout.yaxis.autorange = false
 
     Plotly.redraw("step_plot")
 
