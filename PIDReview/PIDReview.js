@@ -145,6 +145,12 @@ function run_batch_fft(data_set) {
             sample_rate_sum += data_set[j][i].sample_rate
         }
     }
+
+    if (sample_rate_sum == 0) {
+        // Not enough data to make up a window
+        return
+    }
+
     const sample_time = sample_rate_count / sample_rate_sum
 
     for (let j=0; j<num_sets; j++) {
@@ -355,7 +361,7 @@ function setup_plots() {
     TimeInputs.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
                                 margin: { b: 50, l: 50, r: 50, t: 20 },
                                 xaxis: { title: {text: time_scale_label } },
-                                yaxis: { title: {text: "" } }}
+                                yaxis: { title: {text: "Rad/s" } }}
 
     var plot = document.getElementById("TimeInputs")
     Plotly.purge(plot)
@@ -565,15 +571,16 @@ function setup_FFT_data() {
         const name = "Test " + (i+1)
         const step_index = i*2
         step_plot.data[step_index] = { mode: "lines",
-                                       name: name,
-                                       meta: name,
-                                       hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}",
-                                       showlegend: num_sets > 1 }
+                                       line: {color: "rgba(100, 100, 100, 0.2)"},
+                                       hoverinfo: 'none',
+                                       showlegend: false }
 
         step_plot.data[step_index + 1] = { mode: "lines",
-                                           line: {color: "rgba(100, 100, 100, 0.2)"},
-                                           hoverinfo: 'none',
-                                           showlegend: false }
+                                           line: { width: 4 },
+                                           name: name,
+                                           meta: name,
+                                           hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}",
+                                           showlegend: num_sets > 1 }
 
     }
 
@@ -914,6 +921,10 @@ function redraw() {
     Plotly.redraw("TimeInputs")
     Plotly.redraw("TimeOutputs")
 
+    if (PID.sets.FFT == null) {
+        return
+    }
+
     // Populate logging rate and frequency resolution
     document.getElementById("FFT_infoA").innerHTML = (PID.sets.FFT.average_sample_rate).toFixed(2)
     document.getElementById("FFT_infoB").innerHTML = (PID.sets.FFT.average_sample_rate / PID.sets.FFT.window_size).toFixed(2)
@@ -1102,7 +1113,7 @@ function redraw_step() {
 
     // Only plot the first 0.5s of the step
     const sample_time = 1 / PID.sets.FFT.average_sample_rate
-    const step_end_index = Math.ceil(0.5 / sample_time)
+    const step_end_index = Math.min(Math.ceil(0.5 / sample_time), window_size)
 
     // Expected to reach steady state after 0.2s
     const step_steady_state_index = Math.ceil(0.2 / sample_time)
@@ -1114,6 +1125,13 @@ function redraw_step() {
     }
 
     const num_sets = PID.sets.length
+    var valid_sets = 0
+    for (let i = 0; i < num_sets; i++) {
+        if (PID.sets[i].FFT != null) {
+            valid_sets += 1
+        }
+    }
+
     for (let i = 0; i < num_sets; i++) {
         const set = PID.sets[i]
         if (set.FFT == null) {
@@ -1121,8 +1139,8 @@ function redraw_step() {
         }
 
         const plot_index = i*2
-        step_plot.data[plot_index+1].x = []
-        step_plot.data[plot_index+1].y = []
+        step_plot.data[plot_index].x = []
+        step_plot.data[plot_index].y = []
 
         // Find the start and end index
         const start_index = find_start_index(set.FFT.time)
@@ -1204,12 +1222,14 @@ function redraw_step() {
             Step_mean = array_add(Step_mean, step)
 
             // add to plot of all
-            step_plot.data[plot_index+1].x.push(...time)
-            step_plot.data[plot_index+1].y.push(...step)
+            if (valid_sets == 1) {
+                step_plot.data[plot_index].x.push(...time)
+                step_plot.data[plot_index].y.push(...step)
 
-            // Add NaN to remove line back to start
-            step_plot.data[plot_index+1].x.push(NaN)
-            step_plot.data[plot_index+1].y.push(NaN)
+                // Add NaN to remove line back to start
+                step_plot.data[plot_index].x.push(NaN)
+                step_plot.data[plot_index].y.push(NaN)
+            }
         }
 
         if (mean_count <= 0) {
@@ -1218,8 +1238,8 @@ function redraw_step() {
         }
 
         // Plot mean
-        step_plot.data[plot_index].x = time
-        step_plot.data[plot_index].y = array_scale(Step_mean, 1 / mean_count)
+        step_plot.data[plot_index+1].x = time
+        step_plot.data[plot_index+1].y = array_scale(Step_mean, 1 / mean_count)
 
     }
 
@@ -1413,13 +1433,14 @@ function load(log_file) {
     // Reset buttons and labels
     reset()
 
-    // Reset log object                           Copter          Plane
-    PID_log_messages = [ {id: ["PIDR"], prefixes: [ "ATC_RAT_RLL_", "RLL_RATE_"]},
-                         {id: ["PIDP"], prefixes: [ "ATC_RAT_PIT_", "PTCH_RATE_"]},
-                         {id: ["PIDY"], prefixes: [ "ATC_RAT_YAW_", "YAW_RATE_"]},
-                         {id: ["PIQR"], prefixes: [                 "Q_A_RAT_RLL_"]},
-                         {id: ["PIQP"], prefixes: [                 "Q_A_RAT_PIT_"]},
-                         {id: ["PIQY"], prefixes: [                 "Q_A_RAT_YAW_"]},
+    // Reset log object                                  Copter          Plane
+    // Need to do some more testing on plane PIDs, at least the units are different, the way the speed scaling is done might make the components invalid for comparable FFT.
+    PID_log_messages = [ {id: ["PIDR"],      prefixes: [ "ATC_RAT_RLL_", ]},//"RLL_RATE_"]},
+                         {id: ["PIDP"],      prefixes: [ "ATC_RAT_PIT_", ]},//"PTCH_RATE_"]},
+                         {id: ["PIDY"],      prefixes: [ "ATC_RAT_YAW_", ]},//"YAW_RATE_"]},
+                         {id: ["PIQR"],      prefixes: [                 "Q_A_RAT_RLL_"]},
+                         {id: ["PIQP"],      prefixes: [                 "Q_A_RAT_PIT_"]},
+                         {id: ["PIQY"],      prefixes: [                 "Q_A_RAT_YAW_"]},
                          {id: ["RATE", "R"], prefixes: [ "ATC_RAT_RLL_", "Q_A_RAT_RLL_"]},
                          {id: ["RATE", "P"], prefixes: [ "ATC_RAT_PIT_", "Q_A_RAT_PIT_"]},
                          {id: ["RATE", "Y"], prefixes: [ "ATC_RAT_YAW_", "Q_A_RAT_YAW_"]} ]
