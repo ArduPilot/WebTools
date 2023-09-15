@@ -875,30 +875,30 @@ function redraw() {
             }
             // Same x axis for all
             for (let j = 0; j < TimeInputs.data.length; j++) {
-                TimeInputs.data[j].x.push(...set[i].time)
+                TimeInputs.data[j].x = TimeInputs.data[j].x.concat(set[i].time)
             }
-            TimeInputs.data[0].y.push(...set[i].Tar)
-            TimeInputs.data[1].y.push(...set[i].Act)
+            TimeInputs.data[0].y = TimeInputs.data[0].y.concat(set[i].Tar)
+            TimeInputs.data[1].y = TimeInputs.data[1].y.concat(set[i].Act)
             if ("Err" in set[i]) {
-                TimeInputs.data[2].y.push(...set[i].Err)
+                TimeInputs.data[2].y = TimeInputs.data[2].y.concat(set[i].Err)
             }
 
             for (let j = 0; j < TimeOutputs.data.length; j++) {
-                TimeOutputs.data[j].x.push(...set[i].time)
+                TimeOutputs.data[j].x = TimeOutputs.data[j].x.concat(set[i].time)
             }
             if ("P" in set[i]) {
-            TimeOutputs.data[0].y.push(...set[i].P)
+                TimeOutputs.data[0].y = TimeOutputs.data[0].y.concat(set[i].P)
             }
             if ("I" in set[i]) {
-                TimeOutputs.data[1].y.push(...set[i].I)
+                TimeOutputs.data[1].y = TimeOutputs.data[1].y.concat(set[i].I)
             }
             if ("D" in set[i]) {
-                TimeOutputs.data[2].y.push(...set[i].D)
+                TimeOutputs.data[2].y = TimeOutputs.data[2].y.concat(set[i].D)
             }
             if ("FF" in set[i]) {
-                TimeOutputs.data[3].y.push(...set[i].FF)
+                TimeOutputs.data[3].y = TimeOutputs.data[3].y.concat(set[i].FF)
             }
-            TimeOutputs.data[4].y.push(...set[i].Out)
+            TimeOutputs.data[4].y = TimeOutputs.data[4].y.concat(set[i].Out)
         }
     }
 
