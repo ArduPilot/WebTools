@@ -66,9 +66,17 @@
             </fieldset>
         </td>
         <td>
-            <fieldset style="width:200px;height:80px">
+            <fieldset style="width:300px;height:80px">
                 <legend>Axis</legend>
                 <table>
+                    <td>
+                        <input type="radio" id="type_RATE_R" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <label for="type_RATE_R">RATE Roll</label><br>
+                        <input type="radio" id="type_RATE_P" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <label for="type_RATE_P">RATE Pitch</label><br>
+                        <input type="radio" id="type_RATE_Y" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <label for="type_RATE_Y">RATE Yaw</label><br>
+                    </td>
                     <td>
                         <input type="radio" id="type_PIDR" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
                         <label for="type_PIDR">PIDR</label><br>

@@ -77,6 +77,9 @@ function run_fft(data, keys, window_size, window_spacing, windowing_function, ff
         ret.center[i] = window_start + window_size * 0.5
 
         for (const key of keys) {
+            if (!(key in data)) {
+                continue
+            }
 
             // Get data and apply windowing function
             var windowed = data[key].slice(window_start, window_end)
@@ -132,7 +135,7 @@ function run_batch_fft(data_set) {
     var sample_rate_sum = 0
     var sample_rate_count = 0
     for (let j=0; j<num_sets; j++) {
-        const num_batch = data_set.length
+        const num_batch = data_set[j].length
         for (let i=0;i<num_batch;i++) {
             if (data_set[j][i][fft_keys[0]].length < window_size) {
                 // Log section is too short, skip
@@ -145,11 +148,7 @@ function run_batch_fft(data_set) {
     const sample_time = sample_rate_count / sample_rate_sum
 
     for (let j=0; j<num_sets; j++) {
-        data_set[j].FFT = { time: [] }
-        for (const key of fft_keys) {
-            data_set[j].FFT[key] = []
-        }
-
+        let have_data = false
         const num_batch = data_set[j].length
         for (let i=0;i<num_batch;i++) {
             if (data_set[j][i].Tar.length < window_size) {
@@ -157,6 +156,15 @@ function run_batch_fft(data_set) {
                 continue
             }
             var ret = run_fft(data_set[j][i], fft_keys, window_size, window_spacing, windowing_function, fft)
+
+            // Initialize arrays
+            if (!have_data) {
+                have_data = true
+                data_set[j].FFT = { time: [] }
+                for (const key of fft_keys) {
+                    data_set[j].FFT[key] = []
+                }
+            }
 
             data_set[j].FFT.time.push(...array_offset(array_scale(ret.center, sample_time), data_set[j][i].time[0]))
             for (const key of fft_keys) {
@@ -176,7 +184,7 @@ function run_batch_fft(data_set) {
 // Get index into FFT data array
 function get_axis_index() {
     for (let i = 0; i < PID_log_messages.length; i++) {
-        if (document.getElementById("type_" + PID_log_messages[i].id).checked) {
+        if (document.getElementById("type_" + PID_log_messages[i].id.join("_")).checked) {
             return i
         }
     }
@@ -185,8 +193,9 @@ function get_axis_index() {
 // Attempt to put page back to for a new log
 function reset() {
 
-    const types = ["PIDP", "PIDR", "PIDY",
-                   "PIQP", "PIQR", "PIQY"]
+    const types = ["PIDP",   "PIDR",   "PIDY",
+                   "PIQP",   "PIQR",   "PIQY",
+                   "RATE_R", "RATE_P", "RATE_Y"]
     for (const type of types) {
         let ele = document.getElementById("type_" + type)
         ele.disabled = true
@@ -219,9 +228,13 @@ function reset() {
 
     // Disable key checkboxes by default
     for (const key of fft_keys) {
-        const checkbox = document.getElementById("PIDX_" + key)
-        checkbox.checked = false
-        checkbox.disabled = true
+        const FFT_checkbox = document.getElementById("PIDX_" + key)
+        FFT_checkbox.checked = false
+        FFT_checkbox.disabled = true
+
+        const Spec_checkbox = document.getElementById("Spec_" + key)
+        Spec_checkbox.checked = false
+        Spec_checkbox.disabled = true
     }
 
     // Check target and actual
@@ -730,7 +743,22 @@ function add_param_sets() {
 
     // Add line for each param set
     const num_sets = PID.params.sets.length
+
+    // See how many sets are valid, if only one then the checkbox is disabled
+    var valid_sets = 0
     for (let i = 0; i < num_sets; i++) {
+        if ((PID.sets[i] == null) || (PID.sets[i].FFT == null)) {
+            continue
+        }
+        valid_sets += 1
+    }
+
+    // Add line
+    for (let i = 0; i < num_sets; i++) {
+        if ((PID.sets[i] == null) || (PID.sets[i].FFT == null)) {
+            continue
+        }
+
         const set = PID.params.sets[i]
 
         let row = document.createElement("tr")
@@ -745,7 +773,7 @@ function add_param_sets() {
         checkbox.setAttribute('id', "set_selection_" + i)
         checkbox.setAttribute('onchange', "update_hidden(this)")
         checkbox.checked = true
-        checkbox.disabled = num_sets == 1
+        checkbox.disabled = valid_sets == 1
         item.appendChild(checkbox)
 
         for (const name of Object.keys(names)) {
@@ -756,6 +784,52 @@ function add_param_sets() {
             item.appendChild(document.createTextNode(set[name].toFixed(4)))
         }
     }
+
+    // Enable/Disable plot types as required
+
+    // Always have target, actual and output
+    document.getElementById("PIDX_Tar").disabled = false
+    document.getElementById("PIDX_Act").disabled = false
+    document.getElementById("PIDX_Out").disabled = false
+
+    document.getElementById("Spec_Tar").disabled = false
+    document.getElementById("Spec_Act").disabled = false
+    document.getElementById("Spec_Out").disabled = false
+
+    // Only have others from a full PID log
+    const have_all = PID.id[0] !== "RATE"
+    document.getElementById("PIDX_Err").disabled = !have_all
+    document.getElementById("PIDX_P").disabled = !have_all
+    document.getElementById("PIDX_I").disabled = !have_all
+    document.getElementById("PIDX_D").disabled = !have_all
+    document.getElementById("PIDX_FF").disabled = !have_all
+
+    document.getElementById("Spec_Err").disabled = !have_all
+    document.getElementById("Spec_P").disabled = !have_all
+    document.getElementById("Spec_I").disabled = !have_all
+    document.getElementById("Spec_D").disabled = !have_all
+    document.getElementById("Spec_FF").disabled = !have_all
+
+    // Uncheck any that are disabled
+    if (!have_all) {
+        document.getElementById("PIDX_Err").checked = false
+        document.getElementById("PIDX_P").checked = false
+        document.getElementById("PIDX_I").checked = false
+        document.getElementById("PIDX_D").checked = false
+        document.getElementById("PIDX_FF").checked = false
+
+        // Change to Out on spectrogram if disabled option is set
+        const disabled_checked = document.getElementById("Spec_Err").checked ||
+                                 document.getElementById("Spec_P").checked ||
+                                 document.getElementById("Spec_I").checked ||
+                                 document.getElementById("Spec_D").checked ||
+                                 document.getElementById("Spec_FF").checked
+        if (disabled_checked) {
+            document.getElementById("Spec_Out").checked = true
+        }
+    
+    }
+
 
 }
 
@@ -796,15 +870,25 @@ function redraw() {
             }
             TimeInputs.data[0].y.push(...set[i].Tar)
             TimeInputs.data[1].y.push(...set[i].Act)
-            TimeInputs.data[2].y.push(...set[i].Err)
+            if ("Err" in set[i]) {
+                TimeInputs.data[2].y.push(...set[i].Err)
+            }
 
             for (let j = 0; j < TimeOutputs.data.length; j++) {
                 TimeOutputs.data[j].x.push(...set[i].time)
             }
+            if ("P" in set[i]) {
             TimeOutputs.data[0].y.push(...set[i].P)
-            TimeOutputs.data[1].y.push(...set[i].I)
-            TimeOutputs.data[2].y.push(...set[i].D)
-            TimeOutputs.data[3].y.push(...set[i].FF)
+            }
+            if ("I" in set[i]) {
+                TimeOutputs.data[1].y.push(...set[i].I)
+            }
+            if ("D" in set[i]) {
+                TimeOutputs.data[2].y.push(...set[i].D)
+            }
+            if ("FF" in set[i]) {
+                TimeOutputs.data[3].y.push(...set[i].FF)
+            }
             TimeOutputs.data[4].y.push(...set[i].Out)
         }
     }
@@ -863,6 +947,9 @@ function redraw() {
 
         for (let j = 0; j < fft_keys.length; j++) {
             const key = fft_keys[j]
+            if (!(key in set.FFT) || (set.FFT[key][0] == null)) {
+                continue
+            }
 
             var mean = (new Array(set.FFT[key][0][0].length)).fill(0)
             for (let k=start_index;k<end_index;k++) {
@@ -1246,6 +1333,62 @@ function get_PID_param_names(prefix) {
              Slew_max:      prefix + "SMAX"}
 }
 
+// Split use the given time array to return split points in log data
+// Split at any change in parameters
+// Split at any dropped data
+function split_into_batches(PID_log_messages, index, time) {
+
+    let ret = []
+    const len = time.length
+
+    // Record start and end time
+    PID_log_messages[index].start_time = time[0]
+    PID_log_messages[index].end_time = time[len - 1]
+    if ((PID_log_messages.start_time == null) || (PID_log_messages[index].start_time < PID_log_messages.start_time)) {
+        PID_log_messages.start_time = PID_log_messages[index].start_time
+    }
+    if ((PID_log_messages.end_time == null) || (PID_log_messages[index].end_time > PID_log_messages.end_time)) {
+        PID_log_messages.end_time = PID_log_messages[index].end_time
+    }
+
+    let sample_rate_sum = 0
+    let sample_rate_count = 0
+    let batch_start = 0
+    let count = 0
+    let param_set = 0
+    let set_end = (PID_log_messages[index].params.sets.length > 1) ? PID_log_messages[index].params.sets[1].time : null
+    for (let j = 1; j < len; j++) {
+        // Take running average of sample time, split into batches for gaps
+        // Use threshold of 5 times the average gap seen so far.
+        // This should mean we get a new batch after two missed messages
+        count++
+        const past_set_end = (set_end != null) && (time[j] > set_end)
+        if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1)) || past_set_end) {
+            if (count >= 64) {
+                // Must have at least 64 samples in each batch
+                const sample_rate = 1 / ((time[j-1] - time[batch_start]) / count)
+                sample_rate_sum += sample_rate
+                sample_rate_count++
+
+                // Add to batch
+                ret.push({param_set: param_set, sample_rate: sample_rate, batch_start: batch_start, batch_end: j-1})
+            }
+            if (past_set_end) {
+                // Move on to next set
+                param_set++
+                set_end = (PID_log_messages[index].params.sets.length < param_set) ? PID_log_messages[index].params.sets[1].time : null
+            }
+
+            // Start the next batch from this point
+            batch_start = j
+            count = 0
+        }
+
+    }
+
+    return ret
+}
+
 var PID_log_messages = []
 function load(log_file) {
 
@@ -1255,12 +1398,15 @@ function load(log_file) {
     reset()
 
     // Reset log object                           Copter          Plane
-    PID_log_messages = [ {id: "PIDR", prefixes: [ "ATC_RAT_RLL_", "RLL_RATE_"]},
-                         {id: "PIDP", prefixes: [ "ATC_RAT_PIT_", "PTCH_RATE_"]},
-                         {id: "PIDY", prefixes: [ "ATC_RAT_YAW_", "YAW_RATE_"]},
-                         {id: "PIQR", prefixes: [                 "Q_A_RAT_RLL_"]},
-                         {id: "PIQP", prefixes: [                 "Q_A_RAT_PIT_"]},
-                         {id: "PIQR", prefixes: [                 "Q_A_RAT_YAW_"]} ]
+    PID_log_messages = [ {id: ["PIDR"], prefixes: [ "ATC_RAT_RLL_", "RLL_RATE_"]},
+                         {id: ["PIDP"], prefixes: [ "ATC_RAT_PIT_", "PTCH_RATE_"]},
+                         {id: ["PIDY"], prefixes: [ "ATC_RAT_YAW_", "YAW_RATE_"]},
+                         {id: ["PIQR"], prefixes: [                 "Q_A_RAT_RLL_"]},
+                         {id: ["PIQP"], prefixes: [                 "Q_A_RAT_PIT_"]},
+                         {id: ["PIQY"], prefixes: [                 "Q_A_RAT_YAW_"]},
+                         {id: ["RATE", "R"], prefixes: [ "ATC_RAT_RLL_", "Q_A_RAT_RLL_"]},
+                         {id: ["RATE", "P"], prefixes: [ "ATC_RAT_PIT_", "Q_A_RAT_PIT_"]},
+                         {id: ["RATE", "Y"], prefixes: [ "ATC_RAT_YAW_", "Q_A_RAT_YAW_"]} ]
 
     // Set flags for no data
     PID_log_messages.have_data = false
@@ -1283,7 +1429,7 @@ function load(log_file) {
                 param_values[name] = null
             }
 
-            let found_param =- false
+            let found_param = false
             for (let j = 0; j < log.messages.PARM.Name.length; j++) {
                 const param_name = log.messages.PARM.Name[j]
                 for (const [name, param_string] of Object.entries(names)) {
@@ -1291,7 +1437,7 @@ function load(log_file) {
                         continue
                     }
                     found_param = true
-                    if (param_values[name] != null) {
+                    if (param_values[name] != null  && (param_values[name] != log.messages.PARM.Value[j])) {
                         // Param change store all values to this point as a batch
                         PID_log_messages[i].params.sets.push(param_values)
 
@@ -1319,7 +1465,11 @@ function load(log_file) {
     PID_log_messages.start_time = null
     PID_log_messages.end_time = null
     for (let i = 0; i < PID_log_messages.length; i++) {
-        const id = PID_log_messages[i].id
+        if (PID_log_messages[i].params.prefix == null) {
+            // Don't load if we don't have params
+            continue
+        }
+        const id = PID_log_messages[i].id[0]
         if (!(id in log.messageTypes)) {
             // Dont have log message
             continue
@@ -1331,83 +1481,69 @@ function load(log_file) {
             // Do have log, but nothing in it
             continue
         }
+        const is_RATE_msg = id === "RATE"
 
         const time = array_scale(Array.from(log.messages[id].time_boot_ms), 1/1000)
-        const len = time.length
 
-        // Record start and end time
-        PID_log_messages[i].start_time = time[0]
-        PID_log_messages[i].end_time = time[len - 1]
-        if ((PID_log_messages.start_time == null) || (PID_log_messages[i].start_time < PID_log_messages.start_time)) {
-            PID_log_messages.start_time = PID_log_messages[i].start_time
-        }
-        if ((PID_log_messages.end_time == null) || (PID_log_messages[i].end_time > PID_log_messages.end_time)) {
-            PID_log_messages.end_time = PID_log_messages[i].end_time
-        }
+        const batches = split_into_batches(PID_log_messages, i, time)
 
-        PID_log_messages[i].sets = [[]]
-
-        let sample_rate_sum = 0
-        let sample_rate_count = 0
-        let batch_start = 0
-        let count = 0
-        let param_set = 0
-        let set_end = (PID_log_messages[i].params.sets.length > 1) ? PID_log_messages[i].params.sets[1].time : null
-        let have_data = false
-        for (let j = 1; j < len; j++) {
-            // Take running average of sample time, split into batches for gaps
-            // Use threshold of 5 times the average gap seen so far.
-            // This should mean we get a new batch after two missed messages
-            count++
-            const past_set_end = (set_end != null) && (time[j] > set_end)
-            if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1)) || past_set_end) {
-                if (count >= 64) {
-                    // Must have at least 64 samples in each batch
-                    const sample_rate = 1 / ((time[j-1] - time[batch_start]) / count)
-                    sample_rate_sum += sample_rate
-                    sample_rate_count++
-
-                    PID_log_messages[i].sets[param_set].push({ time: time.slice(batch_start, j-i),
-                                                               sample_rate: sample_rate,
-                                                               Tar: Array.from(log.messages[id].Tar.slice(batch_start, j-i)),
-                                                               Act: Array.from(log.messages[id].Act.slice(batch_start, j-i)),
-                                                               Err: Array.from(log.messages[id].Err.slice(batch_start, j-i)),
-                                                               P:   Array.from(log.messages[id].P.slice(batch_start, j-i)),
-                                                               I:   Array.from(log.messages[id].I.slice(batch_start, j-i)),
-                                                               D:   Array.from(log.messages[id].D.slice(batch_start, j-i)),
-                                                               FF:  Array.from(log.messages[id].FF.slice(batch_start, j-i))})
-
-                    have_data = true
+        if (batches.length > 0) {
+            // load from batches
+            PID_log_messages[i].sets = []
+            for (const batch of batches) {
+                if (PID_log_messages[i].sets[batch.param_set] == null) {
+                    PID_log_messages[i].sets[batch.param_set] = []
                 }
-                if (past_set_end) {
-                    // Move on to next set
-                    param_set++
-                    set_end = (PID_log_messages[i].params.sets.length < param_set) ? PID_log_messages[i].params.sets[1].time : null
-                }
+                if (is_RATE_msg) {
+                    const axis_prefix = PID_log_messages[i].id[1]
+                    // Convert degres back to radians to match the native PID logging
+                    // Note that its still not quite the same, PID logs report the filtered target value where as RATE gets the raw
+                    const deg2rag = Math.PI / 180.0
+                    PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
+                                                                     sample_rate: batch.sample_rate,
+                                                                     Tar: array_scale(Array.from(log.messages[id][axis_prefix + "Des"].slice(batch.batch_start, batch.batch_end)), deg2rag),
+                                                                     Act: array_scale(Array.from(log.messages[id][axis_prefix        ].slice(batch.batch_start, batch.batch_end)), deg2rag),
+                                                                     Out: Array.from(log.messages[id][axis_prefix + "Out"].slice(batch.batch_start, batch.batch_end))})
 
-                // Start the next batch from this point
-                batch_start = j
-                count = 0
+                } else {
+                    PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
+                                                                     sample_rate: batch.sample_rate,
+                                                                     Tar: Array.from(log.messages[id].Tar.slice(batch.batch_start, batch.batch_end)),
+                                                                     Act: Array.from(log.messages[id].Act.slice(batch.batch_start, batch.batch_end)),
+                                                                     Err: Array.from(log.messages[id].Err.slice(batch.batch_start, batch.batch_end)),
+                                                                     P:   Array.from(log.messages[id].P.slice(batch.batch_start, batch.batch_end)),
+                                                                     I:   Array.from(log.messages[id].I.slice(batch.batch_start, batch.batch_end)),
+                                                                     D:   Array.from(log.messages[id].D.slice(batch.batch_start, batch.batch_end)),
+                                                                     FF:  Array.from(log.messages[id].FF.slice(batch.batch_start, batch.batch_end))})
+                }
             }
 
-        }
-        delete log.messages[id]
 
-        if (have_data) {
-            let ele = document.getElementById("type_" + id)
+            // Enable UI elements
+            let ele = document.getElementById("type_" + PID_log_messages[i].id.join("_"))
             ele.disabled = false
             if (!PID_log_messages.have_data) {
                 // This is the first item to have data, select it
                 ele.checked = true
             }
+
+            // Set valid data flags
             PID_log_messages[i].have_data = true
             PID_log_messages.have_data = true
         }
+
+        if (!is_RATE_msg) {
+            delete log.messages[id]
+        }
+
     }
+    delete log.messages.RATE
 
     if (!PID_log_messages.have_data) {
-        alert("No PID logs found")
-        return
+        if (Object.keys(log.messages.RATE).length == 0) {
+            alert("No PID or RATE log messages found")
+            return
+        }
     }
 
     // Plot flight data from log
@@ -1451,6 +1587,10 @@ function load(log_file) {
         }
         for (var set of PID.sets) {
             for (var batch of set) {
+                if ("Out" in batch) {
+                    // Have output directly from log when using RATE msg
+                    continue
+                }
                 const len = batch.P.length
                 batch.Out = new Array(len)
                 for (let i = 0; i<len; i++) {
@@ -1487,11 +1627,6 @@ function load(log_file) {
 
     // Plot
     redraw()
-
-    // Enable key checkboxes
-    for (const key of fft_keys) {
-        document.getElementById("PIDX_" + key).disabled = false
-    }
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
