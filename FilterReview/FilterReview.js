@@ -2726,7 +2726,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
         var instance_name = "GYR[" + i + "]"
         if (log.messages[instance_name] == null) {
             // Try single gyro instance
-            if (!Array.from(log.messages.GYR.I).every((x) => x == i)) {
+            if (!("I" in log.messages.GYR) || !Array.from(log.messages.GYR.I).every((x) => x == i)) {
                 continue
             }
             instance_name = "GYR"
