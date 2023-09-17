@@ -52,6 +52,7 @@ function run_fft(data, keys, window_size, window_spacing, windowing_function, ff
     var ret = { center: new Array(num_windows) }
     for (const key of keys) {
         ret[key] = new Array(num_windows)
+        ret[key + "Max"] = new Array(num_windows)
     }
 
     // Pre-allocate scale array.
@@ -82,10 +83,10 @@ function run_fft(data, keys, window_size, window_spacing, windowing_function, ff
             }
 
             // Get data and apply windowing function
-            var windowed = data[key].slice(window_start, window_end)
-            for (let j=0;j<window_size;j++) {
-                windowed[j] *= windowing_function[j]
-            }
+            var windowed = array_mul(data[key].slice(window_start, window_end), windowing_function)
+
+            // Record the maximum value in the window
+            ret[key + "Max"][i] = Math.max(...array_abs(windowed))
 
             // Run fft
             fft.realTransform(result, windowed)
@@ -169,12 +170,14 @@ function run_batch_fft(data_set) {
                 data_set[j].FFT = { time: [] }
                 for (const key of fft_keys) {
                     data_set[j].FFT[key] = []
+                    data_set[j].FFT[key + "Max"] = []
                 }
             }
 
             data_set[j].FFT.time.push(...array_offset(array_scale(ret.center, sample_time), data_set[j][i].time[0]))
             for (const key of fft_keys) {
                 data_set[j].FFT[key].push(...ret[key])
+                data_set[j].FFT[key + "Max"].push(...ret[key + "Max"])
             }
         }
     }
@@ -355,13 +358,14 @@ function setup_plots() {
         TimeInputs.data.push({ mode: "lines",
                                 name: item,
                                 meta: item,
+                                showlegend: true,
                                 hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}" })
     }
 
     TimeInputs.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
                                 margin: { b: 50, l: 50, r: 50, t: 20 },
                                 xaxis: { title: {text: time_scale_label } },
-                                yaxis: { title: {text: "Rad/s" } }}
+                                yaxis: { title: {text: "deg / s" } }}
 
     var plot = document.getElementById("TimeInputs")
     Plotly.purge(plot)
@@ -374,6 +378,7 @@ function setup_plots() {
         TimeOutputs.data.push({ mode: "lines",
                                 name: item,
                                 meta: item,
+                                showlegend: true,
                                 hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}" })
     }
 
@@ -1115,14 +1120,39 @@ function redraw_step() {
     const sample_time = 1 / PID.sets.FFT.average_sample_rate
     const step_end_index = Math.min(Math.ceil(0.5 / sample_time), window_size)
 
-    // Expected to reach steady state after 0.2s
-    const step_steady_state_index = Math.ceil(0.2 / sample_time)
-
     // Create time array
     var time = new Array(step_end_index)
     for (let j=0;j<step_end_index;j++) {
         time[j] = j * sample_time
     }
+
+    // Create noise estimate
+    // Size gaussian based on 25 Hz cutoff freq
+    const cutfreq = 25
+    var len_lpf = PID.sets.FFT.bins.findIndex((x) => x > cutfreq)
+    len_lpf += len_lpf - 2 // account for double sided spectrum, DC and Niquist are not copied
+    const radius = Math.ceil(len_lpf * 0.5)
+    const sigma = len_lpf / 6.0
+
+    // convolution of gaussian and unit step is integral
+    var sn = (new Array(real_len)).fill(1.0)
+    var last_sn = 0
+    for (let j=0;j<len_lpf;j++) {
+        sn[j] = last_sn + Math.exp((-0.5/sigma**2) * (j-radius)**2)
+        last_sn = sn[j]
+    }
+    // Normalize to 1
+    for (let j=0;j<len_lpf;j++) {
+        sn[j] /= last_sn
+    }
+    // Reflect for full spectrum
+    sn = [...sn, ...sn.slice(1,real_len-1).reverse()]
+
+    // Scale
+    sn = array_scale(array_offset(array_scale(sn, -1.0), 1+1e-9), 10.0)
+
+    // Pre-calculate inverse
+    sn = array_inverse(sn)
 
     const num_sets = PID.sets.length
     var valid_sets = 0
@@ -1151,6 +1181,13 @@ function redraw_step() {
         var X = [ new Array(window_size), new Array(window_size) ]
         var Y = [ new Array(window_size), new Array(window_size) ]
         for (let k=start_index;k<end_index;k++) {
+
+            // Skip any window with low input amplitude
+            // 20 deg/s threshold
+            if (set.FFT.TarMax[k] < 20.0) {
+                continue
+            }
+
             // Recreate double sided spectrum
 
             // DC
@@ -1181,14 +1218,19 @@ function redraw_step() {
             }
 
             // Step response calculation taken from PID-Analyzer/PIDtoolbox
+            // https://github.com/Plasmatree/PID-Analyzer
+            // https://github.com/bw1129/PIDtoolbox
+            // Some other links that might be useful:
+            // https://en.wikipedia.org/wiki/Wiener_filter
+            // https://en.wikipedia.org/wiki/Ridge_regression#Relation_to_singular-value_decomposition_and_Wiener_filter
+            // Numerical Recipes, Linear Regularization Methods, http://numerical.recipes/
+            // Impact force reconstruction using the regularized Wiener filter method, https://www.tandfonline.com/doi/full/10.1080/17415977.2015.1101760
+
             const Pyx = complex_mul(Y, complex_conj(X))
             var Pxx = complex_mul(X, complex_conj(X))
 
             // Add SNR estimate
-            // value from PIDtoolbox
-            // PID-Analyzer uses array to bias towards lower frequencies
-            const SN = 10000
-            Pxx[0] = array_offset(Pxx[0], 1 / SN)
+            Pxx[0] = array_add(Pxx[0], sn)
 
             const H = complex_div(Pyx, Pxx)
 
@@ -1210,14 +1252,7 @@ function redraw_step() {
                 step[j] = step[j - 1] + impulse_response[j*2]
             }
 
-            // Check if response seems reasonable
-            const steady_state = step.slice(step_steady_state_index)
-            if ((Math.max(...steady_state) > 3) || (Math.min(...steady_state) < 0.5)) {
-                // Bad result, ignore
-                continue
-            }
-
-            // Good result, add to mean
+            // Add to mean
             mean_count += 1
             Step_mean = array_add(Step_mean, step)
 
@@ -1321,7 +1356,6 @@ function time_range_changed() {
     Plotly.redraw("FlightData")
 
     document.getElementById('calculate').disabled = false
-    document.getElementById('calculate_filters').disabled = false
 }
 
 var last_window_size
@@ -1533,21 +1567,21 @@ function load(log_file) {
                 }
                 if (is_RATE_msg) {
                     const axis_prefix = PID_log_messages[i].id[1]
-                    // Convert degres back to radians to match the native PID logging
-                    // Note that its still not quite the same, PID logs report the filtered target value where as RATE gets the raw
-                    const deg2rag = Math.PI / 180.0
+                    // Note that is not quite the same, PID logs report the filtered target value where as RATE gets the raw
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
                                                                      sample_rate: batch.sample_rate,
-                                                                     Tar: array_scale(Array.from(log.messages[id][axis_prefix + "Des"].slice(batch.batch_start, batch.batch_end)), deg2rag),
-                                                                     Act: array_scale(Array.from(log.messages[id][axis_prefix        ].slice(batch.batch_start, batch.batch_end)), deg2rag),
+                                                                     Tar: Array.from(log.messages[id][axis_prefix + "Des"].slice(batch.batch_start, batch.batch_end)),
+                                                                     Act: Array.from(log.messages[id][axis_prefix        ].slice(batch.batch_start, batch.batch_end)),
                                                                      Out: Array.from(log.messages[id][axis_prefix + "Out"].slice(batch.batch_start, batch.batch_end))})
 
                 } else {
+                    // Convert radians to degress
+                    const rad2deg = 180.0 / Math.PI
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
                                                                      sample_rate: batch.sample_rate,
-                                                                     Tar: Array.from(log.messages[id].Tar.slice(batch.batch_start, batch.batch_end)),
-                                                                     Act: Array.from(log.messages[id].Act.slice(batch.batch_start, batch.batch_end)),
-                                                                     Err: Array.from(log.messages[id].Err.slice(batch.batch_start, batch.batch_end)),
+                                                                     Tar: array_scale(Array.from(log.messages[id].Tar.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     Act: array_scale(Array.from(log.messages[id].Act.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     Err: array_scale(Array.from(log.messages[id].Err.slice(batch.batch_start, batch.batch_end)), rad2deg),
                                                                      P:   Array.from(log.messages[id].P.slice(batch.batch_start, batch.batch_end)),
                                                                      I:   Array.from(log.messages[id].I.slice(batch.batch_start, batch.batch_end)),
                                                                      D:   Array.from(log.messages[id].D.slice(batch.batch_start, batch.batch_end)),
