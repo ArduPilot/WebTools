@@ -256,6 +256,18 @@
 </body>
 
 <script>
+
+    window.onerror = function(msg, url, linenumber) {
+        alert('Sorry, something went wrong.\n\n' + 
+              'Please try a hard reload of this page to clear its cache.\n\n' +
+              'If the error persists open an issue on the GitHub repo.\n' +
+              'Include a copy of the log and the following error message:\n\n' +
+               msg + '\n' +
+              'URL: '+ url +'\n' +
+              'Line Number: '+ linenumber)
+        return false
+    }
+
     setup_plots()
     reset()
 
