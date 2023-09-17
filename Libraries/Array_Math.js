@@ -185,3 +185,12 @@ function array_all_equal(A, val) {
     }
     return true
 }
+
+function array_abs(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = Math.abs(A[i])
+    }
+    return ret
+}
