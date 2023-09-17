@@ -1109,12 +1109,37 @@ function redraw_step() {
 
     const PID = PID_log_messages[get_axis_index()]
 
-    // FFT library
+    // Although we re-calculate the FFT, because were just using larger window overlap the original FFT can still be checked for validity
+    const num_sets = PID.sets.length
+    var valid_sets = 0
+    for (let i = 0; i < num_sets; i++) {
+        if (PID.sets[i].FFT != null) {
+            valid_sets += 1
+        }
+
+        // Clear plot
+        const plot_index = i*2
+        step_plot.data[plot_index].x = []
+        step_plot.data[plot_index].y = []
+    }
+    if (valid_sets == 0) {
+        Plotly.redraw("step_plot")
+        return
+    }
+
+    // FFT library, use window size and sample rate from original FFT
     const window_size = PID.sets.FFT.window_size
     const real_len = real_length(window_size)
     const fft = new FFT_lib(window_size);
     var transfer_function = fft.createComplexArray()
-    var impulse_response = fft.createComplexArray()  
+    var impulse_response = fft.createComplexArray()
+
+    // Get windowing function
+    const windowing_function = hanning(window_size)
+
+    // Large overlap to maximize data, 50% must be used to get valid amplitude over data set
+    // Amplitude is not used here so larger overlap is OK
+    const window_spacing = Math.round(window_size / 16)
 
     // Only plot the first 0.5s of the step
     const sample_time = 1 / PID.sets.FFT.average_sample_rate
@@ -1154,127 +1179,127 @@ function redraw_step() {
     // Pre-calculate inverse
     sn = array_inverse(sn)
 
-    const num_sets = PID.sets.length
-    var valid_sets = 0
-    for (let i = 0; i < num_sets; i++) {
-        if (PID.sets[i].FFT != null) {
-            valid_sets += 1
-        }
-    }
-
-    for (let i = 0; i < num_sets; i++) {
-        const set = PID.sets[i]
-        if (set.FFT == null) {
-            continue
-        }
-
-        const plot_index = i*2
-        step_plot.data[plot_index].x = []
-        step_plot.data[plot_index].y = []
-
-        // Find the start and end index
-        const start_index = find_start_index(set.FFT.time)
-        const end_index = find_end_index(set.FFT.time)+1
+    // For each data set
+    for (let j = 0; j < num_sets; j++) {
+        const num_batch = PID.sets[j].length
+        const plot_index = j*2
 
         var Step_mean = (new Array(step_end_index)).fill(0)
         var mean_count = 0
-        var X = [ new Array(window_size), new Array(window_size) ]
-        var Y = [ new Array(window_size), new Array(window_size) ]
-        for (let k=start_index;k<end_index;k++) {
-
-            // Skip any window with low input amplitude
-            // 20 deg/s threshold
-            if (set.FFT.TarMax[k] < 20.0) {
+        for (let i=0;i<num_batch;i++) {
+            if (PID.sets[j][i].Tar.length < window_size) {
+                // Log section is too short, skip
                 continue
             }
 
-            // Recreate double sided spectrum
+            // FFT of target and actual
+            const FFT_res = run_fft(PID.sets[j][i], ["Tar", "Act"], window_size, window_spacing, windowing_function, fft)
+            const fft_time = array_offset(array_scale(FFT_res.center, sample_time), PID.sets[j][i].time[0])
 
-            // DC
-            X[0][0] = set.FFT.Tar[k][0][0]
-            X[1][0] = set.FFT.Tar[k][1][0]
-            Y[0][0] = set.FFT.Act[k][0][0]
-            Y[1][0] = set.FFT.Act[k][1][0]
+            // Find the start and end index
+            const start_index = find_start_index(fft_time)
+            const end_index = find_end_index(fft_time)+1
 
-            // Nyquist
-            X[0][real_len-1] = set.FFT.Tar[k][0][real_len-1]
-            X[1][real_len-1] = set.FFT.Tar[k][1][real_len-1]
-            Y[0][real_len-1] = set.FFT.Act[k][0][real_len-1]
-            Y[1][real_len-1] = set.FFT.Act[k][1][real_len-1]
+            var X = [ new Array(window_size), new Array(window_size) ]
+            var Y = [ new Array(window_size), new Array(window_size) ]
+            for (let k=start_index;k<end_index;k++) {
 
-            // Everything else is added in two places
-            // Divide by 2 to return to double sided
-            for (let j=1;j<real_len-1;j++) {
-                X[0][j] = set.FFT.Tar[k][0][j] * 0.5
-                X[1][j] = set.FFT.Tar[k][1][j] * 0.5
-                Y[0][j] = set.FFT.Act[k][0][j] * 0.5
-                Y[1][j] = set.FFT.Act[k][1][j] * 0.5
+                // Skip any window with low input amplitude
+                // 20 deg/s threshold
+                if (FFT_res.TarMax[k] < 20.0) {
+                    continue
+                }
 
-                const rhs_index = window_size - j
-                X[0][rhs_index] = set.FFT.Tar[k][0][j] *  0.5
-                X[1][rhs_index] = set.FFT.Tar[k][1][j] * -0.5
-                Y[0][rhs_index] = set.FFT.Act[k][0][j] *  0.5
-                Y[1][rhs_index] = set.FFT.Act[k][1][j] * -0.5
+                // Recreate double sided spectrum
+
+                // DC
+                X[0][0] = FFT_res.Tar[k][0][0]
+                X[1][0] = FFT_res.Tar[k][1][0]
+                Y[0][0] = FFT_res.Act[k][0][0]
+                Y[1][0] = FFT_res.Act[k][1][0]
+
+                // Nyquist
+                X[0][real_len-1] = FFT_res.Tar[k][0][real_len-1]
+                X[1][real_len-1] = FFT_res.Tar[k][1][real_len-1]
+                Y[0][real_len-1] = FFT_res.Act[k][0][real_len-1]
+                Y[1][real_len-1] = FFT_res.Act[k][1][real_len-1]
+
+                // Everything else is added in two places
+                // Divide by 2 to return to double sided
+                for (let l=1;l<real_len-1;l++) {
+                    X[0][l] = FFT_res.Tar[k][0][l] * 0.5
+                    X[1][l] = FFT_res.Tar[k][1][l] * 0.5
+                    Y[0][l] = FFT_res.Act[k][0][l] * 0.5
+                    Y[1][l] = FFT_res.Act[k][1][l] * 0.5
+
+                    const rhs_index = window_size - l
+                    X[0][rhs_index] = FFT_res.Tar[k][0][l] *  0.5
+                    X[1][rhs_index] = FFT_res.Tar[k][1][l] * -0.5
+                    Y[0][rhs_index] = FFT_res.Act[k][0][l] *  0.5
+                    Y[1][rhs_index] = FFT_res.Act[k][1][l] * -0.5
+                }
+
+                // Step response calculation taken from PID-Analyzer/PIDtoolbox
+                // https://github.com/Plasmatree/PID-Analyzer
+                // https://github.com/bw1129/PIDtoolbox
+                // Some other links that might be useful:
+                // https://en.wikipedia.org/wiki/Wiener_filter
+                // https://en.wikipedia.org/wiki/Ridge_regression#Relation_to_singular-value_decomposition_and_Wiener_filter
+                // Numerical Recipes, Linear Regularization Methods, http://numerical.recipes/
+                // Impact force reconstruction using the regularized Wiener filter method, https://www.tandfonline.com/doi/full/10.1080/17415977.2015.1101760
+
+                const Xcon = complex_conj(X)
+                const Pyx = complex_mul(Y, Xcon)
+                var Pxx = complex_mul(X, Xcon)
+
+                // Add SNR estimate
+                Pxx[0] = array_add(Pxx[0], sn)
+
+                const H = complex_div(Pyx, Pxx)
+
+                // Populate transfer function in fft.js interleaved complex format
+                for (let l=0;l<window_size;l++) {
+                    const index = l*2
+                    transfer_function[index]   = H[0][l]
+                    transfer_function[index+1] = H[1][l]
+                }
+
+                // Run inverse FFT
+                fft.inverseTransform(impulse_response, transfer_function)
+
+                // Integrate impulse to get step response
+                var step = new Array(step_end_index)
+                step[0] = impulse_response[0]
+                for (let l=1;l<step_end_index;l++) {
+                    // Just real component
+                    step[l] = step[l - 1] + impulse_response[l*2]
+                }
+
+                // Add to mean
+                mean_count += 1
+                Step_mean = array_add(Step_mean, step)
+
+                // add to plot of all
+                if (valid_sets == 1) {
+                    step_plot.data[plot_index].x.push(...time)
+                    step_plot.data[plot_index].y.push(...step)
+
+                    // Add NaN to remove line back to start
+                    step_plot.data[plot_index].x.push(NaN)
+                    step_plot.data[plot_index].y.push(NaN)
+                }
             }
 
-            // Step response calculation taken from PID-Analyzer/PIDtoolbox
-            // https://github.com/Plasmatree/PID-Analyzer
-            // https://github.com/bw1129/PIDtoolbox
-            // Some other links that might be useful:
-            // https://en.wikipedia.org/wiki/Wiener_filter
-            // https://en.wikipedia.org/wiki/Ridge_regression#Relation_to_singular-value_decomposition_and_Wiener_filter
-            // Numerical Recipes, Linear Regularization Methods, http://numerical.recipes/
-            // Impact force reconstruction using the regularized Wiener filter method, https://www.tandfonline.com/doi/full/10.1080/17415977.2015.1101760
-
-            const Pyx = complex_mul(Y, complex_conj(X))
-            var Pxx = complex_mul(X, complex_conj(X))
-
-            // Add SNR estimate
-            Pxx[0] = array_add(Pxx[0], sn)
-
-            const H = complex_div(Pyx, Pxx)
-
-            // Populate transfer function in fft.js interleaved complex format
-            for (let j=0;j<window_size;j++) {
-                const index = j*2
-                transfer_function[index]   = H[0][j]
-                transfer_function[index+1] = H[1][j]
+            if (mean_count <= 0) {
+                // No good steps, skip this set
+                continue
             }
 
-            // Run inverse FFT
-            fft.inverseTransform(impulse_response, transfer_function)
+            // Plot mean
+            step_plot.data[plot_index+1].x = time
+            step_plot.data[plot_index+1].y = array_scale(Step_mean, 1 / mean_count)
 
-            // Integrate impulse to get step response
-            var step = new Array(step_end_index)
-            step[0] = impulse_response[0]
-            for (let j=1;j<step_end_index;j++) {
-                // Just real component
-                step[j] = step[j - 1] + impulse_response[j*2]
-            }
-
-            // Add to mean
-            mean_count += 1
-            Step_mean = array_add(Step_mean, step)
-
-            // add to plot of all
-            if (valid_sets == 1) {
-                step_plot.data[plot_index].x.push(...time)
-                step_plot.data[plot_index].y.push(...step)
-
-                // Add NaN to remove line back to start
-                step_plot.data[plot_index].x.push(NaN)
-                step_plot.data[plot_index].y.push(NaN)
-            }
         }
-
-        if (mean_count <= 0) {
-            // No good steps, skip this set
-            continue
-        }
-
-        // Plot mean
-        step_plot.data[plot_index+1].x = time
-        step_plot.data[plot_index+1].y = array_scale(Step_mean, 1 / mean_count)
 
     }
 
