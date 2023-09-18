@@ -630,7 +630,7 @@ function HarmonicNotchFilter(params) {
     for (let j=0;j<tracking_methods.length;j++) {
         if (this.params.mode == tracking_methods[j].mode_value) {
             this.tracking = tracking_methods[j]
-            if (!this.tracking.have_data()) {
+            if ((this.params.enable > 0) && !this.tracking.have_data()) {
                 alert("No tracking data available for " + this.tracking.name + " notch")
             }
             break
@@ -2838,7 +2838,7 @@ function load(log_file) {
                     // Multiple IMU instances
                     msg_key = instance_key
 
-                } else if (Array.from(log.messages.IMU.I).every((x) => x == i)) {
+                } else if (("I" in log.messages.IMU) && Array.from(log.messages.IMU.I).every((x) => x == i)) {
                     // Single instance
                     msg_key = "IMU"
 
