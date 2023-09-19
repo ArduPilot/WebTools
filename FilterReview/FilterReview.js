@@ -324,9 +324,10 @@ class ESCTarget extends NotchTarget {
             let time = new Array(len)
 
             for (let i = 0; i < len; i++) {
-                let inst_freq = this.data[i].freq
-                for (let j = 0; j < inst_freq.length; j++) {
-                    inst_freq[j] = this.get_target(config, inst_freq[j])
+                const inst_len = this.data[i].freq.length
+                let inst_freq = new Array(inst_len)
+                for (let j = 0; j < inst_len; j++) {
+                    inst_freq[j] = this.get_target(config, this.data[i].freq[j])
                 }
 
                 time[i] = this.data[i].time
@@ -337,9 +338,10 @@ class ESCTarget extends NotchTarget {
         }
 
         // Tracking average motor rpm
-        let freq = this.data.avg_freq
-        for (let j = 0; j < freq.length; j++) {
-            freq[j] = this.get_target(config, freq[j])
+        const len = this.data.avg_freq.length
+        let freq = new Array(len)
+        for (let j = 0; j < len; j++) {
+            freq[j] = this.get_target(config, this.data.avg_freq[j])
         }
 
         return { freq:freq, time:this.data.avg_time }
@@ -453,9 +455,10 @@ class FFTTarget extends NotchTarget {
             let time = new Array(len)
 
             for (let i = 0; i < len; i++) {
-                let inst_freq = this.data[i].freq
-                for (let j = 0; j < inst_freq.length; j++) {
-                    inst_freq[j] = this.get_target(config, inst_freq[j])
+                const inst_len = this.data[i].freq.length
+                let inst_freq = new Array(inst_len)
+                for (let j = 0; j < inst_len; j++) {
+                    inst_freq[j] = this.get_target(config, this.data[i].freq[j])
                 }
 
                 time[i] = this.data[i].time
@@ -465,9 +468,10 @@ class FFTTarget extends NotchTarget {
         }
 
         // Just center peak
-        let freq = this.data.value
-        for (let j = 0; j < freq.length; j++) {
-            freq[j] = this.get_target(config, freq[j])
+        const len = this.data.value.length
+        let freq = new Array(len)
+        for (let j = 0; j < len; j++) {
+            freq[j] = this.get_target(config, this.data.value[j])
         }
         return { freq:freq, time:this.data.time }
     }
