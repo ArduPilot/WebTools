@@ -2241,14 +2241,22 @@ function update_hidden(source) {
 }
 
 // Grab param from log
-function get_param_value(param_log, name) {
+function get_param_value(param_log, name, allow_change) {
     var value
     for (let i = 0; i < param_log.Name.length; i++) {
         if (param_log.Name[i] === name) {
-            if ((value != null) && (value != param_log.Value[i])) {
-                console.log("Param changed in flight: " + name)
+            const new_value = param_log.Value[i]
+            if ((value != null) && (value != new_value)) {
+                let msg = name + " changed from " + value + " to " + new_value
+                if (allow_change === false) {
+                    msg = "Ignoring param change " + msg
+                    alert(msg)
+                    console.log(msg)
+                    return value
+                }
+                console.log(msg)
             }
-            value = param_log.Value[i]
+            value = new_value
         }
     }
     return value
@@ -2554,7 +2562,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
     }
 
     // Work out if logging is pre/post from param value
-    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
+    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT", false)
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
     const _doing_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 1)) != 0
     const _doing_pre_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 2)) != 0
@@ -2624,11 +2632,16 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch.quantization_noise = 0
 
     // Work out if logging is pre/post from param value
-    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
+    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT", false)
     const post_filter = (INS_LOG_BAT_OPT & (1 << 1)) != 0
+    const pre_post_filter = (INS_LOG_BAT_OPT & (1 << 2)) != 0
+    if (post_filter && pre_post_filter) {
+        allert("Both post and pre+post logging option selected")
+        post_filter = false
+    }
 
     // Load in a one massive batch, split for large gaps in log
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
         var instance_name = "GYR[" + i + "]"
         if (log.messages[instance_name] == null) {
             // Try single gyro instance
@@ -2678,10 +2691,16 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
-
-        Gyro_batch[i].sensor_num = i
-        Gyro_batch[i].post_filter = post_filter
         Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], sample_rate)
+
+        if (pre_post_filter && (i >= num_gyro)) {
+            Gyro_batch[i].sensor_num = i - num_gyro
+            Gyro_batch[i].post_filter = true
+        } else {
+            Gyro_batch[i].sensor_num = i
+            Gyro_batch[i].post_filter = post_filter
+        }
+
     }
 
     var start_time
