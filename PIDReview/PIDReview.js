@@ -1099,43 +1099,12 @@ function redraw_step() {
             const start_index = find_start_index(fft_time)
             const end_index = find_end_index(fft_time)+1
 
-            var X = [ new Array(window_size), new Array(window_size) ]
-            var Y = [ new Array(window_size), new Array(window_size) ]
             for (let k=start_index;k<end_index;k++) {
 
                 // Skip any window with low input amplitude
                 // 20 deg/s threshold
                 if (FFT_res.TarMax[k] < 20.0) {
                     continue
-                }
-
-                // Recreate double sided spectrum
-
-                // DC
-                X[0][0] = FFT_res.Tar[k][0][0]
-                X[1][0] = FFT_res.Tar[k][1][0]
-                Y[0][0] = FFT_res.Act[k][0][0]
-                Y[1][0] = FFT_res.Act[k][1][0]
-
-                // Nyquist
-                X[0][real_len-1] = FFT_res.Tar[k][0][real_len-1]
-                X[1][real_len-1] = FFT_res.Tar[k][1][real_len-1]
-                Y[0][real_len-1] = FFT_res.Act[k][0][real_len-1]
-                Y[1][real_len-1] = FFT_res.Act[k][1][real_len-1]
-
-                // Everything else is added in two places
-                // Divide by 2 to return to double sided
-                for (let l=1;l<real_len-1;l++) {
-                    X[0][l] = FFT_res.Tar[k][0][l] * 0.5
-                    X[1][l] = FFT_res.Tar[k][1][l] * 0.5
-                    Y[0][l] = FFT_res.Act[k][0][l] * 0.5
-                    Y[1][l] = FFT_res.Act[k][1][l] * 0.5
-
-                    const rhs_index = window_size - l
-                    X[0][rhs_index] = FFT_res.Tar[k][0][l] *  0.5
-                    X[1][rhs_index] = FFT_res.Tar[k][1][l] * -0.5
-                    Y[0][rhs_index] = FFT_res.Act[k][0][l] *  0.5
-                    Y[1][rhs_index] = FFT_res.Act[k][1][l] * -0.5
                 }
 
                 // Step response calculation taken from PID-Analyzer/PIDtoolbox
@@ -1147,6 +1116,9 @@ function redraw_step() {
                 // Numerical Recipes, Linear Regularization Methods, http://numerical.recipes/
                 // Impact force reconstruction using the regularized Wiener filter method, https://www.tandfonline.com/doi/full/10.1080/17415977.2015.1101760
 
+                const X = to_double_sided(FFT_res.Tar[k])
+                const Y = to_double_sided(FFT_res.Act[k])
+
                 const Xcon = complex_conj(X)
                 const Pyx = complex_mul(Y, Xcon)
                 var Pxx = complex_mul(X, Xcon)
@@ -1157,11 +1129,7 @@ function redraw_step() {
                 const H = complex_div(Pyx, Pxx)
 
                 // Populate transfer function in fft.js interleaved complex format
-                for (let l=0;l<window_size;l++) {
-                    const index = l*2
-                    transfer_function[index]   = H[0][l]
-                    transfer_function[index+1] = H[1][l]
-                }
+                to_fft_format(transfer_function, H)
 
                 // Run inverse FFT
                 fft.inverseTransform(impulse_response, transfer_function)
