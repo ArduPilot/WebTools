@@ -705,107 +705,6 @@ function HarmonicNotchFilter(params) {
     return this
 }
 
-// return hanning window array of given length
-function hanning(len) {
-    let w = new Array(len)
-    const scale = (2*Math.PI) / (len - 1)
-    for (let i=0; i<len; i++) {
-        w[i] = 0.5 - 0.5 * Math.cos(scale * i)
-    }
-    return w
-}
-
-// Calculate correction factors for linear and energy spectrum
-// linear: 1 / mean(w)
-// energy: 1 / sqrt(mean(w.^2))
-function window_correction_factors(w) {
-    return {
-        linear: 1/math.mean(w),
-        energy: 1/Math.sqrt(math.mean(array_mul(w,w)))
-    }
-}
-
-// Length of real half of fft of len points
-function real_length(len) {
-    return Math.floor(len / 2) + 1
-}
-
-// Frequency bins for given fft length and sample period (real only)
-function rfft_freq(len, d) {
-    const real_len = real_length(len)
-    let freq =  new Array(real_len)
-    for (var i=0;i<real_len;i++) {
-        freq[i] = i / (len * d)
-    }
-    return freq
-}
-
-function run_fft(batch, window_size, window_spacing, windowing_function, fft) {
-    const num_points = batch.x.length
-    const real_len = real_length(window_size)
-    const num_windows = Math.floor((num_points-window_size)/window_spacing) + 1
-
-    var fft_x = new Array(num_windows)
-    var fft_y = new Array(num_windows)
-    var fft_z = new Array(num_windows)
-
-    var center_sample = new Array(num_windows)
-
-    // Pre-allocate scale array.
-    // double positive spectrum to account for discarded energy in the negative spectrum
-    // Note that we don't scale the DC or Nyquist limit
-    // normalize all points by the window size
-    const end_scale = 1 / window_size
-    const mid_scale = 2 / window_size
-    var scale = new Array(real_len)
-    scale[0] = end_scale
-    for (var j=1;j<real_len-1;j++) {
-        scale[j] = mid_scale
-    }
-    scale[real_len-1] = end_scale
-
-    var result = [fft.createComplexArray(), fft.createComplexArray(), fft.createComplexArray()]
-    for (var i=0;i<num_windows;i++) {
-        // Calculate the start of each window
-        const window_start = i * window_spacing
-        const window_end = window_start + window_size
-
-        // Take average time for window
-        center_sample[i] = window_start + window_size * 0.5
-
-        // Get data and apply windowing function
-        let x_windowed = batch.x.slice(window_start, window_end)
-        let y_windowed = batch.y.slice(window_start, window_end)
-        let z_windowed = batch.z.slice(window_start, window_end)
-        for (let j=0;j<window_size;j++) {
-            x_windowed[j] *= windowing_function[j]
-            y_windowed[j] *= windowing_function[j]
-            z_windowed[j] *= windowing_function[j]
-        }
-
-        // Run fft
-        fft.realTransform(result[0], x_windowed)
-        fft.realTransform(result[1], y_windowed)
-        fft.realTransform(result[2], z_windowed)
-
-        fft_x[i] = new Array(real_len)
-        fft_y[i] = new Array(real_len)
-        fft_z[i] = new Array(real_len)
-
-        // Take abs and apply scale
-        // fft.js uses interleaved complex numbers, [ real0, imaginary0, real1, imaginary1, ... ]
-        for (let j=0;j<real_len;j++) {
-            const index = j*2
-            fft_x[i][j] = ((result[0][index]**2 + result[0][index+1]**2)**0.5) * scale[j]
-            fft_y[i][j] = ((result[1][index]**2 + result[1][index+1]**2)**0.5) * scale[j]
-            fft_z[i][j] = ((result[2][index]**2 + result[2][index+1]**2)**0.5) * scale[j]
-        }
-
-    }
-
-    return {x:fft_x, y:fft_y, z:fft_z, center:center_sample}
-}
-
 function run_batch_fft(data_set) {
     const num_batch = data_set.length
     const num_points = data_set[0].x.length
@@ -868,12 +767,15 @@ function run_batch_fft(data_set) {
             // Log section is too short, skip
             continue
         }
-        var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, fft)
+        var ret = run_fft(data_set[i], ["x", "y", "z"], window_size, window_spacing, windowing_function, fft)
 
         time.push(...array_offset(array_scale(ret.center, sample_time), data_set[i].sample_time))
-        x.push(...ret.x)
-        y.push(...ret.y)
-        z.push(...ret.z)
+
+        for (let j=0; j<ret.x.length; j++) {
+            x.push(complex_abs(ret.x[j]))
+            y.push(complex_abs(ret.y[j]))
+            z.push(complex_abs(ret.z[j]))
+        }
 
     }
 
