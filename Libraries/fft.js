@@ -104,3 +104,42 @@ function run_fft(data, keys, window_size, window_spacing, windowing_function, ff
 
     return ret
 }
+
+// Take result of above FFT and recreate full double sided spectrum including removing scale
+function to_double_sided(X) {
+    const real_len = X[0].length
+    const full_len = (real_len - 1) * 2
+
+    let ret = [new Array(full_len), new Array(full_len)]
+
+    // DC
+    ret[0][0] = X[0][0]
+    ret[1][0] = X[1][0]
+
+    // Nyquist
+    ret[0][real_len-1] = X[0][real_len-1]
+    ret[1][real_len-1] = X[1][real_len-1]
+
+    // Everything else is added in two places
+    // Divide by 2 to return to double sided
+    for (let i=1;i<real_len-1;i++) {
+        ret[0][i] = X[0][i] * 0.5
+        ret[1][i] = X[1][i] * 0.5
+
+        const rhs_index = full_len - i
+        ret[0][rhs_index] = X[0][i] *  0.5
+        ret[1][rhs_index] = X[1][i] * -0.5
+    }
+
+    return ret
+}
+
+// Populate target complex array in fft.js interleaved format
+function to_fft_format(target, source) {
+    const len = source[0].length
+    for (let i=0;i<len;i++) {
+        const index = i*2
+        target[index]   = source[0][i]
+        target[index+1] = source[1][i]
+    }
+}
