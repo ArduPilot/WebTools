@@ -9,6 +9,7 @@
 <script type="text/javascript" src="PIDReview.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/fft.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -100,6 +101,7 @@
         <td style="width: 10px;"></td>
         <td>
             <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
+            <div id="OpenIn"></div><br><br>
             <input type="button" id="calculate" value="Calculate" onclick="re_calc()">
         </td>
     </table>
@@ -283,5 +285,7 @@
         }
         reader.readAsArrayBuffer(file)
     }
+
+    setup_open_in("OpenIn", "fileItem", load)
 
 </script>
