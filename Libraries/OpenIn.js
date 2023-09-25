@@ -32,13 +32,14 @@ function setup_open_in(div_id, file_id, load_fun) {
     div.addEventListener("mouseout", () => { dropdown.style.display = "none" });
 
     const destinations = [["UAV Log Viewer", "https://plotbeta.ardupilot.org/#"],
-                          ["Hardware Report", "/HardwareReport"],
-                          ["Filter Review","/FilterReview"], 
-                          ["PID Review", "/PIDReview"]]
+                          ["Hardware Report", "../HardwareReport"],
+                          ["Filter Review","../FilterReview"], 
+                          ["PID Review", "../PIDReview"]]
 
-    const own_window = window.location.pathname
+    const path_segments = window.location.pathname.split('/');
+    const own_window = path_segments.pop() || path_segments.pop()
     for (const dest of destinations) {
-        if (own_window.startsWith(dest[1])) {
+        if (dest[1].includes(own_window)) {
             // Don't link back to self
             continue
         }
