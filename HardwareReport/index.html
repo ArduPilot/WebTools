@@ -7,6 +7,7 @@
 <script type="text/javascript" src="../Libraries/DecodeDevID.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 
 </head>
@@ -34,6 +35,8 @@
 
 <body onload="initial_load(); reset();">
 <input id="fileItem" type="file" accept=".param,.parm,.bin" onchange="load(this)">
+
+<div id="OpenIn"></div>
 
 <h3 hidden>Firmware</h3>
 <p id="VER"></p>
@@ -241,6 +244,8 @@
             'Line Number: '+ linenumber)
       return false
   }
+
+  setup_open_in("OpenIn", "fileItem", (data) => {reset(); load_log(data)})
 
 </script>
 
