@@ -37,6 +37,9 @@ function run_batch_fft(data_set) {
     var sample_rate_sum = 0
     var sample_rate_count = 0
     for (let j=0; j<num_sets; j++) {
+        if (data_set[j] == null) {
+            continue
+        }
         const num_batch = data_set[j].length
         for (let i=0;i<num_batch;i++) {
             if (data_set[j][i][fft_keys[0]].length < window_size) {
@@ -56,6 +59,9 @@ function run_batch_fft(data_set) {
     const sample_time = sample_rate_count / sample_rate_sum
 
     for (let j=0; j<num_sets; j++) {
+        if (data_set[j] == null) {
+            continue
+        }
         let have_data = false
         const num_batch = data_set[j].length
         for (let i=0;i<num_batch;i++) {
@@ -446,6 +452,11 @@ function setup_FFT_data() {
 
     const PID = PID_log_messages[get_axis_index()]
 
+    // Clear existing data
+    fft_plot.data = []
+    step_plot.data = []
+
+
     // Add group for each param set
     const num_sets = PID.params.sets.length
     for (let i = 0; i < num_sets; i++) {
@@ -487,6 +498,14 @@ function setup_FFT_data() {
                                            showlegend: num_sets > 1 }
 
     }
+
+    let plot = document.getElementById("FFTPlot")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
+
+    plot = document.getElementById("step_plot")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, step_plot.data, step_plot.layout, {displaylogo: false});
 
 }
 
@@ -646,6 +665,11 @@ function add_param_sets() {
         cell.style.padding = "8px"
     }
 
+    let index = document.createElement("th")
+    header.appendChild(index)
+    index.appendChild(document.createTextNode("Num"))
+    set_cell_style(index)
+
     let item = document.createElement("th")
     header.appendChild(item)
     item.appendChild(document.createTextNode("Show"))
@@ -675,14 +699,18 @@ function add_param_sets() {
 
     // Add line
     for (let i = 0; i < num_sets; i++) {
-        if ((PID.sets[i] == null) || (PID.sets[i].FFT == null)) {
-            continue
-        }
+        const valid = (PID.sets[i] != null) && (PID.sets[i].FFT != null)
 
         const set = PID.params.sets[i]
 
         let row = document.createElement("tr")
         table.appendChild(row)
+
+        let index = document.createElement("td")
+        row.appendChild(index)
+        set_cell_style(index)
+        index.appendChild(document.createTextNode(i + 1))
+
 
         let item = document.createElement("td")
         row.appendChild(item)
@@ -692,8 +720,8 @@ function add_param_sets() {
         checkbox.setAttribute('type', "checkbox")
         checkbox.setAttribute('id', "set_selection_" + i)
         checkbox.setAttribute('onchange', "update_hidden(this)")
-        checkbox.checked = true
-        checkbox.disabled = valid_sets == 1
+        checkbox.checked = valid
+        checkbox.disabled = (valid_sets == 1) || !valid
         item.appendChild(checkbox)
 
         for (const name of Object.keys(names)) {
@@ -701,7 +729,26 @@ function add_param_sets() {
             row.appendChild(item)
             set_cell_style(item)
 
-            item.appendChild(document.createTextNode(set[name].toFixed(4)))
+            const value = set[name]
+            const text = document.createTextNode(value.toFixed(4))
+
+            let changed = false
+            if (i > 0) {
+                const last_value = PID.params.sets[i-1][name]
+                if (value != last_value) {
+                    changed = true
+                }
+            }
+            if (changed) {
+                // Make text bold
+                let bold = document.createElement("b")
+                bold.appendChild(text)
+                item.appendChild(bold)
+
+            } else {
+                // Just add text
+                item.appendChild(text)
+            }
         }
     }
 
@@ -772,6 +819,9 @@ function redraw() {
         TimeOutputs.data[i].y = []
     }
     for (const set of PID.sets) {
+        if (set == null) {
+            continue
+        }
         for (let i = 0; i < set.length; i++) {
             if (i > 0) {
                 // Push NaN to show gap in data
@@ -857,7 +907,7 @@ function redraw() {
     const num_sets = PID.sets.length
     for (let i = 0; i < num_sets; i++) {
         const set = PID.sets[i]
-        if (set.FFT == null) {
+        if ((set == null) || (set.FFT == null)) {
             continue
         }
         const show_set = document.getElementById("set_selection_" + i).checked
@@ -946,7 +996,7 @@ function redraw_Spectrogram() {
     const num_sets = PID.sets.length
     for (let i = 0; i < num_sets; i++) {
         const set = PID.sets[i]
-        if (set.FFT == null) {
+        if ((set == null) || (set.FFT == null)) {
             continue
         }
 
@@ -1012,7 +1062,7 @@ function redraw_step() {
     const num_sets = PID.sets.length
     var valid_sets = 0
     for (let i = 0; i < num_sets; i++) {
-        if (PID.sets[i].FFT != null) {
+        if ((PID.sets[i] != null) && (PID.sets[i].FFT != null)) {
             valid_sets += 1
         }
 
@@ -1080,6 +1130,9 @@ function redraw_step() {
 
     // For each data set
     for (let j = 0; j < num_sets; j++) {
+        if (PID.sets[j] == null) {
+            continue
+        }
         const num_batch = PID.sets[j].length
         const plot_index = j*2
 
@@ -1147,14 +1200,12 @@ function redraw_step() {
                 Step_mean = array_add(Step_mean, step)
 
                 // add to plot of all
-                if (valid_sets == 1) {
-                    step_plot.data[plot_index].x.push(...time)
-                    step_plot.data[plot_index].y.push(...step)
+                step_plot.data[plot_index].x.push(...time)
+                step_plot.data[plot_index].y.push(...step)
 
-                    // Add NaN to remove line back to start
-                    step_plot.data[plot_index].x.push(NaN)
-                    step_plot.data[plot_index].y.push(NaN)
-                }
+                // Add NaN to remove line back to start
+                step_plot.data[plot_index].x.push(NaN)
+                step_plot.data[plot_index].y.push(NaN)
             }
 
             if (mean_count <= 0) {
@@ -1165,7 +1216,10 @@ function redraw_step() {
             // Plot mean
             step_plot.data[plot_index+1].x = time
             step_plot.data[plot_index+1].y = array_scale(Step_mean, 1 / mean_count)
+            step_plot.data[plot_index+1].visible = true
 
+            // Show all estimates by default for single set
+            step_plot.data[plot_index].visible = (valid_sets == 1)
         }
 
     }
@@ -1195,7 +1249,7 @@ function update_hidden(source) {
         var set = 0
         while (i < fft_plot.data.length) {
             const show_set = document.getElementById("set_selection_" + set).checked
-            fft_plot.data[index].visible = set_to && show_set
+            fft_plot.data[i].visible = set_to && show_set
             i += fft_keys.length
             set += 1
         }
@@ -1230,6 +1284,32 @@ function update_hidden(source) {
             const show_key = document.getElementById("PIDX_" + fft_keys[j]).checked
             fft_plot.data[get_FFT_data_index(set, j)].visible = check && show_key
         }
+
+        const set_index = set*2
+
+        // Set mean plot
+        step_plot.data[set_index+1].visible = check
+
+        // See how many mean lines are showing and hide plot of all
+        let visible_mean = 0
+        let visible_set
+        let j = 0
+        while (j < step_plot.data.length) {
+            step_plot.data[j].visible = false
+            if (step_plot.data[j+1].visible) {
+                visible_mean++
+                visible_set = j
+            }
+            j += 2
+        }
+
+        // If only one mean line is shown then show all estimates for the mean
+        if (visible_mean == 1) {
+            step_plot.data[visible_set].visible = true
+        }
+
+        Plotly.redraw("step_plot")
+
 
     } else {
         set_all_from_id(source.id, source.checked)
@@ -1338,7 +1418,7 @@ function split_into_batches(PID_log_messages, index, time) {
             if (past_set_end) {
                 // Move on to next set
                 param_set++
-                set_end = (PID_log_messages[index].params.sets.length < param_set) ? PID_log_messages[index].params.sets[1].time : null
+                set_end = (PID_log_messages[index].params.sets.length > param_set+1) ? PID_log_messages[index].params.sets[param_set+1].time : null
             }
 
             // Start the next batch from this point
@@ -1402,7 +1482,7 @@ function load(log_file) {
                     found_param = true
                     if (param_values[name] != null  && (param_values[name] != log.messages.PARM.Value[j])) {
                         // Param change store all values to this point as a batch
-                        PID_log_messages[i].params.sets.push(param_values)
+                        PID_log_messages[i].params.sets.push(Object.assign({}, param_values))
 
                         // Record start time for new set
                         param_values.time = log.messages.PARM.time_boot_ms[j] / 1000
@@ -1413,7 +1493,7 @@ function load(log_file) {
             }
             if (found_param) {
                 // Push the final set
-                PID_log_messages[i].params.sets.push(param_values)
+                PID_log_messages[i].params.sets.push(Object.assign({}, param_values))
                 PID_log_messages[i].params.prefix = prefix
                 // could lock onto a set of param prefixes per vehicle to speed up the search
                 break
@@ -1549,6 +1629,10 @@ function load(log_file) {
             continue
         }
         for (var set of PID.sets) {
+            if (set == null) {
+                // No data for this set
+                continue
+            }
             for (var batch of set) {
                 if ("Out" in batch) {
                     // Have output directly from log when using RATE msg
