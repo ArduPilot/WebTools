@@ -2632,9 +2632,9 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch.quantization_noise = 0
 
     // Work out if logging is pre/post from param value
-    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT", false)
-    const post_filter = (INS_LOG_BAT_OPT & (1 << 1)) != 0
-    const pre_post_filter = (INS_LOG_BAT_OPT & (1 << 2)) != 0
+    const INS_RAW_LOG_OPT = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT", false)
+    const post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 2)) != 0)
+    const pre_post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 3)) != 0)
     if (post_filter && pre_post_filter) {
         allert("Both post and pre+post logging option selected")
         post_filter = false
