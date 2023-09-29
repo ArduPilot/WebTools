@@ -448,11 +448,14 @@ function get_FFT_data_index(set_num, plot_type) {
     return set_num*plot_types.length + plot_type
 }
 
+const default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 function setup_FFT_data() {
 
     const PID = PID_log_messages[get_axis_index()]
 
     // Clear existing data
+    TimeInputs.layout.shapes = []
+    TimeOutputs.layout.shapes = []
     fft_plot.data = []
     step_plot.data = []
 
@@ -482,6 +485,8 @@ function setup_FFT_data() {
             }
         }
 
+        const color = default_colors[i % default_colors.length]
+
         // Each set gets mean step response and individual
         const name = "Test " + (i+1)
         const step_index = i*2
@@ -491,15 +496,42 @@ function setup_FFT_data() {
                                        showlegend: false }
 
         step_plot.data[step_index + 1] = { mode: "lines",
-                                           line: { width: 4 },
+                                           line: { width: 4, color: color },
                                            name: name,
                                            meta: name,
                                            hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f}",
                                            showlegend: num_sets > 1 }
 
+        // Add rectangle for each param set to time domain plots
+        const rect = {
+            type: 'rect',
+            line: { width: 0 },
+            yref: 'paper',
+            y0: 0,   y1: 1,
+            fillcolor: color,
+            opacity: 0.4,
+            label: {
+                text: i+1,
+                textposition: 'top left',
+            },
+            layer: "below",
+            visible: false
+        }
+
+        TimeInputs.layout.shapes.push(Object.assign({}, rect))
+        TimeOutputs.layout.shapes.push(Object.assign({}, rect))
+
     }
 
-    let plot = document.getElementById("FFTPlot")
+    let plot = document.getElementById("TimeInputs")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, TimeInputs.data, TimeInputs.layout, {displaylogo: false})
+
+    plot = document.getElementById("TimeOutputs")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, TimeOutputs.data, TimeOutputs.layout, {displaylogo: false})
+
+    plot = document.getElementById("FFTPlot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
 
@@ -535,7 +567,9 @@ function clear_calculation() {
             continue
         }
         for (const set of PID_log_messages[i].sets) {
-            set.FFT = null
+            if (set != null) {
+                set.FFT = null
+            }
         }
         PID_log_messages[i].sets.FFT = null
     }
@@ -660,9 +694,13 @@ function add_param_sets() {
     let header = document.createElement("tr")
     table.appendChild(header)
 
-    function set_cell_style(cell) {
+    function set_cell_style(cell, color) {
         cell.style.border = "1px solid #000"
         cell.style.padding = "8px"
+        if (color != null) {
+            // add alpha, 40%
+            cell.style.backgroundColor = color + '66'
+        }
     }
 
     let index = document.createElement("th")
@@ -699,6 +737,7 @@ function add_param_sets() {
 
     // Add line
     for (let i = 0; i < num_sets; i++) {
+        const color = num_sets > 1 ? default_colors[i % default_colors.length] : null
         const valid = (PID.sets[i] != null) && (PID.sets[i].FFT != null)
 
         const set = PID.params.sets[i]
@@ -708,13 +747,13 @@ function add_param_sets() {
 
         let index = document.createElement("td")
         row.appendChild(index)
-        set_cell_style(index)
+        set_cell_style(index, color)
         index.appendChild(document.createTextNode(i + 1))
 
 
         let item = document.createElement("td")
         row.appendChild(item)
-        set_cell_style(item)
+        set_cell_style(item, color)
 
         let checkbox = document.createElement("input")
         checkbox.setAttribute('type', "checkbox")
@@ -727,7 +766,7 @@ function add_param_sets() {
         for (const name of Object.keys(names)) {
             let item = document.createElement("td")
             row.appendChild(item)
-            set_cell_style(item)
+            set_cell_style(item, color)
 
             const value = set[name]
             const text = document.createTextNode(value.toFixed(4))
@@ -871,6 +910,22 @@ function redraw() {
 
     TimeOutputs.layout.xaxis.autorange = false
     TimeOutputs.layout.xaxis.range = time_range
+
+    // Rectangles to show param changes
+    if (PID.params.sets.length > 1) {
+        for (let i = 0; i < PID.params.sets.length; i++) {
+            const set_start = math.max(time_range[0], PID.params.sets[i].start_time)
+            const set_end = math.min(time_range[1], PID.params.sets[i].end_time)
+
+            TimeInputs.layout.shapes[i].x0 = set_start
+            TimeInputs.layout.shapes[i].x1 = set_end
+            TimeInputs.layout.shapes[i].visible = true
+
+            TimeOutputs.layout.shapes[i].x0 = set_start
+            TimeOutputs.layout.shapes[i].x1 = set_end
+            TimeOutputs.layout.shapes[i].visible = true
+        }
+    }
 
     Plotly.redraw("TimeInputs")
     Plotly.redraw("TimeOutputs")
@@ -1398,13 +1453,17 @@ function split_into_batches(PID_log_messages, index, time) {
     let batch_start = 0
     let count = 0
     let param_set = 0
-    let set_end = (PID_log_messages[index].params.sets.length > 1) ? PID_log_messages[index].params.sets[1].time : null
+    let set_start = PID_log_messages[index].params.sets[0].start_time
+    let set_end = PID_log_messages[index].params.sets[0].end_time
     for (let j = 1; j < len; j++) {
+        if (time[j] < set_start) {
+            continue
+        }
         // Take running average of sample time, split into batches for gaps
         // Use threshold of 5 times the average gap seen so far.
         // This should mean we get a new batch after two missed messages
         count++
-        const past_set_end = (set_end != null) && (time[j] > set_end)
+        const past_set_end = time[j] > set_end
         if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1)) || past_set_end) {
             if (count >= 64) {
                 // Must have at least 64 samples in each batch
@@ -1418,7 +1477,8 @@ function split_into_batches(PID_log_messages, index, time) {
             if (past_set_end) {
                 // Move on to next set
                 param_set++
-                set_end = (PID_log_messages[index].params.sets.length > param_set+1) ? PID_log_messages[index].params.sets[param_set+1].time : null
+                set_start = PID_log_messages[index].params.sets[param_set].start_time
+                set_end = PID_log_messages[index].params.sets[param_set].end_time
             }
 
             // Start the next batch from this point
@@ -1467,33 +1527,47 @@ function load(log_file) {
 
             const names = get_PID_param_names(prefix)
 
-            let param_values = { time: 0 }
+            let param_values = { start_time: 0 }
             for (const name in names) {
                 param_values[name] = null
             }
 
             let found_param = false
+            let last_set_end
             for (let j = 0; j < log.messages.PARM.Name.length; j++) {
                 const param_name = log.messages.PARM.Name[j]
                 for (const [name, param_string] of Object.entries(names)) {
                     if (param_name !== param_string) {
                         continue
                     }
+                    const time = log.messages.PARM.time_boot_ms[j] / 1000
+                    const value = log.messages.PARM.Value[j]
                     found_param = true
-                    if (param_values[name] != null  && (param_values[name] != log.messages.PARM.Value[j])) {
-                        // Param change store all values to this point as a batch
-                        PID_log_messages[i].params.sets.push(Object.assign({}, param_values))
+                    if (param_values[name] != null  && (param_values[name] != value)) {
+                        if ((last_set_end == null) || (time - last_set_end > 1.0)) {
+                            // First param change for a second
+                            last_set_end = time
 
-                        // Record start time for new set
-                        param_values.time = log.messages.PARM.time_boot_ms[j] / 1000
+                            // Param change store all values to this point as a batch
+                            PID_log_messages[i].params.sets.push(Object.assign({}, param_values, {end_time: last_set_end}))
+
+                            // Record start time for new set
+                            param_values.start_time = time
+
+                        } else {
+                            // Very recent param change, combine with latest set, this leaves gap between sets
+                            param_values[name] = value
+                            param_values.start_time = time
+
+                        }
                     }
-                    param_values[name] = log.messages.PARM.Value[j]
+                    param_values[name] = value
                     break
                 }
             }
             if (found_param) {
                 // Push the final set
-                PID_log_messages[i].params.sets.push(Object.assign({}, param_values))
+                PID_log_messages[i].params.sets.push(Object.assign({}, param_values, {end_time: Infinity}))
                 PID_log_messages[i].params.prefix = prefix
                 // could lock onto a set of param prefixes per vehicle to speed up the search
                 break
