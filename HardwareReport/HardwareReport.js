@@ -547,8 +547,8 @@ function load_baro(log) {
             }
             let wind_comp_en = false
             if (params[names.wind_comp.enabled] > 0) {
-                let wind_comp = get_param_array(names.wind_comp.coefficients)
-                if (param_vector_configured(wind_comp, 0.0)) {
+                let wind_comp = get_param_array(params, names.wind_comp.coefficients)
+                if (!array_all_equal(wind_comp, 0.0)) {
                     wind_comp_en = true
                 }
             }
