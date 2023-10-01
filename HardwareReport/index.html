@@ -8,6 +8,7 @@
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 
 </head>
@@ -245,7 +246,9 @@
       return false
   }
 
-  setup_open_in("OpenIn", "fileItem", (data) => {reset(); load_log(data)})
+  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) })
+
+  init_loading_overlay()
 
 </script>
 

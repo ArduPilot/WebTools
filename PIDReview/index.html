@@ -10,6 +10,7 @@
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/fft.js"></script>
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -72,27 +73,27 @@
                 <legend>Axis</legend>
                 <table>
                     <td>
-                        <input type="radio" id="type_RATE_R" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_RATE_R" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_RATE_R">RATE Roll</label><br>
-                        <input type="radio" id="type_RATE_P" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_RATE_P" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_RATE_P">RATE Pitch</label><br>
-                        <input type="radio" id="type_RATE_Y" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_RATE_Y" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_RATE_Y">RATE Yaw</label><br>
                     </td>
                     <td>
-                        <input type="radio" id="type_PIDR" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIDR" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIDR">PIDR</label><br>
-                        <input type="radio" id="type_PIDP" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIDP" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIDP">PIDP</label><br>
-                        <input type="radio" id="type_PIDY" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIDY" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIDY">PIDY</label><br>
                     </td>
                     <td>
-                        <input type="radio" id="type_PIQR" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIQR" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIQR">PIQR</label><br>
-                        <input type="radio" id="type_PIQP" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIQP" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIQP">PIQP</label><br>
-                        <input type="radio" id="type_PIQY" name="Axis" onchange="add_param_sets(); setup_FFT_data(); redraw()">
+                        <input type="radio" id="type_PIQY" name="Axis" onchange="loading_call(setup_axis)">
                         <label for="type_PIQY">PIQY</label><br>
                     </td>
                 </table>
@@ -102,7 +103,7 @@
         <td>
             <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
             <div id="OpenIn"></div><br><br>
-            <input type="button" id="calculate" value="Calculate" onclick="re_calc()">
+            <input type="button" id="calculate" value="Calculate" onclick="loading_call(re_calc)">
         </td>
     </table>
 </fieldset>
@@ -281,11 +282,13 @@
         }
         let reader = new FileReader()
         reader.onload = function (e) {
-            load(reader.result)
+            loading_call(() => { load(reader.result) })
         }
         reader.readAsArrayBuffer(file)
     }
 
-    setup_open_in("OpenIn", "fileItem", load)
+    setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+
+    init_loading_overlay()
 
 </script>

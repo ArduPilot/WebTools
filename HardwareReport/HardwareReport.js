@@ -1269,7 +1269,7 @@ async function load(e) {
     if (file.name.toLowerCase().endsWith(".bin")) {
         let reader = new FileReader()
         reader.onload = function (e) {
-            load_log(reader.result)
+            loading_call(() => { load_log(reader.result) })
         }
         reader.readAsArrayBuffer(file)
 

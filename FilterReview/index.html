@@ -13,6 +13,7 @@
 <script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
 <script type="text/javascript" src="../Libraries/fft.js"></script>
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -88,7 +89,7 @@
             <td>
                 <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
                 <div id="OpenIn"></div><br><br>
-                <input type="button" id="calculate" value="Calculate" onclick="re_calc()">
+                <input type="button" id="calculate" value="Calculate" onclick="loading_call(re_calc)">
             </td>
         </tr>
     </table>
@@ -335,7 +336,7 @@
     <fieldset style="width:428px;height:70px">
     <legend>Setup</legend>
     <p>
-        <input type="button" id="calculate_filters" value="Recalculate filters" onclick="re_calc()">
+        <input type="button" id="calculate_filters" value="Recalculate filters" onclick="loading_call(re_calc)">
         <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
         <button class="styleClass" id="LoadParams" onclick="document.getElementById('LoadParamsbase').click()">Load Parameters</button>
         <input type='file' id="LoadParamsbase" style="display:none" onchange="load_parameters(this.files[0]);">
@@ -549,11 +550,13 @@
         }
         let reader = new FileReader()
         reader.onload = function (e) {
-            load(reader.result)
+            loading_call(() => { load(reader.result) })
         }
         reader.readAsArrayBuffer(file)
     }
 
-    setup_open_in("OpenIn", "fileItem", load)
+    setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+
+    init_loading_overlay()
 
 </script>
