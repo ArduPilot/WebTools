@@ -1740,6 +1740,16 @@ function load(log_file) {
     // Calculate FFT
     calculate()
 
+    // Setup the selected axis
+    setup_axis()
+
+    const end = performance.now();
+    console.log(`Load took: ${end - start} ms`);
+}
+
+// Setup the selected axis
+function setup_axis() {
+
     // Show param values
     add_param_sets()
 
@@ -1748,7 +1758,4 @@ function load(log_file) {
 
     // Plot
     redraw()
-
-    const end = performance.now();
-    console.log(`Load took: ${end - start} ms`);
 }
