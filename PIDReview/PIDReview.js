@@ -1654,13 +1654,10 @@ function load(log_file) {
         }
 
     }
-    delete log.messages.RATE
 
     if (!PID_log_messages.have_data) {
-        if (Object.keys(log.messages.RATE).length == 0) {
-            alert("No PID or RATE log messages found")
-            return
-        }
+        alert("No PID or RATE log messages found")
+        return
     }
 
     // Plot flight data from log
