@@ -899,7 +899,7 @@ var Spectrogram = {}
 var fft_plot = {}
 var Bode = {}
 var flight_data = {}
-const max_num_harmonics = 8
+const max_num_harmonics = 16
 function setup_plots() {
 
     const time_scale_label = "Time (s)"
@@ -2844,6 +2844,37 @@ function load(log_file) {
             const value = get_param_value(log.messages.PARM, param)
             if (value != null) {
                 parameter_set_value(param, value)
+            }
+        }
+    }
+
+    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
+    const have_16_harmonics = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT") != null
+    for (let i = 0; i < HNotch_params.length; i++) {
+        // Find all harmonic bitmasks
+        for (const param of Object.values(HNotch_params[i])) {
+            if (!param.endsWith("HMNCS")) {
+                continue
+            }
+            let param_ele = document.getElementById(param)
+            if (param_ele == null) {
+                continue
+            }
+
+            // Bits of bitmask
+            let items = param_ele.parentElement.querySelectorAll("input[type=checkbox]")
+            for (let item of items) {
+                const hide = (!have_16_harmonics && parseFloat(item.dataset.bit) >= 8) ? "none" : "inline"
+
+                // Hide checkbox and label
+                item.style.display = hide
+                item.labels[0].style.display = hide
+
+                // Hide line breaks
+                let br = item.labels[0].nextSibling
+                if ((br != null) && (br.nodeName == "BR")) {
+                    br.style.display = hide
+                }
             }
         }
     }
