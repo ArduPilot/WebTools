@@ -1300,7 +1300,7 @@ function calculate() {
         if (!Gyro_batch[i].post_filter) {
             // Calculate Z for transfer function
             // Z = e^jw
-            const Z = exp_jw(Gyro_batch[i].FFT.bins, Gyro_batch[i].gyro_rate)
+            const Z = exp_jw(Gyro_batch[i].FFT.bins, Gyro_batch[i].FFT.average_sample_rate)
 
             // Z^-1
             Gyro_batch[i].FFT.Z1 = complex_inverse(Z)
@@ -1320,7 +1320,7 @@ function calculate() {
 
             // Calculate Z for transfer function
             // Z = e^jw
-            const bode_Z = exp_jw(Gyro_batch[i].FFT.bode.freq, Gyro_batch[i].gyro_rate)
+            const bode_Z = exp_jw(Gyro_batch[i].FFT.bode.freq, Gyro_batch[i].FFT.average_sample_rate)
 
             // Z^-1
             Gyro_batch[i].FFT.bode.Z1 = complex_inverse(bode_Z)
@@ -1386,14 +1386,14 @@ function calculate_transfer_function() {
         }
         if (Gyro_batch[i].FFT.Z1 != null) {
             // Calc transfer functions for post filter estimate
-            Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
+            Gyro_batch[i].FFT.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].FFT.average_sample_rate, Gyro_batch[i].FFT.Z1, Gyro_batch[i].FFT.Z2)
 
         }
         if (Gyro_batch[i].FFT.bode != null) {
             // Use post filter if available
 
             // Higher frequency resolution for bode plot
-            Gyro_batch[i].FFT.bode.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].gyro_rate, Gyro_batch[i].FFT.bode.Z1, Gyro_batch[i].FFT.bode.Z2)
+            Gyro_batch[i].FFT.bode.H = calc(i, Gyro_batch[i].FFT.time, Gyro_batch[i].FFT.average_sample_rate, Gyro_batch[i].FFT.bode.Z1, Gyro_batch[i].FFT.bode.Z2)
         }
     }
 
