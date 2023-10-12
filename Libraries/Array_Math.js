@@ -186,6 +186,16 @@ function array_all_equal(A, val) {
     return true
 }
 
+function array_all_NaN(A) {
+    const len = A.length
+    for (let i = 0; i < len; i++) {
+        if (!isNaN(A[i])) {
+            return false
+        }
+    }
+    return true
+}
+
 function array_abs(A) {
     const len = A.length
     let ret = new Array(len)
