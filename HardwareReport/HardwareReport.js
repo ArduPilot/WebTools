@@ -144,11 +144,6 @@ function print_device(parent, id) {
     }
 }
 
-// Helper for Vector3 param names
-function get_param_name_vector3(prefix) {
-    return [prefix + "X", prefix + "Y", prefix + "Z"]
-}
-
 // Helper to get array param values in array
 function get_param_array(params, names) {
     let ret = []
@@ -349,42 +344,6 @@ function load_ins(log) {
             table.appendChild(colum)
         }
     }
-}
-
-// Get Compass params names for given index
-function get_compass_param_names(index) {
-
-    let use_name = "COMPASS_USE"
-    let offset = "COMPASS_OFS"
-    let diagonals = "COMPASS_DIA"
-    let off_diagonals = "COMPASS_ODI"
-    let motor = "COMPASS_MOT"
-    let scale = "COMPASS_SCALE"
-    let orient = "COMPASS_ORIENT"
-    let external = "COMPASS_EXTERNAL"
-    let id = "COMPASS_DEV_ID"
-
-    if (index != 1) {
-        use_name += index
-        offset += index
-        diagonals += index
-        off_diagonals += index
-        motor += index
-        scale += index
-        orient += index
-        external = "COMPASS_EXTERN" + index
-        id += index
-    }
-
-    return { use: use_name,
-             offsets: get_param_name_vector3(offset + "_"), 
-             diagonals: get_param_name_vector3(diagonals + "_"), 
-             off_diagonals: get_param_name_vector3(off_diagonals + "_"), 
-             motor: get_param_name_vector3(motor + "_"),
-             scale: scale,
-             orientation: orient,
-             external: external,
-             id: id }
 }
 
 let compass
