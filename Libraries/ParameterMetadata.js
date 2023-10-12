@@ -110,7 +110,10 @@ async function load_param_inputs(param_doc, param_names) {
 
         // label with name linking to input
         let label = document.createElement("label")
-        label.setAttribute('class', 'parameter_input_label')
+        label.style.display = "inline-block"
+        label.style.width = "165px"
+        label.style.margin  = "5px 0px"
+
         label.setAttribute('for', param.id)
         label.innerHTML = name
 
@@ -233,7 +236,7 @@ async function load_param_inputs(param_doc, param_names) {
 
     function load(data) {
 
-        function recursive_serch(obj, param) {
+        function recursive_search(obj, param) {
             for (const [key, value] of Object.entries(obj)) {
                 if (!param.startsWith(key)) {
                     continue
@@ -241,7 +244,7 @@ async function load_param_inputs(param_doc, param_names) {
                 if (param === key) {
                     return value
                 }
-                let found = recursive_serch(value, param)
+                let found = recursive_search(value, param)
                 if (found != null) {
                     return found
                 }
@@ -250,7 +253,7 @@ async function load_param_inputs(param_doc, param_names) {
 
 
         for (param of param_names) {
-            let metadata = recursive_serch(data, param)
+            let metadata = recursive_search(data, param)
             if (metadata != null) {
                 layout_for_param(param, metadata)
             }

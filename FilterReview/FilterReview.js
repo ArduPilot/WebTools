@@ -2146,28 +2146,6 @@ function update_hidden(source) {
 
 }
 
-// Grab param from log
-function get_param_value(param_log, name, allow_change) {
-    var value
-    for (let i = 0; i < param_log.Name.length; i++) {
-        if (param_log.Name[i] === name) {
-            const new_value = param_log.Value[i]
-            if ((value != null) && (value != new_value)) {
-                let msg = name + " changed from " + value + " to " + new_value
-                if (allow_change === false) {
-                    msg = "Ignoring param change " + msg
-                    alert(msg)
-                    console.log(msg)
-                    return value
-                }
-                console.log(msg)
-            }
-            value = new_value
-        }
-    }
-    return value
-}
-
 function get_HNotch_param_names() {
     let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
     let ret = []
