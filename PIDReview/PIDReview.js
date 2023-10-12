@@ -199,9 +199,6 @@ function setup_plots() {
         margin: { b: 50, l: 50, r: 50, t: 20 },
     }
 
-    // Set axis to match line colors
-    var default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-
     const flight_data_axis_pos = [0, 0.06, 0.94, 1]
     for (let i=0;i<flight_data_plot.length;i++) {
         let axi = "yaxis"
@@ -215,7 +212,7 @@ function setup_plots() {
                                             mirror: true,
                                             side: side,
                                             position: flight_data_axis_pos[i],
-                                            color: default_colors[i] }
+                                            color: plot_default_color(i) }
         if (i > 0) {
             flight_data.layout[axi].overlaying = 'y'
         }
@@ -360,31 +357,18 @@ function setup_plots() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, Spectrogram.data, Spectrogram.layout, {displaylogo: false});
 
-    // Link axes ranges
-    function link_plot_axis_range(link) {
-        for (let i = 0; i<link.length; i++) {
-            const this_plot = link[i][0]
-            const this_axis_key = link[i][1]
-            const this_axis_index = link[i][2]
-            const this_index = i
-            document.getElementById(this_plot).on('plotly_relayout', function(data) {
-                // This is seems not to be recursive because the second call sets with array rather than a object
-                const axis_key = this_axis_key + 'axis' + this_axis_index
-                const range_keys = [axis_key + '.range[0]', axis_key + '.range[1]']
-                if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
-                    var freq_range = [data[range_keys[0]], data[range_keys[1]]]
-                    for (let i = 0; i<link.length; i++) {
-                        if (i == this_index) {
-                            continue
-                        }
-                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].range = freq_range
-                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].autorange = false
-                        Plotly.redraw(link[i][0])
-                    }
-                }
-            })
-        }
-    }
+    link_plots()
+} 
+
+function link_plots() {
+
+    // Clear listeners
+    document.getElementById("TimeInputs").removeAllListeners("plotly_relayout");
+    document.getElementById("TimeOutputs").removeAllListeners("plotly_relayout");
+    document.getElementById("FFTPlot").removeAllListeners("plotly_relayout");
+    document.getElementById("Spectrogram").removeAllListeners("plotly_relayout");
+    document.getElementById("step_plot").removeAllListeners("plotly_relayout");
+
 
     // Link all frequency axis
     link_plot_axis_range([["FFTPlot", "x", "", fft_plot],
@@ -397,49 +381,12 @@ function setup_plots() {
 
 
     // Link all reset calls
-    const reset_link = [["TimeInputs", TimeInputs],
-                        ["TimeOutputs", TimeOutputs],
-                        ["FFTPlot", fft_plot],
-                        ["step_plot", step_plot],
-                        ["Spectrogram", Spectrogram]]
+    link_plot_reset([["TimeInputs", TimeInputs],
+                     ["TimeOutputs", TimeOutputs],
+                     ["FFTPlot", fft_plot],
+                     ["step_plot", step_plot],
+                     ["Spectrogram", Spectrogram]])
 
-    for (let i = 0; i<reset_link.length; i++) {
-        const this_plot = reset_link[i][0]
-        const this_index = i
-        document.getElementById(this_plot).on('plotly_relayout', function(data) {
-            // This is seems not to be recursive because the second call sets with array rather than a object
-            const axis = ["xaxis","yaxis","xaxis2","yaxis2"]
-            var reset = false
-            for (let i = 0; i<axis.length; i++) {
-                const key = axis[i] + '.autorange'
-                if ((data[key] !== undefined) && (data[key] == true)) {
-                    reset = true
-                    break
-                }
-            }
-            if (reset) {
-
-                for (let i = 0; i<reset_link.length; i++) {
-                    if (i == this_index) {
-                        continue
-                    }
-                    var redraw = false
-                    for (let j = 0; j<axis.length; j++) {
-                        if (reset_link[i][1].layout[axis[j]] == null) {
-                            continue
-                        }
-                        if (!reset_link[i][1].layout[axis[j]].fixedrange) {
-                            reset_link[i][1].layout[axis[j]].autorange = true
-                            redraw = true
-                        }
-                    }
-                    if (redraw) {
-                        Plotly.redraw(reset_link[i][0])
-                    }
-                }
-            }
-        })
-    }
 }
 
 // Add data sets to FFT plot
@@ -448,7 +395,6 @@ function get_FFT_data_index(set_num, plot_type) {
     return set_num*plot_types.length + plot_type
 }
 
-const default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 function setup_FFT_data() {
 
     const PID = PID_log_messages[get_axis_index()]
@@ -485,7 +431,7 @@ function setup_FFT_data() {
             }
         }
 
-        const color = default_colors[i % default_colors.length]
+        const color = plot_default_color(i)
 
         // Each set gets mean step response and individual
         const name = "Test " + (i+1)
@@ -538,6 +484,8 @@ function setup_FFT_data() {
     plot = document.getElementById("step_plot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, step_plot.data, step_plot.layout, {displaylogo: false});
+
+    link_plots()
 
 }
 
@@ -737,7 +685,7 @@ function add_param_sets() {
 
     // Add line
     for (let i = 0; i < num_sets; i++) {
-        const color = num_sets > 1 ? default_colors[i % default_colors.length] : null
+        const color = num_sets > 1 ? plot_default_color(i) : null
         const valid = (PID.sets[i] != null) && (PID.sets[i].FFT != null)
 
         const set = PID.params.sets[i]

@@ -774,33 +774,6 @@ function load() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, BodePID.data, BodePID.layout, {displaylogo: false});
 
-
-    // Link axes ranges
-    function link_plot_axis_range(link) {
-        for (let i = 0; i<link.length; i++) {
-            const this_plot = link[i][0]
-            const this_axis_key = link[i][1]
-            const this_axis_index = link[i][2]
-            const this_index = i
-            document.getElementById(this_plot).on('plotly_relayout', function(data) {
-                // This is seems not to be recursive because the second call sets with array rather than a object
-                const axis_key = this_axis_key + 'axis' + this_axis_index
-                const range_keys = [axis_key + '.range[0]', axis_key + '.range[1]']
-                if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
-                    var freq_range = [data[range_keys[0]], data[range_keys[1]]]
-                    for (let i = 0; i<link.length; i++) {
-                        if (i == this_index) {
-                            continue
-                        }
-                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].range = freq_range
-                        link[i][3].layout[link[i][1] + "axis" + link[i][2]].autorange = false
-                        Plotly.redraw(link[i][0])
-                    }
-                }
-            })
-        }
-    }
-
     // Link all frequency axis
     link_plot_axis_range([["Bode", "x", "", Bode],
                           ["Bode", "x", "2", Bode]])
