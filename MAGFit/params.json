@@ -1,0 +1,965 @@
+{
+  "": {
+  "COMPASS_": {
+    "COMPASS_AUTODEC": {
+      "Description": "Enable or disable the automatic calculation of the declination based on gps location",
+      "DisplayName": "Auto Declination",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Auto Declination\n    // @Description: Enable or disable the automatic calculation of the declination based on gps location\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "COMPASS_AUTO_ROT": {
+      "Description": "When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.",
+      "DisplayName": "Automatically check orientation",
+      "Values": {
+        "0": "Disabled",
+        "1": "CheckOnly",
+        "2": "CheckAndFix",
+        "3": "use same tolerance to auto rotate 45 deg rotations"
+      },
+      "__field_text": "\n    // @DisplayName: Automatically check orientation\n    // @Description: When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.\n    // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix,3:use same tolerance to auto rotate 45 deg rotations"
+    },
+    "COMPASS_CAL_FIT": {
+      "Description": "This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.",
+      "DisplayName": "Compass calibration fitness",
+      "Increment": "0.1",
+      "Range": {
+        "high": "32",
+        "low": "4"
+      },
+      "User": "Advanced",
+      "Values": {
+        "16": "Default",
+        "32": "Relaxed",
+        "4": "Very Strict",
+        "8": "Strict"
+      },
+      "__field_text": "\n    // @DisplayName: Compass calibration fitness\n    // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.\n    // @Range: 4 32\n    // @Values: 4:Very Strict,8:Strict,16:Default,32:Relaxed\n    // @Increment: 0.1\n    // @User: Advanced"
+    },
+    "COMPASS_CUS_PIT": {
+      "Description": "Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.",
+      "DisplayName": "Custom orientation pitch offset",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "-180"
+      },
+      "RebootRequired": "True",
+      "Units": "deg",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Custom orientation pitch offset\n    // @Description: Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.\n    // @Range: -180 180\n    // @Units: deg\n    // @Increment: 1\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_CUS_ROLL": {
+      "Description": "Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.",
+      "DisplayName": "Custom orientation roll offset",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "-180"
+      },
+      "RebootRequired": "True",
+      "Units": "deg",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Custom orientation roll offset\n    // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.\n    // @Range: -180 180\n    // @Units: deg\n    // @Increment: 1\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_CUS_YAW": {
+      "Description": "Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.",
+      "DisplayName": "Custom orientation yaw offset",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "-180"
+      },
+      "RebootRequired": "True",
+      "Units": "deg",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Custom orientation yaw offset\n    // @Description: Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.\n    // @Range: -180 180\n    // @Units: deg\n    // @Increment: 1\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEC": {
+      "Description": "An angle to compensate between the true north and magnetic north",
+      "DisplayName": "Compass declination",
+      "Increment": "0.01",
+      "Range": {
+        "high": "3.142",
+        "low": "-3.142"
+      },
+      "Units": "rad",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Compass declination\n    // @Description: An angle to compensate between the true north and magnetic north\n    // @Range: -3.142 3.142\n    // @Units: rad\n    // @Increment: 0.01\n    // @User: Standard"
+    },
+    "COMPASS_DEV_ID": {
+      "Description": "Compass device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass device id\n    // @Description: Compass device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID2": {
+      "Description": "Second compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass2 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 device id\n    // @Description: Second compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID3": {
+      "Description": "Third compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass3 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 device id\n    // @Description: Third compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID4": {
+      "Description": "Extra 4th compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass4 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass4 device id\n    // @Description: Extra 4th compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID5": {
+      "Description": "Extra 5th compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass5 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass5 device id\n    // @Description: Extra 5th compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID6": {
+      "Description": "Extra 6th compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass6 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass6 device id\n    // @Description: Extra 6th compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID7": {
+      "Description": "Extra 7th compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass7 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass7 device id\n    // @Description: Extra 7th compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DEV_ID8": {
+      "Description": "Extra 8th compass's device id.  Automatically detected, do not set manually",
+      "DisplayName": "Compass8 device id",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass8 device id\n    // @Description: Extra 8th compass's device id.  Automatically detected, do not set manually\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "COMPASS_DIA2_X": {
+      "Calibration": "1",
+      "Description": "DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron diagonal X component\n    // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA2_Y": {
+      "Calibration": "1",
+      "Description": "DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron diagonal Y component\n    // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA2_Z": {
+      "Description": "DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron diagonal Z component\n    // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_DIA3_X": {
+      "Calibration": "1",
+      "Description": "DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron diagonal X component\n    // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA3_Y": {
+      "Calibration": "1",
+      "Description": "DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron diagonal Y component\n    // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA3_Z": {
+      "Description": "DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron diagonal Z component\n    // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_DIA_X": {
+      "Calibration": "1",
+      "Description": "DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron diagonal X component\n    // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA_Y": {
+      "Calibration": "1",
+      "Description": "DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron diagonal Y component\n    // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_DIA_Z": {
+      "Description": "DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron diagonal Z component\n    // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_ENABLE": {
+      "Description": "Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.",
+      "DisplayName": "Enable Compass",
+      "RebootRequired": "True",
+      "User": "Standard",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Enable Compass\n    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.\n    // @User: Standard\n    // @RebootRequired: True\n    // @Values: 0:Disabled,1:Enabled"
+    },
+    "COMPASS_EXTERN2": {
+      "Description": "Configure second compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.",
+      "DisplayName": "Compass2 is attached via an external cable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Internal",
+        "1": "External",
+        "2": "ForcedExternal"
+      },
+      "__field_text": "\n    // @DisplayName: Compass2 is attached via an external cable\n    // @Description: Configure second compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.\n    // @Values: 0:Internal,1:External,2:ForcedExternal\n    // @User: Advanced"
+    },
+    "COMPASS_EXTERN3": {
+      "Description": "Configure third compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.",
+      "DisplayName": "Compass3 is attached via an external cable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Internal",
+        "1": "External",
+        "2": "ForcedExternal"
+      },
+      "__field_text": "\n    // @DisplayName: Compass3 is attached via an external cable\n    // @Description: Configure third compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.\n    // @Values: 0:Internal,1:External,2:ForcedExternal\n    // @User: Advanced"
+    },
+    "COMPASS_EXTERNAL": {
+      "Description": "Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.",
+      "DisplayName": "Compass is attached via an external cable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Internal",
+        "1": "External",
+        "2": "ForcedExternal"
+      },
+      "__field_text": "\n    // @DisplayName: Compass is attached via an external cable\n    // @Description: Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.\n    // @Values: 0:Internal,1:External,2:ForcedExternal\n    // @User: Advanced"
+    },
+    "COMPASS_FLTR_RNG": {
+      "Description": "This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.",
+      "DisplayName": "Range in which sample is accepted",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "%",
+      "__field_text": "\n    // @DisplayName: Range in which sample is accepted\n    // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.\n    // @Units: %\n    // @Range: 0 100\n    // @Increment: 1"
+    },
+    "COMPASS_LEARN": {
+      "Description": "Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.",
+      "DisplayName": "Learn compass offsets automatically",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Internal-Learning",
+        "2": "EKF-Learning",
+        "3": "InFlight-Learning"
+      },
+      "__field_text": "\n    // @DisplayName: Learn compass offsets automatically\n    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.\n    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning\n    // @User: Advanced"
+    },
+    "COMPASS_MOT2_X": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass2 for body frame X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass2 for body frame X axis\n    // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT2_Y": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass2 for body frame Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass2 for body frame Y axis\n    // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT2_Z": {
+      "Description": "Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass2 for body frame Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass2 for body frame Z axis\n    // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_MOT3_X": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass3 for body frame X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass3 for body frame X axis\n    // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT3_Y": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass3 for body frame Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass3 for body frame Y axis\n    // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT3_Z": {
+      "Description": "Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation to compass3 for body frame Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation to compass3 for body frame Z axis\n    // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_MOTCT": {
+      "Calibration": "1",
+      "Description": "Set motor interference compensation type to disabled, throttle or current.  Do not change manually.",
+      "DisplayName": "Motor interference compensation type",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Use Throttle",
+        "2": "Use Current"
+      },
+      "__field_text": "\n    // @DisplayName: Motor interference compensation type\n    // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.\n    // @Values: 0:Disabled,1:Use Throttle,2:Use Current\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT_X": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation for body frame X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation for body frame X axis\n    // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT_Y": {
+      "Calibration": "1",
+      "Description": "Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation for body frame Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation for body frame Y axis\n    // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_MOT_Z": {
+      "Description": "Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)",
+      "DisplayName": "Motor interference compensation for body frame Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "1000",
+        "low": "-1000"
+      },
+      "Units": "mGauss/A",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Motor interference compensation for body frame Z axis\n    // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)\n    // @Range: -1000 1000\n    // @Units: mGauss/A\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_ODI2_X": {
+      "Calibration": "1",
+      "Description": "ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron off-diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron off-diagonal X component\n    // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI2_Y": {
+      "Calibration": "1",
+      "Description": "ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron off-diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron off-diagonal Y component\n    // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI2_Z": {
+      "Description": "ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass2 soft-iron off-diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 soft-iron off-diagonal Z component\n    // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_ODI3_X": {
+      "Calibration": "1",
+      "Description": "ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron off-diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron off-diagonal X component\n    // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI3_Y": {
+      "Calibration": "1",
+      "Description": "ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron off-diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron off-diagonal Y component\n    // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI3_Z": {
+      "Description": "ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass3 soft-iron off-diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 soft-iron off-diagonal Z component\n    // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_ODI_X": {
+      "Calibration": "1",
+      "Description": "ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron off-diagonal X component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron off-diagonal X component\n    // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI_Y": {
+      "Calibration": "1",
+      "Description": "ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron off-diagonal Y component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron off-diagonal Y component\n    // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_ODI_Z": {
+      "Description": "ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]",
+      "DisplayName": "Compass soft-iron off-diagonal Z component",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass soft-iron off-diagonal Z component\n    // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]\n    // @User: Advanced"
+    },
+    "COMPASS_OFFS_MAX": {
+      "Description": "This sets the maximum allowed compass offset in calibration and arming checks",
+      "DisplayName": "Compass maximum offset",
+      "Increment": "1",
+      "Range": {
+        "high": "3000",
+        "low": "500"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass maximum offset\n    // @Description: This sets the maximum allowed compass offset in calibration and arming checks\n    // @Range: 500 3000\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_OFS2_X": {
+      "Calibration": "1",
+      "Description": "Offset to be added to compass2's x-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass2 offsets in milligauss on the X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 offsets in milligauss on the X axis\n    // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS2_Y": {
+      "Calibration": "1",
+      "Description": "Offset to be added to compass2's y-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass2 offsets in milligauss on the Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 offsets in milligauss on the Y axis\n    // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS2_Z": {
+      "Description": "Offset to be added to compass2's z-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass2 offsets in milligauss on the Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass2 offsets in milligauss on the Z axis\n    // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_OFS3_X": {
+      "Calibration": "1",
+      "Description": "Offset to be added to compass3's x-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass3 offsets in milligauss on the X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 offsets in milligauss on the X axis\n    // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS3_Y": {
+      "Calibration": "1",
+      "Description": "Offset to be added to compass3's y-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass3 offsets in milligauss on the Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 offsets in milligauss on the Y axis\n    // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS3_Z": {
+      "Description": "Offset to be added to compass3's z-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass3 offsets in milligauss on the Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass3 offsets in milligauss on the Z axis\n    // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_OFS_X": {
+      "Calibration": "1",
+      "Description": "Offset to be added to the compass x-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass offsets in milligauss on the X axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass offsets in milligauss on the X axis\n    // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS_Y": {
+      "Calibration": "1",
+      "Description": "Offset to be added to the compass y-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass offsets in milligauss on the Y axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass offsets in milligauss on the Y axis\n    // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "COMPASS_OFS_Z": {
+      "Description": "Offset to be added to the compass z-axis values to compensate for metal in the frame",
+      "DisplayName": "Compass offsets in milligauss on the Z axis",
+      "Increment": "1",
+      "Range": {
+        "high": "400",
+        "low": "-400"
+      },
+      "Units": "mGauss",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass offsets in milligauss on the Z axis\n    // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame\n    // @Range: -400 400\n    // @Units: mGauss\n    // @Increment: 1\n    // @User: Advanced"
+    },
+    "COMPASS_OPTIONS": {
+      "Bitmask": {
+        "0": "CalRequireGPS",
+        "1": "Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)"
+      },
+      "Description": "This sets options to change the behaviour of the compass",
+      "DisplayName": "Compass options",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass options\n    // @Description: This sets options to change the behaviour of the compass\n    // @Bitmask: 0:CalRequireGPS\n    // @Bitmask: 1: Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)\n    // @User: Advanced"
+    },
+    "COMPASS_ORIENT": {
+      "Description": "The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.",
+      "DisplayName": "Compass orientation",
+      "User": "Advanced",
+      "Values": {
+        "0": "None",
+        "1": "Yaw45",
+        "10": "Yaw90Roll180",
+        "100": "Custom 4.1 and older",
+        "101": "Custom 1",
+        "102": "Custom 2",
+        "11": "Yaw135Roll180",
+        "12": "Pitch180",
+        "13": "Yaw225Roll180",
+        "14": "Yaw270Roll180",
+        "15": "Yaw315Roll180",
+        "16": "Roll90",
+        "17": "Yaw45Roll90",
+        "18": "Yaw90Roll90",
+        "19": "Yaw135Roll90",
+        "2": "Yaw90",
+        "20": "Roll270",
+        "21": "Yaw45Roll270",
+        "22": "Yaw90Roll270",
+        "23": "Yaw135Roll270",
+        "24": "Pitch90",
+        "25": "Pitch270",
+        "26": "Yaw90Pitch180",
+        "27": "Yaw270Pitch180",
+        "28": "Pitch90Roll90",
+        "29": "Pitch90Roll180",
+        "3": "Yaw135",
+        "30": "Pitch90Roll270",
+        "31": "Pitch180Roll90",
+        "32": "Pitch180Roll270",
+        "33": "Pitch270Roll90",
+        "34": "Pitch270Roll180",
+        "35": "Pitch270Roll270",
+        "36": "Yaw90Pitch180Roll90",
+        "37": "Yaw270Roll90",
+        "38": "Yaw293Pitch68Roll180",
+        "39": "Pitch315",
+        "4": "Yaw180",
+        "40": "Pitch315Roll90",
+        "42": "Roll45",
+        "43": "Roll315",
+        "5": "Yaw225",
+        "6": "Yaw270",
+        "7": "Yaw315",
+        "8": "Roll180",
+        "9": "Yaw45Roll180"
+      },
+      "__field_text": "\n    // @DisplayName: Compass orientation\n    // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.\n    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2\n    // @User: Advanced"
+    },
+    "COMPASS_ORIENT2": {
+      "Description": "The orientation of a second external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.",
+      "DisplayName": "Compass2 orientation",
+      "User": "Advanced",
+      "Values": {
+        "0": "None",
+        "1": "Yaw45",
+        "10": "Yaw90Roll180",
+        "100": "Custom 4.1 and older",
+        "101": "Custom 1",
+        "102": "Custom 2",
+        "11": "Yaw135Roll180",
+        "12": "Pitch180",
+        "13": "Yaw225Roll180",
+        "14": "Yaw270Roll180",
+        "15": "Yaw315Roll180",
+        "16": "Roll90",
+        "17": "Yaw45Roll90",
+        "18": "Yaw90Roll90",
+        "19": "Yaw135Roll90",
+        "2": "Yaw90",
+        "20": "Roll270",
+        "21": "Yaw45Roll270",
+        "22": "Yaw90Roll270",
+        "23": "Yaw135Roll270",
+        "24": "Pitch90",
+        "25": "Pitch270",
+        "26": "Yaw90Pitch180",
+        "27": "Yaw270Pitch180",
+        "28": "Pitch90Roll90",
+        "29": "Pitch90Roll180",
+        "3": "Yaw135",
+        "30": "Pitch90Roll270",
+        "31": "Pitch180Roll90",
+        "32": "Pitch180Roll270",
+        "33": "Pitch270Roll90",
+        "34": "Pitch270Roll180",
+        "35": "Pitch270Roll270",
+        "36": "Yaw90Pitch180Roll90",
+        "37": "Yaw270Roll90",
+        "38": "Yaw293Pitch68Roll180",
+        "39": "Pitch315",
+        "4": "Yaw180",
+        "40": "Pitch315Roll90",
+        "42": "Roll45",
+        "43": "Roll315",
+        "5": "Yaw225",
+        "6": "Yaw270",
+        "7": "Yaw315",
+        "8": "Roll180",
+        "9": "Yaw45Roll180"
+      },
+      "__field_text": "\n    // @DisplayName: Compass2 orientation\n    // @Description: The orientation of a second external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.\n    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2\n    // @User: Advanced"
+    },
+    "COMPASS_ORIENT3": {
+      "Description": "The orientation of a third external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.",
+      "DisplayName": "Compass3 orientation",
+      "User": "Advanced",
+      "Values": {
+        "0": "None",
+        "1": "Yaw45",
+        "10": "Yaw90Roll180",
+        "100": "Custom 4.1 and older",
+        "101": "Custom 1",
+        "102": "Custom 2",
+        "11": "Yaw135Roll180",
+        "12": "Pitch180",
+        "13": "Yaw225Roll180",
+        "14": "Yaw270Roll180",
+        "15": "Yaw315Roll180",
+        "16": "Roll90",
+        "17": "Yaw45Roll90",
+        "18": "Yaw90Roll90",
+        "19": "Yaw135Roll90",
+        "2": "Yaw90",
+        "20": "Roll270",
+        "21": "Yaw45Roll270",
+        "22": "Yaw90Roll270",
+        "23": "Yaw135Roll270",
+        "24": "Pitch90",
+        "25": "Pitch270",
+        "26": "Yaw90Pitch180",
+        "27": "Yaw270Pitch180",
+        "28": "Pitch90Roll90",
+        "29": "Pitch90Roll180",
+        "3": "Yaw135",
+        "30": "Pitch90Roll270",
+        "31": "Pitch180Roll90",
+        "32": "Pitch180Roll270",
+        "33": "Pitch270Roll90",
+        "34": "Pitch270Roll180",
+        "35": "Pitch270Roll270",
+        "36": "Yaw90Pitch180Roll90",
+        "37": "Yaw270Roll90",
+        "38": "Yaw293Pitch68Roll180",
+        "39": "Pitch315",
+        "4": "Yaw180",
+        "40": "Pitch315Roll90",
+        "42": "Roll45",
+        "43": "Roll315",
+        "5": "Yaw225",
+        "6": "Yaw270",
+        "7": "Yaw315",
+        "8": "Roll180",
+        "9": "Yaw45Roll180"
+      },
+      "__field_text": "\n    // @DisplayName: Compass3 orientation\n    // @Description: The orientation of a third external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.\n    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2\n    // @User: Advanced"
+    },
+    "COMPASS_PRIO1_ID": {
+      "Description": "Compass device id with 1st order priority, set automatically if 0. Reboot required after change.",
+      "DisplayName": "Compass device id with 1st order priority",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass device id with 1st order priority\n    // @Description: Compass device id with 1st order priority, set automatically if 0. Reboot required after change.\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_PRIO2_ID": {
+      "Description": "Compass device id with 2nd order priority, set automatically if 0. Reboot required after change.",
+      "DisplayName": "Compass device id with 2nd order priority",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass device id with 2nd order priority\n    // @Description: Compass device id with 2nd order priority, set automatically if 0. Reboot required after change.\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_PRIO3_ID": {
+      "Description": "Compass device id with 3rd order priority, set automatically if 0. Reboot required after change.",
+      "DisplayName": "Compass device id with 3rd order priority",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass device id with 3rd order priority\n    // @Description: Compass device id with 3rd order priority, set automatically if 0. Reboot required after change.\n    // @RebootRequired: True\n    // @User: Advanced"
+    },
+    "COMPASS_SCALE": {
+      "Description": "Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done",
+      "DisplayName": "Compass1 scale factor",
+      "Range": {
+        "high": "1.3",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Compass1 scale factor\n    // @Description: Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done\n    // @User: Standard\n    // @Range: 0 1.3"
+    },
+    "COMPASS_SCALE2": {
+      "Description": "Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done",
+      "DisplayName": "Compass2 scale factor",
+      "Range": {
+        "high": "1.3",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Compass2 scale factor\n    // @Description: Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done\n    // @User: Standard\n    // @Range: 0 1.3"
+    },
+    "COMPASS_SCALE3": {
+      "Description": "Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done",
+      "DisplayName": "Compass3 scale factor",
+      "Range": {
+        "high": "1.3",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Compass3 scale factor\n    // @Description: Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done\n    // @User: Standard\n    // @Range: 0 1.3"
+    },
+    "COMPASS_TYPEMASK": {
+      "Bitmask": {
+        "0": "HMC5883",
+        "1": "LSM303D",
+        "11": "DroneCAN",
+        "12": "QMC5883",
+        "14": "MAG3110",
+        "15": "IST8308",
+        "16": "RM3100",
+        "17": "MSP",
+        "18": "ExternalAHRS",
+        "2": "AK8963",
+        "3": "BMM150",
+        "4": "LSM9DS1",
+        "5": "LIS3MDL",
+        "6": "AK09916",
+        "7": "IST8310",
+        "8": "ICM20948",
+        "9": "MMC3416"
+      },
+      "Description": "This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup",
+      "DisplayName": "Compass disable driver type mask",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass disable driver type mask\n    // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup\n    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS\n    // @User: Advanced"
+    },
+    "COMPASS_USE": {
+      "Description": "Enable or disable the use of the compass (instead of the GPS) for determining heading",
+      "DisplayName": "Use compass for yaw",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Use compass for yaw\n    // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "COMPASS_USE2": {
+      "Description": "Enable or disable the secondary compass for determining heading.",
+      "DisplayName": "Compass2 used for yaw",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Compass2 used for yaw\n    // @Description: Enable or disable the secondary compass for determining heading.\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "COMPASS_USE3": {
+      "Description": "Enable or disable the tertiary compass for determining heading.",
+      "DisplayName": "Compass3 used for yaw",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Compass3 used for yaw\n    // @Description: Enable or disable the tertiary compass for determining heading.\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    }
+  },
+  "COMPASS_PMOT": {
+    "COMPASS_PMOT1_X": {
+      "Description": "Compensation for X axis of motor1",
+      "DisplayName": "Compass per-motor1 X",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor1 X\n    // @Description: Compensation for X axis of motor1\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT1_Y": {
+      "Description": "Compensation for Y axis of motor1",
+      "DisplayName": "Compass per-motor1 Y",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor1 Y\n    // @Description: Compensation for Y axis of motor1\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT1_Z": {
+      "Description": "Compensation for Z axis of motor1",
+      "DisplayName": "Compass per-motor1 Z",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor1 Z\n    // @Description: Compensation for Z axis of motor1\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT2_X": {
+      "Description": "Compensation for X axis of motor2",
+      "DisplayName": "Compass per-motor2 X",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor2 X\n    // @Description: Compensation for X axis of motor2\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT2_Y": {
+      "Description": "Compensation for Y axis of motor2",
+      "DisplayName": "Compass per-motor2 Y",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor2 Y\n    // @Description: Compensation for Y axis of motor2\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT2_Z": {
+      "Description": "Compensation for Z axis of motor2",
+      "DisplayName": "Compass per-motor2 Z",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor2 Z\n    // @Description: Compensation for Z axis of motor2\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT3_X": {
+      "Description": "Compensation for X axis of motor3",
+      "DisplayName": "Compass per-motor3 X",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor3 X\n    // @Description: Compensation for X axis of motor3\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT3_Y": {
+      "Description": "Compensation for Y axis of motor3",
+      "DisplayName": "Compass per-motor3 Y",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor3 Y\n    // @Description: Compensation for Y axis of motor3\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT3_Z": {
+      "Description": "Compensation for Z axis of motor3",
+      "DisplayName": "Compass per-motor3 Z",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor3 Z\n    // @Description: Compensation for Z axis of motor3\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT4_X": {
+      "Description": "Compensation for X axis of motor4",
+      "DisplayName": "Compass per-motor4 X",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor4 X\n    // @Description: Compensation for X axis of motor4\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT4_Y": {
+      "Description": "Compensation for Y axis of motor4",
+      "DisplayName": "Compass per-motor4 Y",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor4 Y\n    // @Description: Compensation for Y axis of motor4\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT4_Z": {
+      "Description": "Compensation for Z axis of motor4",
+      "DisplayName": "Compass per-motor4 Z",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Compass per-motor4 Z\n    // @Description: Compensation for Z axis of motor4\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT_EN": {
+      "Description": "This enables per-motor compass corrections",
+      "DisplayName": "per-motor compass correction enable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: per-motor compass correction enable\n    // @Description: This enables per-motor compass corrections\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "COMPASS_PMOT_EXP": {
+      "Description": "This is the exponential correction for the power output of the motor for per-motor compass correction",
+      "DisplayName": "per-motor exponential correction",
+      "Increment": "0.01",
+      "Range": {
+        "high": "2",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: per-motor exponential correction\n    // @Description: This is the exponential correction for the power output of the motor for per-motor compass correction\n    // @Range: 0 2\n    // @Increment: 0.01\n    // @User: Advanced"
+    }
+  }
+  },
+  "json": {
+    "version": 0
+  }
+}
