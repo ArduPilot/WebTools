@@ -36,40 +36,6 @@ class NotchTarget {
         }
     }
 
-    linear_interp(values, index, query_index) {
-        var ret = []
-
-        const data_points = index.length
-        var interpolate_index = 0
-        for (let i = 0; i < query_index.length; i++) {
-            if (query_index[i] <= index[0]) {
-                // Before start
-                ret[i] = values[0]
-                continue
-            }
-            if (query_index[i] >= index[data_points-1]) {
-                // After end
-                ret[i] = values[data_points-1]
-                continue
-            }
-
-            // increment index until there is a point after the target
-            for (interpolate_index; interpolate_index < data_points-2; interpolate_index++) {
-                if (query_index[i] < index[interpolate_index+1]) {
-                    const ratio = (query_index[i] - index[interpolate_index]) / (index[interpolate_index+1] - index[interpolate_index])
-                    ret[i] = values[interpolate_index] + (values[interpolate_index+1] - values[interpolate_index]) * ratio
-                    break
-                }
-            }
-
-            if (interpolate_index == data_points-3) {
-                // Got to the end
-                ret[i] = values[data_points-1]
-            }
-        }
-        return ret
-    }
-
     interpolate(instance, time) {
         if (!this.have_data()) {
             return
@@ -77,7 +43,7 @@ class NotchTarget {
         if (this.data.interpolated == null) {
             this.data.interpolated = []
         }
-        this.data.interpolated[instance] = this.linear_interp(this.data.value, this.data.time, time)
+        this.data.interpolated[instance] = linear_interp(this.data.value, this.data.time, time)
     }
 
     get_target_freq(config) {
@@ -281,9 +247,9 @@ class ESCTarget extends NotchTarget {
         }
         this.data.interpolated[instance] = []
         for (var j=0; j < this.data.length; j++) {
-            this.data.interpolated[instance][j] = this.linear_interp(this.data[j].freq, this.data[j].time, time)
+            this.data.interpolated[instance][j] = linear_interp(this.data[j].freq, this.data[j].time, time)
         }
-        this.data.interpolated[instance].avg_freq = this.linear_interp(this.data.avg_freq, this.data.avg_time, time)
+        this.data.interpolated[instance].avg_freq = linear_interp(this.data.avg_freq, this.data.avg_time, time)
     }
 
     get_interpolated_target_freq(instance, index, config) {
@@ -412,9 +378,9 @@ class FFTTarget extends NotchTarget {
         }
         this.data.interpolated[instance] = []
         for (var j=0; j < this.data.length; j++) {
-            this.data.interpolated[instance][j] = this.linear_interp(this.data[j].freq, this.data[j].time, time)
+            this.data.interpolated[instance][j] = linear_interp(this.data[j].freq, this.data[j].time, time)
         }
-        this.data.interpolated[instance].value = this.linear_interp(this.data.value, this.data.time, time)
+        this.data.interpolated[instance].value = linear_interp(this.data.value, this.data.time, time)
     }
 
     get_interpolated_target_freq(instance, index, config) {

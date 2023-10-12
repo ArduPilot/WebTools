@@ -194,3 +194,36 @@ function array_abs(A) {
     }
     return ret
 }
+
+// Linear interpolation between arrays
+function linear_interp(values, index, query_index) {
+
+    const len = query_index.length
+    let ret = new Array(len)
+
+    const last_value_index = index.length - 1
+    let interpolate_index = 0
+    for (let i = 0; i < len; i++) {
+        if (query_index[i] <= index[0]) {
+            // Before start
+            ret[i] = values[0]
+            continue
+        }
+        if (query_index[i] >= index[last_value_index]) {
+            // After end
+            ret[i] = values[last_value_index]
+            continue
+        }
+
+        // increment index until there is a point after the target
+        for (interpolate_index; interpolate_index < last_value_index; interpolate_index++) {
+            if (query_index[i] < index[interpolate_index+1]) {
+                const ratio = (query_index[i] - index[interpolate_index]) / (index[interpolate_index+1] - index[interpolate_index])
+                ret[i] = values[interpolate_index] + (values[interpolate_index+1] - values[interpolate_index]) * ratio
+                break
+            }
+        }
+
+    }
+    return ret
+}
