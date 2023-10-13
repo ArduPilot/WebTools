@@ -539,74 +539,118 @@ function fit() {
         let A = new mlMatrix.Matrix(num_samples*3, 12)
         let B = new mlMatrix.Matrix(num_samples*3, 1)
 
+        function setup_iron(A, row, colum, x, y, z) {
+
+            const x_row = row + 0
+            const y_row = row + 1
+            const z_row = row + 2
+
+            // Diagonal 1
+            A.data[x_row][colum] = x
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = 0.0
+
+            // Diagonal 2
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = y
+            A.data[z_row][colum] = 0.0
+
+            // Diagonal 3
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = z
+
+            // Off Diagonal 1
+            colum++
+            A.data[x_row][colum] = y
+            A.data[y_row][colum] = x
+            A.data[z_row][colum] = 0.0
+
+            // Off Diagonal 2
+            colum++
+            A.data[x_row][colum] = z
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = x
+
+            // Off Diagonal 3
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = z
+            A.data[z_row][colum] = y
+        }
+
+        function setup_offsets(A, row, colum) {
+
+            const x_row = row + 0
+            const y_row = row + 1
+            const z_row = row + 2
+
+            // Offset 1
+            A.data[x_row][colum] = 1.0
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = 0.0
+
+            // Offset 2
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = 1.0
+            A.data[z_row][colum] = 0.0
+
+            // Offset 3
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = 1.0
+
+        }
+
+        function setup_motor(A, row, colum, val) {
+
+            const x_row = row + 0
+            const y_row = row + 1
+            const z_row = row + 2
+
+            // Motor 1
+            A.data[x_row][colum] = val
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = 0.0
+
+            // Motor 2
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = val
+            A.data[z_row][colum] = 0.0
+
+            // Motor 3
+            colum++
+            A.data[x_row][colum] = 0.0
+            A.data[y_row][colum] = 0.0
+            A.data[z_row][colum] = val
+
+        }
+
+        function setup_scale(A, row, colum, x, y, z) {
+
+            const x_row = row + 0
+            const y_row = row + 1
+            const z_row = row + 2
+
+            // Scale
+            A.data[x_row][colum] = x
+            A.data[y_row][colum] = y
+            A.data[z_row][colum] = z
+
+        }
+
         // Populate A and B
         for (let j = 0; j < num_samples; j++) {
             const index = j*3
             const data_index = start_index + j
 
-            // A matrix
-
-            // Diagonal 1
-            A.data[index+0][0] = MAG_Data[i].raw.x[data_index]
-            A.data[index+1][0] = 0.0
-            A.data[index+2][0] = 0.0
-
-            // Diagonal 2
-            A.data[index+0][1] = 0.0
-            A.data[index+1][1] = MAG_Data[i].raw.y[data_index]
-            A.data[index+2][1] = 0.0
-
-            // Diagonal 3
-            A.data[index+0][2] = 0.0
-            A.data[index+1][2] = 0.0
-            A.data[index+2][2] = MAG_Data[i].raw.z[data_index]
-
-            // Off Diagonal 1
-            A.data[index+0][3] = MAG_Data[i].raw.y[data_index]
-            A.data[index+1][3] = MAG_Data[i].raw.x[data_index]
-            A.data[index+2][3] = 0.0
-
-            // Off Diagonal 2
-            A.data[index+0][4] = MAG_Data[i].raw.z[data_index]
-            A.data[index+1][4] = 0.0
-            A.data[index+2][4] = MAG_Data[i].raw.x[data_index]
-
-            // Off Diagonal 3
-            A.data[index+0][5] = 0.0
-            A.data[index+1][5] = MAG_Data[i].raw.z[data_index]
-            A.data[index+2][5] = MAG_Data[i].raw.y[data_index]
-
-            // Offset 1
-            A.data[index+0][6] = 1.0
-            A.data[index+1][6] = 0.0
-            A.data[index+2][6] = 0.0
-
-            // Offset 2
-            A.data[index+0][7] = 0.0
-            A.data[index+1][7] = 1.0
-            A.data[index+2][7] = 0.0
-
-            // Offset 3
-            A.data[index+0][8] = 0.0
-            A.data[index+1][8] = 0.0
-            A.data[index+2][8] = 1.0
-
-            // Populate motor fit specific values later, zero for now
-
-            // Motor 1
-            A.data[index+0][9] = 0.0
-            A.data[index+1][9] = 0.0
-            A.data[index+2][9] = 0.0
-
-            // Motor 2
-            A.data[index+0][10] = 0.0
-            A.data[index+1][10] = 0.0
-            A.data[index+2][10] = 0.0
-
-            // Motor 3
-            A.data[index+0][11] = 0.0
-            A.data[index+1][11] = 0.0
-            A.data[index+2][11] = 0.0
+            // A matrix, all fits include offsets, setup rest later
+            setup_offsets(A, index, 0)
 
             // B Matrix
             B.data[index+0][0] = MAG_Data[i].expected.x[data_index]
@@ -615,45 +659,85 @@ function fit() {
         }
 
         for (let fit of MAG_Data[i].fits) {
+
+            // Populate all params with defaults
+            fit.params = { 
+                offsets: [0.0, 0.0, 0.0],
+                diagonals: [1.0, 1.0, 1.0],
+                off_diagonals: [0.0, 0.0, 0.0,],
+                scale: 1.0,
+                motor: [0.0, 0.0, 0.0]
+            }
+
             const fit_mot = fit.value != null
+            if (fit.offsets_and_scale === true) {
+                // Just fitting offsets and scale, possibly with motor correction
+                A.columns = fit_mot ? 7 : 4
 
-            // Adjust size of A matrix depending if full mot fit is being done
-            A.columns = fit_mot ? 12 : 9
-
-            if (fit_mot) {
-                // Populate fit specific colum of A matrix
+                // Offsets already in column 0,1,2
+                // Add scale and motor
                 for (let j = 0; j < num_samples; j++) {
                     const index = j*3
                     const data_index = start_index + j
 
-                    A.data[index+0][9]  = fit.value[data_index]
-                    A.data[index+1][10] = fit.value[data_index]
-                    A.data[index+2][11] = fit.value[data_index]
+                    setup_scale(A, index, 3, MAG_Data[i].raw.x[data_index], MAG_Data[i].raw.y[data_index], MAG_Data[i].raw.z[data_index])
+
+                    if (fit_mot) {
+                        setup_motor(A, index, 4, fit.value[data_index])
+                    }
+
                 }
-            }
 
-            // Solve
-            const params = mlMatrix.solve(A, B)
+                // Solve
+                const params = mlMatrix.solve(A, B)
 
-            // Extract params
-            const diagonals =     [ params.get(0,0), params.get(1,0), params.get(2,0) ]
-            const off_diagonals = [ params.get(3,0), params.get(4,0), params.get(5,0) ]
+                // Extract params
+                fit.params.offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
+                fit.params.scale = params.get(3,0)
+                if (fit_mot) {
+                    fit.params.motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
+                }
 
-            // Remove iron correction from offsets
-            const iron = new mlMatrix.Matrix([
-                [diagonals[0],     off_diagonals[0], off_diagonals[1]],
-                [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
-                [off_diagonals[1], off_diagonals[2], diagonals[2]]
-            ])
-            const uncorrected_offsets = new mlMatrix.Matrix([[params.get(6,0), params.get(7,0), params.get(8,0)]])
-            const offsets = uncorrected_offsets.mmul(mlMatrix.inverse(iron))
+            } else {
+                // Fitting offsets and iron matrix, possibly with motor correction
 
-            fit.params = { 
-                offsets: Array.from(offsets.data[0]),
-                diagonals: diagonals,
-                off_diagonals: off_diagonals,
-                scale: 1.0,
-                motor: fit_mot ? [params.get(9,0), params.get(10,0), params.get(11,0)] : [0,0,0]
+                // Adjust size of A matrix depending if full mot fit is being done
+                A.columns = fit_mot ? 12 : 9
+
+                for (let j = 0; j < num_samples; j++) {
+                    const index = j*3
+                    const data_index = start_index + j
+
+                    setup_iron(A, index, 3, MAG_Data[i].raw.x[data_index], MAG_Data[i].raw.y[data_index], MAG_Data[i].raw.z[data_index])
+
+                    if (fit_mot) {
+                        setup_motor(A, index, 9, fit.value[data_index])
+                    }
+
+                }
+
+                // Solve
+                const params = mlMatrix.solve(A, B)
+
+                // Extract params
+                const diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
+                const off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
+
+                // Remove iron correction from offsets
+                const iron = new mlMatrix.Matrix([
+                    [diagonals[0],     off_diagonals[0], off_diagonals[1]],
+                    [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
+                    [off_diagonals[1], off_diagonals[2], diagonals[2]]
+                ])
+                const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
+                const offsets = uncorrected_offsets.mmul(mlMatrix.inverse(iron))
+
+                fit.params.offsets = Array.from(offsets.data[0])
+                fit.params.diagonals = diagonals
+                fit.params.off_diagonals = off_diagonals
+                if (fit_mot) {
+                    fit.params.motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
+                }
             }
 
             apply_params(fit, MAG_Data[i].raw, fit.params, fit.value)
@@ -1044,7 +1128,18 @@ function load(log_file) {
 
     // Add interference sources
     fits = []
-    fits.push("No motor comp")
+
+    // Only offsets
+    fits.push("Offsets and scale")
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        MAG_Data[i].fits.push({ value: null, type: 0, offsets_and_scale: true })
+    }
+
+    // Offsets and elliptical only
+    fits.push("Offsets and iron")
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
