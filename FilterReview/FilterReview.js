@@ -1249,6 +1249,7 @@ function calculate() {
     document.getElementById("calculate").disabled = true
 
     let changed = false
+    let valid_count = 0
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
@@ -1256,10 +1257,14 @@ function calculate() {
         if (Gyro_batch[i].FFT == null) {
             Gyro_batch[i].FFT = run_batch_fft(Gyro_batch[i])
             changed = true
+            valid_count += Gyro_batch[i].FFT.x.length
         }
     }
     if (!changed) {
         return
+    }
+    if (valid_count == 0) {
+        alert("Not enough continuous IMU data available")
     }
 
     // Set FFT info
@@ -1620,7 +1625,7 @@ function redraw() {
     }
 
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.x.length == 0)) {
             continue
         }
 
@@ -1776,7 +1781,7 @@ function redraw_post_estimate_and_bode() {
 
     // Post filter estimate
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.H == null)) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.x.length == 0) || (Gyro_batch[i].FFT.H == null)) {
             continue
         }
 
@@ -1878,7 +1883,7 @@ function redraw_post_estimate_and_bode() {
 
     var index
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.bode == null)) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.x.length == 0) || (Gyro_batch[i].FFT.bode == null)) {
             continue
         }
         if (Gyro_batch[i].sensor_num == gyro_instance) {
@@ -1948,7 +1953,7 @@ function redraw_post_estimate_and_bode() {
 // Find the instance of "Gyro_batch" that matches the selection
 function find_instance(gyro_instance, post_filter) {
     for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null)) {
+        if ((Gyro_batch[i] == null) || (Gyro_batch[i].FFT == null) || (Gyro_batch[i].FFT.x.length == 0)) {
             continue
         }
         if ((Gyro_batch[i].post_filter == post_filter) && (Gyro_batch[i].sensor_num == gyro_instance)) {
