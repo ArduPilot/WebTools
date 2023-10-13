@@ -33,6 +33,71 @@ function parameter_set_disable(name, disable) {
     }
 }
 
+// Get parma value, converting bitmasks as required
+function parameter_get_value(name) {
+    let param = document.getElementById(name)
+    if (param == null) {
+        return
+    }
+
+    let value = parseFloat(param.value)
+
+    // Convert to uint32 value if bitmask
+    if ("type" in param.dataset) {
+        const type = parseFloat(param.dataset.type)
+        if (type < 32) {
+            if (value < 0) {
+                value += (1 << type)
+
+                const sign_mask = 1 << (type-1)
+                value |= sign_mask
+            }
+
+            const max = 0xFFFFFFFF >>> (32 - type)
+            value &= max
+        }
+    }
+
+    return value
+}
+
+// Set size of bitmask parameter, this allows conversion to and from values correctly and hides any unused bits
+function set_bitmask_size(name, size) {
+    let param = document.getElementById(name)
+    if (param == null) {
+        return
+    }
+
+    if (!("type" in param.dataset)) {
+        error("Cannot set size of none bitmask param type: " + name)
+        return
+    }
+
+    if (param.dataset.type == size) {
+        // Already correct size
+        return
+    }
+
+    // Bits of bitmask
+    let items = param.parentElement.querySelectorAll("input[type=checkbox]")
+     for (let item of items) {
+        const hide = (parseFloat(item.dataset.bit) >= size) ? "none" : "inline"
+
+        // Hide checkbox and label
+        item.style.display = hide
+        item.labels[0].style.display = hide
+
+        // Hide line breaks
+        let br = item.labels[0].nextSibling
+        if ((br != null) && (br.nodeName == "BR")) {
+            br.style.display = hide
+        }
+    }
+
+    param.dataset.type = size
+
+}
+
 async function load_param_inputs(param_doc, param_names) {
 
     function layout_for_param(name, metadata) {
@@ -73,6 +138,9 @@ async function load_param_inputs(param_doc, param_names) {
             // Add checkboxes for each bit
             param.setAttribute('step', 1)
 
+            // Assume 32 bit bitmask
+            param.setAttribute('data-type', 32)
+
             let read_bits = function(event) {
                 let paragaph = event.currentTarget.parentElement
 
@@ -84,9 +152,24 @@ async function load_param_inputs(param_doc, param_names) {
                         value |= 1<<parseFloat(item.dataset.bit)
                     }
                 }
-                let param = event.currentTarget.parentElement.querySelectorAll("input[type=number]")
-                param[0].value = value
-                param[0].onchange()
+                let param = event.currentTarget.parentElement.querySelectorAll("input[type=number]")[0]
+
+                // Convert to set type
+                if ("type" in param.dataset) {
+                    const type = parseFloat(param.dataset.type)
+                    if (type < 32) {
+                        const max = 0xFFFFFFFF >>> (32 - type)
+                        value &= max
+
+                        const sign_mask = 1 << (type-1)
+                        if ((value & sign_mask) != 0) {
+                            value -= (1 << type)
+                        }
+                    }
+                }
+
+                param.value = value
+                param.onchange()
             }
 
             paragaph.appendChild(document.createElement('br'))
@@ -117,10 +200,10 @@ async function load_param_inputs(param_doc, param_names) {
             }
 
             let set_bits = function(event) {
-                let param = event.currentTarget
+                const value = parameter_get_value(event.currentTarget.id)
+
                 // Set bits in bitmask
                 let items = param.parentElement.querySelectorAll("input[type=checkbox]")
-                const value = parseFloat(param.value)
                 for (let item of items) {
                     item.checked = value & (1<<parseFloat(item.dataset.bit))
                 }
