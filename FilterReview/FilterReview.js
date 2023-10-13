@@ -2296,7 +2296,7 @@ function load_filters() {
     for (let i = 0; i < HNotch_params.length; i++) {
         params = []
         for (const [key, value] of Object.entries(HNotch_params[i])) {
-            params[key] = parseFloat(document.getElementById(value).value)
+            params[key] = parameter_get_value(value)
         }
         filters.notch.push(new HarmonicNotchFilter(params))
 
@@ -2842,44 +2842,21 @@ function load(log_file) {
                         new FFTTarget(log),
                         new RPMTarget(log, 2, 5)]
 
+    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
+    const have_16_harmonics = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT") != null
+
     // Read from log into HTML box
     const HNotch_params = get_HNotch_param_names()
     for (let i = 0; i < HNotch_params.length; i++) {
         for (const param of Object.values(HNotch_params[i])) {
+            // Set harmonic bitmask size
+            if (param.endsWith("HMNCS")) {
+                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
+                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
+            }
             const value = get_param_value(log.messages.PARM, param)
             if (value != null) {
                 parameter_set_value(param, value)
-            }
-        }
-    }
-
-    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
-    const have_16_harmonics = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT") != null
-    for (let i = 0; i < HNotch_params.length; i++) {
-        // Find all harmonic bitmasks
-        for (const param of Object.values(HNotch_params[i])) {
-            if (!param.endsWith("HMNCS")) {
-                continue
-            }
-            let param_ele = document.getElementById(param)
-            if (param_ele == null) {
-                continue
-            }
-
-            // Bits of bitmask
-            let items = param_ele.parentElement.querySelectorAll("input[type=checkbox]")
-            for (let item of items) {
-                const hide = (!have_16_harmonics && parseFloat(item.dataset.bit) >= 8) ? "none" : "inline"
-
-                // Hide checkbox and label
-                item.style.display = hide
-                item.labels[0].style.display = hide
-
-                // Hide line breaks
-                let br = item.labels[0].nextSibling
-                if ((br != null) && (br.nodeName == "BR")) {
-                    br.style.display = hide
-                }
             }
         }
     }
