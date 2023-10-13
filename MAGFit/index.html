@@ -59,9 +59,15 @@
         <td>
             <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
             <div id="OpenIn"></div><br><br>
-            <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { fit(); redraw() })">
+            <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { select_body_frame_attitude(); fit(); redraw() })">
         </td>
-        <td style="width: 450px;"></td>
+        <td style="width: 10px;"></td>
+        <td>
+            <fieldset style="width:200px;height:80px" id="ATTITUDE">
+                <legend>Attitude source</legend>
+            </fieldset>
+        </td>
+        <td style="width: 300px;"></td>
         <td>
             <br><br><br><br>
             <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">

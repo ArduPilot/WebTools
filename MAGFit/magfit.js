@@ -473,6 +473,46 @@ function find_end_index(time) {
     return end_index
 }
 
+let source
+function select_body_frame_attitude() {
+
+    if (source != null) {
+        // No need to re-calc
+        return
+    }
+
+    for (const ef of body_frame_earth_field) {
+        if (ef.select.checked) {
+            source = ef
+        }
+    }
+    if (source == null) {
+        error("No attitude source selected")
+    }
+
+    // Setup expected plot
+    mag_plot.X.data[0].x = source.time
+    mag_plot.X.data[0].y = source.x
+
+    mag_plot.Y.data[0].x = source.time
+    mag_plot.Y.data[0].y = source.y
+    
+    mag_plot.Z.data[0].x = source.time
+    mag_plot.Z.data[0].y = source.z
+
+    // Interpolate expected to logged compass and calculate error
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        MAG_Data[i].expected = { x: linear_interp(source.x, source.time, MAG_Data[i].time),
+                                 y: linear_interp(source.y, source.time, MAG_Data[i].time),
+                                 z: linear_interp(source.z, source.time, MAG_Data[i].time) }
+
+        MAG_Data[i].orig.error = calc_error(MAG_Data[i].expected, MAG_Data[i].orig)
+    }
+}
+
 function fit() {
 
     const start = performance.now()
@@ -684,8 +724,62 @@ function extractLatLon(log) {
   return [Lat, Lng]
 }
 
+function add_attitude_source(quaternion, earth_field, name) {
+
+    // Rotate earth frame into body frame based on attitude
+    const len = quaternion.q1.length
+    let ret = { x: new Array(len), y: new Array(len), z: new Array(len), time: quaternion.time, name: name }
+    for (i = 0; i < len; i++) {
+
+        // Invert
+        const q1 = quaternion.q1[i]
+        const q2 = -quaternion.q2[i]
+        const q3 = -quaternion.q3[i]
+        const q4 = -quaternion.q4[i]
+    
+        // Rotate
+        let uv = [ (q3 * earth_field.z - q4 * earth_field.y) * 2.0,
+                   (q4 * earth_field.x - q2 * earth_field.z) * 2.0,
+                   (q2 * earth_field.y - q3 * earth_field.x) * 2.0 ]
+
+        ret.x[i] = earth_field.x + (q1 * uv[0] + q3 * uv[2] - q4 * uv[1])
+        ret.y[i] = earth_field.y + (q1 * uv[1] + q4 * uv[0] - q2 * uv[2])
+        ret.z[i] = earth_field.z + (q1 * uv[2] + q2 * uv[1] - q3 * uv[0])
+
+    }
+
+    // Add check box for this attitude source
+    let section = document.getElementById("ATTITUDE")
+
+    let radio = document.createElement("input")
+    radio.setAttribute('type', 'radio')
+    radio.setAttribute('id', "ATTITUDE" + name)
+    radio.setAttribute('name', "attitude_source")
+    radio.disabled = false
+
+    // Clear selected source and enable re-calc
+    radio.addEventListener('change', function() { 
+        document.getElementById('calculate').disabled = false
+        source = null
+    })
+
+    let label = document.createElement("label")
+    label.setAttribute('for', "ATTITUDE" + name)
+    label.innerHTML = name
+
+    section.appendChild(radio)
+    section.appendChild(label)
+    section.appendChild(document.createElement("br"))
+
+    ret.select = radio
+
+    return ret
+
+}
+
 var MAG_Data
 var fits
+var body_frame_earth_field
 function load(log_file) {
 
     let log = new DataflashParser()
@@ -863,69 +957,89 @@ function load(log_file) {
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
 
-    let quaternion
-    if (EKF_TYPE == 2) {
-        log.parseAtOffset("NKQ")
-        const msg_name = "NKQ[0]"
+    // Load various attitude sources and calculate body frame earth field
 
-        quaternion = { time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
-                       q1: Array.from(log.messages[msg_name].Q1),
-                       q2: Array.from(log.messages[msg_name].Q2),
-                       q3: Array.from(log.messages[msg_name].Q3),
-                       q4: Array.from(log.messages[msg_name].Q4)}
+    // Clear attitude selection options
+    let attitude_select = document.getElementById("ATTITUDE")
+    attitude_select.replaceChildren(attitude_select.children[0])
 
-    } else if (EKF_TYPE == 3) {
-        log.parseAtOffset("XKQ")
+    body_frame_earth_field = []
+
+    log.parseAtOffset("AHR2")
+    msg_name = "AHR2"
+    if (log.messages[msg_name] != null) {
+
+        const quaternion = {
+            time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
+            q1: Array.from(log.messages[msg_name].Q1),
+            q2: Array.from(log.messages[msg_name].Q2),
+            q3: Array.from(log.messages[msg_name].Q3),
+            q4: Array.from(log.messages[msg_name].Q4)
+        }
+
+        let field = add_attitude_source(quaternion, earth_field, "DCM")
+        if (EKF_TYPE == 0) {
+            field.select.checked = true
+        }
+ 
+        body_frame_earth_field.push(field)
+    }
+
+    log.parseAtOffset("NKQ")
+    msg_name = "NKQ[0]"
+    if (log.messages[msg_name] != null) {
+
+        const quaternion = {
+            time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
+            q1: Array.from(log.messages[msg_name].Q1),
+            q2: Array.from(log.messages[msg_name].Q2),
+            q3: Array.from(log.messages[msg_name].Q3),
+            q4: Array.from(log.messages[msg_name].Q4)
+        }
+
+        let field = add_attitude_source(quaternion, earth_field, "EKF 2 IMU 1")
+        if (EKF_TYPE == 2) {
+            field.select.checked = true
+        }
+
+        body_frame_earth_field.push(field)
+    }
+
+    log.parseAtOffset("XKQ")
+    if (log.messages["XKQ"] != null) {
 
         var primary = 0
         const EKF3_PRIMARY = get_param_value(log.messages.PARM, "EK3_PRIMARY")
         if (EKF3_PRIMARY != null) {
             primary = EKF3_PRIMARY
         }
-        const msg_name = "XKQ[" + primary + "]"
+        msg_name = "XKQ[" + primary + "]"
 
-        quaternion = { time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
-                       q1: Array.from(log.messages[msg_name].Q1),
-                       q2: Array.from(log.messages[msg_name].Q2),
-                       q3: Array.from(log.messages[msg_name].Q3),
-                       q4: Array.from(log.messages[msg_name].Q4)}
-    } else {
+        if (log.messages[msg_name] != null) {
+
+            quaternion = { 
+                time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
+                q1: Array.from(log.messages[msg_name].Q1),
+                q2: Array.from(log.messages[msg_name].Q2),
+                q3: Array.from(log.messages[msg_name].Q3),
+                q4: Array.from(log.messages[msg_name].Q4)
+            }
+
+            let field = add_attitude_source(quaternion, earth_field, "EKF 3 IMU " + (primary + 1))
+            if (EKF_TYPE == 3) {
+                field.select.checked = true
+            }
+            body_frame_earth_field.push(field)
+        }
+    }
+
+    if (body_frame_earth_field.length == 0) {
         alert("Unknown attitude source")
         return
-    }
-
-    // Rotate earth frame into body frame based on attitude
-    const len = quaternion.q1.length
-    let body_frame_earth_field = { x: new Array(len), y: new Array(len), z: new Array(len) }
-    for (i = 0; i < len; i++) {
-
-        // Invert
-        const q1 = quaternion.q1[i]
-        const q2 = -quaternion.q2[i]
-        const q3 = -quaternion.q3[i]
-        const q4 = -quaternion.q4[i]
-
-        // Rotate
-        let uv = [ (q3 * earth_field.z - q4 * earth_field.y) * 2.0,
-                   (q4 * earth_field.x - q2 * earth_field.z) * 2.0,
-                   (q2 * earth_field.y - q3 * earth_field.x) * 2.0 ]
-
-        body_frame_earth_field.x[i] = earth_field.x + (q1 * uv[0] + q3 * uv[2] - q4 * uv[1])
-        body_frame_earth_field.y[i] = earth_field.y + (q1 * uv[1] + q4 * uv[0] - q2 * uv[2])
-        body_frame_earth_field.z[i] = earth_field.z + (q1 * uv[2] + q2 * uv[1] - q3 * uv[0])
-
-    }
-
-    // Interpolate expected to logged compass and calculate error
-    for (let i = 0; i < 3; i++) {
-        if (MAG_Data[i] == null) {
-            continue
-        }
-        MAG_Data[i].expected = { x: linear_interp(body_frame_earth_field.x, quaternion.time, MAG_Data[i].time),
-                                 y: linear_interp(body_frame_earth_field.y, quaternion.time, MAG_Data[i].time),
-                                 z: linear_interp(body_frame_earth_field.z, quaternion.time, MAG_Data[i].time) }
-
-        MAG_Data[i].orig.error = calc_error(MAG_Data[i].expected, MAG_Data[i].orig)
+    } else if (body_frame_earth_field.length == 1) {
+        // Only one item, select it and disable
+        body_frame_earth_field[0].select.checked = true
+        body_frame_earth_field[0].select.disabled = true
     }
 
     // Add interference sources
@@ -986,16 +1100,6 @@ function load(log_file) {
         error_plot.data[i].x = MAG_Data[i].time
     }
 
-    // Plot Expected
-    mag_plot.X.data[0].x = quaternion.time
-    mag_plot.X.data[0].y = body_frame_earth_field.x
-
-    mag_plot.Y.data[0].x = quaternion.time
-    mag_plot.Y.data[0].y = body_frame_earth_field.y
-
-    mag_plot.Z.data[0].x = quaternion.time
-    mag_plot.Z.data[0].y = body_frame_earth_field.z
-
     // Add button for each fit
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
@@ -1031,6 +1135,7 @@ function load(log_file) {
 
     }
 
+    select_body_frame_attitude()
     fit()
     redraw()
 
@@ -1048,4 +1153,3 @@ function time_range_changed() {
 
     document.getElementById('calculate').disabled = false
 }
-
