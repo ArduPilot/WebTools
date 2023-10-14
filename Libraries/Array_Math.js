@@ -195,6 +195,27 @@ function array_abs(A) {
     return ret
 }
 
+function array_mean(A) {
+    const len = A.length
+    let ret = 0
+    for (let i = 0; i<len; i++) {
+        ret += A[i]
+    }
+    return ret / len
+}
+
+// Return a range, including start and end points
+function array_from_range(start, end, step) {
+    const len = Math.floor((end - start) / step) + 1
+    let val = start
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = val
+        val += step
+    }
+    return ret
+}
+
 // Linear interpolation between arrays
 function linear_interp(values, index, query_index) {
 

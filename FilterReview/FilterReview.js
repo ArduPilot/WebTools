@@ -1222,7 +1222,7 @@ function calculate() {
             const max_freq = Gyro_batch[i].FFT.bins[Gyro_batch[i].FFT.bins.length  - 1]
 
             Gyro_batch[i].FFT.bode = []
-            Gyro_batch[i].FFT.bode.freq = math.range(0, max_freq, freq_step, true)._data
+            Gyro_batch[i].FFT.bode.freq = array_from_range(0, max_freq, freq_step)
 
             // Calculate Z for transfer function
             // Z = e^jw
@@ -2654,7 +2654,7 @@ function load(log_file) {
                 }
                 if (msg_key != null) {
                     // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
-                    gyro_rate[i] = math.mean(Array.from(log.messages[msg_key].GHz))
+                    gyro_rate[i] = array_mean(Array.from(log.messages[msg_key].GHz))
                 }
 
             }
