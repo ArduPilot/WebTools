@@ -76,7 +76,7 @@ function setup_plots() {
             document.getElementById("TimeEnd").value = Math.ceil(range[1])
             if (MAG_Data != null) {
                 // If we have data then enable re-calculate on updated range
-                document.getElementById("calculate").disabled = false
+                set_need_calc(true)
             }
         }
 
@@ -225,7 +225,7 @@ function save_parameters() {
         return ret
     }
 
-    function check_params(i, names, values) {
+    function check_params(i, names, values, original_values) {
 
         function check_range(name, value, lower, upper) {
             let ret = ""
@@ -251,11 +251,22 @@ function save_parameters() {
         warning += check_array(names.diagonals, values.diagonals, 0.2, 5.0)
         warning += check_array(names.off_diagonals, values.off_diagonals, -1.0, 1.0)
 
+        if (warning != "") {
+            warning = "MAG " + (i+1) + " params outside typical range:\n" + warning
+        }
+
+        if (original_values.orientation != values.orientation) {
+            if (warning != "") {
+                warning += "\n"
+            }
+            warning += "MAG " + (i+1) + " orientation (" + names.orientation + ") changed from " + get_rotation_name(original_values.orientation) + " to " + get_rotation_name(values.orientation) + "\n"
+        }
+
         if (warning == "") {
             return true
         }
 
-        return confirm("MAG " + (i+1) + " params outside typical range:\n" + warning);
+        return confirm(warning);
     }
 
     let params = ""
@@ -266,7 +277,7 @@ function save_parameters() {
         }
         for (let j = 0; j < MAG_Data[i].fits.length; j++) {
             if (MAG_Data[i].fits[j].select.checked) {
-                if (MAG_Data[i].fits[j].valid && check_params(i, MAG_Data[i].names, MAG_Data[i].fits[j].params)) {
+                if (MAG_Data[i].fits[j].valid && check_params(i, MAG_Data[i].names, MAG_Data[i].fits[j].params, MAG_Data[i].params)) {
                     const fit_type = MAG_Data[i].fits[j].type
                     if (type == 0) {
                         type = fit_type
@@ -301,6 +312,7 @@ function redraw() {
             parameter_set_value(names.motor[i], values.motor[i])
         }
         parameter_set_value(names.scale, values.scale)
+        parameter_set_value(names.orientation, values.orientation)
     }
 
     for (let i = 0; i < 3; i++) {
@@ -473,6 +485,152 @@ function find_end_index(time) {
     return end_index
 }
 
+// Run all calculation steps
+function calculate() {
+
+    select_body_frame_attitude()
+
+    check_orientation()
+
+    fit()
+
+    redraw()
+
+    set_need_calc(false)
+
+}
+
+function check_orientation() {
+
+    const start = performance.now()
+
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null || !MAG_Data[i].rotate) {
+            continue
+        }
+
+        // Find the start and end index
+        const start_index = find_start_index(MAG_Data[i].time)
+        const end_index = find_end_index(MAG_Data[i].time)+1
+        const num_samples = end_index - start_index
+
+        // Calculate average earth filed to match sensor to
+        let ef_mean = { x:0.0, y:0.0, z:0.0 }
+        for (let j = 0; j < num_samples; j++) {
+            const data_index = start_index + j
+
+            ef_mean.x += MAG_Data[i].expected.x[data_index]
+            ef_mean.y += MAG_Data[i].expected.y[data_index]
+            ef_mean.z += MAG_Data[i].expected.z[data_index]
+        }
+        ef_mean.x /= num_samples
+        ef_mean.y /= num_samples
+        ef_mean.z /= num_samples
+
+        let rotation = new Quaternion()
+
+        // Try all rotations
+        const last_rotation = 43
+        let rot_error = []
+        for (let rot = 0; rot <= last_rotation; rot++) {
+            // Skip the weird ones
+            if ((rot == 38) || (rot == 41)) {
+                // ROTATION_ROLL_90_PITCH_68_yAW_293
+                // ROTATION_PITCH_7
+                continue
+            }
+
+            if (!rotation.from_rotation(rot)) {
+                continue
+            }
+
+            // Rotate and take average
+            let x = new Array(num_samples)
+            let y = new Array(num_samples)
+            let z = new Array(num_samples)
+            let mean = { x:0.0, y:0.0, z:0.0 }
+            for (let j = 0; j < num_samples; j++) {
+                const data_index = start_index + j
+
+                const tmp = rotation.rotate([MAG_Data[i].raw.x[data_index],
+                                             MAG_Data[i].raw.y[data_index],
+                                             MAG_Data[i].raw.z[data_index]])
+    
+                x[j] = tmp[0]
+                y[j] = tmp[1]
+                z[j] = tmp[2]
+
+                mean.x += x[j]
+                mean.y += y[j]
+                mean.z += z[j]
+            }
+            mean.x /= num_samples
+            mean.y /= num_samples
+            mean.z /= num_samples
+
+            const offsets = { 
+                x: ef_mean.x - mean.x,
+                y: ef_mean.y - mean.y,
+                z: ef_mean.z - mean.z
+            }
+
+            let error_sum = 0
+            for (let j = 0; j < num_samples; j++) {
+                const data_index = start_index + j
+
+                error_sum += Math.sqrt(
+                    (x[j] - MAG_Data[i].expected.x[data_index] + offsets.x)**2 +
+                    (y[j] - MAG_Data[i].expected.y[data_index] + offsets.y)**2 +
+                    (z[j] - MAG_Data[i].expected.z[data_index] + offsets.z)**2
+                )
+            }
+
+            rot_error.push({ rotation: rot, error: error_sum / num_samples })
+
+        }
+
+        rot_error.sort((a, b) => a.error - b.error);
+
+        const first = rot_error[0]
+        const second = rot_error[1]
+
+        const is_correct = (first.rotation == MAG_Data[i].params.orientation)
+        const cost_ratio = second.error / first.error
+
+        const correct_txt = is_correct ? "correct" : "incorrect"
+        let txt = "Mag " + (i+1) + " " + correct_txt + " orientation " + get_rotation_name(MAG_Data[i].params.orientation)
+        if (!is_correct) {
+            txt += ", best orientation: " + get_rotation_name(first.rotation)
+        }
+        txt += ", second best orientation: " + get_rotation_name(second.rotation)
+        txt += ", cost ratio: " + (cost_ratio*100).toFixed(2) + " %"
+        console.log(txt)
+
+        // If best rotation fit is twice as good as next best then switch
+        MAG_Data[i].rotation = (cost_ratio > 2) ? first.rotation : MAG_Data[i].params.orientation
+
+        // Apply rotation
+        let rot = new Quaternion()
+        rot.from_rotation(MAG_Data[i].rotation)
+
+        const len = MAG_Data[i].raw.x.length
+        MAG_Data[i].rotated = { x: new Array(len), y: new Array(len), z: new Array(len) }
+        for (let j = 0; j < len; j++) {
+            const tmp = rot.rotate([ MAG_Data[i].raw.x[j],
+                                     MAG_Data[i].raw.y[j],
+                                     MAG_Data[i].raw.z[j] ])
+
+            MAG_Data[i].rotated.x[j] = tmp[0]
+            MAG_Data[i].rotated.y[j] = tmp[1]
+            MAG_Data[i].rotated.z[j] = tmp[2]
+        }
+
+    }
+
+    const end = performance.now();
+    console.log(`Orientation check took: ${end - start} ms`);
+}
+
 let source
 function select_body_frame_attitude() {
 
@@ -496,7 +654,7 @@ function select_body_frame_attitude() {
 
     mag_plot.Y.data[0].x = source.time
     mag_plot.Y.data[0].y = source.y
-    
+
     mag_plot.Z.data[0].x = source.time
     mag_plot.Z.data[0].y = source.z
 
@@ -534,6 +692,28 @@ function fit() {
             MAG_Data[i].orig.mean_error += MAG_Data[i].orig.error[start_index + j]
         }
         MAG_Data[i].orig.mean_error /= num_samples
+
+        let rot = {}
+        let orientation
+        if (!MAG_Data[i].rotate) {
+            // Use raw directly
+            rot.x = MAG_Data[i].raw.x
+            rot.y = MAG_Data[i].raw.y
+            rot.z = MAG_Data[i].raw.z
+
+            // Original orientation
+            orientation = MAG_Data[i].params.orientation
+
+        } else {
+            // use rotation corrected
+            rot.x = MAG_Data[i].rotated.x
+            rot.y = MAG_Data[i].rotated.y
+            rot.z = MAG_Data[i].rotated.z
+
+            // New orientation (possibly)
+            orientation = MAG_Data[i].rotation
+
+        }
 
         // Solve in the form Ax = B
         let A = new mlMatrix.Matrix(num_samples*3, 12)
@@ -666,7 +846,8 @@ function fit() {
                 diagonals: [1.0, 1.0, 1.0],
                 off_diagonals: [0.0, 0.0, 0.0,],
                 scale: 1.0,
-                motor: [0.0, 0.0, 0.0]
+                motor: [0.0, 0.0, 0.0],
+                orientation: orientation
             }
 
             const fit_mot = fit.value != null
@@ -680,7 +861,7 @@ function fit() {
                     const index = j*3
                     const data_index = start_index + j
 
-                    setup_scale(A, index, 3, MAG_Data[i].raw.x[data_index], MAG_Data[i].raw.y[data_index], MAG_Data[i].raw.z[data_index])
+                    setup_scale(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
 
                     if (fit_mot) {
                         setup_motor(A, index, 4, fit.value[data_index])
@@ -708,7 +889,7 @@ function fit() {
                     const index = j*3
                     const data_index = start_index + j
 
-                    setup_iron(A, index, 3, MAG_Data[i].raw.x[data_index], MAG_Data[i].raw.y[data_index], MAG_Data[i].raw.z[data_index])
+                    setup_iron(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
 
                     if (fit_mot) {
                         setup_motor(A, index, 9, fit.value[data_index])
@@ -740,7 +921,7 @@ function fit() {
                 }
             }
 
-            apply_params(fit, MAG_Data[i].raw, fit.params, fit.value)
+            apply_params(fit, rot, fit.params, fit.value)
             fit.error = calc_error(MAG_Data[i].expected, fit)
 
             // Calculate error for selected samples only
@@ -779,8 +960,6 @@ function fit() {
     const end = performance.now();
     console.log(`Fit took: ${end - start} ms`);
 
-    document.getElementById('calculate').disabled = true
-
 }
 
 function calc_error(A, B) {
@@ -808,27 +987,32 @@ function extractLatLon(log) {
   return [Lat, Lng]
 }
 
+// Enable/disable calculate and save params button
+function set_need_calc(b) {
+    document.getElementById('calculate').disabled = !b
+    document.getElementById('SaveParams').disabled = b
+}
+
 function add_attitude_source(quaternion, earth_field, name) {
 
     // Rotate earth frame into body frame based on attitude
+    let q = new Quaternion()
+
     const len = quaternion.q1.length
     let ret = { x: new Array(len), y: new Array(len), z: new Array(len), time: quaternion.time, name: name }
     for (i = 0; i < len; i++) {
 
-        // Invert
-        const q1 = quaternion.q1[i]
-        const q2 = -quaternion.q2[i]
-        const q3 = -quaternion.q3[i]
-        const q4 = -quaternion.q4[i]
-    
-        // Rotate
-        let uv = [ (q3 * earth_field.z - q4 * earth_field.y) * 2.0,
-                   (q4 * earth_field.x - q2 * earth_field.z) * 2.0,
-                   (q2 * earth_field.y - q3 * earth_field.x) * 2.0 ]
+        // Invert and load into helper
+        q.q1 =  quaternion.q1[i]
+        q.q2 = -quaternion.q2[i]
+        q.q3 = -quaternion.q3[i]
+        q.q4 = -quaternion.q4[i]
 
-        ret.x[i] = earth_field.x + (q1 * uv[0] + q3 * uv[2] - q4 * uv[1])
-        ret.y[i] = earth_field.y + (q1 * uv[1] + q4 * uv[0] - q2 * uv[2])
-        ret.z[i] = earth_field.z + (q1 * uv[2] + q2 * uv[1] - q3 * uv[0])
+        const tmp = q.rotate(earth_field)
+
+        ret.x[i] = tmp[0]
+        ret.y[i] = tmp[1]
+        ret.z[i] = tmp[2]
 
     }
 
@@ -843,7 +1027,7 @@ function add_attitude_source(quaternion, earth_field, name) {
 
     // Clear selected source and enable re-calc
     radio.addEventListener('change', function() { 
-        document.getElementById('calculate').disabled = false
+        set_need_calc(true)
         source = null
     })
 
@@ -878,24 +1062,33 @@ function load(log_file) {
 
         flight_data.data[1].x = ATT_time
         flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+    } else {
+        flight_data.data[0].x = null
+        flight_data.data[0].y = null
+        flight_data.data[1].x = null
+        flight_data.data[1].y = null
     }
 
     log.parseAtOffset("RATE")
     if (Object.keys(log.messages.RATE).length > 0) {
         flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
         flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+    } else {
+        flight_data.data[2].x = null
+        flight_data.data[2].y = null
     }
 
     log.parseAtOffset("POS")
     if (Object.keys(log.messages.POS).length > 0) {
         flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    } else {
+        flight_data.data[3].x = null
+        flight_data.data[3].y = null
     }
     Plotly.redraw("FlightData")
 
     MAG_Data = []
-
-    // also need to reset plots...
 
     // Get MAG data
     MAG_Data.start_time = null
@@ -937,7 +1130,8 @@ function load(log_file) {
                                         get_param_value(log.messages.PARM, MAG_Data[i].names.motor[2])],
                                id: get_param_value(log.messages.PARM, MAG_Data[i].names.id),
                                use: get_param_value(log.messages.PARM, MAG_Data[i].names.use),
-                               external: get_param_value(log.messages.PARM, MAG_Data[i].names.external)  }
+                               external: get_param_value(log.messages.PARM, MAG_Data[i].names.external),
+                               orientation: get_param_value(log.messages.PARM, MAG_Data[i].names.orientation) }
 
         // Print some device info, offset is first param in fieldset
         let name = "MAG" + i
@@ -983,9 +1177,9 @@ function load(log_file) {
         // Remove calibration to get raw values
 
         // Subtract compass-motor compensation
-        let X = array_sub(MAG_Data[i].orig.x, Array.from(log.messages[msg_name].MOX))
-        let Y = array_sub(MAG_Data[i].orig.y, Array.from(log.messages[msg_name].MOY))
-        let Z = array_sub(MAG_Data[i].orig.z, Array.from(log.messages[msg_name].MOZ))
+        let x = array_sub(MAG_Data[i].orig.x, Array.from(log.messages[msg_name].MOX))
+        let y = array_sub(MAG_Data[i].orig.y, Array.from(log.messages[msg_name].MOY))
+        let z = array_sub(MAG_Data[i].orig.z, Array.from(log.messages[msg_name].MOZ))
 
         // Remove iron correction
         if (!array_all_equal(MAG_Data[i].params.diagonals, 0.0)) {
@@ -999,25 +1193,44 @@ function load(log_file) {
             const inv_iron = mlMatrix.inverse(iron)
 
             // Vectorized multiplication
-            const corrected_X = array_add(array_add( array_scale(X, inv_iron.get(0,0)), array_scale(Y, inv_iron.get(0,1))), array_scale(Z, inv_iron.get(0,2)) )
-            const corrected_Y = array_add(array_add( array_scale(X, inv_iron.get(1,0)), array_scale(Y, inv_iron.get(1,1))), array_scale(Z, inv_iron.get(1,2)) )
-            const corrected_Z = array_add(array_add( array_scale(X, inv_iron.get(2,0)), array_scale(Y, inv_iron.get(2,1))), array_scale(Z, inv_iron.get(2,2)) )
+            const corrected_x = array_add(array_add( array_scale(x, inv_iron.get(0,0)), array_scale(y, inv_iron.get(0,1))), array_scale(z, inv_iron.get(0,2)) )
+            const corrected_y = array_add(array_add( array_scale(x, inv_iron.get(1,0)), array_scale(y, inv_iron.get(1,1))), array_scale(z, inv_iron.get(1,2)) )
+            const corrected_z = array_add(array_add( array_scale(x, inv_iron.get(2,0)), array_scale(y, inv_iron.get(2,1))), array_scale(z, inv_iron.get(2,2)) )
 
-            X = corrected_X; Y = corrected_Y; Z = corrected_Z
+            x = corrected_x; y = corrected_y; z = corrected_z
         }
 
         // Remove scale factor, if valid
         if (scale_valid(MAG_Data[i].params.scale)) {
             const inv_scale = 1 / MAG_Data[i].params.scale
-            X = array_scale(X, inv_scale)
-            Y = array_scale(Y, inv_scale)
-            Z = array_scale(Z, inv_scale)
+            x = array_scale(x, inv_scale)
+            y = array_scale(y, inv_scale)
+            z = array_scale(z, inv_scale)
         }
 
         // remove offsets
-        MAG_Data[i].raw = { x: array_sub(X, Array.from(log.messages[msg_name].OfsX)),
-                            y: array_sub(Y, Array.from(log.messages[msg_name].OfsY)),
-                            z: array_sub(Z, Array.from(log.messages[msg_name].OfsZ)) }
+        x = array_sub(x, Array.from(log.messages[msg_name].OfsX))
+        y = array_sub(y, Array.from(log.messages[msg_name].OfsY))
+        z = array_sub(z, Array.from(log.messages[msg_name].OfsZ))
+
+        // Rotate external compasses back into raw sensor frame
+        let rotation = new Quaternion()
+        let rotate = false
+        if ((MAG_Data[i].params.external != 0) && rotation.from_rotation(MAG_Data[i].params.orientation)) {
+            rotation.invert()
+            const len = x.length
+            for (let j = 0; j < len; j++) {
+                const tmp = rotation.rotate([x[j], y[j], z[j]])
+    
+                x[j] = tmp[0]
+                y[j] = tmp[1]
+                z[j] = tmp[2]
+            }
+            rotate = true
+        }
+
+        MAG_Data[i].raw = { x: x, y: y, z: z }
+        MAG_Data[i].rotate = rotate
 
     }
 
@@ -1036,7 +1249,7 @@ function load(log_file) {
         alert("Could not get earth field for Lat: " + Lat + " Lng: " + Lng)
         return
     }
-    console.log("EF: " + earth_field.x + ", " + earth_field.y + ", " + earth_field.z + " at Lat: " + Lat + " Lng: " + Lng)
+    console.log("EF: " + earth_field[0] + ", " + earth_field[1] + ", " + earth_field[2] + " at Lat: " + Lat + " Lng: " + Lng)
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
@@ -1127,6 +1340,7 @@ function load(log_file) {
     }
 
     // Add interference sources
+    source = null
     fits = []
 
     // Only offsets
@@ -1230,11 +1444,7 @@ function load(log_file) {
 
     }
 
-    select_body_frame_attitude()
-    fit()
-    redraw()
-
-    document.getElementById("SaveParams").disabled = false
+    calculate()
 
 }
 
@@ -1246,5 +1456,5 @@ function time_range_changed() {
     flight_data.layout.xaxis.autorange = false
     Plotly.redraw("FlightData")
 
-    document.getElementById('calculate').disabled = false
+    set_need_calc(true)
 }

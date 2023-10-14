@@ -5,8 +5,8 @@
 <title>ArduPilot MAGFit</title>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/ml-matrix@6.10.5/matrix.umd.min.js'></script>
-<script type="text/javascript" src="matrix3.js"></script>
 <script type="text/javascript" src="wmm.js"></script>
+<script type="text/javascript" src="quaternion.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
 <script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
@@ -57,19 +57,18 @@
         </td>
         <td style="width: 10px;"></td>
         <td>
-            <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
-            <div id="OpenIn"></div><br><br>
-            <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { select_body_frame_attitude(); fit(); redraw() })">
-        </td>
-        <td style="width: 10px;"></td>
-        <td>
             <fieldset style="width:200px;height:80px" id="ATTITUDE">
                 <legend>Attitude source</legend>
             </fieldset>
         </td>
+        <td style="width: 10px;"></td>
+        <td>
+            <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br><br>
+            <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { calculate(); })">
+        </td>
         <td style="width: 300px;"></td>
         <td>
-            <br><br><br><br>
+            <div id="OpenIn"></div><br><br><br>
             <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
         </td>
     </table>
@@ -137,6 +136,9 @@
             <fieldset>
                 <legend>Compass 1 parameters</legend>
                 <p>
+                    <input id="COMPASS_ORIENT" name="COMPASS_ORIENT" type="number" style="width: 100px"/>
+                </p>
+                <p>
                     <input id="COMPASS_OFS_X" name="COMPASS_OFS_X" type="number" style="width: 100px"/>
                 </p><p>
                     <input id="COMPASS_OFS_Y" name="COMPASS_OFS_Y" type="number" style="width: 100px"/>
@@ -173,6 +175,9 @@
             <fieldset style="width:350px">
                 <legend>Compass 2 parameters</legend>
                 <p>
+                    <input id="COMPASS_ORIENT2" name="COMPASS_ORIENT2" type="number" style="width: 100px"/>
+                </p>
+                <p>
                     <input id="COMPASS_OFS2_X" name="COMPASS_OFS2_X" type="number" style="width: 100px"/>
                 </p><p>
                     <input id="COMPASS_OFS2_Y" name="COMPASS_OFS2_Y" type="number" style="width: 100px"/>
@@ -208,6 +213,9 @@
         <td>
             <fieldset style="width:350px">
                 <legend>Compass 3 parameters</legend>
+                <p>
+                    <input id="COMPASS_ORIENT3" name="COMPASS_ORIENT3" type="number" style="width: 100px"/>
+                </p>
                 <p>
                     <input id="COMPASS_OFS3_X" name="COMPASS_OFS3_X" type="number" style="width: 100px"/>
                 </p><p>
@@ -257,6 +265,7 @@
         params.push(...names.off_diagonals)
         params.push(names.scale)
         params.push(...names.motor)
+        params.push(names.orientation)
     }
     load_param_inputs("params.json", params)
 

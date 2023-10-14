@@ -76,25 +76,24 @@ const intensity_table = [
 function interpolate_table(table, latitude_deg, longitude_deg) {
     // interpolate inside a table for a given lat/lon in degrees
     // round down to nearest sampling resolution
-    min_lat = Math.floor(latitude_deg / SAMPLING_RES) * SAMPLING_RES
-    min_lon = Math.floor(longitude_deg / SAMPLING_RES) * SAMPLING_RES
+    const min_lat = Math.floor(latitude_deg / SAMPLING_RES) * SAMPLING_RES
+    const min_lon = Math.floor(longitude_deg / SAMPLING_RES) * SAMPLING_RES
 
     // find index of nearest low sampling point
-    min_lat_index = Math.floor(-(SAMPLING_MIN_LAT) + min_lat) / SAMPLING_RES
-    min_lon_index = Math.floor(-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES
+    const min_lat_index = Math.floor(-(SAMPLING_MIN_LAT) + min_lat) / SAMPLING_RES
+    const min_lon_index = Math.floor(-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES
 
     // calculate intensity
-    data_sw = table[min_lat_index][min_lon_index]
-    data_se = table[min_lat_index][min_lon_index + 1]
-    data_ne = table[min_lat_index + 1][min_lon_index + 1]
-    data_nw = table[min_lat_index + 1][min_lon_index]
+    const data_sw = table[min_lat_index][min_lon_index]
+    const data_se = table[min_lat_index][min_lon_index + 1]
+    const data_ne = table[min_lat_index + 1][min_lon_index + 1]
+    const data_nw = table[min_lat_index + 1][min_lon_index]
 
     // perform bilinear interpolation on the four grid corners
-    data_min = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_se - data_sw) + data_sw
-    data_max = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_ne - data_nw) + data_nw
+    const data_min = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_se - data_sw) + data_sw
+    const data_max = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_ne - data_nw) + data_nw
 
-    value = ((latitude_deg - min_lat) / SAMPLING_RES) * (data_max - data_min) + data_min
-    return value
+    return ((latitude_deg - min_lat) / SAMPLING_RES) * (data_max - data_min) + data_min
 }
 
 function get_mag_field_ef(latitude_deg, longitude_deg) {
@@ -112,21 +111,22 @@ function get_mag_field_ef(latitude_deg, longitude_deg) {
         return
     }
 
-    intensity_gauss = interpolate_table(intensity_table, latitude_deg, longitude_deg)
-    declination_deg = interpolate_table(declination_table, latitude_deg, longitude_deg)
-    inclination_deg = interpolate_table(inclination_table, latitude_deg, longitude_deg)
+    const intensity_gauss = interpolate_table(intensity_table, latitude_deg, longitude_deg)
+    const declination_deg = interpolate_table(declination_table, latitude_deg, longitude_deg)
+    const inclination_deg = interpolate_table(inclination_table, latitude_deg, longitude_deg)
 
     return [declination_deg, inclination_deg, intensity_gauss]
 }
 
 function expected_earth_field_lat_lon(lat, lon) {
     // return expected magnetic field for a location
-    field_var = get_mag_field_ef(lat, lon)
+    const field_var = get_mag_field_ef(lat, lon)
     if (field_var == null) {
         return
     }
-    mag_ef = { x: field_var[2]*1000.0, y:0.0, z:0.0 }
-    R = Matrix3()
-    R.from_euler(0.0, -field_var[1] * (Math.PI/180), field_var[0] * (Math.PI/180))
-    return R.mul(mag_ef)
+
+    let Q = new Quaternion()
+    Q.from_euler(0.0, -field_var[1] * (Math.PI/180), field_var[0] * (Math.PI/180))
+
+    return Q.rotate([field_var[2]*1000.0, 0.0, 0.0])
 }
