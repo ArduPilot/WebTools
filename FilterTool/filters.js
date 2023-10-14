@@ -393,7 +393,7 @@ function unwrap(phase) {
 function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase) {
 
     // Not sure why range does not return expected array, _data gets us the array
-    const freq = math.range(freq_step, freq_max, freq_step, true)._data
+    const freq = array_from_range(freq_step, freq_max, freq_step)
 
     // Start with unity transfer function, input = output
     const len = freq.length

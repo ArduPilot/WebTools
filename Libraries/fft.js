@@ -16,8 +16,8 @@ function hanning(len) {
 // energy: 1 / sqrt(mean(w.^2))
 function window_correction_factors(w) {
     return {
-        linear: 1/math.mean(w),
-        energy: 1/Math.sqrt(math.mean(array_mul(w,w)))
+        linear: 1/array_mean(w),
+        energy: 1/Math.sqrt(array_mean(array_mul(w,w)))
     }
 }
 
