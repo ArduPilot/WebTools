@@ -222,7 +222,7 @@ async function load_param_inputs(param_doc, param_names) {
             for (const [value, desc] of Object.entries(metadata.Values)) {
                 let list_item = document.createElement("option")
                 list_item.setAttribute('value', value)
-                list_item.innerHTML = value + ': ' + desc
+                list_item.innerHTML = value + ':' + desc
                 value_list.appendChild(list_item)
             }
             value_list.name = param.name
