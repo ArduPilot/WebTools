@@ -33,7 +33,8 @@ function setup_open_in(div_id, file_id, load_fun) {
 
     const destinations = [["UAV Log Viewer", "https://plotbeta.ardupilot.org/#"],
                           ["Hardware Report", "../HardwareReport"],
-                          ["Filter Review","../FilterReview"], 
+                          ["Filter Review","../FilterReview"],
+                          ["MAGFit", "../MAGFit"],
                           ["PID Review", "../PIDReview"]]
 
     const path_segments = window.location.pathname.split('/');
