@@ -1,0 +1,20 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": "standard",
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "rules": {
+        "indent": [
+            "error",
+            4
+        ],
+        "camelcase": "off",
+        "space-before-function-paren": "off",
+        "quotes": "off"
+    },
+    "ignorePatterns": ["jsDataflashParser/*", "Libraries/FileSaver.js"]
+}
