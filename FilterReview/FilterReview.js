@@ -1321,7 +1321,7 @@ function get_amplitude_scale() {
         ret.label = "PSD (dB/Hz)"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
         ret.window_correction = function(correction, resolution) { return ((correction.energy**2) * 0.5) / resolution }
-        ret.quantization_correction = function(correction) { return 1 / (correction.energy * Math.SQRT1_2) }
+        ret.quantization_correction = function(window_correction) { return 1 / Math.sqrt(window_correction) }
 
     } else if (use_DB) {
         ret.fun = function (x) { return x }
@@ -1330,7 +1330,7 @@ function get_amplitude_scale() {
         ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
         ret.correction_scale = 1.0
         ret.window_correction = function(correction, resolution) { return correction.linear }
-        ret.quantization_correction = function(correction) { return 1 / correction.linear }
+        ret.quantization_correction = function(window_correction) { return 1 / window_correction }
 
     } else {
         ret.fun = function (x) { return x }
@@ -1338,7 +1338,7 @@ function get_amplitude_scale() {
         ret.label = "Amplitude"
         ret.hover = function (axis) { return "%{" + axis + ":.2f}" }
         ret.window_correction = function(correction, resolution) { return correction.linear }
-        ret.quantization_correction = function(correction) { return 1 / correction.linear }
+        ret.quantization_correction = function(window_correction) { return 1 / window_correction }
 
     }
 
@@ -1690,8 +1690,8 @@ function redraw_post_estimate_and_bode() {
         const FFT_resolution = Gyro_batch[i].FFT.average_sample_rate/Gyro_batch[i].FFT.window_size
         const window_correction = amplitude_scale.window_correction(Gyro_batch[i].FFT.correction, FFT_resolution)
 
-        // Scale quantization by the window correction factor so correction can be applyed later
-        const quantization_correction = Gyro_batch.quantization_noise * amplitude_scale.quantization_correction(Gyro_batch[i].FFT.correction)
+        // Scale quantization by the window correction factor so correction can be applied later
+        const quantization_correction = Gyro_batch.quantization_noise * amplitude_scale.quantization_correction(window_correction)
 
         // Find the start and end index
         const start_index = find_start_index(Gyro_batch[i].FFT.time)
@@ -2512,8 +2512,12 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch = []
     Gyro_batch.type = "raw"
 
-    // logging floats, quantization noise probably negligible (not yet investigated)
-    Gyro_batch.quantization_noise = 0
+    // white noise noise model
+    // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
+    // See also Analog Devices:
+    // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
+    // The 24 here is the length of the mantissa in the 32 bit float that is used for logging
+    Gyro_batch.quantization_noise = 1 / (Math.sqrt(3) * 2**(24-0.5))
 
     // Work out if logging is pre/post from param value
     const INS_RAW_LOG_OPT = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT", false)
