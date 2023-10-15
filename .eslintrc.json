@@ -7,14 +7,33 @@
     "parserOptions": {
         "ecmaVersion": "latest"
     },
+    "plugins": [
+        "html"
+    ],
     "rules": {
         "indent": [
-            "error",
+            "off",
             4
         ],
         "camelcase": "off",
         "space-before-function-paren": "off",
-        "quotes": "off"
+        "quotes": "off",
+        "no-multiple-empty-lines": "off",
+        "no-trailing-spaces": "off",
+        "semi": "off",
+        "space-infix-ops": "off",
+        "key-spacing": "off",
+        "no-multi-spaces": "off",
+        "comma-spacing": "off",
+        "array-bracket-spacing": "off",
+        "padded-blocks": "off",
+        "object-curly-spacing": "off",
+        "object-curly-newline": "off",
+        "computed-property-spacing": "off",
+        "comma-dangle": "off",
+        "object-shorthand": "off",
+        "spaced-comment": "off",
+        "semi-spacing": "off"
     },
     "ignorePatterns": ["jsDataflashParser/*", "Libraries/FileSaver.js"]
 }
