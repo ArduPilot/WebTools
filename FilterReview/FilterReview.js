@@ -2512,12 +2512,11 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch = []
     Gyro_batch.type = "raw"
 
-    // white noise noise model
-    // https://en.wikipedia.org/wiki/Quantization_(signal_processing)#Quantization_noise_model
-    // See also Analog Devices:
-    // "Taking the Mystery out of the Infamous Formula, "SNR = 6.02N + 1.76dB," and Why You Should Care"
-    // The 24 here is the length of the mantissa in the 32 bit float that is used for logging
-    Gyro_batch.quantization_noise = 1 / (Math.sqrt(3) * 2**(24-0.5))
+    // Quatisation noise for 32 bit float is the same as a 24 bit integer, this is the length of the mantissa.
+    // However that noise is relative to the signal level.
+    // Because we don't know the signal level we can't estimate the noise.
+    // Could run over the whole data and take the max or similar, but for now we just assume 0 noise.
+    Gyro_batch.quantization_noise = 0.0
 
     // Work out if logging is pre/post from param value
     const INS_RAW_LOG_OPT = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT", false)
