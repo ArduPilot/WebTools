@@ -199,6 +199,10 @@ function setup_plots() {
 
 }
 
+const offsets_range = [-1500.0, 1500.0]
+const diagonals_range = [0.8, 1.2]
+const off_diagonals_range = [-0.2, 0.2]
+const scale_range = [0.8, 1.2]
 function save_parameters() {
 
     function param_string(name, value) {
@@ -227,29 +231,30 @@ function save_parameters() {
 
     function check_params(i, names, values, original_values) {
 
-        function check_range(name, value, lower, upper) {
+        function check_range(name, value, range) {
             let ret = ""
-            if (value > upper) {
-                ret = name + " " + value + " larger than " + upper + "\n"
-            } else if (value < lower) {
-                ret = name + " " + value + " less than " + lower + "\n"
+            if (value > range[1]) {
+                ret = name + " " + value + " larger than " + range[1] + "\n"
+            } else if (value < range[0]) {
+                ret = name + " " + value + " less than " + range[0] + "\n"
             }
             return ret
         }
 
-        function check_array(names, values, upper, lower) {
+        function check_array(names, values, range) {
             let ret = ""
             for (let i = 0; i < names.length; i++) {
-                ret += check_range(names[i], values[i], upper, lower)
+                ret += check_range(names[i], values[i], range)
             }
             return ret
         }
 
         let warning = ""
 
-        warning += check_array(names.offsets, values.offsets, -1800.0, 1800.0)
-        warning += check_array(names.diagonals, values.diagonals, 0.2, 5.0)
-        warning += check_array(names.off_diagonals, values.off_diagonals, -1.0, 1.0)
+        warning += check_array(names.offsets, values.offsets, offsets_range)
+        warning += check_array(names.diagonals, values.diagonals, diagonals_range)
+        warning += check_array(names.off_diagonals, values.off_diagonals, off_diagonals_range)
+        warning += check_range(names.scale, values.scale, scale_range)
 
         if (warning != "") {
             warning = "MAG " + (i+1) + " params outside typical range:\n" + warning
@@ -718,6 +723,7 @@ function fit() {
         // Solve in the form Ax = B
         let A = new mlMatrix.Matrix(num_samples*3, 12)
         let B = new mlMatrix.Matrix(num_samples*3, 1)
+        let B2 = new mlMatrix.Matrix(num_samples*3, 1)
 
         function setup_iron(A, row, colum, x, y, z) {
 
@@ -832,10 +838,15 @@ function fit() {
             // A matrix, all fits include offsets, setup rest later
             setup_offsets(A, index, 0)
 
-            // B Matrix
+            // B Matrix if scale or iron are included
             B.data[index+0][0] = MAG_Data[i].expected.x[data_index]
             B.data[index+1][0] = MAG_Data[i].expected.y[data_index]
             B.data[index+2][0] = MAG_Data[i].expected.z[data_index]
+
+            // B Matrix for offsets only
+            B2.data[index+0][0] = MAG_Data[i].expected.x[data_index] - rot.x[data_index]
+            B2.data[index+1][0] = MAG_Data[i].expected.y[data_index] - rot.y[data_index]
+            B2.data[index+2][0] = MAG_Data[i].expected.z[data_index] - rot.z[data_index]
         }
 
         for (let fit of MAG_Data[i].fits) {
@@ -851,7 +862,29 @@ function fit() {
             }
 
             const fit_mot = fit.value != null
-            if (fit.offsets_and_scale === true) {
+            if (fit.offsets_only) {
+                // Just fitting offsets, possibly with motor correction
+                A.columns = fit_mot ? 6 : 3
+
+                if (fit_mot) {
+                    for (let j = 0; j < num_samples; j++) {
+                        const index = j*3
+                        const data_index = start_index + j
+                        setup_motor(A, index, 3, fit.value[data_index])
+                    }
+                }
+
+                // Solves
+                const params = mlMatrix.solve(A, B2)
+
+                // Extract params
+                fit.params.offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
+
+                if (fit_mot) {
+                    fit.params.motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
+                }
+
+            } else if (fit.offsets_and_scale === true) {
                 // Just fitting offsets and scale, possibly with motor correction
                 A.columns = fit_mot ? 7 : 4
 
@@ -924,6 +957,29 @@ function fit() {
                 }
             }
 
+            function params_valid(params) {
+
+                function check_range(val, range) {
+                    return (val > range[0]) && (val < range[1])
+                }
+
+                let ret = true
+                for (let i = 0; i < 3; i++) {
+                    ret &= check_range(params.offsets[i], offsets_range)
+                    ret &= check_range(params.diagonals[i], diagonals_range)
+                    ret &= check_range(params.off_diagonals[i], off_diagonals_range)
+                }
+                ret &= check_range(params.scale, scale_range)
+                return ret
+            }
+
+            // Check param ranges
+            fit.valid = params_valid(fit.params)
+
+            if (!fit.valid) {
+                continue
+            }
+
             apply_params(fit, rot, fit.params, fit.value)
             fit.error = calc_error(MAG_Data[i].expected, fit)
 
@@ -934,8 +990,6 @@ function fit() {
             }
             fit.mean_error /= num_samples
 
-            // If fit is much worse than original calibration then it was not successful
-            fit.valid = fit.mean_error < (MAG_Data[i].orig.mean_error * 2.0)
 
         }
 
@@ -1347,11 +1401,13 @@ function load(log_file) {
     fits = []
 
     // Only offsets
+    fits.push("Offsets")
     fits.push("Offsets and scale")
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
         }
+        MAG_Data[i].fits.push({ value: null, type: 0, offsets_only: true })
         MAG_Data[i].fits.push({ value: null, type: 0, offsets_and_scale: true })
     }
 
