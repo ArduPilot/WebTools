@@ -452,8 +452,8 @@ function apply_params(ret, raw, params, motor) {
     // Motor
     if (motor != null) {
         ret.x = array_add(ret.x, array_scale(motor, params.motor[0]))
-        ret.x = array_add(ret.x, array_scale(motor, params.motor[1]))
-        ret.x = array_add(ret.x, array_scale(motor, params.motor[2]))
+        ret.y = array_add(ret.y, array_scale(motor, params.motor[1]))
+        ret.z = array_add(ret.z, array_scale(motor, params.motor[2]))
     }
 }
 
@@ -873,8 +873,11 @@ function fit() {
                 const params = mlMatrix.solve(A, B)
 
                 // Extract params
-                fit.params.offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
                 fit.params.scale = params.get(3,0)
+
+                // Remove scale from offsets
+                fit.params.offsets = array_scale([ params.get(0,0), params.get(1,0), params.get(2,0) ], 1 / fit.params.scale)
+
                 if (fit_mot) {
                     fit.params.motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
                 }
