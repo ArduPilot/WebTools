@@ -68,8 +68,7 @@
         </td>
         <td style="width: 300px;"></td>
         <td>
-            <div id="OpenIn"></div><br><br><br>
-            <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
+            <div id="OpenIn"></div><br><br><br><br>
         </td>
     </table>
 </fieldset>
@@ -87,41 +86,32 @@
     <h2 style="text-align:center">Expected vs measured body frame magnetic field</h2>
 </td></tr></table>
 
-<div id="mag_plot_X" style="width:1200px;height:300px"></div>
-<div id="mag_plot_Y" style="width:1200px;height:300px"></div>
-<div id="mag_plot_Z" style="width:1200px;height:300px"></div>
-
 <table>
     <tr>
-        <td>
+        <td style="vertical-align:top">
             <fieldset style="width:350px">
                 <legend>Compass 1</legend>
                 <p id="MAG0"></p>
-                <fieldset id="MAG0_TYPE">
-                    <legend>Calibration type</legend>
-                </fieldset>
             </fieldset>
         </td>
-        <td>
+        <td style="vertical-align:top">
             <fieldset style="width:350px">
                 <legend>Compass 2</legend>
                 <p id="MAG1"></p>
-                <fieldset id="MAG1_TYPE">
-                    <legend>Calibration type</legend>
-                </fieldset>
             </fieldset>
         </td>
-        <td>
+        <td style="vertical-align:top">
             <fieldset style="width:350px">
                 <legend>Compass 3</legend>
                 <p id="MAG2"></p>
-                <fieldset id="MAG2_TYPE">
-                    <legend>Calibration type</legend>
-                </fieldset>
             </fieldset>
         </td>
     </tr>
 </table>
+
+<div id="mag_plot_x" style="width:1200px;height:300px"></div>
+<div id="mag_plot_y" style="width:1200px;height:300px"></div>
+<div id="mag_plot_z" style="width:1200px;height:300px"></div>
 
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">Calibration error</h2>
@@ -251,6 +241,15 @@
         </td>
     </tr>
 </table>
+<table style="width:1150px">
+    <tr>
+        <td style="text-align:right">
+            <br>
+            <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
+        </td>
+    </tr>
+</table>
+
 
 </body>
 

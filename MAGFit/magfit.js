@@ -3,11 +3,13 @@
 var DataflashParser
 import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
-const axis = ['X', 'Y', 'Z']
+const axis = ['x', 'y', 'z']
+const fit_types = { offsets: "Offsets", scale: "Offsets and scale", iron: "Offsets and iron" }
 var flight_data = {}
-var mag_plot = { X: {}, Y:{}, Z: {} }
+var mag_plot = { x: {}, y:{}, z: {} }
 var error_plot = {}
 var error_bars = {}
+const gauss_hovertemplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} mGauss"
 function setup_plots() {
 
     // Turn off buttons that should not be pressed
@@ -99,25 +101,16 @@ function setup_plots() {
     })
 
     // X, Y, Z component plots
-    const gauss_hover = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} mGauss"
     for (const axi of axis) {
         mag_plot[axi].data = []
 
         const name = "Expected"
-        mag_plot[axi].data[0] = { mode: "lines", name: name, meta: name, line: { width: 4 }, hovertemplate: gauss_hover }
-
-        for (let i=0;i<3;i++) {
-            const name = "Mag " + (i + 1)
-            mag_plot[axi].data[i+1] = {
-                mode: "lines",
-                name: name,
-                meta: name,
-                line: { color: plot_default_color(i+1) },
-                visible: true,
-                legendgroup: i,
-                legendgrouptitle: { text: "" },
-                hovertemplate: gauss_hover
-            }
+        mag_plot[axi].data[0] = { 
+            mode: "lines",
+            name: name,
+            meta: name,
+            line: { width: 4, color: "#000000" },
+            hovertemplate: gauss_hovertemplate
         }
 
         mag_plot[axi].layout = {
@@ -134,19 +127,9 @@ function setup_plots() {
     }
 
     // Error plot
-    error_plot.data = []
-    for (let i=0;i<3;i++) {
-        const name = "Mag " + (i + 1)
-        error_plot.data[i] = {
-            mode: "lines",
-            name: name,
-            meta: name,
-            line: { color: plot_default_color(i+1) },
-            legendgroup: i,
-            legendgrouptitle: { text: "" },
-            hovertemplate: gauss_hover
-        }
-    }
+    // Don't actually ploy any thing in the first index, but it makes the index line up with the above plots
+    // That makes the indexes slightly easier, but more importantly makes the auto color line color work the same
+    error_plot.data = [ { line: { width: 4, color: "#000000" } }]
     error_plot.layout = {
         xaxis: {title: {text: time_scale_label }, zeroline: false, showline: true, mirror: true},
         yaxis: {title: {text: "Field error (mGauss)" }, zeroline: false, showline: true, mirror: true },
@@ -167,7 +150,6 @@ function setup_plots() {
             name: name,
             meta: name,
             marker: { color: plot_default_color(i+1) }, 
-            y: [],
             hovertemplate: "<extra></extra>%{meta}<br>%{x}<br>%{y:.2f} mGauss"
         }
     }
@@ -184,18 +166,6 @@ function setup_plots() {
     Plotly.newPlot('error_bars', error_bars.data, error_bars.layout, { modeBarButtonsToRemove: ['lasso2d', 'select2d'], displaylogo: false })
 
 
-    // Link all time axis
-    link_plot_axis_range([["mag_plot_X", "x", "", mag_plot.X],
-                          ["mag_plot_Y", "x", "", mag_plot.Y],
-                          ["mag_plot_Z", "x", "", mag_plot.Z],
-                          ["error_plot", "x", "", error_plot]])
-
-    // Link plot reset
-    link_plot_reset([["mag_plot_X", mag_plot.X],
-                     ["mag_plot_Y", mag_plot.Y],
-                     ["mag_plot_Z", mag_plot.Z],
-                     ["error_plot", error_plot],
-                     ["error_bars", error_bars],])
 
 }
 
@@ -320,107 +290,176 @@ function redraw() {
         parameter_set_value(names.orientation, values.orientation)
     }
 
+    // Expected field
+    for (const axi of axis) {
+        mag_plot[axi].data = [ mag_plot[axi].data[0] ]
+
+        mag_plot[axi].data[0].x = source.time
+        mag_plot[axi].data[0].y = source[axi]
+    }
+    error_plot.data = [ error_plot.data[0] ]
+
+
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
         }
-        const show = document.getElementById("MAG" + i + "_SHOW").checked
+        const name = "Mag " + (i + 1)
 
-        function setup_legend(data, group, text) {
-            data.legendgroup = group
-            data.legendgrouptitle.text = text
-        }
+        function setup_plot(data, group_index, fit_name, dash) {
+            const show = data.show.checked
+            data.show.setAttribute('data-index', mag_plot.x.data.length)
 
-        if (MAG_Data[i].orig.select.checked) {
+            const group_name = fit_name
 
-            mag_plot.X.data[i+1].visible = show
-            mag_plot.Y.data[i+1].visible = show
-            mag_plot.Z.data[i+1].visible = show
-            error_plot.data[i].visible = show
-
-            mag_plot.X.data[i+1].y = MAG_Data[i].orig.x
-            mag_plot.Y.data[i+1].y = MAG_Data[i].orig.y
-            mag_plot.Z.data[i+1].y = MAG_Data[i].orig.z
-
-            const name = "Existing Calibration"
-            setup_legend(mag_plot.X.data[i+1], 0, name)
-            setup_legend(mag_plot.Y.data[i+1], 0, name)
-            setup_legend(mag_plot.Z.data[i+1], 0, name)
-
-
-            error_plot.data[i].y = MAG_Data[i].orig.error
-            setup_legend(error_plot.data[i], 0, name)
-
-            show_params(MAG_Data[i].names, MAG_Data[i].params)
-        } else {
-            for (let j = 0; j < MAG_Data[i].fits.length; j++) {
-                if (MAG_Data[i].fits[j].select.checked) {
-
-                    const valid_fit = MAG_Data[i].fits[j].valid
-                    mag_plot.X.data[i+1].visible = valid_fit && show
-                    mag_plot.Y.data[i+1].visible = valid_fit && show
-                    mag_plot.Z.data[i+1].visible = valid_fit && show
-                    error_plot.data[i].visible = valid_fit && show
-
-                    if (valid_fit) {
-                        mag_plot.X.data[i+1].y = MAG_Data[i].fits[j].x
-                        mag_plot.Y.data[i+1].y = MAG_Data[i].fits[j].y
-                        mag_plot.Z.data[i+1].y = MAG_Data[i].fits[j].z
-                        error_plot.data[i].y = MAG_Data[i].fits[j].error
-                    }
-
-                    const name = fits[j]
-                    setup_legend(mag_plot.X.data[i+1], j+1, name)
-                    setup_legend(mag_plot.Y.data[i+1], j+1, name)
-                    setup_legend(mag_plot.Z.data[i+1], j+1, name)
-                    setup_legend(error_plot.data[i], j+1, name)
-
-                    // Show original prams if fit is invalid
-                    show_params(MAG_Data[i].names, valid_fit ? MAG_Data[i].fits[j].params : MAG_Data[i].params)
-
-                    break
-                }
+            for (const axi of axis) {
+                mag_plot[axi].data.push({
+                    mode: "lines",
+                    name: name,
+                    meta: name,
+                    line: { dash },
+                    visible: show,
+                    legendgroup: group_index,
+                    legendgrouptitle: { text: group_name },
+                    hovertemplate: gauss_hovertemplate,
+                    x: MAG_Data[i].time,
+                    y: data[axi]
+                })
             }
+
+            error_plot.data.push({
+                mode: "lines",
+                name: name,
+                meta: name,
+                line: { dash },
+                visible: show,
+                legendgroup: group_index,
+                legendgrouptitle: { text: group_name },
+                hovertemplate: gauss_hovertemplate,
+                x: MAG_Data[i].time,
+                y: data.error
+            })
         }
+
+        // Existing cal
+        setup_plot(MAG_Data[i].orig, -1, "Existing cal")
+
+        for (let j = 0; j < MAG_Data[i].fits.length; j++) {
+            const group_index = j*Object.keys(fit_types).length
+            setup_plot(MAG_Data[i].fits[j].offsets, group_index + 0, fit_types.offsets + "<br>" + MAG_Data[i].fits[j].name, "solid")
+            setup_plot(MAG_Data[i].fits[j].scale,   group_index + 1, fit_types.scale + "<br>" +  MAG_Data[i].fits[j].name,  "solid")
+            setup_plot(MAG_Data[i].fits[j].iron,    group_index + 2, fit_types.iron + "<br>" +  MAG_Data[i].fits[j].name,   "solid")
+        }
+
+        //show_params(MAG_Data[i].names, MAG_Data[i].params)
+
+        // Show original prams if fit is invalid
+        //show_params(MAG_Data[i].names, valid_fit ? source.params : MAG_Data[i].params)
+
     }
 
     const time_range = [ parseFloat(document.getElementById("TimeStart").value),
                          parseFloat(document.getElementById("TimeEnd").value)]
 
-    mag_plot.X.layout.xaxis.autorange = false
-    mag_plot.Y.layout.xaxis.autorange = false
-    mag_plot.Z.layout.xaxis.autorange = false
-
-    mag_plot.X.layout.xaxis.range = time_range
-    mag_plot.Y.layout.xaxis.range = time_range
-    mag_plot.Z.layout.xaxis.range = time_range
-
-    Plotly.redraw("mag_plot_X")
-    Plotly.redraw("mag_plot_Y")
-    Plotly.redraw("mag_plot_Z")
+    for (const axi of axis) {
+        mag_plot[axi].layout.xaxis.autorange = false
+        mag_plot[axi].layout.xaxis.range = time_range
+        Plotly.newPlot("mag_plot_" + axi, mag_plot[axi].data, mag_plot[axi].layout, {displaylogo: false});
+    }
 
     error_plot.layout.xaxis.autorange = false
     error_plot.layout.xaxis.range = time_range
 
-    Plotly.redraw("error_plot")
+    Plotly.newPlot("error_plot", error_plot.data, error_plot.layout, {displaylogo: false});
 
     // Plot error bars
-    const bar_x_axis = ["Existing Calibration", ...fits ]
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
         }
-        error_bars.data[i].visible = document.getElementById("MAG" + i + "_SHOW").checked
-        error_bars.data[i].x = bar_x_axis
-        error_bars.data[i].y[0] = MAG_Data[i].orig.mean_error
+
+        error_bars.data[i].y = [MAG_Data[i].orig.mean_error]
+        error_bars.data[i].x = ["Existing Calibration"]
 
         for (let j = 0; j < MAG_Data[i].fits.length; j++) {
-            if (MAG_Data[i].fits[j].valid) {
-                error_bars.data[i].y[1+j] = MAG_Data[i].fits[j].mean_error
+            const name =  "<br>" + MAG_Data[i].fits[j].name
+
+            if (MAG_Data[i].fits[j].offsets.valid) {
+                error_bars.data[i].x.push("Offsets" + name)
+                error_bars.data[i].y.push(MAG_Data[i].fits[j].offsets.mean_error)
+            }
+            if (MAG_Data[i].fits[j].scale.valid) {
+                error_bars.data[i].x.push("Offsets and scale" + name)
+                error_bars.data[i].y.push(MAG_Data[i].fits[j].scale.mean_error)
+            }
+            if (MAG_Data[i].fits[j].iron.valid) {
+                error_bars.data[i].x.push("Offsets and iron" + name)
+                error_bars.data[i].y.push(MAG_Data[i].fits[j].iron.mean_error)
             }
         }
+
+        error_bars.data[i].visible = true // document.getElementById("MAG" + i + "_SHOW").checked
     }
     Plotly.redraw("error_bars")
+
+    // Clear listeners
+    document.getElementById("mag_plot_x").removeAllListeners("plotly_relayout");
+    document.getElementById("mag_plot_y").removeAllListeners("plotly_relayout");
+    document.getElementById("mag_plot_z").removeAllListeners("plotly_relayout");
+    document.getElementById("error_plot").removeAllListeners("plotly_relayout");
+
+    // Link all time axis
+    link_plot_axis_range([
+        ["mag_plot_x", "x", "", mag_plot.x],
+        ["mag_plot_y", "x", "", mag_plot.y],
+        ["mag_plot_z", "x", "", mag_plot.z],
+        ["error_plot", "x", "", error_plot]
+    ])
+
+    // Link plot reset
+    link_plot_reset([
+        ["mag_plot_x", mag_plot.x],
+        ["mag_plot_y", mag_plot.y],
+        ["mag_plot_z", mag_plot.z],
+        ["error_plot", error_plot],
+        ["error_bars", error_bars]
+    ])
+
+}
+
+function update_hidden(ele) {
+    if (ele.dataset.index == null) {
+        return
+    }
+    const index = parseFloat(ele.dataset.index)
+    const show = ele.checked
+
+    for (const axi of axis) {
+        mag_plot[axi].data[index].visible = show
+        Plotly.redraw("mag_plot_" + axi)
+    }
+
+    error_plot.data[index].visible = show
+    Plotly.redraw("error_plot")
+
+    // Turn off error bars for any mag that is completely disabled
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        let show_bar = false
+
+        show_bar ||= MAG_Data[i].orig.show.checked
+        for (let j = 0; j < MAG_Data[i].fits.length; j++) {
+            for (const key of Object.keys(fit_types)) {
+                show_bar ||= MAG_Data[i].fits[j][key].show.checked
+            }
+        }
+
+        error_bars.data[i].visible = show_bar
+    }
+    Plotly.redraw("error_bars")
+
 
 }
 
@@ -514,6 +553,10 @@ function check_orientation() {
             continue
         }
 
+        const option = document.querySelector("input[name=\"MAG" + i + "orientation\"]:checked").value
+        const fix = (option == 1) || (option == 2)
+        const include_45 = (option == 2)
+
         // Find the start and end index
         const start_index = find_start_index(MAG_Data[i].time)
         const end_index = find_end_index(MAG_Data[i].time)+1
@@ -542,6 +585,11 @@ function check_orientation() {
             if ((rot == 38) || (rot == 41)) {
                 // ROTATION_ROLL_90_PITCH_68_yAW_293
                 // ROTATION_PITCH_7
+                continue
+            }
+
+            // Skip 45's if not enabled
+            if (!include_45 && !right_angle_rotation(rot)) {
                 continue
             }
 
@@ -602,6 +650,9 @@ function check_orientation() {
         const is_correct = (first.rotation == MAG_Data[i].params.orientation)
         const cost_ratio = second.error / first.error
 
+        // best error must be half that of next best to be sure
+        const check_valid = cost_ratio > 2
+
         const correct_txt = is_correct ? "correct" : "incorrect"
         let txt = "Mag " + (i+1) + " " + correct_txt + " orientation " + get_rotation_name(MAG_Data[i].params.orientation)
         if (!is_correct) {
@@ -611,8 +662,25 @@ function check_orientation() {
         txt += ", cost ratio: " + (cost_ratio*100).toFixed(2) + " %"
         console.log(txt)
 
-        // If best rotation fit is twice as good as next best then switch
-        MAG_Data[i].rotation = (cost_ratio > 2) ? first.rotation : MAG_Data[i].params.orientation
+        // Ordinal rotation
+        MAG_Data[i].rotation = MAG_Data[i].params.orientation
+
+        if (check_valid && !is_correct) {
+            // Found incorrect rotation
+            if (fix) {
+                MAG_Data[i].rotation = first.rotation
+
+            } else {
+                // Warn user but do not fix
+                alert(
+                    "Mag " + (i+1) + " possible incorrect orientation\n" +
+                    "Should be: " + get_rotation_name(first.rotation) + " ?\n" +
+                    "Cost ratio: " + (cost_ratio*100).toFixed(2) + " %"
+                )
+
+            }
+
+        }
 
         // Apply rotation
         let rot = new Quaternion()
@@ -652,16 +720,6 @@ function select_body_frame_attitude() {
     if (source == null) {
         error("No attitude source selected")
     }
-
-    // Setup expected plot
-    mag_plot.X.data[0].x = source.time
-    mag_plot.X.data[0].y = source.x
-
-    mag_plot.Y.data[0].x = source.time
-    mag_plot.Y.data[0].y = source.y
-
-    mag_plot.Z.data[0].x = source.time
-    mag_plot.Z.data[0].y = source.z
 
     // Interpolate expected to logged compass and calculate error
     for (let i = 0; i < 3; i++) {
@@ -851,167 +909,172 @@ function fit() {
 
         for (let fit of MAG_Data[i].fits) {
 
-            // Populate all params with defaults
-            fit.params = { 
-                offsets: [0.0, 0.0, 0.0],
-                diagonals: [1.0, 1.0, 1.0],
-                off_diagonals: [0.0, 0.0, 0.0,],
-                scale: 1.0,
-                motor: [0.0, 0.0, 0.0],
-                orientation: orientation
-            }
+            function evaluate_fit(params) {
 
-            const fit_mot = fit.value != null
-            if (fit.offsets_only) {
-                // Just fitting offsets, possibly with motor correction
-                A.columns = fit_mot ? 6 : 3
-
-                if (fit_mot) {
-                    for (let j = 0; j < num_samples; j++) {
-                        const index = j*3
-                        const data_index = start_index + j
-                        setup_motor(A, index, 3, fit.value[data_index])
+                function params_valid(params) {
+                    function check_range(val, range) {
+                        return (val > range[0]) && (val < range[1])
                     }
+
+                    let ret = true
+                    for (let i = 0; i < 3; i++) {
+                        ret &= check_range(params.offsets[i], offsets_range)
+                        ret &= check_range(params.diagonals[i], diagonals_range)
+                        ret &= check_range(params.off_diagonals[i], off_diagonals_range)
+                    }
+                    ret &= check_range(params.scale, scale_range)
+                    return ret
                 }
 
-                // Solves
-                const params = mlMatrix.solve(A, B2)
 
-                // Extract params
-                fit.params.offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
 
-                if (fit_mot) {
-                    fit.params.motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
+                // Populate any unset params with defaults
+                if (params.diagonals == null) {
+                    params.diagonals = [1.0, 1.0, 1.0]
+                }
+                if (params.off_diagonals == null) {
+                    params.off_diagonals = [0.0, 0.0, 0.0,]
+                }
+                if (params.scale == null) {
+                    params.scale = 1.0
+                }
+                if (params.motor == null) {
+                    params.motor = [0.0, 0.0, 0.0]
+                }
+                params.orientation = orientation
+
+                // Check param ranges
+                let ret = { params, valid: params_valid(params) }
+
+                if (!ret.valid) {
+                    return ret
                 }
 
-            } else if (fit.offsets_and_scale === true) {
-                // Just fitting offsets and scale, possibly with motor correction
-                A.columns = fit_mot ? 7 : 4
+                apply_params(ret, rot, params, fit.value)
+                ret.error = calc_error(MAG_Data[i].expected, ret)
 
-                // Offsets already in column 0,1,2
-                // Add scale and motor
+                // Calculate error for selected samples only
+                ret.mean_error = 0
                 for (let j = 0; j < num_samples; j++) {
-                    const index = j*3
-                    const data_index = start_index + j
-
-                    setup_scale(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
-
-                    if (fit_mot) {
-                        setup_motor(A, index, 4, fit.value[data_index])
-                    }
-
+                    ret.mean_error += ret.error[start_index + j]
                 }
+                ret.mean_error /= num_samples
 
-                // Solve
-                const params = mlMatrix.solve(A, B)
-
-                // Extract params
-                fit.params.scale = params.get(3,0)
-
-                // Remove scale from offsets
-                fit.params.offsets = array_scale([ params.get(0,0), params.get(1,0), params.get(2,0) ], 1 / fit.params.scale)
-
-                if (fit_mot) {
-                    fit.params.motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
-                }
-
-            } else {
-                // Fitting offsets and iron matrix, possibly with motor correction
-
-                // Adjust size of A matrix depending if full mot fit is being done
-                A.columns = fit_mot ? 12 : 9
-
-                for (let j = 0; j < num_samples; j++) {
-                    const index = j*3
-                    const data_index = start_index + j
-
-                    setup_iron(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
-
-                    if (fit_mot) {
-                        setup_motor(A, index, 9, fit.value[data_index])
-                    }
-
-                }
-
-                // Solve
-                const params = mlMatrix.solve(A, B)
-
-                // Extract params
-                const diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
-                const off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
-
-                // Remove iron correction from offsets
-                const iron = new mlMatrix.Matrix([
-                    [diagonals[0],     off_diagonals[0], off_diagonals[1]],
-                    [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
-                    [off_diagonals[1], off_diagonals[2], diagonals[2]]
-                ])
-                const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
-                const offsets = uncorrected_offsets.mmul(mlMatrix.inverse(iron))
-
-                fit.params.offsets = Array.from(offsets.data[0])
-                fit.params.diagonals = diagonals
-                fit.params.off_diagonals = off_diagonals
-                if (fit_mot) {
-                    fit.params.motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
-                }
-            }
-
-            function params_valid(params) {
-
-                function check_range(val, range) {
-                    return (val > range[0]) && (val < range[1])
-                }
-
-                let ret = true
-                for (let i = 0; i < 3; i++) {
-                    ret &= check_range(params.offsets[i], offsets_range)
-                    ret &= check_range(params.diagonals[i], diagonals_range)
-                    ret &= check_range(params.off_diagonals[i], off_diagonals_range)
-                }
-                ret &= check_range(params.scale, scale_range)
                 return ret
             }
 
-            // Check param ranges
-            fit.valid = params_valid(fit.params)
 
-            if (!fit.valid) {
-                continue
+            const fit_mot = fit.value != null
+
+            // Just fitting offsets, possibly with motor correction
+            A.columns = fit_mot ? 6 : 3
+
+            if (fit_mot) {
+                for (let j = 0; j < num_samples; j++) {
+                    const index = j*3
+                    const data_index = start_index + j
+                    setup_motor(A, index, 3, fit.value[data_index])
+                }
             }
 
-            apply_params(fit, rot, fit.params, fit.value)
-            fit.error = calc_error(MAG_Data[i].expected, fit)
+            // Solve
+            let params = mlMatrix.solve(A, B2)
 
-            // Calculate error for selected samples only
-            fit.mean_error = 0
+            // Extract params
+            let offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
+
+            let motor
+            if (fit_mot) {
+                motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
+            }
+
+            Object.assign(fit.offsets, evaluate_fit({offsets, motor}))
+
+
+            // Just fitting offsets and scale, possibly with motor correction
+            A.columns = fit_mot ? 7 : 4
+
+            // Offsets already in column 0,1,2
+            // Add scale and motor
             for (let j = 0; j < num_samples; j++) {
-                fit.mean_error += fit.error[start_index + j]
+                const index = j*3
+                const data_index = start_index + j
+
+                setup_scale(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
+
+                if (fit_mot) {
+                    setup_motor(A, index, 4, fit.value[data_index])
+                }
             }
-            fit.mean_error /= num_samples
 
+            // Solve
+            params = mlMatrix.solve(A, B)
 
-        }
+            // Extract params
+            let scale = params.get(3,0)
 
-    }
+            // Remove scale from offsets
+            offsets = array_scale([ params.get(0,0), params.get(1,0), params.get(2,0) ], 1 / scale)
 
-    // Auto select best fit
-    for (let i = 0; i < 3; i++) {
-        if (MAG_Data[i] == null) {
-            continue
-        }
-        let best_select = MAG_Data[i].orig.select
-        let best = MAG_Data[i].orig.mean_error
-
-        for (let fit of MAG_Data[i].fits) {
-            fit.select.disabled = !fit.valid
-            if (fit.valid && (fit.mean_error < best)) {
-                best_select = fit.select
-                best = fit.mean_error
+            if (fit_mot) {
+                motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
             }
+            Object.assign(fit.scale, evaluate_fit({offsets, scale, motor}))
+
+            // Fitting offsets and iron matrix, possibly with motor correction
+
+            // Adjust size of A matrix depending if full mot fit is being done
+            A.columns = fit_mot ? 12 : 9
+
+            for (let j = 0; j < num_samples; j++) {
+                const index = j*3
+                const data_index = start_index + j
+
+                setup_iron(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
+
+                if (fit_mot) {
+                    setup_motor(A, index, 9, fit.value[data_index])
+                }
+
+            }
+
+            // Solve
+            params = mlMatrix.solve(A, B)
+
+            // Extract params
+            const diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
+            const off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
+
+            // Remove iron correction from offsets
+            const iron = new mlMatrix.Matrix([
+                [diagonals[0],     off_diagonals[0], off_diagonals[1]],
+                [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
+                [off_diagonals[1], off_diagonals[2], diagonals[2]]
+            ])
+            const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
+            offsets = Array.from(uncorrected_offsets.mmul(mlMatrix.inverse(iron)).data[0])
+
+            if (fit_mot) {
+                motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
+            }
+
+            Object.assign(fit.iron, evaluate_fit({offsets, diagonals, off_diagonals, motor}))
+
+            // Disable selection of invalid fits
+            // select the first valid none motor fit by default
+            let show_fit
+            for (const key of Object.keys(fit_types)) {
+                fit[key].show.disabled = !fit[key].valid
+                if (fit[key].valid && (show_fit == null)) {
+                    show_fit = fit[key].show
+                }
+            }
+            if (show_fit && (fit.type == 0)) {
+                show_fit.checked = true
+            }
+
         }
 
-        best_select.checked = true
     }
 
     const end = performance.now();
@@ -1145,6 +1208,14 @@ function load(log_file) {
     }
     Plotly.redraw("FlightData")
 
+    // html helper
+    function half_gap() {
+        let hr = document.createElement("hr")
+        hr.style.visibility = "hidden"
+        hr.style.margin = "5px"
+        return hr
+    }
+
     MAG_Data = []
 
     // Get MAG data
@@ -1152,7 +1223,14 @@ function load(log_file) {
     MAG_Data.end_time = null
     for (let i = 0; i < 3; i++) {
         var msg_name = 'MAG[' + i + ']'
+
+        // Clear section
+        let name = "MAG" + i
+        let info = document.getElementById(name)
+        info.replaceChildren()
+
         if (log.messages[msg_name] == null) {
+            info.appendChild(document.createTextNode("Not found"))
             continue
         }
 
@@ -1190,11 +1268,8 @@ function load(log_file) {
                                external: get_param_value(log.messages.PARM, MAG_Data[i].names.external),
                                orientation: get_param_value(log.messages.PARM, MAG_Data[i].names.orientation) }
 
-        // Print some device info, offset is first param in fieldset
-        let name = "MAG" + i
-        let info = document.getElementById(name)
-        info.replaceChildren()
 
+        // Print some device info, offset is first param in fieldset
         const id = decode_devid(MAG_Data[i].params.id, DEVICE_TYPE_COMPASS)
         if (id != null) {
             if (id.bus_type_index == 3) {
@@ -1204,8 +1279,8 @@ function load(log_file) {
                 info.appendChild(document.createTextNode(id.name + " via " + id.bus_type))
             }
         }
-        info.appendChild(document.createElement("br"))
-        info.appendChild(document.createElement("br"))
+
+        info.appendChild(half_gap())
 
         info.appendChild(document.createTextNode("Use: " + (MAG_Data[i].params.use ? "\u2705" : "\u274C")))
         info.appendChild(document.createTextNode(", "))
@@ -1213,23 +1288,7 @@ function load(log_file) {
         info.appendChild(document.createTextNode(", "))
         info.appendChild(document.createTextNode("Health: " + (array_all_equal(log.messages[msg_name].Health, 1) ? "\u2705" : "\u274C")))
 
-        info.appendChild(document.createElement("br"))
-        info.appendChild(document.createElement("br"))
-
-        let show = document.createElement("input")
-        let show_name = name + "_SHOW"
-        show.setAttribute('type', 'checkbox')
-        show.setAttribute('id', show_name)
-        show.addEventListener('change', function() { redraw() } )
-        show.checked = true
-
-        let label = document.createElement("label")
-        label.setAttribute('for', show_name)
-        label.innerHTML = "Show"
-
-        info.appendChild(show)
-        info.appendChild(label)
-
+        info.appendChild(half_gap())
 
         // Remove calibration to get raw values
 
@@ -1398,26 +1457,20 @@ function load(log_file) {
 
     // Add interference sources
     source = null
-    fits = []
 
-    // Only offsets
-    fits.push("Offsets")
-    fits.push("Offsets and scale")
+    // No compass motor fit
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
         }
-        MAG_Data[i].fits.push({ value: null, type: 0, offsets_only: true })
-        MAG_Data[i].fits.push({ value: null, type: 0, offsets_and_scale: true })
-    }
-
-    // Offsets and elliptical only
-    fits.push("Offsets and iron")
-    for (let i = 0; i < 3; i++) {
-        if (MAG_Data[i] == null) {
-            continue
-        }
-        MAG_Data[i].fits.push({ value: null, type: 0 })
+        MAG_Data[i].fits.push({
+            value: null,
+            type: 0,
+            name: "No motor comp",
+            offsets: {},
+            scale: {},
+            iron: {}
+        })
     }
 
     log.parseAtOffset("BAT")
@@ -1445,27 +1498,21 @@ function load(log_file) {
                 // Battery does not support current
                 continue
             }
-            fits.push("Battery " + (i+1) + " current")
             const time = array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000)
-            for (let i = 0; i < 3; i++) {
-                if (MAG_Data[i] == null) {
+            for (let j = 0; j < 3; j++) {
+                if (MAG_Data[j] == null) {
                     continue
                 }
-                MAG_Data[i].fits.push({ value: linear_interp(value, time, MAG_Data[i].time), type: 2 })
+                MAG_Data[j].fits.push({
+                    value: linear_interp(value, time, MAG_Data[i].time),
+                    type: 2,
+                    name: "Battery " + (i+1) + " current",
+                    offsets: {},
+                    scale: {},
+                    iron: {}
+                })
             }
         }
-    }
-
-    // Setup time array in plots
-    for (let i = 0; i < 3; i++) {
-        if (MAG_Data[i] == null) {
-            continue
-        }
-        mag_plot.X.data[i+1].x = MAG_Data[i].time
-        mag_plot.Y.data[i+1].x = MAG_Data[i].time
-        mag_plot.Z.data[i+1].x = MAG_Data[i].time
-
-        error_plot.data[i].x = MAG_Data[i].time
     }
 
     // Add button for each fit
@@ -1473,34 +1520,103 @@ function load(log_file) {
         if (MAG_Data[i] == null) {
             continue
         }
-        let name = "MAG" + i + "_TYPE"
+        let name = "MAG" + i
         let section = document.getElementById(name)
-        section.replaceChildren(section.children[0])
 
-        function setup_radio(type) {
+        // Fieldset to contain parameter change options
+        let param_fieldset = document.createElement("fieldset")
+        section.appendChild(param_fieldset)
+
+        let param_legend = document.createElement("legend")
+        param_legend.innerHTML = "Parameter changes"
+        param_fieldset.appendChild(param_legend)
+
+        function setup_radio(parent, type, label_txt, value) {
+            const id = name + type + label_txt
             let radio = document.createElement("input")
             radio.setAttribute('type', 'radio')
-            radio.setAttribute('id', name + type)
-            radio.setAttribute('name', name)
-            radio.disabled = false
-            radio.addEventListener('change', function() { redraw() } )
-    
-            let label = document.createElement("label")
-            label.setAttribute('for', name + type)
-            label.innerHTML = type
+            radio.setAttribute('id', id)
+            radio.setAttribute('name', name + type)
+            radio.setAttribute('value', value)
 
-            section.appendChild(radio)
-            section.appendChild(label)
-            section.appendChild(document.createElement("br"))
+            let label = document.createElement("label")
+            label.setAttribute('for', id)
+            label.innerHTML = label_txt
+
+            parent.appendChild(radio)
+            parent.appendChild(label)
 
             return radio
         }
 
-        MAG_Data[i].orig.select = setup_radio("Existing Calibration")
-        for (let j = 0; j < fits.length; j++) {
-            MAG_Data[i].fits[j].select = setup_radio(fits[j])
-        }
+        param_fieldset.appendChild(document.createTextNode("Use:  "))
+        setup_radio(param_fieldset, "use", "No change").checked = true
+        param_fieldset.appendChild(document.createTextNode(", "))
+        setup_radio(param_fieldset, "use", "Use")
+        param_fieldset.appendChild(document.createTextNode(", "))
+        setup_radio(param_fieldset, "use", "Do not use")
 
+        param_fieldset.appendChild(half_gap())
+
+        param_fieldset.appendChild(document.createTextNode("Orientation:  "))
+        
+        let orientation = setup_radio(param_fieldset, "orientation", "Check", 0)
+        orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
+        orientation.checked = true
+
+        param_fieldset.appendChild(document.createTextNode(", "))
+        orientation = setup_radio(param_fieldset, "orientation", "Fix 90", 1)
+        orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
+
+        param_fieldset.appendChild(document.createTextNode(", "))
+        orientation = setup_radio(param_fieldset, "orientation", "Fix 45", 2)
+        orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
+
+        // Fieldset to contain calibration selection options
+        let cal_fieldset = document.createElement("fieldset")
+        section.appendChild(cal_fieldset)
+
+        let cal_legend = document.createElement("legend")
+        cal_legend.innerHTML = "Calibrations"
+        cal_fieldset.appendChild(cal_legend)
+
+
+
+        function setup_check(parent, type, fit) {
+            const id = name + type + fit
+            let check = document.createElement("input")
+            check.setAttribute('type', 'checkbox')
+            check.setAttribute('id', id)
+            check.addEventListener('change', function() { update_hidden(this) } )
+
+    
+            let label = document.createElement("label")
+            label.setAttribute('for', id)
+            label.innerHTML = type
+
+            parent.appendChild(check)
+            parent.appendChild(label)
+            parent.appendChild(document.createElement("br"))
+
+            return check
+        }
+        MAG_Data[i].orig.show = setup_check(cal_fieldset, "Existing", "")
+        MAG_Data[i].orig.show.checked = true
+        MAG_Data[i].orig.show.style.margin = "3px 3px 9px 20px"
+
+        for (let j = 0; j < MAG_Data[i].fits.length; j++) {
+            let fieldset = document.createElement("fieldset")
+
+            let legend = document.createElement("legend")
+            legend.innerHTML = MAG_Data[i].fits[j].name
+            fieldset.appendChild(legend)
+
+            for (const [key, value] of Object.entries(fit_types)) {
+                MAG_Data[i].fits[j][key].show = setup_check(fieldset, value, MAG_Data[i].fits[j].name)
+            }
+
+            cal_fieldset.appendChild(fieldset)
+        }
     }
 
     calculate()

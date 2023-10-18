@@ -1,6 +1,53 @@
 
 // Quaternion rotation helpers
 
+// From Rotation enum
+const ROTATION_NONE                = 0
+const ROTATION_YAW_45              = 1
+const ROTATION_YAW_90              = 2
+const ROTATION_YAW_135             = 3
+const ROTATION_YAW_180             = 4
+const ROTATION_YAW_225             = 5
+const ROTATION_YAW_270             = 6
+const ROTATION_YAW_315             = 7
+const ROTATION_ROLL_180            = 8
+const ROTATION_ROLL_180_YAW_45     = 9
+const ROTATION_ROLL_180_YAW_90     = 10
+const ROTATION_ROLL_180_YAW_135    = 11
+const ROTATION_PITCH_180           = 12
+const ROTATION_ROLL_180_YAW_225    = 13
+const ROTATION_ROLL_180_YAW_270    = 14
+const ROTATION_ROLL_180_YAW_315    = 15
+const ROTATION_ROLL_90             = 16
+const ROTATION_ROLL_90_YAW_45      = 17
+const ROTATION_ROLL_90_YAW_90      = 18
+const ROTATION_ROLL_90_YAW_135     = 19
+const ROTATION_ROLL_270            = 20
+const ROTATION_ROLL_270_YAW_45     = 21
+const ROTATION_ROLL_270_YAW_90     = 22
+const ROTATION_ROLL_270_YAW_135    = 23
+const ROTATION_PITCH_90            = 24
+const ROTATION_PITCH_270           = 25
+const ROTATION_PITCH_180_YAW_90    = 26 // same as ROTATION_ROLL_180_YAW_270
+const ROTATION_PITCH_180_YAW_270   = 27 // same as ROTATION_ROLL_180_YAW_90
+const ROTATION_ROLL_90_PITCH_90    = 28
+const ROTATION_ROLL_180_PITCH_90   = 29
+const ROTATION_ROLL_270_PITCH_90   = 30
+const ROTATION_ROLL_90_PITCH_180   = 31
+const ROTATION_ROLL_270_PITCH_180  = 32
+const ROTATION_ROLL_90_PITCH_270   = 33
+const ROTATION_ROLL_180_PITCH_270  = 34
+const ROTATION_ROLL_270_PITCH_270  = 35
+const ROTATION_ROLL_90_PITCH_180_YAW_90 = 36
+const ROTATION_ROLL_90_YAW_270     = 37
+const ROTATION_ROLL_90_PITCH_68_YAW_293 = 38 // this is actually, roll 90, pitch 68.8, yaw 293.3
+const ROTATION_PITCH_315           = 39
+const ROTATION_ROLL_90_PITCH_315   = 40
+const ROTATION_PITCH_7             = 41
+const ROTATION_ROLL_45             = 42
+const ROTATION_ROLL_315            = 43
+
+
 function get_rotation_name(rotation) {
 
     const names = {
@@ -59,6 +106,43 @@ function get_rotation_name(rotation) {
     }
 }
 
+
+this.right_angle_rotation = function(rotation) {
+    switch (rotation) {
+        case ROTATION_NONE:
+        case ROTATION_YAW_90:
+        case ROTATION_YAW_180:
+        case ROTATION_YAW_270:
+        case ROTATION_ROLL_180:
+        case ROTATION_ROLL_180_YAW_90:
+        case ROTATION_PITCH_180:
+        case ROTATION_ROLL_180_YAW_270:
+        case ROTATION_ROLL_90:
+        case ROTATION_ROLL_90_YAW_90:
+        case ROTATION_ROLL_270:
+        case ROTATION_ROLL_270_YAW_90:
+        case ROTATION_PITCH_90:
+        case ROTATION_PITCH_270:
+        case ROTATION_PITCH_180_YAW_90:
+        case ROTATION_PITCH_180_YAW_270:
+        case ROTATION_ROLL_90_PITCH_90:
+        case ROTATION_ROLL_180_PITCH_90:
+        case ROTATION_ROLL_270_PITCH_90:
+        case ROTATION_ROLL_90_PITCH_180:
+        case ROTATION_ROLL_270_PITCH_180:
+        case ROTATION_ROLL_90_PITCH_270:
+        case ROTATION_ROLL_180_PITCH_270:
+        case ROTATION_ROLL_270_PITCH_270:
+        case ROTATION_ROLL_90_PITCH_180_YAW_90:
+        case ROTATION_ROLL_90_YAW_270:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+
 function Quaternion() {
 
     this.q1
@@ -68,53 +152,6 @@ function Quaternion() {
 
     // Get rotation from ArduPilot numbering
     this.from_rotation = function(rotation) {
-
-        // From Rotation enum
-        const ROTATION_NONE                = 0
-        const ROTATION_YAW_45              = 1
-        const ROTATION_YAW_90              = 2
-        const ROTATION_YAW_135             = 3
-        const ROTATION_YAW_180             = 4
-        const ROTATION_YAW_225             = 5
-        const ROTATION_YAW_270             = 6
-        const ROTATION_YAW_315             = 7
-        const ROTATION_ROLL_180            = 8
-        const ROTATION_ROLL_180_YAW_45     = 9
-        const ROTATION_ROLL_180_YAW_90     = 10
-        const ROTATION_ROLL_180_YAW_135    = 11
-        const ROTATION_PITCH_180           = 12
-        const ROTATION_ROLL_180_YAW_225    = 13
-        const ROTATION_ROLL_180_YAW_270    = 14
-        const ROTATION_ROLL_180_YAW_315    = 15
-        const ROTATION_ROLL_90             = 16
-        const ROTATION_ROLL_90_YAW_45      = 17
-        const ROTATION_ROLL_90_YAW_90      = 18
-        const ROTATION_ROLL_90_YAW_135     = 19
-        const ROTATION_ROLL_270            = 20
-        const ROTATION_ROLL_270_YAW_45     = 21
-        const ROTATION_ROLL_270_YAW_90     = 22
-        const ROTATION_ROLL_270_YAW_135    = 23
-        const ROTATION_PITCH_90            = 24
-        const ROTATION_PITCH_270           = 25
-        //const ROTATION_PITCH_180_YAW_90    = 26 // same as ROTATION_ROLL_180_YAW_270
-        //const ROTATION_PITCH_180_YAW_270   = 27 // same as ROTATION_ROLL_180_YAW_90
-        const ROTATION_ROLL_90_PITCH_90    = 28
-        const ROTATION_ROLL_180_PITCH_90   = 29
-        const ROTATION_ROLL_270_PITCH_90   = 30
-        const ROTATION_ROLL_90_PITCH_180   = 31
-        const ROTATION_ROLL_270_PITCH_180  = 32
-        const ROTATION_ROLL_90_PITCH_270   = 33
-        const ROTATION_ROLL_180_PITCH_270  = 34
-        const ROTATION_ROLL_270_PITCH_270  = 35
-        const ROTATION_ROLL_90_PITCH_180_YAW_90 = 36
-        const ROTATION_ROLL_90_YAW_270     = 37
-        const ROTATION_ROLL_90_PITCH_68_YAW_293 = 38 // this is actually, roll 90, pitch 68.8, yaw 293.3
-        const ROTATION_PITCH_315           = 39
-        const ROTATION_ROLL_90_PITCH_315   = 40
-        const ROTATION_PITCH_7             = 41
-        const ROTATION_ROLL_45             = 42
-        const ROTATION_ROLL_315            = 43
-
         const HALF_SQRT_2 = 0.70710678118654752440084436210485
         const HALF_SQRT_2_PlUS_SQRT_2 = 0.92387953251128673848313610506011 // sqrt(2 + sqrt(2)) / 2
         const HALF_SQRT_2_MINUS_SQTR_2 = 0.38268343236508972626808144923416 // sqrt(2 - sqrt(2)) / 2
@@ -182,7 +219,7 @@ function Quaternion() {
                 break
 
             case ROTATION_ROLL_180_YAW_90:
-        //case ROTATION_PITCH_180_YAW_270:
+          //case ROTATION_PITCH_180_YAW_270:
                 q1 = q4 = 0
                 q2 = q3 = HALF_SQRT_2
                 break
@@ -205,7 +242,7 @@ function Quaternion() {
                 break
 
             case ROTATION_ROLL_180_YAW_270:
-        //case ROTATION_PITCH_180_YAW_90:
+          //case ROTATION_PITCH_180_YAW_90:
                 q1 = q4 = 0
                 q2 = -HALF_SQRT_2
                 q3 = HALF_SQRT_2
