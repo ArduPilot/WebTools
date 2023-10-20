@@ -407,6 +407,7 @@ function redraw() {
     document.getElementById("mag_plot_y").removeAllListeners("plotly_relayout");
     document.getElementById("mag_plot_z").removeAllListeners("plotly_relayout");
     document.getElementById("error_plot").removeAllListeners("plotly_relayout");
+    document.getElementById("error_bars").removeAllListeners("plotly_relayout");
 
     // Link all time axis
     link_plot_axis_range([
@@ -534,6 +535,8 @@ function calculate() {
 
     select_body_frame_attitude()
 
+    calculate_bins()
+
     check_orientation()
 
     fit()
@@ -542,6 +545,85 @@ function calculate() {
 
     set_need_calc(false)
 
+}
+// Calculate error weights based on attitude binning
+const num_bins = 80
+function calculate_bins() {
+    const start = performance.now()
+
+    // Fibonacci lattice of unit radius
+    const bins = { x: new Array(num_bins), y: new Array(num_bins), z: new Array(num_bins) }
+    for (let i = 0; i < num_bins; i++) {
+        const k = i + 0.5;
+
+        const phi = Math.acos(1.0 - 2.0 * k / num_bins)
+        const theta = Math.PI * (1 + Math.sqrt(5)) * k
+
+        bins.x[i] = Math.cos(theta) * Math.sin(phi)
+        bins.y[i] = Math.sin(theta) * Math.sin(phi)
+        bins.z[i] = Math.cos(phi)
+    }
+
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        const len = MAG_Data[i].expected.x.length
+        MAG_Data[i].expected.bins = new Array(len)
+
+        // Find the closest bin to each point 
+        for (let j = 0; j < len; j++) {
+            // Convert to unit
+            let x = MAG_Data[i].expected.x[j]
+            let y = MAG_Data[i].expected.y[j]
+            let z = MAG_Data[i].expected.z[j]
+            const length = Math.sqrt(x**2 + y**2 + z**2)
+            x /= length
+            y /= length
+            z /= length
+
+            // Check all points
+            let min_dist = Infinity
+            for (let k = 0; k < num_bins; k++) {
+                const dist_sq = (x - bins.x[k])**2 + (y - bins.y[k])**2 + (z - bins.z[k])**2
+
+                if (dist_sq < min_dist) {
+                    min_dist = dist_sq
+                    MAG_Data[i].expected.bins[j] = k
+                }
+            }
+        }
+    }
+
+    const end = performance.now();
+    console.log(`Binning took: ${end - start} ms`);
+}
+
+function get_weights(bins) {
+
+    const count = new Array(num_bins).fill(0)
+
+    const len = bins.length
+    let num_unique_bins = 0
+    let total_bins = 0
+    for (let i = 0; i < len; i++) {
+        if (count[bins[i]] == 0) {
+            num_unique_bins++
+        }
+        count[bins[i]]++
+        total_bins++
+    }
+    const mean_bin_size = total_bins / num_unique_bins
+    const coverage = num_unique_bins / num_bins
+
+    let weights = new Array(len).fill(1)
+
+    for (let i = 0; i < len; i++) {
+        // Scale by mean_bin_size so that the average weight is 1, this give comparable error magnitude to the un-weighted case
+        weights[i] = mean_bin_size / count[bins[i]]
+    }
+
+    return { weights, coverage }
 }
 
 function check_orientation() {
@@ -561,6 +643,9 @@ function check_orientation() {
         const start_index = find_start_index(MAG_Data[i].time)
         const end_index = find_end_index(MAG_Data[i].time)+1
         const num_samples = end_index - start_index
+
+        // Get weighting based on bins
+        const weights = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index)).weights
 
         // Calculate average earth filed to match sensor to
         let ef_mean = { x:0.0, y:0.0, z:0.0 }
@@ -631,11 +716,9 @@ function check_orientation() {
             for (let j = 0; j < num_samples; j++) {
                 const data_index = start_index + j
 
-                error_sum += Math.sqrt(
-                    (x[j] - MAG_Data[i].expected.x[data_index] + offsets.x)**2 +
-                    (y[j] - MAG_Data[i].expected.y[data_index] + offsets.y)**2 +
-                    (z[j] - MAG_Data[i].expected.z[data_index] + offsets.z)**2
-                )
+                error_sum += ((x[j] - MAG_Data[i].expected.x[data_index] + offsets.x)**2 +
+                              (y[j] - MAG_Data[i].expected.y[data_index] + offsets.y)**2 +
+                              (z[j] - MAG_Data[i].expected.z[data_index] + offsets.z)**2) * weights[j]
             }
 
             rot_error.push({ rotation: rot, error: error_sum / num_samples })
@@ -749,12 +832,20 @@ function fit() {
         const end_index = find_end_index(MAG_Data[i].time)+1
         const num_samples = end_index - start_index
 
+        // Get weighting based on bins
+        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index))
+        const weights = weight_obj.weights
+        const sqrt_weight = array_sqrt(weights)
+
+        // Update coverage graphic
+        MAG_Data[i].coverage.value = weight_obj.coverage
+
         // Calculate original fit error for selected samples only
-        MAG_Data[i].orig.mean_error = 0
+        let error_sum = 0
         for (let j = 0; j < num_samples; j++) {
-            MAG_Data[i].orig.mean_error += MAG_Data[i].orig.error[start_index + j]
+            error_sum += weights[j] * MAG_Data[i].orig.error[start_index + j]**2 
         }
-        MAG_Data[i].orig.mean_error /= num_samples
+        MAG_Data[i].orig.mean_error = Math.sqrt(error_sum / num_samples)
 
         let rot = {}
         let orientation
@@ -825,28 +916,28 @@ function fit() {
             A.data[z_row][colum] = y
         }
 
-        function setup_offsets(A, row, colum) {
+        function setup_offsets(A, row, colum, weight) {
 
             const x_row = row + 0
             const y_row = row + 1
             const z_row = row + 2
 
             // Offset 1
-            A.data[x_row][colum] = 1.0
+            A.data[x_row][colum] = weight
             A.data[y_row][colum] = 0.0
             A.data[z_row][colum] = 0.0
 
             // Offset 2
             colum++
             A.data[x_row][colum] = 0.0
-            A.data[y_row][colum] = 1.0
+            A.data[y_row][colum] = weight
             A.data[z_row][colum] = 0.0
 
             // Offset 3
             colum++
             A.data[x_row][colum] = 0.0
             A.data[y_row][colum] = 0.0
-            A.data[z_row][colum] = 1.0
+            A.data[z_row][colum] = weight
 
         }
 
@@ -894,17 +985,17 @@ function fit() {
             const data_index = start_index + j
 
             // A matrix, all fits include offsets, setup rest later
-            setup_offsets(A, index, 0)
+            setup_offsets(A, index, 0, sqrt_weight[j])
 
             // B Matrix if scale or iron are included
-            B.data[index+0][0] = MAG_Data[i].expected.x[data_index]
-            B.data[index+1][0] = MAG_Data[i].expected.y[data_index]
-            B.data[index+2][0] = MAG_Data[i].expected.z[data_index]
+            B.data[index+0][0] = MAG_Data[i].expected.x[data_index] * sqrt_weight[j]
+            B.data[index+1][0] = MAG_Data[i].expected.y[data_index] * sqrt_weight[j]
+            B.data[index+2][0] = MAG_Data[i].expected.z[data_index] * sqrt_weight[j]
 
             // B Matrix for offsets only
-            B2.data[index+0][0] = MAG_Data[i].expected.x[data_index] - rot.x[data_index]
-            B2.data[index+1][0] = MAG_Data[i].expected.y[data_index] - rot.y[data_index]
-            B2.data[index+2][0] = MAG_Data[i].expected.z[data_index] - rot.z[data_index]
+            B2.data[index+0][0] = (MAG_Data[i].expected.x[data_index] - rot.x[data_index]) * sqrt_weight[j]
+            B2.data[index+1][0] = (MAG_Data[i].expected.y[data_index] - rot.y[data_index]) * sqrt_weight[j]
+            B2.data[index+2][0] = (MAG_Data[i].expected.z[data_index] - rot.z[data_index]) * sqrt_weight[j]
         }
 
         for (let fit of MAG_Data[i].fits) {
@@ -954,11 +1045,11 @@ function fit() {
                 ret.error = calc_error(MAG_Data[i].expected, ret)
 
                 // Calculate error for selected samples only
-                ret.mean_error = 0
+                let error_sum = 0
                 for (let j = 0; j < num_samples; j++) {
-                    ret.mean_error += ret.error[start_index + j]
+                    error_sum += weights[j] * ret.error[start_index + j]**2
                 }
-                ret.mean_error /= num_samples
+                ret.mean_error = Math.sqrt(error_sum / num_samples)
 
                 return ret
             }
@@ -973,7 +1064,7 @@ function fit() {
                 for (let j = 0; j < num_samples; j++) {
                     const index = j*3
                     const data_index = start_index + j
-                    setup_motor(A, index, 3, fit.value[data_index])
+                    setup_motor(A, index, 3, fit.value[data_index] * sqrt_weight[j])
                 }
             }
 
@@ -1000,10 +1091,10 @@ function fit() {
                 const index = j*3
                 const data_index = start_index + j
 
-                setup_scale(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
+                setup_scale(A, index, 3, rot.x[data_index] * sqrt_weight[j], rot.y[data_index] * sqrt_weight[j], rot.z[data_index] * sqrt_weight[j])
 
                 if (fit_mot) {
-                    setup_motor(A, index, 4, fit.value[data_index])
+                    setup_motor(A, index, 4, fit.value[data_index] * sqrt_weight[j])
                 }
             }
 
@@ -1030,10 +1121,10 @@ function fit() {
                 const index = j*3
                 const data_index = start_index + j
 
-                setup_iron(A, index, 3, rot.x[data_index], rot.y[data_index], rot.z[data_index])
+                setup_iron(A, index, 3, rot.x[data_index] * sqrt_weight[j], rot.y[data_index] * sqrt_weight[j], rot.z[data_index] * sqrt_weight[j])
 
                 if (fit_mot) {
-                    setup_motor(A, index, 9, fit.value[data_index])
+                    setup_motor(A, index, 9, fit.value[data_index] * sqrt_weight[j])
                 }
 
             }
@@ -1042,8 +1133,8 @@ function fit() {
             params = mlMatrix.solve(A, B)
 
             // Extract params
-            const diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
-            const off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
+            let diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
+            let off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
 
             // Remove iron correction from offsets
             const iron = new mlMatrix.Matrix([
@@ -1054,11 +1145,16 @@ function fit() {
             const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
             offsets = Array.from(uncorrected_offsets.mmul(mlMatrix.inverse(iron)).data[0])
 
+            // Normalize iron matrix into scale param
+            scale = array_mean(diagonals)
+            diagonals = array_scale(diagonals, 1 / scale)
+            off_diagonals = array_scale(off_diagonals, 1 / scale)
+
             if (fit_mot) {
                 motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
             }
 
-            Object.assign(fit.iron, evaluate_fit({offsets, diagonals, off_diagonals, motor}))
+            Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor}))
 
             // Disable selection of invalid fits
             // select the first valid none motor fit by default
@@ -1287,6 +1383,12 @@ function load(log_file) {
         info.appendChild(document.createTextNode("External: " + ((MAG_Data[i].params.external > 0) ? "\u2705" : "\u274C")))
         info.appendChild(document.createTextNode(", "))
         info.appendChild(document.createTextNode("Health: " + (array_all_equal(log.messages[msg_name].Health, 1) ? "\u2705" : "\u274C")))
+
+        info.appendChild(half_gap())
+
+        info.appendChild(document.createTextNode("Coverage: "))
+        MAG_Data[i].coverage = document.createElement("progress")
+        info.appendChild(MAG_Data[i].coverage)
 
         info.appendChild(half_gap())
 
