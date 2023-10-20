@@ -205,6 +205,15 @@ function array_abs(A) {
     return ret
 }
 
+function array_sqrt(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i<len; i++) {
+        ret[i] = Math.sqrt(A[i])
+    }
+    return ret
+}
+
 function array_mean(A) {
     const len = A.length
     let ret = 0
