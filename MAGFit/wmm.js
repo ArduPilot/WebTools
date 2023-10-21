@@ -111,22 +111,26 @@ function get_mag_field_ef(latitude_deg, longitude_deg) {
         return
     }
 
-    const intensity_gauss = interpolate_table(intensity_table, latitude_deg, longitude_deg)
-    const declination_deg = interpolate_table(declination_table, latitude_deg, longitude_deg)
-    const inclination_deg = interpolate_table(inclination_table, latitude_deg, longitude_deg)
+    // gauss
+    const intensity = interpolate_table(intensity_table, latitude_deg, longitude_deg)
 
-    return [declination_deg, inclination_deg, intensity_gauss]
+    // deg
+    const declination = interpolate_table(declination_table, latitude_deg, longitude_deg)
+    const inclination = interpolate_table(inclination_table, latitude_deg, longitude_deg)
+
+    return { declination, inclination, intensity }
 }
 
 function expected_earth_field_lat_lon(lat, lon) {
     // return expected magnetic field for a location
-    const field_var = get_mag_field_ef(lat, lon)
-    if (field_var == null) {
+    const field = get_mag_field_ef(lat, lon)
+    if (field == null) {
         return
     }
 
     let Q = new Quaternion()
-    Q.from_euler(0.0, -field_var[1] * (Math.PI/180), field_var[0] * (Math.PI/180))
+    Q.from_euler(0.0, -field.inclination * (Math.PI/180), field.declination * (Math.PI/180))
 
-    return Q.rotate([field_var[2]*1000.0, 0.0, 0.0])
+    field.vector = Q.rotate([field.intensity*1000.0, 0.0, 0.0])
+    return field
 }
