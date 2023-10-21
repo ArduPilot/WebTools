@@ -142,13 +142,48 @@ this.right_angle_rotation = function(rotation) {
     }
 }
 
+// interpolation between two quaternions a and c based on 0 to 1 ratio t
+function slerp(a, c, t) {
+
+    let b = new Quaternion()
+
+    let dot_prod = a.q1 * c.q1 + a.q2 * c.q2 + a.q3 * c.q3 + a.q4 * c.q4
+
+    let c_sign = 1.0
+    if (dot_prod < 0) {
+        c_sign = -1.0
+        dot_prod *= -1.0
+    }
+    if (dot_prod >= 1.0) {
+        // a and c are the same, return copy of a
+        b.q1 = a.q1
+        b.q2 = a.q2
+        b.q3 = a.q3
+        b.q4 = a.q4
+        return b
+    }
+
+    const theta0 = Math.acos(dot_prod)
+    const sin_theta0_inv = 1 / Math.sin(theta0)
+
+    const a_scale = Math.sin((1.0 - t) * theta0) * sin_theta0_inv
+    const c_scale = Math.sin(t * theta0) * c_sign * sin_theta0_inv
+
+    b.q1 = a.q1 * a_scale + c.q1 * c_scale
+    b.q2 = a.q2 * a_scale + c.q2 * c_scale
+    b.q3 = a.q3 * a_scale + c.q3 * c_scale
+    b.q4 = a.q4 * a_scale + c.q4 * c_scale
+
+    return b
+
+ }
 
 function Quaternion() {
 
-    this.q1
-    this.q2
-    this.q3
-    this.q4
+    this.q1 = 1.0
+    this.q2 = 0.0
+    this.q3 = 0.0
+    this.q4 = 0.0
 
     // Get rotation from ArduPilot numbering
     this.from_rotation = function(rotation) {
@@ -448,6 +483,21 @@ function Quaternion() {
         this.q2 = sr2*cp2*cy2 - cr2*sp2*sy2;
         this.q3 = cr2*sp2*cy2 + sr2*cp2*sy2;
         this.q4 = cr2*cp2*sy2 - sr2*sp2*cy2;
+    }
+
+    // get euler roll angle
+    this.get_euler_roll = function() {
+        return Math.atan2(2.0 * (this.q1 * this.q2 + this.q3 * this.q4), 1.0 - 2.0 * (this.q2 * this.q2 + this.q3 * this.q3))
+    }
+
+    // get euler pitch angle
+    this.get_euler_pitch = function() {
+        return Math.asin(2.0 * (this.q1 * this.q3 - this.q4 * this.q2))
+    }
+
+    // get euler yaw angle
+    this.get_euler_yaw = function() {
+        return Math.atan2(2.0 * (this.q1 * this.q4 + this.q2 * this.q3), 1.0 - 2.0 * (this.q3 * this.q3 + this.q4 * this.q4))
     }
 
 }

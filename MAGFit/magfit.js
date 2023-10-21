@@ -7,6 +7,7 @@ const axis = ['x', 'y', 'z']
 const fit_types = { offsets: "Offsets", scale: "Offsets and scale", iron: "Offsets and iron" }
 var flight_data = {}
 var mag_plot = { x: {}, y:{}, z: {} }
+var yaw_change = { mag: {}, att: {} }
 var error_plot = {}
 var error_bars = {}
 const gauss_hovertemplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} mGauss"
@@ -141,6 +142,32 @@ function setup_plots() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, error_plot.data, error_plot.layout, {displaylogo: false});
 
+    // Mag yaw error
+    yaw_change.mag.data = [ { line: { width: 4, color: "#000000" } }]
+    yaw_change.mag.layout = {
+        xaxis: {title: {text: time_scale_label }, zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: "Change heading<br> New vs existing calibration (deg)" }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("yaw_change_mag")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, yaw_change.mag.data, yaw_change.mag.layout, {displaylogo: false});
+
+    // ATT yaw error
+    yaw_change.att.data = [ { line: { width: 4, color: "#000000" } }]
+    yaw_change.att.layout = {
+        xaxis: {title: {text: time_scale_label }, zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: "Change heading<br> New vs selected attitude source (deg)" }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("yaw_change_att")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, yaw_change.att.data, yaw_change.att.layout, {displaylogo: false});
+
     // Error bar graph
     error_bars.data = []
     for (let i=0;i<3;i++) {
@@ -164,8 +191,6 @@ function setup_plots() {
     plot = document.getElementById("error_bars")
     Plotly.purge(plot)
     Plotly.newPlot('error_bars', error_bars.data, error_bars.layout, { modeBarButtonsToRemove: ['lasso2d', 'select2d'], displaylogo: false })
-
-
 
 }
 
@@ -294,10 +319,12 @@ function redraw() {
     for (const axi of axis) {
         mag_plot[axi].data = [ mag_plot[axi].data[0] ]
 
-        mag_plot[axi].data[0].x = source.time
+        mag_plot[axi].data[0].x = source.quaternion.time
         mag_plot[axi].data[0].y = source[axi]
     }
     error_plot.data = [ error_plot.data[0] ]
+    yaw_change.mag.data = [ yaw_change.mag.data[0] ]
+    yaw_change.att.data = [ yaw_change.att.data[0] ]
 
 
     for (let i = 0; i < 3; i++) {
@@ -306,7 +333,7 @@ function redraw() {
         }
         const name = "Mag " + (i + 1)
 
-        function setup_plot(data, group_index, fit_name, dash) {
+        function setup_plot(data, group_index, fit_name) {
             const show = data.show.checked
             data.show.setAttribute('data-index', mag_plot.x.data.length)
 
@@ -317,7 +344,6 @@ function redraw() {
                     mode: "lines",
                     name: name,
                     meta: name,
-                    line: { dash },
                     visible: show,
                     legendgroup: group_index,
                     legendgrouptitle: { text: group_name },
@@ -331,13 +357,53 @@ function redraw() {
                 mode: "lines",
                 name: name,
                 meta: name,
-                line: { dash },
                 visible: show,
                 legendgroup: group_index,
                 legendgrouptitle: { text: group_name },
                 hovertemplate: gauss_hovertemplate,
                 x: MAG_Data[i].time,
                 y: data.error
+            })
+
+            // Calculate yaw change from existing calibration
+            // always 0 for existing line, hide plot with 0 line width
+            // This means line colors still match
+            const existing = (group_index == -1)
+
+            let mag_yaw = 0
+            if ("yaw" in data) {
+                mag_yaw = array_scale(array_wrap_PI(array_sub(data.yaw, MAG_Data[i].orig.yaw)), 180 / Math.PI)
+            }
+
+            yaw_change.mag.data.push({
+                mode: "lines",
+                name: name,
+                meta: name,
+                line: { width: existing ? 0 : 2 },
+                visible: show,
+                showlegend: !existing,
+                legendgroup: group_index,
+                legendgrouptitle: { text: group_name },
+                hovertemplate: gauss_hovertemplate,
+                x: MAG_Data[i].time,
+                y: mag_yaw
+            })
+
+            let att_yaw = 0
+            if ("yaw" in data) {
+                att_yaw = array_scale(array_wrap_PI(array_sub(data.yaw, MAG_Data[i].quaternion.yaw)), 180 / Math.PI)
+            }
+
+            yaw_change.att.data.push({
+                mode: "lines",
+                name: name,
+                meta: name,
+                visible: show,
+                legendgroup: group_index,
+                legendgrouptitle: { text: group_name },
+                hovertemplate: gauss_hovertemplate,
+                x: MAG_Data[i].time,
+                y: att_yaw
             })
         }
 
@@ -346,9 +412,9 @@ function redraw() {
 
         for (let j = 0; j < MAG_Data[i].fits.length; j++) {
             const group_index = j*Object.keys(fit_types).length
-            setup_plot(MAG_Data[i].fits[j].offsets, group_index + 0, fit_types.offsets + "<br>" + MAG_Data[i].fits[j].name, "solid")
-            setup_plot(MAG_Data[i].fits[j].scale,   group_index + 1, fit_types.scale + "<br>" +  MAG_Data[i].fits[j].name,  "solid")
-            setup_plot(MAG_Data[i].fits[j].iron,    group_index + 2, fit_types.iron + "<br>" +  MAG_Data[i].fits[j].name,   "solid")
+            setup_plot(MAG_Data[i].fits[j].offsets, group_index + 0, fit_types.offsets + "<br>" + MAG_Data[i].fits[j].name)
+            setup_plot(MAG_Data[i].fits[j].scale,   group_index + 1, fit_types.scale + "<br>" +  MAG_Data[i].fits[j].name)
+            setup_plot(MAG_Data[i].fits[j].iron,    group_index + 2, fit_types.iron + "<br>" +  MAG_Data[i].fits[j].name)
         }
 
         //show_params(MAG_Data[i].names, MAG_Data[i].params)
@@ -371,6 +437,16 @@ function redraw() {
     error_plot.layout.xaxis.range = time_range
 
     Plotly.newPlot("error_plot", error_plot.data, error_plot.layout, {displaylogo: false});
+
+    yaw_change.mag.layout.xaxis.autorange = false
+    yaw_change.mag.layout.xaxis.range = time_range
+
+    Plotly.newPlot("yaw_change_mag", yaw_change.mag.data, yaw_change.mag.layout, {displaylogo: false});
+
+    yaw_change.att.layout.xaxis.autorange = false
+    yaw_change.att.layout.xaxis.range = time_range
+
+    Plotly.newPlot("yaw_change_att", yaw_change.att.data, yaw_change.att.layout, {displaylogo: false});
 
     // Plot error bars
     for (let i = 0; i < 3; i++) {
@@ -408,13 +484,17 @@ function redraw() {
     document.getElementById("mag_plot_z").removeAllListeners("plotly_relayout");
     document.getElementById("error_plot").removeAllListeners("plotly_relayout");
     document.getElementById("error_bars").removeAllListeners("plotly_relayout");
+    document.getElementById("yaw_change_mag").removeAllListeners("plotly_relayout");
+    document.getElementById("yaw_change_att").removeAllListeners("plotly_relayout");
 
     // Link all time axis
     link_plot_axis_range([
         ["mag_plot_x", "x", "", mag_plot.x],
         ["mag_plot_y", "x", "", mag_plot.y],
         ["mag_plot_z", "x", "", mag_plot.z],
-        ["error_plot", "x", "", error_plot]
+        ["error_plot", "x", "", error_plot],
+        ["yaw_change_mag", "x", "", yaw_change.mag],
+        ["yaw_change_att", "x", "", yaw_change.att],
     ])
 
     // Link plot reset
@@ -423,7 +503,9 @@ function redraw() {
         ["mag_plot_y", mag_plot.y],
         ["mag_plot_z", mag_plot.z],
         ["error_plot", error_plot],
-        ["error_bars", error_bars]
+        ["error_bars", error_bars],
+        ["yaw_change_mag", yaw_change.mag],
+        ["yaw_change_att", yaw_change.att],
     ])
 
 }
@@ -442,6 +524,12 @@ function update_hidden(ele) {
 
     error_plot.data[index].visible = show
     Plotly.redraw("error_plot")
+
+    yaw_change.mag.data[index].visible = show
+    Plotly.redraw("yaw_change_mag")
+
+    yaw_change.att.data[index].visible = show
+    Plotly.redraw("yaw_change_att")
 
     // Turn off error bars for any mag that is completely disabled
     for (let i = 0; i < 3; i++) {
@@ -546,6 +634,76 @@ function calculate() {
     set_need_calc(false)
 
 }
+
+// Angle wrap helpers
+function wrap_2PI(rad) {
+    const PI2 = Math.PI * 2
+    return (rad + PI2) % PI2
+}
+
+function wrap_PI(rad) {
+    let ret = wrap_2PI(rad)
+    if (ret > Math.PI) {
+        ret -= Math.PI * 2
+    }
+    return ret
+}
+
+function array_wrap_PI(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i < len; i++) {
+        ret[i] = wrap_PI(A[i])
+    }
+    return ret
+}
+
+function array_wrap_2PI(A) {
+    const len = A.length
+    let ret = new Array(len)
+    for (let i = 0; i < len; i++) {
+        ret[i] = wrap_2PI(A[i])
+    }
+    return ret
+}
+
+// Calculate yaw estimate from compass only, tilt correction
+function get_yaw(mag_field, quaternion) {
+    const len = mag_field.x.length
+    const declination_rad = earth_field.declination * (Math.PI / 180)
+
+    let yaw = new Array(len)
+    let quat = new Quaternion()
+    for (let i = 0; i < len; i++) {
+
+        // Populate quaternion
+        quat.q1 = quaternion.q1[i]
+        quat.q2 = quaternion.q2[i]
+        quat.q3 = quaternion.q3[i]
+        quat.q4 = quaternion.q4[i]
+
+        // Get roll and pitch
+        const roll = quat.get_euler_roll()
+        const pitch = quat.get_euler_pitch()
+
+        // Rotate from body frame to earth frame with roll and pitch only
+        // Only X/Y components are required for heading
+
+        // Pre-cal some trig
+        const cp = Math.cos(pitch)
+        const sp = Math.sin(pitch)
+        const sr = Math.sin(roll)
+        const cr = Math.cos(roll)
+
+        const X = cp * mag_field.x[i] + sr * sp * mag_field.y[i] + cr * sp * mag_field.z[i]
+        const Y =                     -1.0 * cr * mag_field.y[i] +      sr * mag_field.z[i]
+
+        yaw[i] = wrap_2PI(Math.atan2(Y,X) + declination_rad)
+    }
+
+    return yaw
+}
+
 // Calculate error weights based on attitude binning
 const num_bins = 80
 function calculate_bins() {
@@ -787,6 +945,32 @@ function check_orientation() {
     console.log(`Orientation check took: ${end - start} ms`);
 }
 
+function get_body_frame_ef(quaternion) {
+
+    const len = quaternion.q1.length
+
+    ret = { x: new Array(len), y: new Array(len), z: new Array(len) }
+
+    let q = new Quaternion()
+    for (i = 0; i < len; i++) {
+
+        // Invert and load into helper
+        q.q1 =  quaternion.q1[i]
+        q.q2 = -quaternion.q2[i]
+        q.q3 = -quaternion.q3[i]
+        q.q4 = -quaternion.q4[i]
+
+        const tmp = q.rotate(earth_field.vector)
+
+        ret.x[i] = tmp[0]
+        ret.y[i] = tmp[1]
+        ret.z[i] = tmp[2]
+
+    }
+
+    return ret
+}
+
 let source
 function select_body_frame_attitude() {
 
@@ -804,16 +988,94 @@ function select_body_frame_attitude() {
         error("No attitude source selected")
     }
 
+    // Calculate expected for this source
+    Object.assign(source, get_body_frame_ef(source.quaternion))
+
     // Interpolate expected to logged compass and calculate error
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
             continue
         }
-        MAG_Data[i].expected = { x: linear_interp(source.x, source.time, MAG_Data[i].time),
-                                 y: linear_interp(source.y, source.time, MAG_Data[i].time),
-                                 z: linear_interp(source.z, source.time, MAG_Data[i].time) }
 
+        // Spherical interpolation between arrays of quatenions
+        function array_slerp(values, index, query_index) {
+
+            const len = query_index.length
+            let ret = { q1: new Array(len), q2: new Array(len), q3: new Array(len), q4: new Array(len) }
+
+            const last_value_index = index.length - 1
+            let interpolate_index = 0
+            for (let i = 0; i < len; i++) {
+
+                if (query_index[i] <= index[0]) {
+                    // Before start
+                    ret.q1[i] = values.q1[0]
+                    ret.q2[i] = values.q2[0]
+                    ret.q3[i] = values.q3[0]
+                    ret.q4[i] = values.q4[0]
+
+                    continue
+                }
+                if (query_index[i] >= index[last_value_index]) {
+                    // After end
+                    ret.q1[i] = values.q1[last_value_index]
+                    ret.q2[i] = values.q2[last_value_index]
+                    ret.q3[i] = values.q3[last_value_index]
+                    ret.q4[i] = values.q4[last_value_index]
+                    continue
+                }
+
+                // increment index until there is a point after the target
+                for (interpolate_index; interpolate_index < last_value_index; interpolate_index++) {
+                    if (query_index[i] < index[interpolate_index+1]) {
+                        const ratio = (query_index[i] - index[interpolate_index]) / (index[interpolate_index+1] - index[interpolate_index])
+
+                        // Create A and C quaternions
+                        const a = { q1: values.q1[interpolate_index],     q2: values.q2[interpolate_index],     q3: values.q3[interpolate_index],     q4: values.q4[interpolate_index]}
+                        const c = { q1: values.q1[interpolate_index + 1], q2: values.q2[interpolate_index + 1], q3: values.q3[interpolate_index + 1], q4: values.q4[interpolate_index + 1]}
+
+                        // interpolate
+                        const b = slerp(a, c, ratio)
+
+                        ret.q1[i] = b.q1
+                        ret.q2[i] = b.q2
+                        ret.q3[i] = b.q3
+                        ret.q4[i] = b.q4
+
+                        break
+                    }
+                }
+
+            }
+            return ret
+        }
+
+        MAG_Data[i].quaternion = array_slerp(source.quaternion, source.quaternion.time, MAG_Data[i].time)
+
+        // Get yaw from quaternion for comparison later
+        let quat = new Quaternion()
+        const len = MAG_Data[i].quaternion.q1.length
+        MAG_Data[i].quaternion.yaw = new Array(len)
+        for (let j = 0; j < len; j++) {
+
+            // Populate quaternion
+            quat.q1 = MAG_Data[i].quaternion.q1[j]
+            quat.q2 = MAG_Data[i].quaternion.q2[j]
+            quat.q3 = MAG_Data[i].quaternion.q3[j]
+            quat.q4 = MAG_Data[i].quaternion.q4[j]
+
+            MAG_Data[i].quaternion.yaw[j] = quat.get_euler_yaw()
+
+        }
+
+        // Rotate earth field into body frame
+        MAG_Data[i].expected = get_body_frame_ef(MAG_Data[i].quaternion)
+
+        // Error between existing calibration and expected
         MAG_Data[i].orig.error = calc_error(MAG_Data[i].expected, MAG_Data[i].orig)
+
+        // Yaw estimate from existing calibration
+        MAG_Data[i].orig.yaw = get_yaw(MAG_Data[i].orig, MAG_Data[i].quaternion)
     }
 }
 
@@ -1051,6 +1313,8 @@ function fit() {
                 }
                 ret.mean_error = Math.sqrt(error_sum / num_samples)
 
+                ret.yaw = get_yaw(ret, MAG_Data[i].quaternion)
+
                 return ret
             }
 
@@ -1209,28 +1473,7 @@ function set_need_calc(b) {
     document.getElementById('SaveParams').disabled = b
 }
 
-function add_attitude_source(quaternion, earth_field, name) {
-
-    // Rotate earth frame into body frame based on attitude
-    let q = new Quaternion()
-
-    const len = quaternion.q1.length
-    let ret = { x: new Array(len), y: new Array(len), z: new Array(len), time: quaternion.time, name: name }
-    for (i = 0; i < len; i++) {
-
-        // Invert and load into helper
-        q.q1 =  quaternion.q1[i]
-        q.q2 = -quaternion.q2[i]
-        q.q3 = -quaternion.q3[i]
-        q.q4 = -quaternion.q4[i]
-
-        const tmp = q.rotate(earth_field)
-
-        ret.x[i] = tmp[0]
-        ret.y[i] = tmp[1]
-        ret.z[i] = tmp[2]
-
-    }
+function add_attitude_source(quaternion, name) {
 
     // Add check box for this attitude source
     let section = document.getElementById("ATTITUDE")
@@ -1255,15 +1498,14 @@ function add_attitude_source(quaternion, earth_field, name) {
     section.appendChild(label)
     section.appendChild(document.createElement("br"))
 
-    ret.select = radio
-
-    return ret
+    return { quaternion, name, select: radio }
 
 }
 
 var MAG_Data
 var fits
 var body_frame_earth_field
+var earth_field
 function load(log_file) {
 
     let log = new DataflashParser()
@@ -1462,7 +1704,7 @@ function load(log_file) {
     log.parseAtOffset("ORGN")
     log.parseAtOffset("POS")
     var [Lat, Lng] = extractLatLon(log)
-    var earth_field = expected_earth_field_lat_lon(Lat, Lng)
+    earth_field = expected_earth_field_lat_lon(Lat, Lng)
     if (earth_field == null) {
         alert("Could not get earth field for Lat: " + Lat + " Lng: " + Lng)
         return
@@ -1492,7 +1734,7 @@ function load(log_file) {
             q4: Array.from(log.messages[msg_name].Q4)
         }
 
-        let field = add_attitude_source(quaternion, earth_field, "DCM")
+        let field = add_attitude_source(quaternion, "DCM")
         if (EKF_TYPE == 0) {
             field.select.checked = true
         }
@@ -1512,7 +1754,7 @@ function load(log_file) {
             q4: Array.from(log.messages[msg_name].Q4)
         }
 
-        let field = add_attitude_source(quaternion, earth_field, "EKF 2 IMU 1")
+        let field = add_attitude_source(quaternion, "EKF 2 IMU 1")
         if (EKF_TYPE == 2) {
             field.select.checked = true
         }
@@ -1540,7 +1782,7 @@ function load(log_file) {
                 q4: Array.from(log.messages[msg_name].Q4)
             }
 
-            let field = add_attitude_source(quaternion, earth_field, "EKF 3 IMU " + (primary + 1))
+            let field = add_attitude_source(quaternion, "EKF 3 IMU " + (primary + 1))
             if (EKF_TYPE == 3) {
                 field.select.checked = true
             }
