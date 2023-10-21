@@ -473,7 +473,8 @@ function redraw() {
                 showlegend: !existing,
                 legendgroup: group_index,
                 legendgrouptitle: { text: group_name },
-                hovertemplate: yaw_change_hover,
+                hoverinfo : existing ? "none" : "all",
+                hovertemplate: existing ? "" : yaw_change_hover,
                 x: MAG_Data[i].time,
                 y: mag_yaw
             })
