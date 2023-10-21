@@ -1736,6 +1736,7 @@ function load(log_file) {
 
         if (log.messages[msg_name] == null) {
             info.appendChild(document.createTextNode("Not found"))
+            document.getElementById("MAG_" + (i + 1) + "_PARAM_INFO").replaceChildren(document.createTextNode("Not found"))
             continue
         }
 
