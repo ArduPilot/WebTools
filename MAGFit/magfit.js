@@ -305,21 +305,36 @@ function save_parameters() {
 
     let params = ""
     let type = 0
+    let saved = "Saved:\n"
     for (let i = 0; i < 3; i++) {
-        if (MAG_Data[i] == null || !document.getElementById("MAG" + i + "_SHOW").checked) {
+        if (MAG_Data[i] == null) {
             continue
         }
-        for (let j = 0; j < MAG_Data[i].fits.length; j++) {
-            if (MAG_Data[i].fits[j].select.checked) {
-                if (MAG_Data[i].fits[j].valid && check_params(i, MAG_Data[i].names, MAG_Data[i].fits[j].params, MAG_Data[i].params)) {
-                    const fit_type = MAG_Data[i].fits[j].type
-                    if (type == 0) {
-                        type = fit_type
-                    } else if ((fit_type != 0) && (fit_type != type)) {
-                        alert("All compasses must use the same motor fit type, current and throttle compensation cannot be used together")
-                        return
+        const len = MAG_Data[i].param_selection.length
+        for (let j = 0; j < len; j++) {
+            if (MAG_Data[i].param_selection[j].show) {
+                if (check_params(i, MAG_Data[i].names, MAG_Data[i].param_selection[j], MAG_Data[i].params)) {
+                    if (!array_all_equal(MAG_Data[i].param_selection[j].motor, 0.0)) {
+                        // Check for conflicting motor compensation types
+                        const fit_type = MAG_Data[i].param_selection[j].fit_type
+                        if (type == 0) {
+                            type = fit_type
+                        } else if ((fit_type != 0) && (fit_type != type)) {
+                            alert("All compasses must use the same motor fit type, current and throttle compensation cannot be used together")
+                            return
+                        }
                     }
-                    params += save_params(MAG_Data[i].names, MAG_Data[i].fits[j].params)
+                    params += save_params(MAG_Data[i].names, MAG_Data[i].param_selection[j])
+
+                    // Set use param if selected
+                    const option = document.querySelector("input[name=\"MAG" + i + "use\"]:checked").value
+                    if (option != 0) {
+                        // Override
+                        params += param_string(MAG_Data[i].names.use, option == 1 ? 1 : 0)
+                    }
+
+                    saved += "\tCompass " + (i + 1) + ": " + MAG_Data[i].param_selection[j].name + "\n"
+
                 }
                 break
             }
@@ -334,20 +349,53 @@ function save_parameters() {
 
     var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
     saveAs(blob, "MAGFit.param");
+
+    alert(saved)
+}
+
+function update_shown_params() {
+
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+
+        const info_name = "MAG_" + (i + 1) + "_PARAM_INFO"
+
+        function show_params(names, values, fit_name) {
+            for (let i = 0; i < 3; i++) {
+                parameter_set_value(names.offsets[i], values.offsets[i])
+                parameter_set_value(names.diagonals[i], values.diagonals[i])
+                parameter_set_value(names.off_diagonals[i], values.off_diagonals[i])
+                parameter_set_value(names.motor[i], values.motor[i])
+            }
+            parameter_set_value(names.scale, values.scale)
+            parameter_set_value(names.orientation, values.orientation)
+    
+            document.getElementById(info_name).replaceChildren(document.createTextNode(fit_name))
+        }
+
+        let shown = false
+
+        const len = MAG_Data[i].param_selection.length
+        for (let j = 0; j < len; j++) {
+            if (MAG_Data[i].param_selection[j].show) {
+                show_params(MAG_Data[i].names, MAG_Data[i].param_selection[j], MAG_Data[i].param_selection[j].name)
+                shown = true
+                break
+            }
+        }
+
+        if (!shown) {
+            // Show existing params
+            show_params(MAG_Data[i].names, MAG_Data[i].params, "Existing calibration")
+        }
+    }
+
 }
 
 function redraw() {
 
-    function show_params(names, values) {
-        for (let i = 0; i < 3; i++) {
-            parameter_set_value(names.offsets[i], values.offsets[i])
-            parameter_set_value(names.diagonals[i], values.diagonals[i])
-            parameter_set_value(names.off_diagonals[i], values.off_diagonals[i])
-            parameter_set_value(names.motor[i], values.motor[i])
-        }
-        parameter_set_value(names.scale, values.scale)
-        parameter_set_value(names.orientation, values.orientation)
-    }
 
     // Expected field
     for (const axi of axis) {
@@ -369,10 +417,12 @@ function redraw() {
             continue
         }
         const name = "Mag " + (i + 1)
+        MAG_Data[i].param_selection = []
 
         function setup_plot(data, group_index, fit_name) {
             const show = data.show.checked
-            data.show.setAttribute('data-index', mag_plot.x.data.length)
+            const index = mag_plot.x.data.length
+            data.show.setAttribute('data-index', index)
 
             const group_name = fit_name
 
@@ -466,6 +516,15 @@ function redraw() {
                 x: MAG_Data[i].time,
                 y: magnitude
             })
+
+            if ("params" in data) {
+                MAG_Data[i].param_selection.push(Object.assign({
+                    // Use same index as plots
+                    index: index,
+                    name: group_name.replace("<br>", ', '),
+                    show
+                }, data.params))
+            }
         }
 
         // Existing cal
@@ -477,11 +536,6 @@ function redraw() {
             setup_plot(MAG_Data[i].fits[j].scale,   group_index + 1, fit_types.scale + "<br>" +  MAG_Data[i].fits[j].name)
             setup_plot(MAG_Data[i].fits[j].iron,    group_index + 2, fit_types.iron + "<br>" +  MAG_Data[i].fits[j].name)
         }
-
-        //show_params(MAG_Data[i].names, MAG_Data[i].params)
-
-        // Show original prams if fit is invalid
-        //show_params(MAG_Data[i].names, valid_fit ? source.params : MAG_Data[i].params)
 
     }
 
@@ -629,6 +683,33 @@ function update_hidden(ele) {
     }
     Plotly.redraw("error_bars")
 
+    // Add/remove the set param set from list
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        const selection_index = MAG_Data[i].param_selection.findIndex(i => i.index === index)
+        if (selection_index == -1) {
+            // Not found
+            continue
+        }
+
+        // set show
+        MAG_Data[i].param_selection[selection_index].show = show
+        if (show) {
+            // Move to first priority
+            const selection = MAG_Data[i].param_selection[selection_index]
+
+            // Remove
+            MAG_Data[i].param_selection.splice(selection_index, 1)
+
+            // Add to start
+            MAG_Data[i].param_selection.splice(0, 0, selection)
+
+        }
+    }
+
+    update_shown_params()
 
 }
 
@@ -710,6 +791,8 @@ function calculate() {
     fit()
 
     redraw()
+
+    update_shown_params()
 
     set_need_calc(false)
 
@@ -980,7 +1063,7 @@ function check_orientation() {
             txt += ", best orientation: " + get_rotation_name(first.rotation)
         }
         txt += ", second best orientation: " + get_rotation_name(second.rotation)
-        txt += ", cost ratio: " + (cost_ratio*100).toFixed(2) + " %"
+        txt += ", cost ratio: " + (cost_ratio).toFixed(2)
         console.log(txt)
 
         // Ordinal rotation
@@ -994,9 +1077,9 @@ function check_orientation() {
             } else {
                 // Warn user but do not fix
                 alert(
-                    "Mag " + (i+1) + " possible incorrect orientation\n" +
+                    "Mag " + (i+1) + " possible incorrect orientation: " + get_rotation_name(MAG_Data[i].params.orientation) + "\n" +
                     "Should be: " + get_rotation_name(first.rotation) + " ?\n" +
-                    "Cost ratio: " + (cost_ratio*100).toFixed(2) + " %"
+                    "Cost ratio: " + (cost_ratio).toFixed(2)
                 )
 
             }
@@ -1362,6 +1445,9 @@ function fit() {
 
 
                 // Populate any unset params with defaults
+                if (params.fit_type == null) {
+                    params.fit_type = 0
+                }
                 if (params.diagonals == null) {
                     params.diagonals = [1.0, 1.0, 1.0]
                 }
@@ -1423,7 +1509,7 @@ function fit() {
                 motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
             }
 
-            Object.assign(fit.offsets, evaluate_fit({offsets, motor}))
+            Object.assign(fit.offsets, evaluate_fit({offsets, motor, fit_type: fit.type }))
 
 
             // Just fitting offsets and scale, possibly with motor correction
@@ -1454,7 +1540,7 @@ function fit() {
             if (fit_mot) {
                 motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
             }
-            Object.assign(fit.scale, evaluate_fit({offsets, scale, motor}))
+            Object.assign(fit.scale, evaluate_fit({offsets, scale, motor, fit_type: fit.type }))
 
             // Fitting offsets and iron matrix, possibly with motor correction
 
@@ -1498,7 +1584,7 @@ function fit() {
                 motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
             }
 
-            Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor}))
+            Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor, fit_type: fit.type}))
 
             // Disable selection of invalid fits
             // select the first valid none motor fit by default
@@ -1658,7 +1744,8 @@ function load(log_file) {
                                 z: Array.from(log.messages[msg_name].MagZ)},
                         time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
                         names: get_compass_param_names(i+1),
-                        fits: [] }
+                        fits: [],
+                        param_selection: [] }
 
         // Set start and end times
         MAG_Data[i].start_time = MAG_Data[i].time[0]
@@ -1991,11 +2078,11 @@ function load(log_file) {
         }
 
         param_fieldset.appendChild(document.createTextNode("Use:  "))
-        setup_radio(param_fieldset, "use", "No change").checked = true
+        setup_radio(param_fieldset, "use", "No change", 0).checked = true
         param_fieldset.appendChild(document.createTextNode(", "))
-        setup_radio(param_fieldset, "use", "Use")
+        setup_radio(param_fieldset, "use", "Use", 1)
         param_fieldset.appendChild(document.createTextNode(", "))
-        setup_radio(param_fieldset, "use", "Do not use")
+        setup_radio(param_fieldset, "use", "Do not use", 2)
 
         param_fieldset.appendChild(half_gap())
 
