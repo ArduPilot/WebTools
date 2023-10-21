@@ -8,6 +8,8 @@ const fit_types = { offsets: "Offsets", scale: "Offsets and scale", iron: "Offse
 var flight_data = {}
 var mag_plot = { x: {}, y:{}, z: {} }
 var yaw_change = { mag: {}, att: {} }
+var field_length = {}
+var motor_comp = {}
 var error_plot = {}
 var error_bars = {}
 const gauss_hovertemplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} mGauss"
@@ -168,6 +170,38 @@ function setup_plots() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, yaw_change.att.data, yaw_change.att.layout, {displaylogo: false});
 
+    // Mag field length
+    field_length.data = [{
+        mode: "lines",
+        name: "Expected",
+        meta: "Expected",
+        line: { width: 4, color: "#000000" },
+        hovertemplate: gauss_hovertemplate
+    }]
+    field_length.layout = {
+        xaxis: {title: {text: time_scale_label }, zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: "Measured field length (mGauss)" }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("field_length")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, field_length.data, field_length.layout, {displaylogo: false});
+
+    // Motor compensation source
+    motor_comp.data = []
+    motor_comp.layout = {
+        xaxis: {title: {text: time_scale_label }, zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: "Current (A)" }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("motor_comp")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, motor_comp.data, motor_comp.layout, {displaylogo: false});
+
     // Error bar graph
     error_bars.data = []
     for (let i=0;i<3;i++) {
@@ -326,6 +360,9 @@ function redraw() {
     yaw_change.mag.data = [ yaw_change.mag.data[0] ]
     yaw_change.att.data = [ yaw_change.att.data[0] ]
 
+    field_length.data = [ field_length.data[0] ]
+    field_length.data[0].x = [MAG_Data.start_time, MAG_Data.end_time]
+    field_length.data[0].y = [earth_field.intensity * 1000.0, earth_field.intensity * 1000.0]
 
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
@@ -375,6 +412,8 @@ function redraw() {
                 mag_yaw = array_scale(array_wrap_PI(array_sub(data.yaw, MAG_Data[i].orig.yaw)), 180 / Math.PI)
             }
 
+            const yaw_change_hover = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} deg"
+
             yaw_change.mag.data.push({
                 mode: "lines",
                 name: name,
@@ -384,7 +423,7 @@ function redraw() {
                 showlegend: !existing,
                 legendgroup: group_index,
                 legendgrouptitle: { text: group_name },
-                hovertemplate: gauss_hovertemplate,
+                hovertemplate: yaw_change_hover,
                 x: MAG_Data[i].time,
                 y: mag_yaw
             })
@@ -401,9 +440,31 @@ function redraw() {
                 visible: show,
                 legendgroup: group_index,
                 legendgrouptitle: { text: group_name },
-                hovertemplate: gauss_hovertemplate,
+                hovertemplate: yaw_change_hover,
                 x: MAG_Data[i].time,
                 y: att_yaw
+            })
+
+            // Calculate field length
+            let magnitude
+            if ("x" in data) {
+                const len = data.x.length
+                magnitude = new Array(len)
+                for (let j = 0; j < len; j++) {
+                    magnitude[j] = Math.sqrt(data.x[j]**2 + data.y[j]**2 + data.z[j]**2)
+                }
+            }
+
+            field_length.data.push({
+                mode: "lines",
+                name: name,
+                meta: name,
+                visible: show,
+                legendgroup: group_index,
+                legendgrouptitle: { text: group_name },
+                hovertemplate: gauss_hovertemplate,
+                x: MAG_Data[i].time,
+                y: magnitude
             })
         }
 
@@ -448,6 +509,16 @@ function redraw() {
 
     Plotly.newPlot("yaw_change_att", yaw_change.att.data, yaw_change.att.layout, {displaylogo: false});
 
+    field_length.layout.xaxis.autorange = false
+    field_length.layout.xaxis.range = time_range
+
+    Plotly.newPlot("field_length", field_length.data, field_length.layout, {displaylogo: false});
+
+    motor_comp.layout.xaxis.autorange = false
+    motor_comp.layout.xaxis.range = time_range
+
+    Plotly.redraw("motor_comp");
+
     // Plot error bars
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
@@ -486,6 +557,8 @@ function redraw() {
     document.getElementById("error_bars").removeAllListeners("plotly_relayout");
     document.getElementById("yaw_change_mag").removeAllListeners("plotly_relayout");
     document.getElementById("yaw_change_att").removeAllListeners("plotly_relayout");
+    document.getElementById("field_length").removeAllListeners("plotly_relayout");
+    document.getElementById("motor_comp").removeAllListeners("plotly_relayout");
 
     // Link all time axis
     link_plot_axis_range([
@@ -495,6 +568,8 @@ function redraw() {
         ["error_plot", "x", "", error_plot],
         ["yaw_change_mag", "x", "", yaw_change.mag],
         ["yaw_change_att", "x", "", yaw_change.att],
+        ["field_length", "x", "", field_length],
+        ["motor_comp", "x", "", motor_comp],
     ])
 
     // Link plot reset
@@ -506,6 +581,8 @@ function redraw() {
         ["error_bars", error_bars],
         ["yaw_change_mag", yaw_change.mag],
         ["yaw_change_att", yaw_change.att],
+        ["field_length", field_length],
+        ["motor_comp", motor_comp],
     ])
 
 }
@@ -530,6 +607,9 @@ function update_hidden(ele) {
 
     yaw_change.att.data[index].visible = show
     Plotly.redraw("yaw_change_att")
+
+    field_length.data[index].visible = show
+    Plotly.redraw("field_length")
 
     // Turn off error bars for any mag that is completely disabled
     for (let i = 0; i < 3; i++) {
@@ -1721,6 +1801,7 @@ function load(log_file) {
     attitude_select.replaceChildren(attitude_select.children[0])
 
     body_frame_earth_field = []
+    source = null
 
     log.parseAtOffset("AHR2")
     msg_name = "AHR2"
@@ -1800,7 +1881,7 @@ function load(log_file) {
     }
 
     // Add interference sources
-    source = null
+    motor_comp.data = []
 
     // No compass motor fit
     for (let i = 0; i < 3; i++) {
@@ -1856,8 +1937,24 @@ function load(log_file) {
                     iron: {}
                 })
             }
+
+            // Add to motor comp plot
+            motor_comp.data.push({
+                mode: "lines",
+                name: (i + 1).toFixed(),
+                meta: "Battery " + (i + 1).toFixed(),
+                legendgroup: 1,
+                legendgrouptitle: { text: "Battery current" },
+                hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} A",
+                x: time,
+                y: value
+            })
         }
     }
+
+    // Redraw motor comp plot
+    Plotly.newPlot("motor_comp", motor_comp.data, motor_comp.layout, {displaylogo: false});
+
 
     // Add button for each fit
     for (let i = 0; i < 3; i++) {
