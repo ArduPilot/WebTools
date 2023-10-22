@@ -255,6 +255,7 @@ function save_parameters() {
         ret += param_array(names.motor, values.motor)
 
         ret += param_string(names.scale, values.scale)
+        ret += param_string(names.orientation, values.orientation)
         return ret
     }
 
