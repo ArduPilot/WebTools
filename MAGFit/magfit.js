@@ -1627,7 +1627,7 @@ function extractLatLon(log) {
     return [Lat, Lng]
   }
   console.warn("no ORGN message found")
-  if (log.messages["POS"] !== undefined) {
+  if (Object.keys(log.messages["POS"]).length > 0) {
     Lat = log.messages["POS"].Lat[log.messages["POS"].Lat.length-1] * 10**-7
     Lng = log.messages["POS"].Lng[log.messages["POS"].Lng.length-1] * 10**-7
     return [Lat, Lng]
@@ -1728,12 +1728,19 @@ function load(log_file) {
     MAG_Data.start_time = null
     MAG_Data.end_time = null
     for (let i = 0; i < 3; i++) {
-        var msg_name = 'MAG[' + i + ']'
 
         // Clear section
         let name = "MAG" + i
         let info = document.getElementById(name)
         info.replaceChildren()
+
+        var msg_name = 'MAG[' + i + ']'
+        if ((log.messages[msg_name] == null) && ("I" in log.messages.MAG)) {
+            // Try single instance, deal with change in instance string
+            if (Array.from(log.messages.MAG.I).every((x) => x == i)) {
+                msg_name = "MAG"
+            }
+        }
 
         if (log.messages[msg_name] == null) {
             info.appendChild(document.createTextNode("Not found"))
@@ -1864,6 +1871,11 @@ function load(log_file) {
 
     }
 
+    if (MAG_Data.length == 0) {
+        alert("No compass data in log")
+        return
+    }
+
     // Set start and end time
     document.getElementById("TimeStart").value = MAG_Data.start_time
     document.getElementById("TimeEnd").value = MAG_Data.end_time
@@ -1915,6 +1927,12 @@ function load(log_file) {
 
     log.parseAtOffset("NKQ")
     msg_name = "NKQ[0]"
+    if ((log.messages[msg_name] == null) && ("C" in log.messages.NKQ)) {
+        // Try single instance, deal with change in instance string
+        if (Array.from(log.messages.NKQ.C).every((x) => x == 0)) {
+            msg_name = "NKQ"
+        }
+    }
     if (log.messages[msg_name] != null) {
 
         const quaternion = {
@@ -1942,6 +1960,13 @@ function load(log_file) {
             primary = EKF3_PRIMARY
         }
         msg_name = "XKQ[" + primary + "]"
+
+        if ((log.messages[msg_name] == null) && ("C" in log.messages.XKQ)) {
+            // Try single instance, deal with change in instance string
+            if (Array.from(log.messages.XKQ.C).every((x) => x == primary)) {
+                msg_name = "XKQ"
+            }
+        }
 
         if (log.messages[msg_name] != null) {
 
@@ -2094,14 +2119,17 @@ function load(log_file) {
         let orientation = setup_radio(param_fieldset, "orientation", "Check", 0)
         orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
         orientation.checked = true
+        orientation.disabled = !MAG_Data[i].rotate
 
         param_fieldset.appendChild(document.createTextNode(", "))
         orientation = setup_radio(param_fieldset, "orientation", "Fix 90", 1)
         orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
+        orientation.disabled = !MAG_Data[i].rotate
 
         param_fieldset.appendChild(document.createTextNode(", "))
         orientation = setup_radio(param_fieldset, "orientation", "Fix 45", 2)
         orientation.addEventListener('change', function() { loading_call(() => { calculate(); }) } )
+        orientation.disabled = !MAG_Data[i].rotate
 
         // Fieldset to contain calibration selection options
         let cal_fieldset = document.createElement("fieldset")

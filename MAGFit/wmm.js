@@ -122,6 +122,11 @@ function get_mag_field_ef(latitude_deg, longitude_deg) {
 }
 
 function expected_earth_field_lat_lon(lat, lon) {
+
+    if ((lat == null) || (lon == null)) {
+        return
+    }
+
     // return expected magnetic field for a location
     const field = get_mag_field_ef(lat, lon)
     if (field == null) {
