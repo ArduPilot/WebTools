@@ -2370,6 +2370,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
     // Only interested in gyro here
     const IMU_SENSOR_TYPE_GYRO = 1
     let data_index = 0
+    let max_instance = 0
     for (let i = 0; i < log.messages.ISBH.N.length; i++) {
         // Parse headers
         if (log.messages.ISBH.type[i] != IMU_SENSOR_TYPE_GYRO) {
@@ -2379,6 +2380,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         const instance = log.messages.ISBH.instance[i]
         if (Gyro_batch[instance] == null) {
             Gyro_batch[instance] = []
+            max_instance = Math.max(max_instance, instance)
         }
 
         let decode_complete = false
@@ -2450,7 +2452,13 @@ function load_from_batch(log, num_gyro, gyro_rate) {
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
     const _doing_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 1)) != 0
     const _doing_pre_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 2)) != 0
-    const use_instance_offset = _doing_pre_post_filter_logging || (_doing_post_filter_logging && _doing_sensor_rate_logging)
+    let use_instance_offset = _doing_pre_post_filter_logging || (_doing_post_filter_logging && _doing_sensor_rate_logging)
+
+    if (!use_instance_offset && (max_instance >= num_gyro)) {
+        alert("Got pre-post instances without INS_LOG_BAT_OPT set, assuming pre-post")
+        use_instance_offset = true
+    }
+
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
