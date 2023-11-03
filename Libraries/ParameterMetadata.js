@@ -172,7 +172,9 @@ async function load_param_inputs(param_doc, param_names) {
                 }
 
                 param.value = value
-                param.onchange()
+                if (typeof param.onchange === 'function') {
+                    param.onchange()
+                }
             }
 
             paragaph.appendChild(document.createElement('br'))
