@@ -1907,7 +1907,7 @@ function load(log_file) {
 
     log.parseAtOffset("AHR2")
     msg_name = "AHR2"
-    if (log.messages[msg_name] != null) {
+    if (Object.keys(log.messages[msg_name]).length > 0) {
 
         const quaternion = {
             time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
@@ -1927,13 +1927,13 @@ function load(log_file) {
 
     log.parseAtOffset("NKQ")
     msg_name = "NKQ[0]"
-    if ((log.messages[msg_name] == null) && ("C" in log.messages.NKQ)) {
+    if (!(msg_name in log.messages) && ("C" in log.messages.NKQ)) {
         // Try single instance, deal with change in instance string
         if (Array.from(log.messages.NKQ.C).every((x) => x == 0)) {
             msg_name = "NKQ"
         }
     }
-    if (log.messages[msg_name] != null) {
+    if ((msg_name in log.messages) && (Object.keys(log.messages[msg_name]).length > 0)) {
 
         const quaternion = {
             time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
@@ -1952,7 +1952,7 @@ function load(log_file) {
     }
 
     log.parseAtOffset("XKQ")
-    if (log.messages["XKQ"] != null) {
+    if (Object.keys(log.messages["XKQ"]).length > 0) {
 
         var primary = 0
         const EKF3_PRIMARY = get_param_value(log.messages.PARM, "EK3_PRIMARY")
@@ -1968,7 +1968,7 @@ function load(log_file) {
             }
         }
 
-        if (log.messages[msg_name] != null) {
+        if (Object.keys(log.messages[msg_name]).length > 0) {
 
             quaternion = { 
                 time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
