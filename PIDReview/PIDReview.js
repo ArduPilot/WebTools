@@ -1448,10 +1448,9 @@ function load(log_file) {
     reset()
 
     // Reset log object                                  Copter          Plane
-    // Need to do some more testing on plane PIDs, at least the units are different, the way the speed scaling is done might make the components invalid for comparable FFT.
-    PID_log_messages = [ {id: ["PIDR"],      prefixes: [ "ATC_RAT_RLL_", ]},//"RLL_RATE_"]},
-                         {id: ["PIDP"],      prefixes: [ "ATC_RAT_PIT_", ]},//"PTCH_RATE_"]},
-                         {id: ["PIDY"],      prefixes: [ "ATC_RAT_YAW_", ]},//"YAW_RATE_"]},
+    PID_log_messages = [ {id: ["PIDR"],      prefixes: [ "ATC_RAT_RLL_", "RLL_RATE_"]},
+                         {id: ["PIDP"],      prefixes: [ "ATC_RAT_PIT_", "PTCH_RATE_"]},
+                         {id: ["PIDY"],      prefixes: [ "ATC_RAT_YAW_", "YAW_RATE_"]},
                          {id: ["PIQR"],      prefixes: [                 "Q_A_RAT_RLL_"]},
                          {id: ["PIQP"],      prefixes: [                 "Q_A_RAT_PIT_"]},
                          {id: ["PIQY"],      prefixes: [                 "Q_A_RAT_YAW_"]},
