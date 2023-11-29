@@ -832,8 +832,12 @@ function get_link() {
     // Add all query strings
     var sections = ["params", "PID_params"];
     for (var j = 0; j<sections.length; j++) {
-        var items = document.forms[sections[j]].getElementsByTagName("input");
+        var items = document.forms[sections[j]].querySelectorAll('input,select');
         for (var i=-0;i<items.length;i++) {
+            if (items[i].name === "") {
+                // Invalid name
+                continue
+            }
             if (items[i].type == "radio" && !items[i].checked) {
                 // Only add checked radio buttons
                 continue;
