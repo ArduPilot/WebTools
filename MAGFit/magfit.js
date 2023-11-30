@@ -2105,12 +2105,12 @@ function load(log_file) {
             return radio
         }
 
-        param_fieldset.appendChild(document.createTextNode("Use:  "))
+        param_fieldset.appendChild(document.createTextNode("Use sensor: "))
         setup_radio(param_fieldset, "use", "No change", 0).checked = true
         param_fieldset.appendChild(document.createTextNode(", "))
         setup_radio(param_fieldset, "use", "Use", 1)
         param_fieldset.appendChild(document.createTextNode(", "))
-        setup_radio(param_fieldset, "use", "Do not use", 2)
+        setup_radio(param_fieldset, "use", "Don't use", 2)
 
         param_fieldset.appendChild(half_gap())
 
