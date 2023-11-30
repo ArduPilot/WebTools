@@ -2488,7 +2488,11 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         if (Gyro_batch[i] == null) {
             continue
         }
-        Gyro_batch[i].gyro_rate = Math.max(gyro_rate[Gyro_batch[i].sensor_num], max_logging_rate[Gyro_batch[i].sensor_num])
+        Gyro_batch[i].gyro_rate = max_logging_rate[Gyro_batch[i].sensor_num]
+        if (gyro_rate[Gyro_batch[i].sensor_num] != null) {
+            // Make sure rate is at least the reported sampling rate
+            Gyro_batch[i].gyro_rate = Math.max(gyro_rate[Gyro_batch[i].sensor_num], Gyro_batch[i].gyro_rate)
+        }
     }
 
     // Grab full time range of batches
@@ -2586,7 +2590,11 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
-        Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], sample_rate)
+        Gyro_batch[i].gyro_rate = sample_rate
+        if (gyro_rate[i] != null) {
+            // Make sure rate is at least the reported sampling rate
+            Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], Gyro_batch[i].gyro_rate)
+        }
 
         if (pre_post_filter && (i >= num_gyro)) {
             Gyro_batch[i].sensor_num = i - num_gyro
@@ -2648,9 +2656,6 @@ function load(log_file) {
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
 
-            // Defualt to 1000Hz
-            gyro_rate[i] = 1000
-
             if (log.messages.IMU != null) {
                 let msg_key
                 const instance_key = "IMU[" + i + "]"
@@ -2671,7 +2676,8 @@ function load(log_file) {
             }
 
             if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + Math.round(gyro_rate[i]) + " Hz"
+                const rate = (gyro_rate[i] == null) ? "?" : Math.round(gyro_rate[i])
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + rate + " Hz"
             }
             num_gyro++
         }
