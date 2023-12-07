@@ -2034,7 +2034,7 @@ function load(log_file) {
                 continue
             }
             const value = Array.from(log.messages[msg_name].Curr)
-            if (array_all_NaN(value) || array_all_equal(0)) {
+            if (array_all_NaN(value) || array_all_equal(value, 0)) {
                 // Battery does not support current
                 continue
             }
