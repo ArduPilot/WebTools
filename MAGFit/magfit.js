@@ -1891,7 +1891,7 @@ function load(log_file) {
         alert("Could not get earth field for Lat: " + Lat + " Lng: " + Lng)
         return
     }
-    console.log("EF: " + earth_field[0] + ", " + earth_field[1] + ", " + earth_field[2] + " at Lat: " + Lat + " Lng: " + Lng)
+    console.log("EF: " + earth_field.vector[0] + ", " + earth_field.vector[1] + ", " + earth_field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
