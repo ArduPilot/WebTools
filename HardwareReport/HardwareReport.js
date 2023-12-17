@@ -1456,6 +1456,29 @@ function load_log(log_file) {
     }
     delete log.messages.FILE
 
+    // Plot stats
+    let stats = log.stats()
+    if (stats) {
+        plot = document.getElementById("log_stats")
+        plot.hidden = false
+
+        log_stats.data[0].labels = []
+        log_stats.data[0].values = []
+        for (const [key, value] of Object.entries(stats)) {
+            log_stats.data[0].labels.push(key)
+            log_stats.data[0].values.push(value.size)
+        }
+
+        Plotly.redraw(plot)
+
+        let para = document.getElementById("LOGSTATS")
+        para.appendChild(
+            document.createTextNode("Total size: " + log.data.byteLength + " Bytes")
+        )
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+    }
+
 }
 
 async function load(e) {
@@ -1487,6 +1510,7 @@ let performance_mem = {}
 let performance_time = {}
 let stack_mem = {}
 let stack_pct = {}
+let log_stats = {}
 function reset() {
 
     function setup_section(section) {
@@ -1507,6 +1531,7 @@ function reset() {
     setup_section(document.getElementById("DroneCAN"))
     setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
+    setup_section(document.getElementById("LOGSTATS"))
 
     ins = []
     compass = []
@@ -1851,6 +1876,18 @@ function reset() {
     plot.hidden = true
     plot.previousElementSibling.hidden = true
     plot.previousElementSibling.previousElementSibling.hidden = true
+
+    // Log stats
+    log_stats.data = [ { type: 'pie', textposition: 'inside', textinfo: "label+percent",
+                         hovertemplate: '%{label}<br>%{value:,i} Bytes<br>%{percent}<extra></extra>'} ]
+    log_stats.layout = { showlegend: false,
+                         margin: { b: 10, l: 50, r: 50, t: 10 },
+                         }
+
+    plot = document.getElementById("log_stats")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, log_stats.data, log_stats.layout, {displaylogo: false});
+    plot.hidden = true
 
 }
 
