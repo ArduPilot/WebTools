@@ -944,6 +944,210 @@ function load_can(can_msgs) {
     section.hidden = !have_section
 }
 
+function load_waypoints(log) {
+
+    function item_compare(A, B) {
+        if ((A == null) || (B == null)) {
+            return true
+        }
+        return A.command_total === B.command_total &&
+            A.sequence === B.sequence &&
+            A.command === B.command &&
+            A.param1 === B.param1 &&
+            A.param2 === B.param2 &&
+            A.param3 === B.param3 &&
+            A.param4 === B.param4 &&
+            A.latitude === B.latitude &&
+            A.longitude === B.longitude &&
+            A.altitude === B.altitude &&
+            A.frame === B.frame
+    }
+
+    function get_download_link(mission_name, mission) {
+        let link = document.createElement("a")
+        link.title = "download file"
+        link.innerHTML = mission_name
+        link.href = "#"
+        link.addEventListener('click', function() {
+            let text = "QGC WPL 110\n"
+
+            let count = 0
+            for (let j = 0; j < mission.length; j++) {
+                if (mission[j] == null) {
+                    continue
+                }
+                count++
+    
+                text += mission[j].sequence + "\t"
+                text += "0\t"
+                text += mission[j].frame + "\t"
+                text += mission[j].command + "\t"
+                text += mission[j].param1.toFixed(8) + "\t"
+                text += mission[j].param2.toFixed(8) + "\t"
+                text += mission[j].param3.toFixed(8) + "\t"
+                text += mission[j].param4.toFixed(8) + "\t"
+                text += (mission[j].latitude / 10**7).toFixed(8) + "\t"
+                text += (mission[j].longitude / 10**7).toFixed(8) + "\t"
+                text += (mission[j].altitude).toFixed(6) + "\t"
+                text += "1\n"
+            }
+    
+            if (mission.command_total != count) {
+                alert("Mission incomplete")
+            }
+    
+            var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+            saveAs(blob, mission_name)
+        })
+        return link
+    }
+
+    // Load missions
+    log.parseAtOffset("CMD")
+    if (('CMD' in log.messages) && (Object.keys(log.messages.CMD).length > 0)) {
+
+        let missions = []
+        let mission_inst = 0
+        for (let i = 0; i < log.messages.CMD.CTot.length; i++) {
+            const item = { 
+                command_total : log.messages.CMD.CTot[i],
+                sequence      : log.messages.CMD.CNum[i],
+                command       : log.messages.CMD.CId[i],
+                param1        : log.messages.CMD.Prm1[i],
+                param2        : log.messages.CMD.Prm2[i],
+                param3        : log.messages.CMD.Prm3[i],
+                param4        : log.messages.CMD.Prm4[i],
+                latitude      : log.messages.CMD.Lat[i],
+                longitude     : log.messages.CMD.Lng[i],
+                altitude      : log.messages.CMD.Alt[i],
+                frame         : log.messages.CMD.Frame[i]
+            }
+
+            const index = item.sequence
+            if ((missions[mission_inst] != null) && 
+                ((item.command_total != missions[mission_inst].command_total) || !item_compare(item, missions[mission_inst][index]))) {
+                // Item does not match existing mission, start a new one
+                mission_inst++
+            }
+            if (missions[mission_inst] == null) {
+                missions[mission_inst] = []
+                missions[mission_inst].command_total = item.command_total
+            }
+            missions[mission_inst][index] = item
+        }
+
+        let para = document.getElementById("WAYPOINTS")
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+
+        // add heading
+        let heading = document.createElement("h4")
+        heading.innerHTML = "Mission"
+        para.appendChild(heading)
+
+        let para2 = document.createElement("p")
+        para.appendChild(para2)
+
+        for (let i = 0; i < missions.length; i++) {
+            if (i > 0) {
+                para2.appendChild(document.createTextNode(", "))
+            }
+            para2.appendChild(get_download_link("waypoints_" + i + ".txt", missions[i]))
+        }
+    }
+    delete log.messages.CMD
+
+    // Load fence
+    log.parseAtOffset("FNCE")
+    if (('FNCE' in log.messages) && (Object.keys(log.messages.FNCE).length > 0)) {
+
+        let fences = []
+        let fence_inst = 0
+        for (let i = 0; i < log.messages.FNCE.Tot.length; i++) {
+
+            let command
+            let p1
+            switch (log.messages.FNCE.Type[i]) {
+                case 98:
+                    command = 5001
+                    p1 = log.messages.FNCE.Count[i]
+                    break
+
+                case 97:
+                    command = 5002
+                    p1 = log.messages.FNCE.Count[i]
+                    break
+
+                case 95:
+                    command = 5000
+                    p1 = 0
+                    break
+
+                case 93:
+                    command = 5004
+                    p1 = log.messages.FNCE.Radius[i]
+                    break
+
+                case 92:
+                    command = 5003
+                    p1 = log.messages.FNCE.Radius[i]
+                    break
+
+                default:
+                    // Unknown type
+                    continue
+            }
+
+            const item = { 
+                command_total : log.messages.FNCE.Tot[i],
+                sequence      : log.messages.FNCE.Seq[i] + 1, // Offset by 1 since home it not included
+                command       : command,
+                param1        : p1,
+                param2        : 0,
+                param3        : 0,
+                param4        : 0,
+                latitude      : log.messages.FNCE.Lat[i],
+                longitude     : log.messages.FNCE.Lng[i],
+                altitude      : 0,
+                frame         : 0
+            }
+
+            const index = item.sequence
+            if ((fences[fence_inst] != null) && 
+                ((item.command_total != fences[fence_inst].command_total) || !item_compare(item,fences[fence_inst][index]))) {
+                // Item does not match existing fence, start a new one
+                fence_inst++
+            }
+            if (fences[fence_inst] == null) {
+                fences[fence_inst] = []
+                fences[fence_inst].command_total = item.command_total
+            }
+            fences[fence_inst][index] = item
+        }
+
+        let para = document.getElementById("WAYPOINTS")
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+
+        // add heading
+        let heading = document.createElement("h4")
+        heading.innerHTML = "Polygon fence"
+        para.appendChild(heading)
+
+        let para2 = document.createElement("p")
+        para.appendChild(para2)
+
+        for (let i = 0; i < fences.length; i++) {
+            if (i > 0) {
+                para2.appendChild(document.createTextNode(", "))
+            }
+            para2.appendChild(get_download_link("fence_" + i + ".txt", fences[i]))
+        }
+    }
+    delete log.messages.FNCE
+
+}
+
 let params = {}
 let defaults = {}
 function load_log(log_file) {
@@ -1215,6 +1419,9 @@ function load_log(log_file) {
     }
     delete log.messages.STAK
 
+    // Add download link for missions and fence
+    load_waypoints(log)
+
     // Add download link for embedded files
     log.parseAtOffset("FILE")
     log.processFiles()
@@ -1292,6 +1499,7 @@ function reset() {
     setup_section(document.getElementById("BARO"))
     setup_section(document.getElementById("ARSPD"))
     setup_section(document.getElementById("DroneCAN"))
+    setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
 
     ins = []
