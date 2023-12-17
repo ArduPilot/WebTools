@@ -875,6 +875,12 @@ function load_params(log) {
     update_minimal_config()
 
     update_pos_plot()
+
+    // Be annoying if arming checks are disabled
+    if (("ARMING_CHECK" in params) && (params.ARMING_CHECK == 0)) {
+        alert("Arming checks disabled")
+    }
+
 }
 
 function load_param_file(text) {
