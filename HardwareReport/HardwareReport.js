@@ -1215,6 +1215,34 @@ function load_log(log_file) {
     }
     delete log.messages.STAK
 
+    // Add download link for embedded files
+    log.parseAtOffset("FILE")
+    log.processFiles()
+    if (Object.keys(log.files).length > 0) {
+        let para = document.getElementById("FILES")
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+
+        let first_item = true
+        for (const [name, contents] of Object.entries(log.files)) {
+            if (!first_item) {
+                para.appendChild(document.createTextNode(", "))
+            }
+            first_item = false
+
+
+            let link = document.createElement("a")
+            link.title = "download file"
+            link.innerHTML = name
+            link.href = "#"
+            link.addEventListener('click', function() { saveAs(new Blob([contents]), name) })
+
+            para.appendChild(link)
+
+        }
+    }
+    delete log.messages.FILE
+
 }
 
 async function load(e) {
@@ -1264,6 +1292,7 @@ function reset() {
     setup_section(document.getElementById("BARO"))
     setup_section(document.getElementById("ARSPD"))
     setup_section(document.getElementById("DroneCAN"))
+    setup_section(document.getElementById("FILES"))
 
     ins = []
     compass = []
