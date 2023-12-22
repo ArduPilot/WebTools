@@ -56,45 +56,20 @@
 <h3 hidden>DroneCAN devices</h3>
 <p id="DroneCAN"></p>
 
-<h3 hidden>Position offsets</h3>
-<div id="POS_OFFSETS" style="width:800px;height:800px"></div>
-
-<h3 hidden>Temperature</h3>
-<div id="Temperature" style="width:800px;height:400px"></div>
-
-<h3 hidden>Board Voltage</h3>
-<div id="Board_Voltage" style="width:800px;height:400px"></div>
-
-<h3 hidden>CPU</h3>
-<h4 hidden>Load</h4>
-<div id="performance_load" style="width:800px;height:400px"></div>
-
-<h4 hidden>Free memory</h4>
-<div id="performance_mem" style="width:800px;height:400px"></div>
-
-<h4 hidden>Loop times</h4>
-<div id="performance_time" style="width:800px;height:400px"></div>
-
-<h3 hidden>Stack</h3>
-<h4 hidden>Free memory</h4>
-<div id="stack_mem" style="width:800px;height:400px"></div>
-
-<h4 hidden>Memory usage</h4>
-<div id="stack_pct" style="width:800px;height:400px"></div>
-
-<h3 id="ParametersHeading" hidden>Parameters</h3>
+<h3 id="ParametersHeading" hidden>Download Parameters</h3>
 <p>
   <input type="button" id="SaveAllParams" value="Save All Parameters" onclick="save_all_parameters();" hidden>
-  <input type="button" id="SaveChangedParams" value="Save Changed Parameters" onclick="save_changed_parameters();" hidden>
+  <input type="button" id="SaveChangedParams" value="Save Only Parameters Different Than Defaults" onclick="save_changed_parameters();" hidden>
 
-  <h4 hidden>Minimal configuration</h4>
+  <h4 hidden>Minimal Configuration Parameters Download(Basic configuration params, not calibrations, flight modes, etc.) <br>for sharing with other users of similar vehicle configurations.<br>
+However,you may select certain of these to be included with the check boxes below.</h4>
 
   <fieldset style="width:600px" hidden>
-    <legend>Base</legend>
+    <legend>Basic Configuration Parameters</legend>
     <input type="radio" id="param_base_all" name="param_base" onchange="update_minimal_config()" checked>
     <label for="param_base_all">All</label>
     <input type="radio" id="param_base_changed" name="param_base" onchange="update_minimal_config()" disabled>
-    <label for="param_base_changed">Changed</label><br>
+    <label for="param_base_changed">Changed from defaults</label><br>
   </fieldset>
 
   <form id="params" hidden>
@@ -225,15 +200,41 @@
   </form>
 
   <br>
-  <input type="button" id="SaveMinimalParams" value="Save minimal Parameters" onclick="save_minimal_parameters();" hidden>
+  <input type="button" id="SaveMinimalParams" value="Save Minimal Parameters" onclick="save_minimal_parameters();" hidden>
 
 </p>
 
-<h3 hidden>Waypoints</h3>
+<h3 hidden>Download Waypoints</h3>
 <p id="WAYPOINTS"></p>
 
-<h3 hidden>Files</h3>
+<h3 hidden>Download Files</h3>
 <p id="FILES"></p>
+
+<h3 hidden>Position offsets</h3>
+<div id="POS_OFFSETS" style="width:800px;height:800px"></div>
+
+<h3 hidden>Temperature</h3>
+<div id="Temperature" style="width:800px;height:400px"></div>
+
+<h3 hidden>Board Voltage</h3>
+<div id="Board_Voltage" style="width:800px;height:400px"></div>
+
+<h3 hidden>CPU</h3>
+<h4 hidden>Load</h4>
+<div id="performance_load" style="width:800px;height:400px"></div>
+
+<h4 hidden>Free memory</h4>
+<div id="performance_mem" style="width:800px;height:400px"></div>
+
+<h4 hidden>Loop times</h4>
+<div id="performance_time" style="width:800px;height:400px"></div>
+
+<h3 hidden>Stack</h3>
+<h4 hidden>Free memory</h4>
+<div id="stack_mem" style="width:800px;height:400px"></div>
+
+<h4 hidden>Memory usage</h4>
+<div id="stack_pct" style="width:800px;height:400px"></div>
 
 <h3 hidden>Log stats</h3>
 <p id="LOGSTATS"></p>
