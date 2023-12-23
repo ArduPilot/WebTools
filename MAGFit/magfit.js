@@ -2070,6 +2070,11 @@ function load(log_file) {
     // Redraw motor comp plot
     Plotly.newPlot("motor_comp", motor_comp.data, motor_comp.layout, {displaylogo: false});
 
+    // Hide if there is no data
+    const hide_motor_comp = motor_comp.data.length == 0
+    let plot = document.getElementById("motor_comp")
+    plot.hidden = hide_motor_comp
+    plot.previousElementSibling.hidden = hide_motor_comp
 
     // Add button for each fit
     for (let i = 0; i < 3; i++) {
