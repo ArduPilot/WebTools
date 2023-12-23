@@ -818,10 +818,10 @@ function update_pos_plot() {
         Sensor_Offset.layout.scene.zaxis.range = [  max_offset, -max_offset ]
 
         Plotly.redraw(plot)
+
+        plot_visibility(plot, false)
     }
 
-    plot.previousElementSibling.hidden = !have_plot
-    plot.hidden = !have_plot
 
 }
 
@@ -1160,6 +1160,10 @@ function load_waypoints(log) {
 
 }
 
+function plot_visibility(plot, hide) {
+    plot.parentElement.hidden = hide
+}
+
 let params = {}
 let defaults = {}
 function load_log(log_file) {
@@ -1256,8 +1260,7 @@ function load_log(log_file) {
     const have_IMU = ('IMU' in log.messages) && (Object.keys(log.messages.IMU).length > 0)
     if (have_HEAT || have_POWR_temp || have_MCU || have_IMU) {
         let plot = document.getElementById("Temperature")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
 
         if (have_HEAT) {
             const time = array_scale(Array.from(log.messages.HEAT.time_boot_ms), 1 / 1000)
@@ -1304,8 +1307,7 @@ function load_log(log_file) {
     // Voltage plot
     if (have_POWR || have_MCU) {
         let plot = document.getElementById("Board_Voltage")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
 
         if (have_POWR) {
             const time = array_scale(Array.from(log.messages.POWR.time_boot_ms), 1 / 1000)
@@ -1343,11 +1345,11 @@ function load_log(log_file) {
 
     // Performance
     if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
+        document.getElementById("CPU").hidden = false
+
         // Load
         let plot = document.getElementById("performance_load")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
-        plot.previousElementSibling.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
 
         const time = array_scale(Array.from(log.messages.PM.time_boot_ms), 1 / 1000)
 
@@ -1358,8 +1360,7 @@ function load_log(log_file) {
 
         // Memory
         plot = document.getElementById("performance_mem")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
 
         performance_mem.data[0].x = time
         performance_mem.data[0].y = Array.from(log.messages.PM.Mem)
@@ -1368,8 +1369,7 @@ function load_log(log_file) {
 
         // Time
         plot = document.getElementById("performance_time")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
 
         performance_time.data[0].x = time
         performance_time.data[0].y = array_inverse(array_scale(Array.from(log.messages.PM.MaxT), 1 / 1000000))
@@ -1412,16 +1412,15 @@ function load_log(log_file) {
             stack_pct.data.push({ mode: 'lines', x: stack[i].time, y: mem_pct, name: stack[i].name, meta: stack[i].name, hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} %" })
         }
 
+        document.getElementById("Stack").hidden = false
+
         plot = document.getElementById("stack_mem")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
-        plot.previousElementSibling.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
         Plotly.purge(plot)
         Plotly.newPlot(plot, stack_mem.data, stack_mem.layout, {displaylogo: false});
 
         plot = document.getElementById("stack_pct")
-        plot.hidden = false
-        plot.previousElementSibling.hidden = false
+        plot_visibility(plot, false)
         Plotly.purge(plot)
         Plotly.newPlot(plot, stack_pct.data, stack_pct.layout, {displaylogo: false});
 
@@ -1463,7 +1462,7 @@ function load_log(log_file) {
     let stats = log.stats()
     if (stats) {
         plot = document.getElementById("log_stats")
-        plot.hidden = false
+        plot_visibility(plot, false)
 
         log_stats.data[0].labels = []
         log_stats.data[0].values = []
@@ -1474,12 +1473,9 @@ function load_log(log_file) {
 
         Plotly.redraw(plot)
 
-        let para = document.getElementById("LOGSTATS")
-        para.appendChild(
+        document.getElementById("LOGSTATS").replaceChildren(
             document.createTextNode("Total size: " + log.data.byteLength + " Bytes")
         )
-        para.hidden = false
-        para.previousElementSibling.hidden = false
     }
 
 }
@@ -1534,7 +1530,6 @@ function reset() {
     setup_section(document.getElementById("DroneCAN"))
     setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
-    setup_section(document.getElementById("LOGSTATS"))
 
     ins = []
     compass = []
@@ -1747,8 +1742,7 @@ function reset() {
     let plot = document.getElementById("POS_OFFSETS")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Sensor_Offset.data, Sensor_Offset.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Temperature plot
     const time_scale_label = "Time (s)"
@@ -1777,8 +1771,8 @@ function reset() {
     plot = document.getElementById("Temperature")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Temperature.data, Temperature.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
+
 
     // Voltages
     const voltage_hover_tmmplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} V"
@@ -1803,10 +1797,11 @@ function reset() {
     plot = document.getElementById("Board_Voltage")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Board_Voltage.data, Board_Voltage.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Performace load
+    document.getElementById("CPU").hidden = true
+
     performance_load.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} %" }]
 
     performance_load.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
@@ -1818,9 +1813,7 @@ function reset() {
     plot = document.getElementById("performance_load")
     Plotly.purge(plot)
     Plotly.newPlot(plot, performance_load.data, performance_load.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
-    plot.previousElementSibling.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Performace memory
     performance_mem.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B" }]
@@ -1834,8 +1827,7 @@ function reset() {
     plot = document.getElementById("performance_mem")
     Plotly.purge(plot)
     Plotly.newPlot(plot, performance_mem.data, performance_mem.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Performace time
     const performance_time_hover = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} Hz"
@@ -1857,10 +1849,11 @@ function reset() {
     plot = document.getElementById("performance_time")
     Plotly.purge(plot)
     Plotly.newPlot(plot, performance_time.data, performance_time.layout, {displaylogo: false});
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Stack
+    document.getElementById("Stack").hidden = true
+
     // Memory
     stack_mem.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
                            margin: { b: 50, l: 50, r: 50, t: 20 },
@@ -1869,9 +1862,7 @@ function reset() {
                          }
 
     plot = document.getElementById("stack_mem")
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
-    plot.previousElementSibling.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Percentage
     stack_pct.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
@@ -1881,9 +1872,7 @@ function reset() {
                          }
 
     plot = document.getElementById("stack_pct")
-    plot.hidden = true
-    plot.previousElementSibling.hidden = true
-    plot.previousElementSibling.previousElementSibling.hidden = true
+    plot_visibility(plot, true)
 
     // Log stats
     log_stats.data = [ { type: 'pie', textposition: 'inside', textinfo: "label+percent",
@@ -1895,7 +1884,7 @@ function reset() {
     plot = document.getElementById("log_stats")
     Plotly.purge(plot)
     Plotly.newPlot(plot, log_stats.data, log_stats.layout, {displaylogo: false});
-    plot.hidden = true
+    plot_visibility(plot, true)
 
 }
 
