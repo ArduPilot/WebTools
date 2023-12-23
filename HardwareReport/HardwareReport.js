@@ -832,9 +832,7 @@ function update_minimal_config() {
     }
     document.forms["params"].hidden = false
     document.forms["params"].previousElementSibling.hidden = false
-    document.forms["params"].previousElementSibling.previousElementSibling.hidden = false
     document.getElementById("SaveMinimalParams").hidden = false
-    document.getElementById("ParametersHeading").hidden = false
 
     const changed = document.getElementById("param_base_changed").checked
 
@@ -871,6 +869,14 @@ function load_params(log) {
     load_airspeed(log)
     load_gps()
     load_flow()
+
+
+    if (Object.keys(params).length > 0) {
+        // Show param save
+        let ParametersContent = document.getElementById("ParametersContent")
+        ParametersContent.hidden = false
+        ParametersContent.previousElementSibling.hidden = false
+    }
 
     update_minimal_config()
 
@@ -1176,9 +1182,6 @@ function load_log(log_file) {
     }
     delete log.messages.PARM
 
-    if (Object.keys(params).length > 0) {
-        document.getElementById("SaveAllParams").hidden = false
-    }
     if (Object.keys(defaults).length > 0) {
         document.getElementById("SaveChangedParams").hidden = false
         document.getElementById("param_base_changed").disabled = false
@@ -1546,8 +1549,13 @@ function reset() {
     // Reset params
     params = {}
     defaults = {}
-    document.getElementById("SaveAllParams").hidden = true
+
+    let ParametersContent = document.getElementById("ParametersContent")
+    ParametersContent.hidden = true
+    ParametersContent.previousElementSibling.hidden = true
     document.getElementById("SaveChangedParams").hidden = true
+    document.getElementById("param_base_changed").disabled = true
+    document.getElementById("param_base_all").checked = true
 
 
     // Reset minimal param output

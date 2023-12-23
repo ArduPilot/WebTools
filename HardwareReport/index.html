@@ -56,160 +56,6 @@
 <h3 hidden>DroneCAN devices</h3>
 <p id="DroneCAN"></p>
 
-<h3 id="ParametersHeading" hidden>Download Parameters</h3>
-<p>
-  <input type="button" id="SaveAllParams" value="Save All Parameters" onclick="save_all_parameters();" hidden>
-  <input type="button" id="SaveChangedParams" value="Save Only Parameters Different Than Defaults" onclick="save_changed_parameters();" hidden>
-
-  <h4 hidden>Minimal Configuration Parameters Download(Basic configuration params, not calibrations, flight modes, etc.) <br>for sharing with other users of similar vehicle configurations.<br>
-However,you may select certain of these to be included with the check boxes below.</h4>
-
-  <fieldset style="width:600px" hidden>
-    <legend>Basic Configuration Parameters</legend>
-    <input type="radio" id="param_base_all" name="param_base" onchange="update_minimal_config()" checked>
-    <label for="param_base_all">All</label>
-    <input type="radio" id="param_base_changed" name="param_base" onchange="update_minimal_config()" disabled>
-    <label for="param_base_changed">Changed from defaults</label><br>
-  </fieldset>
-
-  <form id="params" hidden>
-    <table>
-      <tr>
-        <td>
-          <fieldset style="width:175px; height:150px">
-            <legend>Inertial Sensors</legend>
-            <input type="checkbox" id="param_ins_gyro">
-            <label for="param_ins_gyro">Gyro</label>
-            <br>
-            <input type="checkbox" id="param_ins_accel">
-            <label for="param_ins_accel">Accel</label>
-            <br>
-            <input type="checkbox" id="param_ins_use">
-            <label for="param_ins_use">Use</label>
-            <br>
-            <input type="checkbox" id="param_ins_position">
-            <label for="param_ins_position">Position</label>
-            <br>
-          </fieldset>
-        </td>
-        <td>
-          <fieldset style="width:175px; height:150px">
-            <legend>Compass</legend>
-            <input type="checkbox" id="param_compass_calibration">
-            <label for="param_compass_calibration">Calibration</label>
-            <br>
-            <input type="checkbox" id="param_compass_ordering">
-            <label for="param_compass_ordering">Ordering</label>
-            <br>
-            <input type="checkbox" id="param_compass_id">
-            <label for="param_compass_id">IDs</label>
-            <br>
-            <input type="checkbox" id="param_compass_use">
-            <label for="param_compass_use">Use</label>
-            <br>
-            <input type="checkbox" id="param_declination">
-            <label for="param_declination">Declination</label>
-            <br>
-          </fieldset>
-        </td>
-        <td>
-          <fieldset style="width:175px; height:150px">
-            <legend>Barometer</legend>
-            <input type="checkbox" id="param_baro_calibration">
-            <label for="param_baro_calibration">Calibration</label>
-            <br>
-            <input type="checkbox" id="param_baro_id">
-            <label for="param_baro_id">IDs</label>
-            <br>
-            <input type="checkbox" id="param_baro_wind_comp">
-            <label for="param_baro_wind_comp">Wind compensation</label>
-            <br>
-          </fieldset>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <fieldset style="width:175px; height:150px">
-            <legend>Airspeed</legend>
-            <input type="checkbox" id="param_airspeed_type">
-            <label for="param_airspeed_type">Type</label>
-            <br>
-            <input type="checkbox" id="param_airspeed_calibration">
-            <label for="param_airspeed_calibration">Calibration</label>
-            <br>
-            <input type="checkbox" id="param_airspeed_use">
-            <label for="param_airspeed_use">Use</label>
-            <br>
-          </fieldset>
-        </td>
-        <td>
-        <fieldset style="width:175px; height:150px">
-          <legend>AHRS</legend>
-          <input type="checkbox" id="param_ahrs_trim">
-          <label for="param_ahrs_trim">Trim</label><br>
-          <input type="checkbox" id="param_ahrs_orientation">
-          <label for="param_ahrs_orientation">Orientation</label><br>
-        </fieldset>
-      </td>
-      <td>
-        <fieldset style="width:175px; height:150px">
-          <legend>RC</legend>
-          <input type="checkbox" id="param_rc_calibration">
-          <label for="param_rc_calibration">Calibration</label>
-          <br>
-          <input type="checkbox" id="param_rc_reverse">
-          <label for="param_rc_reverse">Reversals</label>
-          <br>
-          <input type="checkbox" id="param_rc_dz">
-          <label for="param_rc_dz">Dead zone</label>
-          <br>
-          <input type="checkbox" id="param_rc_options">
-          <label for="param_rc_options">Options</label>
-          <br>
-          <input type="checkbox" id="param_rc_flightmodes">
-          <label for="param_rc_flightmodes">Flight modes</label>
-          <br>
-        </fieldset>
-      </td>
-      </tr>
-    </table>
-
-    <fieldset style="width:600px">
-      <legend>Stream rates</legend>
-      <input type="checkbox" id="param_stream_0">
-      <label for="param_stream_0">SR 0,</label>
-
-      <input type="checkbox" id="param_stream_1">
-      <label for="param_stream_1">SR 1,</label>
-
-      <input type="checkbox" id="param_stream_2">
-      <label for="param_stream_2">SR 2,</label>
-
-      <input type="checkbox" id="param_stream_3">
-      <label for="param_stream_3">SR 3,</label>
-
-      <input type="checkbox" id="param_stream_4">
-      <label for="param_stream_4">SR 4,</label>
-
-      <input type="checkbox" id="param_stream_5">
-      <label for="param_stream_5">SR 5,</label>
-
-      <input type="checkbox" id="param_stream_6">
-      <label for="param_stream_6">SR 6</label>
-    </fieldset>
-  </form>
-
-  <br>
-  <input type="button" id="SaveMinimalParams" value="Save Minimal Parameters" onclick="save_minimal_parameters();" hidden>
-
-</p>
-
-<h3 hidden>Download Waypoints</h3>
-<p id="WAYPOINTS"></p>
-
-<h3 hidden>Download Files</h3>
-<p id="FILES"></p>
-
 <h3 hidden>Position offsets</h3>
 <div id="POS_OFFSETS" style="width:800px;height:800px"></div>
 
@@ -235,6 +81,163 @@ However,you may select certain of these to be included with the check boxes belo
 
 <h4 hidden>Memory usage</h4>
 <div id="stack_pct" style="width:800px;height:400px"></div>
+
+<h3 hidden>Download Parameters</h3>
+<div id="ParametersContent" hidden>
+  <p>
+    <input type="button" value="Save All Parameters" onclick="save_all_parameters();">
+    <input type="button" id="SaveChangedParams" value="Save Changed Parameters" title="saves only those parameters that have been changed from their default value" onclick="save_changed_parameters();" hidden>
+  </p>
+  <h4>Minimal Configuration</h4>
+  <p style="width:600px">
+    Configuration parameters excluding calibrations, flight modes, etc. You may select certain of these to be included with the check boxes below.
+    For sharing and comparing similar vehicle configurations.
+
+    <fieldset style="width:600px" hidden>
+      <legend>Basic Configuration Parameters</legend>
+      <input type="radio" id="param_base_all" name="param_base" onchange="update_minimal_config()" checked>
+      <label for="param_base_all">All</label>
+      <input type="radio" id="param_base_changed" name="param_base" onchange="update_minimal_config()" disabled>
+      <label for="param_base_changed">Changed from defaults</label><br>
+    </fieldset>
+
+    <form id="params" hidden>
+      <table>
+        <tr>
+          <td>
+            <fieldset style="width:175px; height:150px">
+              <legend>Inertial Sensors</legend>
+              <input type="checkbox" id="param_ins_gyro">
+              <label for="param_ins_gyro">Gyro</label>
+              <br>
+              <input type="checkbox" id="param_ins_accel">
+              <label for="param_ins_accel">Accel</label>
+              <br>
+              <input type="checkbox" id="param_ins_use">
+              <label for="param_ins_use">Use</label>
+              <br>
+              <input type="checkbox" id="param_ins_position">
+              <label for="param_ins_position">Position</label>
+              <br>
+            </fieldset>
+          </td>
+          <td>
+            <fieldset style="width:175px; height:150px">
+              <legend>Compass</legend>
+              <input type="checkbox" id="param_compass_calibration">
+              <label for="param_compass_calibration">Calibration</label>
+              <br>
+              <input type="checkbox" id="param_compass_ordering">
+              <label for="param_compass_ordering">Ordering</label>
+              <br>
+              <input type="checkbox" id="param_compass_id">
+              <label for="param_compass_id">IDs</label>
+              <br>
+              <input type="checkbox" id="param_compass_use">
+              <label for="param_compass_use">Use</label>
+              <br>
+              <input type="checkbox" id="param_declination">
+              <label for="param_declination">Declination</label>
+              <br>
+            </fieldset>
+          </td>
+          <td>
+            <fieldset style="width:175px; height:150px">
+              <legend>Barometer</legend>
+              <input type="checkbox" id="param_baro_calibration">
+              <label for="param_baro_calibration">Calibration</label>
+              <br>
+              <input type="checkbox" id="param_baro_id">
+              <label for="param_baro_id">IDs</label>
+              <br>
+              <input type="checkbox" id="param_baro_wind_comp">
+              <label for="param_baro_wind_comp">Wind compensation</label>
+              <br>
+            </fieldset>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <fieldset style="width:175px; height:150px">
+              <legend>Airspeed</legend>
+              <input type="checkbox" id="param_airspeed_type">
+              <label for="param_airspeed_type">Type</label>
+              <br>
+              <input type="checkbox" id="param_airspeed_calibration">
+              <label for="param_airspeed_calibration">Calibration</label>
+              <br>
+              <input type="checkbox" id="param_airspeed_use">
+              <label for="param_airspeed_use">Use</label>
+              <br>
+            </fieldset>
+          </td>
+          <td>
+          <fieldset style="width:175px; height:150px">
+            <legend>AHRS</legend>
+            <input type="checkbox" id="param_ahrs_trim">
+            <label for="param_ahrs_trim">Trim</label><br>
+            <input type="checkbox" id="param_ahrs_orientation">
+            <label for="param_ahrs_orientation">Orientation</label><br>
+          </fieldset>
+        </td>
+        <td>
+          <fieldset style="width:175px; height:150px">
+            <legend>RC</legend>
+            <input type="checkbox" id="param_rc_calibration">
+            <label for="param_rc_calibration">Calibration</label>
+            <br>
+            <input type="checkbox" id="param_rc_reverse">
+            <label for="param_rc_reverse">Reversals</label>
+            <br>
+            <input type="checkbox" id="param_rc_dz">
+            <label for="param_rc_dz">Dead zone</label>
+            <br>
+            <input type="checkbox" id="param_rc_options">
+            <label for="param_rc_options">Options</label>
+            <br>
+            <input type="checkbox" id="param_rc_flightmodes">
+            <label for="param_rc_flightmodes">Flight modes</label>
+            <br>
+          </fieldset>
+        </td>
+        </tr>
+      </table>
+
+      <fieldset style="width:600px">
+        <legend>Stream rates</legend>
+        <input type="checkbox" id="param_stream_0">
+        <label for="param_stream_0">SR 0,</label>
+
+        <input type="checkbox" id="param_stream_1">
+        <label for="param_stream_1">SR 1,</label>
+
+        <input type="checkbox" id="param_stream_2">
+        <label for="param_stream_2">SR 2,</label>
+
+        <input type="checkbox" id="param_stream_3">
+        <label for="param_stream_3">SR 3,</label>
+
+        <input type="checkbox" id="param_stream_4">
+        <label for="param_stream_4">SR 4,</label>
+
+        <input type="checkbox" id="param_stream_5">
+        <label for="param_stream_5">SR 5,</label>
+
+        <input type="checkbox" id="param_stream_6">
+        <label for="param_stream_6">SR 6</label>
+      </fieldset>
+    </form>
+
+    <br>
+    <input type="button" id="SaveMinimalParams" value="Save Minimal Parameters" onclick="save_minimal_parameters();" hidden>
+  </p>
+</div>
+
+<h3 hidden>Download Waypoints</h3>
+<p id="WAYPOINTS"></p>
+
+<h3 hidden>Download Files</h3>
+<p id="FILES"></p>
 
 <h3 hidden>Log stats</h3>
 <p id="LOGSTATS"></p>
