@@ -825,6 +825,87 @@ function update_pos_plot() {
 
 }
 
+function show_param_changes(param_changes) {
+
+    let para = document.getElementById("ParameterChanges")
+
+    // Remove anything already in section
+    para.replaceChildren()
+
+    let added = 0
+    for (const [name, changes] of Object.entries(param_changes)) {
+
+        if (name.startsWith("STAT_")) {
+            // Stats are set automatically and expected to change, don't report
+            continue
+        }
+        added += 1
+
+        // Create collapsable details element
+        let details = document.createElement("details")
+        details.style.marginBottom = "5px"
+        para.appendChild(details)
+
+        // Add name
+        let summary = document.createElement("summary")
+        summary.appendChild(document.createTextNode(name))
+        details.appendChild(summary)
+
+        // Table to show changes
+        let table = document.createElement("table")
+        table.style.borderCollapse = "collapse"
+        table.style.marginTop = "5px"
+        table.style.marginLeft = "10px"
+        details.appendChild(table)
+
+        // Add headers
+        let header = document.createElement("tr")
+        table.appendChild(header)
+
+        // table formatting helper
+        function set_cell_style(cell) {
+            cell.style.border = "1px solid #000"
+            cell.style.padding = "8px"
+        }
+
+        // Time
+        let time = document.createElement("th")
+        header.appendChild(time)
+        time.appendChild(document.createTextNode("Time (s)"))
+        set_cell_style(time)
+
+        // Value
+        let value = document.createElement("th")
+        header.appendChild(value)
+        value.appendChild(document.createTextNode("Value"))
+        set_cell_style(value)
+
+        // Add each change
+        for (const change of changes) {
+            let row = document.createElement("tr")
+            table.appendChild(row)
+
+            time = document.createElement("td")
+            row.appendChild(time)
+            time.appendChild(document.createTextNode(change.time.toFixed(2)))
+            set_cell_style(time)
+
+            value = document.createElement("td")
+            row.appendChild(value)
+            value.appendChild(document.createTextNode(change.value))
+            set_cell_style(value)
+        }
+    }
+
+    if (added == 0) {
+        // Nothing interesting changed, don't show
+        return
+    }
+
+    para.hidden = false
+    para.previousElementSibling.hidden = false
+}
+
 function update_minimal_config() {
 
     if (Object.keys(params).length == 0) {
@@ -1175,16 +1256,38 @@ function load_log(log_file) {
         delete log.messages.CAND
     }
 
+    let param_changes = {}
+    let param_time = {}
     for (let i = 0; i < log.messages.PARM.Name.length; i++) {
-        params[log.messages.PARM.Name[i]] = log.messages.PARM.Value[i]
+        const name = log.messages.PARM.Name[i]
+        const time = log.messages.PARM.time_boot_ms[i] * (1/1000)
+        const value = log.messages.PARM.Value[i]
+
+        if ((name in params) && (params[name] != value)) {
+            // Already seen this param with a different value record change
+            if (!(name in param_changes)) {
+                // Add original value
+                param_changes[name] = [{time: param_time[name], value: params[name]}]
+            }
+            param_changes[name].push({time, value})
+        }
+
+        params[name] = value
+        param_time[name] = time
         if ("Default" in log.messages.PARM) {
             const default_val = log.messages.PARM.Default[i]
             if (!isNaN(default_val)) {
-                defaults[log.messages.PARM.Name[i]] = default_val
+                defaults[name] = default_val
             }
         }
     }
     delete log.messages.PARM
+    delete param_time
+
+    show_param_changes(param_changes)
+    delete param_changes
+
+    console.log(param_changes)
 
     if (Object.keys(defaults).length > 0) {
         document.getElementById("SaveChangedParams").hidden = false
@@ -1551,7 +1654,9 @@ function reset() {
     document.getElementById("SaveChangedParams").hidden = true
     document.getElementById("param_base_changed").disabled = true
     document.getElementById("param_base_all").checked = true
-
+    let ParameterChanges = document.getElementById("ParameterChanges")
+    ParameterChanges.hidden = true
+    ParameterChanges.previousElementSibling.hidden = true
 
     // Reset minimal param output
     function setup_minimal_param(id, params) {
