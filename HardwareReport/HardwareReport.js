@@ -1287,8 +1287,6 @@ function load_log(log_file) {
     show_param_changes(param_changes)
     delete param_changes
 
-    console.log(param_changes)
-
     if (Object.keys(defaults).length > 0) {
         document.getElementById("SaveChangedParams").hidden = false
         document.getElementById("param_base_changed").disabled = false
@@ -1561,9 +1559,44 @@ function load_log(log_file) {
     }
     delete log.messages.FILE
 
+    // Logging dropped packets and free buffer
+    log.parseAtOffset("DSF")
+    if (('DSF' in log.messages) && (Object.keys(log.messages.DSF).length > 0)) {
+        document.getElementById("log_stats_header").hidden = false
+
+        const time = array_scale(Array.from(log.messages.DSF.time_boot_ms), 1 / 1000)
+
+        // Dropped packets
+        plot = document.getElementById("log_dropped")
+        plot_visibility(plot, false)
+
+        log_dropped.data[0].x = time
+        log_dropped.data[0].y = Array.from(log.messages.DSF.Dp)
+
+        Plotly.redraw(plot)
+
+        // Buffer space
+        plot = document.getElementById("log_buffer")
+        plot_visibility(plot, false)
+
+        log_buffer.data[0].x = time
+        log_buffer.data[0].y = Array.from(log.messages.DSF.FMx)
+
+        log_buffer.data[1].x = time
+        log_buffer.data[1].y = Array.from(log.messages.DSF.FAv)
+
+        log_buffer.data[2].x = time
+        log_buffer.data[2].y = Array.from(log.messages.DSF.FMn)
+
+        Plotly.redraw(plot)
+    }
+    delete log.messages.DSF
+
     // Plot stats
     let stats = log.stats()
     if (stats) {
+        document.getElementById("log_stats_header").hidden = false
+
         plot = document.getElementById("log_stats")
         plot_visibility(plot, false)
 
@@ -1612,6 +1645,8 @@ let performance_mem = {}
 let performance_time = {}
 let stack_mem = {}
 let stack_pct = {}
+let log_dropped = {}
+let log_buffer = {}
 let log_stats = {}
 function reset() {
 
@@ -1980,6 +2015,48 @@ function reset() {
     plot_visibility(plot, true)
 
     // Log stats
+    document.getElementById("log_stats_header").hidden = true
+
+    // Log dropped packets
+    log_dropped.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f}" }]
+
+    log_dropped.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                           margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Dropped messages" } }
+                         }
+
+    plot = document.getElementById("log_dropped")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, log_dropped.data, log_dropped.layout, {displaylogo: false});
+    plot_visibility(plot, true)
+
+    // Log free buffer space
+    log_buffer.data = []
+
+    const log_buffer_hover = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B"
+
+    name = "Maximum"
+    log_buffer.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: log_buffer_hover })
+
+    name = "Average"
+    log_buffer.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: log_buffer_hover })
+
+    name = "Minimum"
+    log_buffer.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: log_buffer_hover })
+
+    log_buffer.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
+                          margin: { b: 50, l: 50, r: 50, t: 20 },
+                           xaxis: { title: {text: time_scale_label } },
+                           yaxis: { title: {text: "Free Buffer Space (bytes)" } }
+                        }
+
+    plot = document.getElementById("log_buffer")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, log_buffer.data, log_buffer.layout, {displaylogo: false});
+    plot_visibility(plot, true)
+
+    // Log Composition
     log_stats.data = [ { type: 'pie', textposition: 'inside', textinfo: "label+percent",
                          hovertemplate: '%{label}<br>%{value:,i} Bytes<br>%{percent}<extra></extra>'} ]
     log_stats.layout = { showlegend: false,
