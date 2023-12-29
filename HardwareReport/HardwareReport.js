@@ -267,7 +267,7 @@ function load_ins(log) {
                 }
             }
         }
-        if (!found_instance && (Object.keys(log.messages.IMU).length > 0)) {
+        if (!found_instance && (Object.keys(log.messages.IMU).length > 0) && ('I' in log.messages.IMU)) {
             const instance = log.messages.IMU.I[0]
             if (ins[instance] != null) {
                 ins[instance].acc_all_healthy = array_all_equal(log.messages.IMU.AH, 1)
@@ -413,7 +413,7 @@ function load_compass(log) {
                 }
             }
         }
-        if (!found_instance && (Object.keys(log.messages.MAG).length > 0)) {
+        if (!found_instance && (Object.keys(log.messages.MAG).length > 0) && ('I' in log.messages.MAG)) {
             const instance = log.messages.MAG.I[0]
             if (compass[instance] != null) {
                 compass[instance].all_healthy = array_all_equal(log.messages.MAG.Health, 1)
@@ -527,7 +527,7 @@ function load_baro(log) {
                 }
             }
         }
-        if (!found_instance && (Object.keys(log.messages.BARO).length > 0)) {
+        if (!found_instance && (Object.keys(log.messages.BARO).length > 0) && ('I' in log.messages.BARO)) {
             const instance = log.messages.BARO.I[0]
             if (baro[instance] != null) {
                 baro[instance].all_healthy = array_all_equal(log.messages.BARO.Health, 1)
@@ -1358,7 +1358,7 @@ function load_log(log_file) {
     const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
     const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
     const have_MCU = ('MCU' in log.messages) && (Object.keys(log.messages.MCU).length > 0)
-    const have_IMU = ('IMU' in log.messages) && (Object.keys(log.messages.IMU).length > 0)
+    const have_IMU = ('IMU' in log.messages) && (Object.keys(log.messages.IMU).length > 0) && ('I' in log.messages.IMU)
     if (have_HEAT || have_POWR_temp || have_MCU || have_IMU) {
         let plot = document.getElementById("Temperature")
         plot_visibility(plot, false)
@@ -1369,7 +1369,7 @@ function load_log(log_file) {
             Temperature.data[0].x = time
             Temperature.data[0].y = Array.from(log.messages.HEAT.Targ)
 
-            Temperature.data[1].x =time
+            Temperature.data[1].x = time
             Temperature.data[1].y = Array.from(log.messages.HEAT.Temp)
         }
 
