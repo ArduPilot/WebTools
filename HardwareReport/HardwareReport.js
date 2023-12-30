@@ -126,6 +126,326 @@ async function check_release(hash, paragraph) {
 
 }
 
+function show_watchdog(WDOG) {
+
+    let watchdogs = []
+    for (let i = 0; i < WDOG.time_boot_ms.length; i++) {
+        let watchdog = { 
+            scheduler_task: WDOG.Tsk[i],
+            internal_errors: WDOG.IE[i],
+            internal_error_count: WDOG.IEC[i],
+            internal_error_last_line: WDOG.IEL[i],
+            last_mavlink_msgid: WDOG.MvMsg[i],
+            last_mavlink_cmd: WDOG.MvCmd[i],
+            semaphore_line: WDOG.SmLn[i],
+            fault_line: WDOG.FL[i],
+            fault_type: WDOG.FT[i],
+            fault_addr: WDOG.FA[i],
+            fault_thd_prio: WDOG.FP[i],
+            fault_icsr: WDOG.ICSR[i],
+            fault_lr: WDOG.LR[i],
+            thread_name: WDOG.TN[i]
+        }
+
+        function item_compare(A, B) {
+            if ((A == null) || (B == null)) {
+                return false
+            }
+            return A.scheduler_task === B.scheduler_task &&
+                A.internal_errors === B.internal_errors &&
+                A.internal_error_count === B.internal_error_count &&
+                A.internal_error_last_line === B.internal_error_last_line &&
+                A.last_mavlink_msgid === B.last_mavlink_msgid &&
+                A.last_mavlink_cmd === B.last_mavlink_cmd &&
+                A.semaphore_line === B.semaphore_line &&
+                A.fault_line === B.fault_line &&
+                A.fault_type === B.fault_type &&
+                A.fault_addr === B.fault_addr &&
+                A.fault_thd_prio === B.fault_thd_prio &&
+                A.fault_icsr === B.fault_icsr &&
+                A.fault_lr === B.fault_lr &&
+                A.thread_name === B.thread_name
+        }
+
+        // Check if this has been seen before
+        if (item_compare(watchdogs[watchdogs.length-1], watchdog)) {
+            continue
+        }
+
+        watchdogs.push(watchdog)
+    }
+
+    const num_watchdogs = watchdogs.length
+    if (num_watchdogs == 0) {
+        return
+    }
+
+    let para = document.getElementById("WDOG")
+    para.hidden = false
+    para.previousElementSibling.hidden = false
+
+    for (let i = 0; i < num_watchdogs; i++) {
+        if (i > 0) {
+            para.appendChild(document.createElement("br"))
+        }
+
+        if (num_watchdogs > 1) {
+            let heading = document.createElement("h4")
+            heading.appendChild(document.createTextNode("Watchdog " + (i+1)))
+            para.appendChild(heading)
+        }
+
+        let task_name
+        switch (watchdogs[i].scheduler_task) {
+            case -3:
+                task_name = "Waiting for sample"
+                break
+            case -1:
+                task_name = "Pre loop"
+                break
+            case -2:
+                task_name = "Fast loop"
+                break
+        }
+
+        let extra = (task_name == null) ? "" : " (" + task_name + ")"
+        para.appendChild(document.createTextNode("Scheduler Task: " + watchdogs[i].scheduler_task + extra))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Internal Error Mask: " + watchdogs[i].internal_errors))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Internal Error Count: " + watchdogs[i].internal_error_count))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Internal Error Line: " + watchdogs[i].internal_error_last_line))
+
+        extra = (watchdogs[i].last_mavlink_msgid == 0) ? " (none)" : ""
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Last MAVLink Message: " + watchdogs[i].last_mavlink_msgid + extra))
+
+        extra = (watchdogs[i].last_mavlink_cmd == 0) ? " (none)" : ""
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Last MAVLink Command: " + watchdogs[i].last_mavlink_cmd + extra))
+
+        extra = (watchdogs[i].semaphore_line == 0) ? " (not waiting)" : ""
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Semaphore Line: " + watchdogs[i].semaphore_line + extra))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Line: " + watchdogs[i].fault_line))
+
+        let fault_name
+        switch (watchdogs[i].fault_type) {
+            case 1:
+                fault_name = "Reset"
+                break
+            case 2:
+                fault_name = "NMI"
+                break
+            case 3:
+                fault_name = "HardFault"
+                break
+            case 4:
+                fault_name = "MemManage"
+                break
+            case 4:
+                fault_name = "BusFault"
+                break
+            case 4:
+                fault_name = "UsageFault"
+                break
+        }
+
+        extra = (fault_name == null) ? "" : " (" + fault_name + ")"
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Type: " + watchdogs[i].fault_type + extra))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Address: 0x" + watchdogs[i].fault_addr.toString(16)))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Thread Priority: " + watchdogs[i].fault_thd_prio))
+
+        function decode_ICSR(ICSR, section) {
+
+            function decoder_m4_vectactive(value) {
+                const exceptions = {
+                    0: "Thread mode",
+                    1: "Reserved",
+                    2: "NMI",
+                    3: "Hard fault",
+                    4: "Memory management fault",
+                    5: "Bus fault",
+                    6: "Usage fault",
+                    7: "Reserved....",
+                    10: "Reserved",
+                    11: "SVCall",
+                    12: "Reserved for Debug",
+                    13: "Reserved",
+                    14: "PendSV",
+                    15: "SysTick",
+                }
+                let exception
+                if (value in exceptions) {
+                    exception = exceptions[value]
+                } else {
+                    exception = "IRQ" + (value - 16)
+                }
+                return " (" + exception + ")"
+            }
+
+            function decoder_m4_retobase(value) {
+                let out
+                if (value) {
+                    out = "no (or no more) active exceptions"
+                } else {
+                    out = "preempted active exceptions"
+                }
+                return " (" + out + ")"
+            }
+
+            function decoder_m4_vectpending(value) {
+                return decoder_m4_vectactive(value)
+            }
+
+            function decoder_m4_isrpending(value) {
+                let out
+                if (value) {
+                    out = "Interrupt pending"
+                } else {
+                    out = "No pending interrupt"
+                }
+                return " (" + out + ")"
+            }
+
+            function decoder_m4_pendstclr(value) {
+                return " (WO clears SysTick exception)"
+            }
+
+            function decoder_m4_pendstset(value) {
+                let out
+                if (value) {
+                    out = "SysTick pending"
+                } else {
+                    out = "SysTick not pending"
+                }
+                return " (" + out + ")"
+            }
+
+            function decoder_m4_pendsvclr(value) {
+                return " (WO clears pendsv exception)"
+            }
+
+            function decoder_m4_pendsvset(value) {
+                let out
+                if (value) {
+                    out = "PendSV pending"
+                } else {
+                    out = "PendSV not pending"
+                }
+                return " (" + out + ")"
+            }
+
+            function decoder_m4_nmipendset(value) {
+                let out
+                if (value) {
+                    out = "NMI pending"
+                } else {
+                    out = "NMI not pending"
+                }
+                return " (" + out + ")"
+            }
+
+            // this ICSR-bit-assignment-table table also looks valid for M7
+            // - page 195 of
+            // dm00237416-stm32f7-series-and-stm32h7-series-cortexm7-processor-programming-manual-stmicroelectronics.pdf
+            const M4_BITS = [
+                ["0-8", "VECTACTIVE", decoder_m4_vectactive],
+                ["9-10", "RESERVED1", null],
+                ["11", "RETOBASE", decoder_m4_retobase],
+                ["12-18", "VECTPENDING", decoder_m4_vectpending],
+                ["19-21", "RESERVED2", null],
+                ["22", "ISRPENDING", decoder_m4_isrpending],
+                ["23-24", "RESERVED3", null],
+                ["25", "PENDSTCLR", decoder_m4_pendstclr],
+                ["26", "PENDSTSET", decoder_m4_pendstset],
+                ["27", "PENDSVCLR", decoder_m4_pendsvclr],
+                ["28", "PENDSVSET", decoder_m4_pendsvset],
+                ["29-30", "RESERVED4", null],
+                ["31", "NMIPENDSET", decoder_m4_nmipendset],
+            ]
+
+            for (const bit of M4_BITS) {
+                let bits = bit[0]
+                let name = bit[1]
+                let decoder = bit[2]
+
+                let start_bit
+                let stop_bit
+                if (bits.includes("-")) {
+                    const start_stop = bits.split("-")
+                    start_bit = parseInt(start_stop[0])
+                    stop_bit = parseInt(start_stop[1])
+                } else {
+                    start_bit = parseInt(bits)
+                    stop_bit = parseInt(bits)
+                }
+                let mask = 0
+                for (let i = start_bit; i < stop_bit+1; i++) {
+                    mask |= (1 << i)
+                }
+                let value = (ICSR & mask) >> start_bit
+                let text  = name + ": 0x" + value.toString(16)
+                if (decoder != null) {
+                    text += " " + decoder(value)
+                }
+                section.appendChild(document.createTextNode(text))
+                section.appendChild(document.createElement("br"))
+
+            }
+        }
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault ICS Register: "))
+
+        let details = document.createElement("details")
+        details.style.display = "inline"
+        details.style.verticalAlign = "top"
+        para.appendChild(details)
+
+        let summary = document.createElement("summary")
+        summary.appendChild(document.createTextNode("0x" + watchdogs[i].fault_icsr.toString(16)))
+        details.appendChild(summary)
+        decode_ICSR(watchdogs[i].fault_icsr, details)
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Long Return Address: 0x" + watchdogs[i].fault_lr.toString(16)))
+
+        para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode("Fault Thread name: " + watchdogs[i].thread_name))
+
+        // This format can be pasted into https://github.com/ArduPilot/ardupilot/blob/master/Tools/scripts/decode_watchdog.py
+        console.log("\"WDOG, 0, " +
+            watchdogs[i].scheduler_task + ", " +
+            watchdogs[i].internal_errors + ", " +
+            watchdogs[i].internal_error_count + ", " +
+            watchdogs[i].internal_error_last_line + ", " +
+            watchdogs[i].last_mavlink_msgid + ", " +
+            watchdogs[i].last_mavlink_cmd + ", " +
+            watchdogs[i].semaphore_line + ", " +
+            watchdogs[i].fault_line + ", " +
+            watchdogs[i].fault_type + ", " +
+            watchdogs[i].fault_addr + ", " +
+            watchdogs[i].fault_thd_prio + ", " +
+            watchdogs[i].fault_icsr + ", " +
+            watchdogs[i].fault_lr + ", " +
+            watchdogs[i].thread_name + "\""
+        )
+    }
+
+}
+
 // Print device type from DEVID using two lines
 function print_device(parent, id) {
     if (id == null) {
@@ -1354,6 +1674,14 @@ function load_log(log_file) {
         }
     }
 
+    // Look for watchdog
+    log.parseAtOffset("WDOG")
+    if (('WDOG' in log.messages) && (Object.keys(log.messages.WDOG).length > 0)) {
+        show_watchdog(log.messages.WDOG)
+    }
+    delete log.messages.WDOG
+
+
     const have_HEAT = ('HEAT' in log.messages) && (Object.keys(log.messages.HEAT).length > 0)
     const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
     const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
@@ -1661,6 +1989,7 @@ function reset() {
 
     setup_section(document.getElementById("VER"))
     setup_section(document.getElementById("FC"))
+    setup_section(document.getElementById("WDOG"))
     setup_section(document.getElementById("INS"))
     setup_section(document.getElementById("COMPASS"))
     setup_section(document.getElementById("BARO"))
