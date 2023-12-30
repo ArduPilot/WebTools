@@ -1681,6 +1681,32 @@ function load_log(log_file) {
     }
     delete log.messages.WDOG
 
+    // IOMCU
+    log.parseAtOffset("IOMC")
+    if (('IOMC' in log.messages) && (Object.keys(log.messages.IOMC).length > 0)) {
+        let para = document.getElementById("IOMCU")
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+
+        if ("RSErr" in log.messages.IOMC) {
+            const read_satus_error = Math.max(...log.messages.IOMC.RSErr)
+            para.appendChild(document.createTextNode("Status read errors: " + read_satus_error + " " + (read_satus_error == 0 ? "\u2705" : "\u274C")))
+            para.appendChild(document.createElement("br"))
+        }
+
+        const total_errors =  Math.max(...log.messages.IOMC.Nerr)
+        para.appendChild(document.createTextNode("Flight Controller errors: " + total_errors + " " + (total_errors == 0 ? "\u2705" : "\u274C")))
+        para.appendChild(document.createElement("br"))
+
+        const IOMCU_total_errors =  Math.max(...log.messages.IOMC.Nerr2)
+        para.appendChild(document.createTextNode("IOMCU errors: " + IOMCU_total_errors + " " + (IOMCU_total_errors == 0 ? "\u2705" : "\u274C")))
+        para.appendChild(document.createElement("br"))
+
+        const delayed_packets =  Math.max(...log.messages.IOMC.NDel)
+        para.appendChild(document.createTextNode("Delayed packets: " + delayed_packets + " " + (delayed_packets == 0 ? "\u2705" : "\u274C")))
+    }
+    delete log.messages.IOMC
+
 
     const have_HEAT = ('HEAT' in log.messages) && (Object.keys(log.messages.HEAT).length > 0)
     const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
@@ -1990,6 +2016,7 @@ function reset() {
     setup_section(document.getElementById("VER"))
     setup_section(document.getElementById("FC"))
     setup_section(document.getElementById("WDOG"))
+    setup_section(document.getElementById("IOMCU"))
     setup_section(document.getElementById("INS"))
     setup_section(document.getElementById("COMPASS"))
     setup_section(document.getElementById("BARO"))
