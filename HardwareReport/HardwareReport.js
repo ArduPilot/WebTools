@@ -1559,6 +1559,96 @@ function load_waypoints(log) {
     }
     delete log.messages.FNCE
 
+    // Load rally points
+    log.parseAtOffset("RALY")
+    if (('RALY' in log.messages) && (Object.keys(log.messages.RALY).length > 0)) {
+
+        let rallypoints = []
+        let rallyinst = 0
+        for (let i = 0; i < log.messages.RALY.Tot.length; i++) {
+
+            // Decode flags
+            const flags = log.messages.RALY.Flags[i]
+            const alt_frame_valid = (flags & 0b0000100) != 0
+            const AP_alt_frame = (flags & 0b00011000) >> 3
+
+            let alt_frame
+            if (alt_frame_valid) {
+                switch(AP_alt_frame) {
+                    case 0: // Location::AltFrame::ABSOLUTE
+                        alt_frame = 0 // MAV_FRAME_GLOBAL
+                        break
+
+                    case 1: // Location::AltFrame::ABOVE_HOME
+                        alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
+                        break
+
+                    case 2: // Location::AltFrame::ABOVE_ORIGIN
+                        // invalid
+                        break
+
+                    case 3: // Location::AltFrame::ABOVE_TERRAIN
+                        alt_frame = 10 // MAV_FRAME_GLOBAL_TERRAIN_ALT
+                        break
+                }
+            } else {
+                alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
+            }
+
+            if (alt_frame == null) {
+                // Invalid frame, skip
+                continue
+            }
+
+            const item = { 
+                command_total : log.messages.RALY.Tot[i],
+                sequence      : log.messages.RALY.Seq[i] + 1, // Offset by 1 since home it not included
+                command       : 5100, // MAV_CMD_NAV_RALLY_POINT
+                param1        : 0,
+                param2        : 0,
+                param3        : 0,
+                param4        : 0,
+                latitude      : log.messages.RALY.Lat[i],
+                longitude     : log.messages.RALY.Lng[i],
+                altitude      : log.messages.RALY.Alt[i],
+                frame         : alt_frame
+            }
+
+            const index = item.sequence
+            if ((rallypoints[rallyinst] != null) && 
+                ((item.command_total != rallypoints[rallyinst].command_total) || !item_compare(item, rallypoints[rallyinst][index]))) {
+                // Item does not match existing points, start a new set
+                rallyinst++
+            }
+            if (rallypoints[rallyinst] == null) {
+                rallypoints[rallyinst] = []
+                rallypoints[rallyinst].command_total = item.command_total
+            }
+            rallypoints[rallyinst][index] = item
+        }
+
+        let para = document.getElementById("WAYPOINTS")
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+
+        // add heading
+        let heading = document.createElement("h4")
+        heading.innerHTML = "Rally points"
+        para.appendChild(heading)
+
+        let para2 = document.createElement("p")
+        para.appendChild(para2)
+
+        for (let i = 0; i < rallypoints.length; i++) {
+            if (i > 0) {
+                para2.appendChild(document.createTextNode(", "))
+            }
+            para2.appendChild(get_download_link("rally_" + i + ".txt", rallypoints[i]))
+        }
+
+    }
+    delete log.messages.RALY
+
 }
 
 function plot_visibility(plot, hide) {
@@ -1882,7 +1972,7 @@ function load_log(log_file) {
     }
     delete log.messages.STAK
 
-    // Add download link for missions and fence
+    // Add download link for missions, fence and rally points
     load_waypoints(log)
 
     // Add download link for embedded files
