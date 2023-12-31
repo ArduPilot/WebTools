@@ -1567,37 +1567,33 @@ function load_waypoints(log) {
         let rallyinst = 0
         for (let i = 0; i < log.messages.RALY.Tot.length; i++) {
 
-            // Decode flags
-            const flags = log.messages.RALY.Flags[i]
-            const alt_frame_valid = (flags & 0b0000100) != 0
-            const AP_alt_frame = (flags & 0b00011000) >> 3
+            let alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
 
-            let alt_frame
-            if (alt_frame_valid) {
-                switch(AP_alt_frame) {
-                    case 0: // Location::AltFrame::ABSOLUTE
-                        alt_frame = 0 // MAV_FRAME_GLOBAL
-                        break
+            // Decode flags if available
+            if ("Flags" in log.messages.RALY) {
+                const flags = log.messages.RALY.Flags[i]
+                const alt_frame_valid = (flags & 0b0000100) != 0
+                const AP_alt_frame = (flags & 0b00011000) >> 3
 
-                    case 1: // Location::AltFrame::ABOVE_HOME
-                        alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
-                        break
+                if (alt_frame_valid) {
+                    switch(AP_alt_frame) {
+                        case 0: // Location::AltFrame::ABSOLUTE
+                            alt_frame = 0 // MAV_FRAME_GLOBAL
+                            break
 
-                    case 2: // Location::AltFrame::ABOVE_ORIGIN
-                        // invalid
-                        break
+                        case 1: // Location::AltFrame::ABOVE_HOME
+                            alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
+                            break
 
-                    case 3: // Location::AltFrame::ABOVE_TERRAIN
-                        alt_frame = 10 // MAV_FRAME_GLOBAL_TERRAIN_ALT
-                        break
+                        case 2: // Location::AltFrame::ABOVE_ORIGIN
+                            // invalid
+                            continue
+
+                        case 3: // Location::AltFrame::ABOVE_TERRAIN
+                            alt_frame = 10 // MAV_FRAME_GLOBAL_TERRAIN_ALT
+                            break
+                    }
                 }
-            } else {
-                alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
-            }
-
-            if (alt_frame == null) {
-                // Invalid frame, skip
-                continue
             }
 
             const item = { 
