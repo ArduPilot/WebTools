@@ -446,6 +446,185 @@ function show_watchdog(WDOG) {
 
 }
 
+function show_internal_errors(log) {
+
+    let internal_errors = []
+
+    // Add from PM
+    if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
+        const len = log.messages.PM.time_boot_ms.length
+        for (let i = 0; i < len; i++) {
+            internal_errors.push({
+                time: log.messages.PM.time_boot_ms[i],
+                mask: log.messages.PM.IntE[i],
+                line: log.messages.PM.ErrL[i],
+                count: log.messages.PM.ErrC[i]
+            })
+        }
+    }
+
+    // Add from MON
+    if (('MON' in log.messages) && (Object.keys(log.messages.MON).length > 0)) {
+        const len = log.messages.MON.time_boot_ms.length
+        for (let i = 0; i < len; i++) {
+            internal_errors.push({
+                time: log.messages.MON.time_boot_ms[i],
+                mask: log.messages.MON.IErr[i],
+                line: log.messages.MON.IErrLn[i],
+                count: log.messages.MON.IErrCnt[i]
+            })
+        }
+    }
+
+    if (internal_errors.length == 0) {
+        // Nothing logged
+        return
+    }
+
+    // Sort by time, this allows combination from the two messages
+    internal_errors.sort((a, b) => { return a.time - b.time })
+
+    // Only keep changes, first item is always unique
+    let unique_errors = [internal_errors[0]]
+    for (let i = 1; i < internal_errors.length; i++) {
+        const error = internal_errors[i]
+
+        const last_error_index = unique_errors.length - 1
+        const last_error = unique_errors[last_error_index]
+
+        if ((error.mask != last_error.mask) ||
+            (error.line != last_error.line)) {
+            // Change in mask or line, add to list
+            unique_errors.push(error)
+
+        } else if (error.count > last_error.count) {
+            // Mask and line the same, update count only
+            unique_errors[last_error_index].count = error.count
+        }
+
+    }
+
+    // Calculate the change in mask and count
+    unique_errors[0].mask_change = unique_errors[0].mask
+    unique_errors[0].count_change = unique_errors[0].count
+    for (let i = 1; i < unique_errors.length; i++) {
+        unique_errors[i].mask_change = unique_errors[i].mask & (~unique_errors[i-1].mask)
+        unique_errors[i].count_change = unique_errors[i].count - unique_errors[i-1].count
+    }
+
+
+    let para = document.getElementById("InternalError")
+
+    // Print
+    let lines = 0
+    for (const error of unique_errors) {
+        if (error.mask == 0) {
+            // No error
+            continue
+        }
+
+        const error_string = [
+            "logging map failure",
+            "logging missing structure",
+            "logging write missing format",
+            "logging  too many deletes",
+            "logging bad get file name",
+            "panic",
+            "logging flush without semaphore",
+            "logging bad current block",
+            "logging bad block count",
+            "logging dequeue failure",
+            "Constraining NaN",
+            "Watchdog reset",
+            "IOMCU reset",
+            "IOMCU fail",
+            "SPI fail",
+            "main loop stuck",
+            "gcs bad link",
+            "bitmask range",
+            "gcs offset",
+            "i2c isr",
+            "flow of control",
+            "sfs recursion",
+            "bad rotation",
+            "stack overflow",
+            "imu reset",
+            "gpio isr",
+            "mem guard",
+            "dma fail",
+            "params restored",
+            "invalid arguments",
+        ]
+
+        function get_string(val) {
+            let ret = ""
+            for (let i = 0; i < 32; i++) {
+                if ((val & (1 << i)) != 0) {
+                    if (ret.length > 0) {
+                        ret += ", "
+                    }
+                    ret += error_string[i]
+                }
+            }
+            return ret
+        }
+
+        function pop_count_32(val) {
+            let count = 0
+            for (let i = 0; i < 32; i++) {
+                if ((val & (1 << i)) != 0) {
+                    count++
+                }
+            }
+            return count
+        }
+
+        if (lines > 0) {
+            para.appendChild(document.createElement("br"))
+        }
+
+        para.appendChild(document.createTextNode("0x" + error.mask_change.toString(16) + ": " + get_string(error.mask_change)))
+
+        const new_errors = pop_count_32(error.mask_change)
+        const existing_errors = pop_count_32(error.mask)
+        const have_line = error.line > 0
+        const single_error = (existing_errors == 0) && (new_errors == 1)
+        if (single_error || (new_errors != error.count_change)) {
+            // Only one error, must all be of this type no matter the count
+            // Multiple errors, not sure which the count belongs to
+            const multiple = error.count_change > 1
+
+            if (multiple || have_line) {
+                para.appendChild(document.createTextNode(" ("))
+                if (multiple) {
+                    para.appendChild(document.createTextNode(error.count_change + " times"))
+                    if (have_line) {
+                        para.appendChild(document.createTextNode(", "))
+                    }
+                }
+                if (have_line) {
+                    para.appendChild(document.createTextNode("line " + error.line))
+                }
+                para.appendChild(document.createTextNode(")"))
+            }
+
+        } else {
+            // Got the same number of changes in mask as errors, must be 1 to 1
+            if (have_line) {
+                para.appendChild(document.createTextNode(" (line " + error.line + ")" ))
+            }
+        }
+        lines++
+    }
+
+    if (lines > 0) {
+        // Show section
+        para.hidden = false
+        para.previousElementSibling.hidden = false
+    }
+
+}
+
 // Print device type from DEVID using two lines
 function print_device(parent, id) {
     if (id == null) {
@@ -1767,6 +1946,11 @@ function load_log(log_file) {
     }
     delete log.messages.WDOG
 
+    // Look for internal errors
+    log.parseAtOffset("MON")
+    show_internal_errors(log)
+    delete log.messages.MON
+
     // IOMCU
     log.parseAtOffset("IOMC")
     if (('IOMC' in log.messages) && (Object.keys(log.messages.IOMC).length > 0)) {
@@ -2102,6 +2286,7 @@ function reset() {
     setup_section(document.getElementById("VER"))
     setup_section(document.getElementById("FC"))
     setup_section(document.getElementById("WDOG"))
+    setup_section(document.getElementById("InternalError"))
     setup_section(document.getElementById("IOMCU"))
     setup_section(document.getElementById("INS"))
     setup_section(document.getElementById("COMPASS"))
