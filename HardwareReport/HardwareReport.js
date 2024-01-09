@@ -451,7 +451,11 @@ function show_internal_errors(log) {
     let internal_errors = []
 
     // Add from PM
-    if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
+    if (('PM' in log.messages) &&
+        ("time_boot_ms" in log.messages.PM) &&
+        ("IntE" in log.messages.PM) &&
+        ("ErrL" in log.messages.PM) &&
+        ("ErrC" in log.messages.PM)) {
         const len = log.messages.PM.time_boot_ms.length
         for (let i = 0; i < len; i++) {
             internal_errors.push({
