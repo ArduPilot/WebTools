@@ -717,6 +717,10 @@ function add_param_sets() {
             set_cell_style(item, color)
 
             const value = set[name]
+            if (value == null) {
+                continue
+            }
+
             const text = document.createTextNode(value.toFixed(4))
 
             let changed = false
