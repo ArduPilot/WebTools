@@ -30,7 +30,7 @@
 </td></tr></table>
 
 <body>
-
+<p style="width:1200px;text-align:center"">This tool will take a log with either batch samples or raw IMU samples and display the noise spectrum present before any notch filtering, and after them, and what the post filter noise spectrums WOULD be if the filter parameters are changed. This allows a user to make just an initial flight with pre and post filtering enabled before the notchs are setup, and experiment with notch filter parameters to see the projected effects. These params can then be saved and loaded into the autopilot without the need for repetitive test flights to see filter change results.</p>
 <style>
     div.plotly-notifier {
         visibility: hidden;
@@ -43,6 +43,7 @@
 <td>
 <fieldset style="width:1100px">
     <legend>Setup</legend>
+    <p style="width:1200px"> First load the log file using the "Browse..." button and select the area in "Flight Data" to be analyzed with the mouse. The hit "Calculate" to create the spectrums over the selected time range. Also select the log type. The spectrums will be shown in the "IMU Spectrum" panel</p>
     <table>
         <tr>
             <td>
@@ -103,7 +104,7 @@
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">IMU Spectrum</h2>
 </td></tr></table>
-
+<p style="width:1200px;text-align:center">Spectrums are shown for each Gyro of the autopilot. Each axis can be shown or hidden, before the Gyro, after any enabled filtering, and/or an estimate after any proposed filtering made by changing the log's values in the "Filter Configuration" panel.</p>
 <table>
     <tr>
         <td style="width: 50px;"></td>
@@ -252,7 +253,7 @@
 </table>
 
 <div id="FFTPlot" style="width:1200px;height:450px"></div>
-
+<p style="width:1200px">The following control how the spectrums are displayed above. </p>
 <table>
     <tr>
         <td>
@@ -307,7 +308,7 @@
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">Filter Configuration</h2>
 </td></tr></table>
-
+<p>You must "Recalculate filters" to have changes made below reflected in the above estimated spectrums. Values initially reflect log values.</p>
 <table>
 <tr>
 <td style="width: 30px;"></td>
@@ -409,7 +410,9 @@
 </td>
 </tr>
 </table>
-
+<details>
+<summary><h2 >IMU Spectrogram</h2>
+<p> Advanced user tool that shows spectrum versus log time. Click on the title to show this panel.</p></summary>
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">IMU Spectrogram</h2>
 </td></tr></table>
@@ -470,8 +473,10 @@
         </td>
     </tr>
 </table>
-
-
+</details>
+<details>
+<summary><h2 >Frequency Response of Filters</h2>
+<p> Advanced user tool that shows filter bode plot. Click on the title to show this panel.</p></summary>
 <table><tr><td style="width:1200px">
 <h2 style="text-align:center">Frequency Response of Filters</h2>
 </td></tr></table>
@@ -510,7 +515,7 @@
     </tr>
 </table>
 
-
+</details>
 
 </body>
 
