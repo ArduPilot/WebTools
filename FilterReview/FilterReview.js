@@ -758,6 +758,10 @@ function get_FFT_data_index(gyro_num, plot_type, axi) {
 // Attempt to put page back to for a new log
 function reset() {
 
+    document.getElementById("log_type_raw").checked = true
+    document.getElementById("log_type_batch").disabled = false
+    document.getElementById("log_type_raw").disabled = false
+
     document.getElementById("FFTWindow_per_batch").disabled = true
     document.getElementById("FFTWindow_size").disabled = true
     document.getElementById("TimeStart").disabled = true
@@ -2700,19 +2704,22 @@ function load(log_file) {
     if (have_batch_log && !have_raw_log) {
         // Only have batch log
         document.getElementById("log_type_batch").checked = true
-        document.getElementById("log_type_raw").disabled = true
         use_batch = true
 
     } else if (have_raw_log && !have_batch_log) {
         // Only have raw log
         document.getElementById("log_type_raw").checked = true
-        document.getElementById("log_type_batch").disabled = true
         use_batch = false
 
     } else {
         // Have both, use selected
         use_batch = document.getElementById("log_type_batch").checked
     }
+
+    // Cannot change log type after the log has been loaded, disable both buttons
+    document.getElementById("log_type_batch").disabled = true
+    document.getElementById("log_type_raw").disabled = true
+
     document.getElementById("FFTWindow_size").disabled = use_batch
     document.getElementById("FFTWindow_per_batch").disabled = !use_batch
 
