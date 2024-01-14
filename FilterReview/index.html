@@ -5,6 +5,10 @@
 <title>ArduPilot Filter Review Tool</title>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 <script src="https://unpkg.com/browser-cjs/require.min.js"></script>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
 <script type="text/javascript" src="FilterReview.js"></script>
 <script type="text/javascript" src="../Libraries/DecodeDevID.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
@@ -26,7 +30,7 @@
 </td></tr></table>
 
 <table><tr><td style="width:1200px">
-<h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot Filter Review Tool</a></h1>
+<h1 style="text-align:center; margin-block-end: 0.25em;"><a href="" style="color: #000000; text-decoration:none;">ArduPilot Filter Review Tool</a></h1>
 </td></tr></table>
 
 <body>
@@ -35,7 +39,17 @@
     div.plotly-notifier {
         visibility: hidden;
     }
+
+    .tippy-box {
+        font-size: 20px;
+    }
 </style>
+
+<p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
+This tool takes a .bin log with either batch samples or raw IMU samples and display the noise spectrum present before and after any filtering. It also estimates the post filter noise spectrums WOULD be if the filter parameters are changed.
+This allows a single flight with pre filter logging enabled before the notch's are setup, and experiment with notch filter parameters to see the estimated effects.
+These params can then be saved and loaded into the autopilot without the need for repetitive test flights to see filter change results.
+</p>
 
 <table>
 <tr>
@@ -47,16 +61,29 @@
         <tr>
             <td>
                 <fieldset style="width:100px;height:80px">
-                    <legend>Log type</legend>
-                    <input type="radio" id="log_type_batch" name="log_type" checked>
+                    <legend>Log type
+                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                        data-tippy-content='Log type is automatically set based on loaded log. If both Batch and Raw sensor are present then this selection is used. The selection must be made before the log is loaded. The Calculate button will not change log type.',
+                        data-tippy-maxWidth='750px'/>
+                    </legend>
+                    <input type="radio" id="log_type_batch" name="log_type">
                     <label for="log_type_batch">Batch</label><br>
-                    <input type="radio" id="log_type_raw" name="log_type">
+                    <input type="radio" id="log_type_raw" name="log_type" checked>
                     <label for="log_type_raw">Raw sensor</label><br>
                 </fieldset>
             </td>
             <td>
                 <fieldset style="width:200px;height:80px">
-                    <legend>FFT Settings</legend>
+                    <legend>FFT Settings
+                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                        data-tippy-allowHTML="true"
+                        data-tippy-content='If Batch logging is used the number of FFT windows per batch can be increased. Raw sensor logging allows the FFT window size to be changed directly. Window size must be a power of 2 (512, 1024, 2048, ...) the up/down buttons do this automatically.
+                                            <ul>
+                                            <li>Increasing window size increases frequency resolution and decreases temporal resolution. This is useful when looking at low frequencies, but due to the decreased temporal resolution longer hover flights are needed.</li>
+                                            <li>Decreasing window size reduces frequency resolution and increases temporal resolution. This is useful when using the IMU Spectrogram to review notch tracking in dynamic flight.</li>
+                                            </ul>'
+                        data-tippy-maxWidth='750px'/>
+                    </legend>
                     <table>
                         <tr>
                             <td style="width: 125px;">
@@ -73,7 +100,11 @@
             </td>
             <td>
                 <fieldset style="width:200px;height:80px">
-                    <legend>Analysis time</legend>
+                    <legend>Analysis time
+                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                        data-tippy-content='Start and end times for averaging of FFT results show in the IMU Spectrum plot, automatically updated from the selected portion of the log shown in the Flight Data plot. The Calculate button must be clicked after any change of start/end time.'
+                        data-tippy-maxWidth='750px'/>
+                    </legend>
                     <label for="TimeStart">Start (s)</label>
                     <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/><br><br>
                     <label for="TimeEnd">End (s)</label>
@@ -86,6 +117,12 @@
                 <div id="OpenIn"></div><br><br>
                 <input type="button" id="calculate" value="Calculate" onclick="loading_call(re_calc)">
             </td>
+            <td width="99%" style="text-align:right; vertical-align:top">
+                <img id="TT" src="../images/question-circle.svg" width="30px" 
+                    data-tippy-content='Load a .bin log file using the file button. "Open In" opens the log in one of the other WebTools. If Analysis time or FFT Settings are changed the Calculate button should be used to re-calculate the IMU Spectrum.',
+                    data-tippy-maxWidth='750px'
+                />
+            </td>
         </tr>
     </table>
 </fieldset>
@@ -94,14 +131,22 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Flight Data</h2>
+    <h2 style="text-align:center">Flight Data
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Zoom into a section of the flight to change the Analysis time then click "Calculate". Selecting a hover section when the noise should be constant will give the clearest results on the IMU Spectrum.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="FlightData" style="width:1200px;height:450px"></div>
 
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">IMU Spectrum</h2>
+    <h2 style="text-align:center">IMU Spectrum
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Spectrums are shown for each Gyro. Each axis can be shown or hidden, before the filters, after any enabled filtering, and/or an estimate after any proposed filtering made by changing the log&#39s values in the "Filter Configuration" panel. Double click Gyro headings to show/hide all.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <table>
@@ -113,7 +158,9 @@
                 Sensor: <label id="Gyro0_info"></label>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Pre-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Pre-filter
+                            <img id="TT_Pre" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro0PreX" name="Gyro0PreX" onchange="update_hidden(this)">
                         <label for="Gyro0PreX">X</label>
 
@@ -126,7 +173,9 @@
                 </p>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Post-filter
+                            <img id="TT_Post" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro0PostX" name="Gyro0PostX" onchange="update_hidden(this)">
                         <label for="Gyro0PostX">X</label>
 
@@ -139,7 +188,9 @@
                 </p>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Estimated post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Estimated post-filter
+                            <img id="TT_Est" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro0PostEstX" name="Gyro0PostEstX" onchange="update_hidden(this)">
                         <label for="Gyro0PostEstX">X</label>
 
@@ -160,7 +211,9 @@
                 Sensor: <label id="Gyro1_info"></label>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Pre-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Pre-filter
+                            <img id="TT_Pre" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro1PreX" name="Gyro1PreX" onchange="update_hidden(this)">
                         <label for="Gyro1PreX">X</label>
 
@@ -173,7 +226,9 @@
                     </p>
                     <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Post-filter
+                            <img id="TT_Post" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro1PostX" name="Gyro1PostX" onchange="update_hidden(this)">
                         <label for="Gyro1PostX">X</label>
 
@@ -186,7 +241,9 @@
                 </p>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Estimated post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Estimated post-filter
+                            <img id="TT_Est" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro1PostEstX" name="Gyro1PostEstX" onchange="update_hidden(this)">
                         <label for="Gyro1PostEstX">X</label>
 
@@ -207,7 +264,9 @@
                 Sensor: <label id="Gyro2_info"></label>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Pre-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Pre-filter
+                            <img id="TT_Pre" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro2PreX" name="Gyro2PreX" onchange="update_hidden(this)">
                         <label for="Gyro2PreX">X</label>
 
@@ -220,7 +279,9 @@
                 </p>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Post-filter
+                            <img id="TT_Post" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro2PostX" name="Gyro2PostX" onchange="update_hidden(this)">
                         <label for="Gyro2PostX">X</label>
     
@@ -233,7 +294,9 @@
                 </p>
                 <p>
                     <fieldset style="width:300px">
-                        <legend ondblclick="update_hidden(this)">Estimated post-filter</legend>
+                        <legend ondblclick="update_hidden(this)">Estimated post-filter
+                            <img id="TT_Est" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"/>
+                        </legend>
                         <input type="checkbox" id="Gyro2PostEstX" name="Gyro2PostEstX" onchange="update_hidden(this)">
                         <label for="Gyro2PostEstX">X</label>
     
@@ -257,7 +320,11 @@
     <tr>
         <td>
             <fieldset style="width:300px;height:40px">
-                <legend>Amplitude scale</legend>
+                <legend>Amplitude scale
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Different amplitude scales show effects more clearly than others. Note that this scale also apples to the IMU Spectrogram.',
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="radio" id="ScaleLinear" name="Scale" onchange="redraw()">
                 <label for="ScaleLinear">Linear</label>
                 <input type="radio" id="ScaleLog" name="Scale" onchange="redraw()" checked>
@@ -268,7 +335,11 @@
         </td>
         <td>
             <fieldset style="width:260px;height:40px">
-                <legend>Frequency scale</legend>
+                <legend>Frequency scale
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='RPM Frequency scale is usefully to understand what could be the cause of noise. Note that this scale also apples to the IMU Spectrogram.',
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="radio" id="freq_ScaleLinear" name="feq_scale" onchange="redraw()" checked>
                 <label for="freq_ScaleLinear">Linear</label>
                 <input type="radio" id="freq_ScaleLog" name="feq_scale" onchange="redraw()">
@@ -282,7 +353,11 @@
         </td>
         <td>
             <fieldset style="width:240px;height:40px">
-                <legend>Notch tracking</legend>
+                <legend>Notch tracking
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Show/hide the center frequency and movement range of enabled notch filters. These should line up with noise peaks.',
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="checkbox" id="Notch1Show" name="Notch1Show" onchange="update_hidden(this)">
                 <label for="Notch1Show">Show notch 1</label>
 
@@ -292,7 +367,17 @@
         </td>
         <td>
             <fieldset style="width:240px;height:40px">
-                <legend>Loop Rate Aliasing</legend>
+                <legend>Loop Rate Aliasing
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-allowHTML="true"
+                    data-tippy-content='Aliasing between IMU rate and PID rate can cause high frequency noise to reflect down to into the control bandwidth.
+                                        <ul>
+                                        <li>Hide: Show full spectrum seen by the IMUs at the IMU rate.</li>
+                                        <li>Show: Show full spectrum seen by control loops at loop rate. This is both the true spectrum and aliased spectrum.</li>
+                                        <li>Aliasing only: Show only the reflected spectrum from aliasing effects.</li>
+                                        </ul>'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="radio" id="Aliasing_none" name="Aliasing" onchange="redraw()" checked>
                 <label for="Aliasing_none">Hide</label>
                 <input type="radio" id="Aliasing_on" name="Aliasing" onchange="redraw()">
@@ -305,7 +390,11 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Filter Configuration</h2>
+    <h2 style="text-align:center">Filter Configuration
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Parameter values initially from log, changes can be made and applied to the estimated post filter spectrum. Hover over param names to see descriptions. Click Recalculate filters after making any changes.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <table>
@@ -329,7 +418,11 @@
 </td>
 <td>
     <fieldset style="width:428px;height:70px">
-    <legend>Setup</legend>
+    <legend>Setup
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Recalculate filters after changing any parameters to update the estimated post filter spectrum. Save or load parameters to/from a param file.',
+        data-tippy-maxWidth='750px'/>
+    </legend>
     <p>
         <input type="button" id="calculate_filters" value="Recalculate filters" onclick="loading_call(re_calc)">
         <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
@@ -411,7 +504,11 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">IMU Spectrogram</h2>
+    <h2 style="text-align:center">IMU Spectrogram
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='IMU spectrum vs time, this shows how the noise changes throughout the flight. More dynamic flights can be used to check the notch is tracking the noise correctly. Any gaps indicate log dropouts.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="Spectrogram" style="width:1200px;height:450px"></div>
@@ -473,7 +570,11 @@
 
 
 <table><tr><td style="width:1200px">
-<h2 style="text-align:center">Frequency Response of Filters</h2>
+<h2 style="text-align:center">Frequency Response of Filters
+    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+    data-tippy-content='Bode plot of configured filters. Solid line shows average, shadow shows the range of moment as the notches track up and down.',
+    data-tippy-maxWidth='750px'/>
+</h2>
 </td></tr></table>
 
 <div id="Bode" style="width:1200px;height:900px"></div>
@@ -496,7 +597,11 @@
         </td>
         <td>
             <fieldset style="width:175px;">
-                <legend>Phase scale</legend>
+                <legend>Phase scale
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='±180 is the traditional bode phase scale. Un-wrapped attempts to remove the jumps, however for very large changes in phase the un-wrapping can go wrong, if you see very large phase this is probably what has happened. The ±180 scale is still correct.',
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" onchange="redraw_post_estimate_and_bode()" checked>
                 <label for="ScaleUnWrap">un-wrapped</label>
                 <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap"  onchange="redraw_post_estimate_and_bode()">
@@ -526,6 +631,14 @@
               'Line Number: '+ linenumber)
         return false
     }
+
+    // Load tool tips
+    tippy('#TT')
+
+    tippy('#TT_Pre', { content: "Logged IMU spectrum prior to application of filters. Double click to show/hide all."})
+    tippy('#TT_Post', { content: "Logged IMU spectrum including application of filters. Double click to show/hide all."})
+    tippy('#TT_Est', { content: "Estimated IMU spectrum including application of filters as configured in Filter Configuration. Double click to show/hide all."})
+
 
     setup_plots()
     reset()
