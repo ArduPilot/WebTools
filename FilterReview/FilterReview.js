@@ -2784,9 +2784,29 @@ function load(log_file) {
         flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
     }
 
+    let first_throttle_time
+    let last_throttle_time
     if (Object.keys(log.messages.RATE).length > 0) {
-        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+        // Get values
+        const RATE_time = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
+        const throttle = Array.from(log.messages.RATE.AOut)
+
+        // Plot
+        flight_data.data[2].x = RATE_time
+        flight_data.data[2].y = throttle
+
+        // Find first and last throttle for auto-zoom of plot
+        function positive_throttle(x) {
+            return x > 0.0
+        }
+        const first_index = throttle.findIndex(positive_throttle)
+        const last_index = throttle.findLastIndex(positive_throttle)
+        if (first_index) {
+            first_throttle_time = RATE_time[first_index]
+        }
+        if (last_index) {
+            last_throttle_time = RATE_time[last_index]
+        }
     }
 
     log.parseAtOffset("POS")
@@ -2794,8 +2814,6 @@ function load(log_file) {
         flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
     }
-
-    Plotly.redraw("FlightData")
 
     // Try and work out which is the primary sensor
     let primary_gyro = 0
@@ -2843,20 +2861,34 @@ function load(log_file) {
     load_filters()
 
     // Update ranges of start and end time
-    start_time = Math.floor(Gyro_batch.start_time)
-    end_time = Math.ceil(Gyro_batch.end_time)
+    let data_start_time = Math.floor(Gyro_batch.start_time)
+    let data_end_time = Math.ceil(Gyro_batch.end_time)
+
+    // If found use zoom to none zero throttle
+    let calc_start_time = data_start_time
+    let calc_end_time = data_end_time
+    if ((first_throttle_time != null) && (last_throttle_time != null)) {
+        // Round throttle points to center and add 1 second. This trys to crop out the throttle rising from 0 and dropping back to 0
+        calc_start_time = Math.max(calc_start_time, Math.ceil(first_throttle_time) + 1.0)
+        calc_end_time = Math.min(calc_end_time, Math.floor(last_throttle_time) - 1.0)
+
+        flight_data.layout.xaxis.range = [calc_start_time, calc_end_time]
+        flight_data.layout.xaxis.autorange = false
+    }
+
+    Plotly.redraw("FlightData")
 
     var start_input = document.getElementById("TimeStart")
     start_input.disabled = false;
-    start_input.min = start_time
-    start_input.value = start_time
-    start_input.max = end_time
+    start_input.min = data_start_time
+    start_input.value = calc_start_time
+    start_input.max = data_end_time
 
     var end_input = document.getElementById("TimeEnd")
     end_input.disabled = false;
-    end_input.min = start_time
-    end_input.value = end_time
-    end_input.max = end_time
+    end_input.min = data_start_time
+    end_input.value = calc_end_time
+    end_input.max = data_end_time
 
     // Enable checkboxes for sensors which are present
     var first_gyro
