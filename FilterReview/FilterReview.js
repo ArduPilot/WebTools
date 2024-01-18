@@ -443,6 +443,67 @@ class FFTTarget extends NotchTarget {
     }
 }
 
+class LoggedNotch extends NotchTarget {
+    constructor(log, instance) {
+        super(null, null, null, "Logged", null)
+
+        this.harmonics = null
+
+        function find_instance_key(msg) {
+            let instance_key = msg + "[" + instance + "]"
+            if (log.messages[instance_key] != null) {
+                // Multiple instances
+                return instance_key
+            }
+
+            if (("I" in log.messages[msg]) && Array.from(log.messages[msg].I).every((x) => x == instance)) {
+                // Single instance
+                return msg
+    
+            }
+
+            // No instances
+        }
+
+        // Load static notch message
+        const static_msg = "FTNS"
+        log.parseAtOffset(static_msg)
+        const static_inst = find_instance_key(static_msg)
+        if ((static_inst != null) && (Object.keys(log.messages[static_inst]).length > 0)) {
+            this.name += " static"
+
+            this.data.time = array_scale(Array.from(log.messages[static_inst].time_boot_ms), 1 / 1000)
+            this.data.freq = Array.from(log.messages[static_inst].NF)
+
+            // If we have a static instance there should not be a dynamic for this instance
+            return
+        }
+
+        // Load dynamic msg
+        const dynamic_msg = "FTN"
+        log.parseAtOffset(dynamic_msg)
+        const dynamic_inst = find_instance_key(dynamic_msg)
+        if ((dynamic_inst != null) && (Object.keys(log.messages[dynamic_inst]).length > 0)) {
+            const num_notches = Math.max(...Array.from(log.messages[dynamic_inst].NDn))
+
+            this.data.time = array_scale(Array.from(log.messages[dynamic_inst].time_boot_ms), 1 / 1000)
+
+            this.data.freq = []
+            for (let i = 0; i<num_notches; i++) {
+                const name = "NF" + (i + 1)
+                this.data.freq[i] = Array.from(log.messages[dynamic_inst][name])
+            }
+        }
+
+    }
+
+    get_target_freq() {
+        return { freq:this.data.freq, time:this.data.time }
+    }
+
+}
+
+
 function DigitalBiquadFilter(freq) {
     this.target_freq = freq
 
@@ -619,6 +680,10 @@ function HarmonicNotchFilter(params) {
         return this.tracking.mode_value == 0
     }
 
+    this.harmonics = function() {
+        return this.params.harmonics
+    }
+
     if (!this.enabled()) {
         // Disabled
         this.transfer = function(Hn, Hd, instance, index, sample_freq, Z1, Z2) { }
@@ -665,9 +730,6 @@ function HarmonicNotchFilter(params) {
         return this.tracking.name
     }
 
-    this.harmonics = function() {
-        return this.params.harmonics
-    }
     return this
 }
 
@@ -842,6 +904,10 @@ function reset() {
         check.disabled = true
         check.checked = true
     }
+
+    check = document.getElementById("SpecNotchShowLogged")
+    check.disabled = true
+    check.checked = false
 
     // Set param defaults that are none 0
     const defualts = [{name: "_FREQ",   value: 80},
@@ -1070,7 +1136,7 @@ function setup_plots() {
     }]
 
     // Add tracking lines
-    // Two harmonic notch filters each with upto 8 harmonics
+    // Two harmonic notch filters each with upto 16 harmonics
     for (let i=0;i<2;i++) {
         let Group_name = "Notch " + (i+1)
         let dash = (i == 0) ? "solid" : "dot"
@@ -1084,6 +1150,24 @@ function setup_plots() {
                 name: name,
                 meta: Group_name + "<br>" + name,
                 legendgroup: i,
+                legendgrouptitle: { text: "" }
+            })
+        }
+    }
+    // Logged notch tacking
+    for (let i=0;i<2;i++) {
+        let Group_name = "Logged Notch " + (i+1)
+        let dash = (i == 0) ? "solid" : "dot"
+        for (let j=0;j<max_num_harmonics;j++) {
+            let name = (j == 0) ? "Fundamental" : "Harmonic " + (j+1)
+            Spectrogram.data.push({
+                type:"scatter",
+                mode: "lines",
+                line: { width: 4, dash: dash },
+                visible: false,
+                name: name,
+                meta: Group_name + "<br>" + name,
+                legendgroup: i+2,
                 legendgrouptitle: { text: "" }
             })
         }
@@ -1974,10 +2058,12 @@ function redraw_Spectrogram() {
     for (let i=0;i<filters.notch.length;i++) {
         // Plus one for the spectrogram plot
         const plot_offset = i * max_num_harmonics + 1
+        const logged_offset = max_num_harmonics * 2
 
         // Hide all
         for (let j=0;j<max_num_harmonics;j++) {
             Spectrogram.data[plot_offset + j].visible = false
+            Spectrogram.data[plot_offset + logged_offset + j].visible = false
         }
 
         // Filter not setup
@@ -1985,31 +2071,36 @@ function redraw_Spectrogram() {
             continue
         }
 
-        const Group_name = "Notch " + (i+1) + ": " + filters.notch[i].name()
-        const fundamental = filters.notch[i].get_target_freq()
+        function build_plot_array(fundamental) {
+            let time
+            let freq
+            const time_array = Array.isArray(fundamental.time[0])
+            if (!Array.isArray(fundamental.freq[0])) {
+                // Single peak
+                time = fundamental.time
+                freq = fundamental.freq
 
-        let time
-        let freq
-        if (!Array.isArray(fundamental.time[0])) {
-            // Single peak
-            time = fundamental.time
-            freq = fundamental.freq
+            } else {
+                // Tracking multiple peaks
+                time = []
+                freq = []
 
-        } else {
-            // Tracking multiple peaks
-            time = []
-            freq = []
+                for (let j=0;j<fundamental.freq.length;j++) {
+                    time.push(...(time_array ? fundamental.time[j] : fundamental.time))
+                    freq.push(...fundamental.freq[j])
 
-            for (let j=0;j<fundamental.time.length;j++) {
-                time.push(...fundamental.time[j])
-                freq.push(...fundamental.freq[j])
+                    // Add NAN to remove line from end back to the start
+                    time.push(NaN)
+                    freq.push(NaN)
+                }
 
-                // Add NAN to remove line from end back to the start
-                time.push(NaN)
-                freq.push(NaN)
             }
-
+            return { time, freq }
         }
+
+        let Group_name = "Notch " + (i+1) + ": " + filters.notch[i].name()
+        let fundamental = filters.notch[i].get_target_freq()
+        let plot_data = build_plot_array(fundamental)
 
         // Enable each harmonic
         const show_notch = document.getElementById("SpecNotch" + (i+1) + "Show").checked
@@ -2017,13 +2108,35 @@ function redraw_Spectrogram() {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = array_scale(freq, j+1)
+            const harmonic_freq = array_scale(plot_data.freq, j+1)
 
             Spectrogram.data[plot_offset + j].visible = show_notch
-            Spectrogram.data[plot_offset + j].x = time
+            Spectrogram.data[plot_offset + j].x = plot_data.time
             Spectrogram.data[plot_offset + j].y = frequency_scale.fun(harmonic_freq)
             Spectrogram.data[plot_offset + j].hovertemplate = tracking_hovertemplate
             Spectrogram.data[plot_offset + j].legendgrouptitle.text = Group_name
+        }
+
+        // Enable logged notch
+        if (logged_tracking[i].have_data()) {
+            Group_name = "Notch " + (i+1) + ": " + logged_tracking[i].name
+            fundamental = logged_tracking[i].get_target_freq()
+            plot_data = build_plot_array(fundamental)
+
+            const show_logged = document.getElementById("SpecNotchShowLogged").checked
+            const logged_offset = max_num_harmonics * 2
+            for (let j=0;j<max_num_harmonics;j++) {
+                if ((logged_tracking[i].harmonics & (1<<j)) == 0) {
+                    continue
+                }
+                const harmonic_freq = array_scale(plot_data.freq, j+1)
+
+                Spectrogram.data[plot_offset + logged_offset + j].visible = show_notch && show_logged
+                Spectrogram.data[plot_offset + logged_offset + j].x = plot_data.time
+                Spectrogram.data[plot_offset + logged_offset + j].y = frequency_scale.fun(harmonic_freq)
+                Spectrogram.data[plot_offset + logged_offset + j].hovertemplate = tracking_hovertemplate
+                Spectrogram.data[plot_offset + logged_offset + j].legendgrouptitle.text = Group_name
+            }
         }
 
     }
@@ -2035,21 +2148,64 @@ function redraw_Spectrogram() {
 function update_hidden_spec(source) {
 
     const notch_num = parseFloat(source.id.match(/\d+/g)) - 1
+
+    // Offset by the total number of lines over
+    const show_logged = document.getElementById("SpecNotchShowLogged").checked
+    const logged_offset = max_num_harmonics * 2
+
     const plot_offset = notch_num * max_num_harmonics + 1
 
     // Hide all
     for (let j=0;j<max_num_harmonics;j++) {
         Spectrogram.data[plot_offset + j].visible = false
+        Spectrogram.data[plot_offset + logged_offset + j].visible = false
     }
 
     if (source.checked) {
         // Show those that are enabled
         for (let j=0;j<max_num_harmonics;j++) {
-            if ((filters.notch[notch_num].harmonics() & (1<<j)) == 0) {
-                continue
+            if ((filters.notch[notch_num].harmonics() & (1<<j)) != 0) {
+                Spectrogram.data[plot_offset + j].visible = true
             }
-            Spectrogram.data[plot_offset + j].visible = true
+            if (show_logged && (logged_tracking[notch_num].harmonics & (1<<j)) != 0) {
+                Spectrogram.data[plot_offset + logged_offset + j].visible = true
+            }
         }
+    }
+
+    Plotly.redraw("Spectrogram")
+
+}
+
+// update lines show on spectrogram
+function update_logged_notch_hidden_spec(source) {
+
+    // Offset by the total number of lines over
+    const show_logged = source.checked
+    const logged_offset = max_num_harmonics * 2
+
+    for (let i=0;i<filters.notch.length;i++) {
+        const plot_offset = i * max_num_harmonics + 1
+
+        // Hide all
+        for (let j=0;j<max_num_harmonics;j++) {
+            Spectrogram.data[plot_offset + j].visible = false
+            Spectrogram.data[plot_offset + logged_offset + j].visible = false
+        }
+
+        const show_notch = document.getElementById("SpecNotch" + (i+1) + "Show").checked
+        if (show_notch) {
+            // Show those that are enabled
+            for (let j=0;j<max_num_harmonics;j++) {
+                if ((filters.notch[i].harmonics() & (1<<j)) != 0) {
+                    Spectrogram.data[plot_offset + j].visible = true
+                }
+                if (show_logged && (logged_tracking[i].harmonics & (1<<j)) != 0) {
+                    Spectrogram.data[plot_offset + logged_offset + j].visible = true
+                }
+            }
+        }
+
     }
 
     Plotly.redraw("Spectrogram")
@@ -2635,6 +2791,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
 
 var Gyro_batch
 var tracking_methods
+var logged_tracking
 var filters
 function load(log_file) {
 
@@ -2744,6 +2901,19 @@ function load(log_file) {
                         new ESCTarget(log),
                         new FFTTarget(log),
                         new RPMTarget(log, 2, 5)]
+
+    // Load logged notch fequencies for comparison
+    logged_tracking = [ new LoggedNotch(log, 0),
+                        new LoggedNotch(log, 1) ]
+
+    // If log data is present allow user to show it
+    let show_logged_notch = false
+    for (let i = 0; i < logged_tracking.length; i++) {
+        if (logged_tracking[i].have_data()) {
+            show_logged_notch = true
+        }
+    }
+    document.getElementById("SpecNotchShowLogged").disabled = !show_logged_notch
 
     // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
     const have_16_harmonics = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT") != null
@@ -2859,6 +3029,11 @@ function load(log_file) {
     // Load filters from params
     filter_param_read()
     load_filters()
+
+    // Use orginal harmonics value for logged notches
+    for (let i = 0; i < filters.notch.length; i++) {
+        logged_tracking[i].harmonics = filters.notch[i].harmonics()
+    }
 
     // Update ranges of start and end time
     let data_start_time = Math.floor(Gyro_batch.start_time)

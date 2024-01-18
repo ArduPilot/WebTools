@@ -531,7 +531,16 @@ These params can then be saved and loaded into the autopilot without the need fo
         </td>
         <td>
             <fieldset style="width:350px;height:40px">
-                <legend>Filtering</legend>
+                <legend>Filtering
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-allowHTML="true"
+                    data-tippy-content='<ul>
+                                        <li>Pre-filter: Logged IMU spectrum prior to application of filters.</li>
+                                        <li>Post-filter: Logged IMU spectrum including application of filters.</li>
+                                        <li>Estimated post-filter: Estimated IMU spectrum including application of filters as configured in Filter Configuration.</li>
+                                        </ul>'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="radio" id="SpecGyroPre" name="SpecGyroPrePost" onchange="redraw_Spectrogram()">
                 <label for="SpecGyroPre">Pre-filter</label>
 
@@ -557,12 +566,20 @@ These params can then be saved and loaded into the autopilot without the need fo
         </td>
         <td>
             <fieldset style="width:240px;height:40px">
-                <legend>Notch tracking</legend>
+                <legend>Notch tracking
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Show/hide the center frequency and movement range of enabled notch filters. These should line up with noise peaks.
+                                        Logged shows the logged notch frequencies from the log, these will not change with parameter changes.',
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <input type="checkbox" id="SpecNotch1Show" name="SpecNotch1Show" onchange="update_hidden_spec(this)">
-                <label for="SpecNotch1Show">Show notch 1</label>
+                <label for="SpecNotch1Show">Notch 1</label>
 
                 <input type="checkbox" id="SpecNotch2Show" name="SpecNotch2Show" onchange="update_hidden_spec(this)">
-                <label for="SpecNotch2Show">Show notch 2</label>
+                <label for="SpecNotch2Show">Notch 2</label>
+
+                <input type="checkbox" id="SpecNotchShowLogged" name="SpecNotchShowLogged" onchange="update_logged_notch_hidden_spec(this)">
+                <label for="SpecNotchShowLogged">Logged</label>
             </fieldset>
         </td>
     </tr>
