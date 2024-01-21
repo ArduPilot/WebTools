@@ -4,7 +4,12 @@
 <meta charset="utf-8" />
 <title>ArduPilot MAGFit</title>
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
+
 <script src='https://cdn.jsdelivr.net/npm/ml-matrix@6.10.5/matrix.umd.min.js'></script>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
 <script type="text/javascript" src="wmm.js"></script>
 <script type="text/javascript" src="quaternion.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
@@ -23,6 +28,10 @@
     div.plotly-notifier {
         visibility: hidden;
     }
+
+    .tippy-box {
+        font-size: 20px;
+    }
 </style>
 
 <table style="width:1200px"><tr><td>
@@ -39,6 +48,11 @@
 
 <body>
 
+<p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
+This tool takes a .bin log and performs a "MAGFit inflight calibration". Calibration parameters are found that fit the measured magnetic field from the log to the predicted field from the World Magnetic Model.
+For best results use a flight log that covers as many orientations as possible. Flying figure of eight patterns works well. If you need a motor calibration using either throttle or a current reading then you should also cover as wide a range of throttles and current draws as possible. You do not have to be in any particular flight mode.
+</p>
+
 <table>
 <tr>
 <td style="width: 30px;"></td>
@@ -48,7 +62,11 @@
     <table>
         <td>
             <fieldset style="width:200px;height:80px">
-                <legend>Analysis time</legend>
+                <legend>Analysis time
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Start and end times for MAGFit, automatically updated from the selected portion of the log shown in the Flight Data plot. The Calculate button must be clicked after any change of start/end time.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <label for="TimeStart">Start (s)</label>
                 <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:75px"/><br><br>
                 <label for="TimeEnd">End (s)</label>
@@ -58,7 +76,11 @@
         <td style="width: 10px;"></td>
         <td>
             <fieldset style="width:200px;height:80px" id="ATTITUDE">
-                <legend>Attitude source</legend>
+                <legend>Attitude source
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Select the attitude source that will be used for the MAGFit, this should best represent the true attitude of the vehicle, typically the default is fine, if you know there were EKF issues using DCM may give better results. The Calculate button must be clicked after any change of source.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
             </fieldset>
         </td>
         <td style="width: 10px;"></td>
@@ -67,8 +89,12 @@
             <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { calculate(); })">
         </td>
         <td style="width: 300px;"></td>
-        <td>
-            <div id="OpenIn"></div><br><br><br><br>
+        <td style="text-align:right; vertical-align:top">
+            <div id="OpenIn"></div><br><br><br>
+            <img id="TT" src="../images/question-circle.svg" width="30px" 
+                data-tippy-content='Load a .bin log file using the file button. "Open In" opens the log in one of the other WebTools. If Analysis time or Attitude source are changed the Calculate button should be used to re-calculate the MAGFit.',
+                data-tippy-maxWidth='750px'
+            />
         </td>
     </table>
 </fieldset>
@@ -77,13 +103,21 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Flight Data</h2>
+    <h2 style="text-align:center">Flight Data
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Zoom into a section of the flight to change the Analysis time then click "Calculate". Selecting the flying section of the log with heading changes and various throttle levels should give the best results.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="FlightData" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Expected vs measured body frame magnetic field</h2>
+    <h2 style="text-align:center">Expected vs measured body frame magnetic field
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Per compass status and options, use checkboxes to select calibrations for comparison. Plots show results of calibrations in X Y and Z axis.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <table>
@@ -114,26 +148,46 @@
 <div id="mag_plot_z" style="width:1200px;height:300px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Yaw change</h2>
+    <h2 style="text-align:center">Yaw change
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Change in yaw resulting from MAGFit. The first plot is change in yaw between new MAGFit calibration and the existing calibration. 
+                            The second plot is projected change in yaw between new MAGFit calibration and the selected attitude source.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="yaw_change_mag" style="width:1200px;height:300px"></div>
 <div id="yaw_change_att" style="width:1200px;height:300px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Field length</h2>
+    <h2 style="text-align:center">Field length
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Comparison of field length &radic;(X&#178; + Y&#178; + Z&#178;). field length errors may coincide with current draw.
+                            Significant correlation could mean using battery compensation would give better results, if correlation remains when using a compensated fit a hardware fix may been required to move the compass further from the interference source.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="field_length" style="width:1200px;height:300px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Motor compensation sources</h2>
+    <h2 style="text-align:center">Motor compensation sources
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Battery current for comparison with field length and fit error. 
+                            Significant correlation could mean using battery compensation would give better results, if correlation remains when using a compensated fit a hardware fix may been required to move the compass further from the interference source.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="motor_comp" style="width:1200px;height:300px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Fit error</h2>
+    <h2 style="text-align:center">Fit error
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='First plot is error of selected fit over time. Second plot is mean error compared for all fits, the value is the normalized area under the curve of the first plot. 
+        Error over time can be used to correlate with compensation sources. Mean error can be used to compare between fits.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
 </td></tr></table>
 
 <div id="error_plot" style="width:1200px;height:300px"></div>
@@ -143,7 +197,11 @@
     <tr>
         <td>
             <fieldset>
-                <legend>Compass 1 parameters</legend>
+                <legend>Compass 1 parameters
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Selected calibration parameters for the first compass. These will be saved in the downloaded parameter file if "Save Parameters" is clicked.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <p id="MAG_1_PARAM_INFO"></p>
                 <p>
                     <input id="COMPASS_ORIENT" name="COMPASS_ORIENT" type="number" style="width: 100px"/>
@@ -183,7 +241,11 @@
         </td>
         <td>
             <fieldset style="width:350px">
-                <legend>Compass 2 parameters</legend>
+                <legend>Compass 2 parameters
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Selected calibration parameters for the second compass. These will be saved in the downloaded parameter file if "Save Parameters" is clicked.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <p id="MAG_2_PARAM_INFO"></p>
                 <p>
                     <input id="COMPASS_ORIENT2" name="COMPASS_ORIENT2" type="number" style="width: 100px"/>
@@ -223,7 +285,11 @@
         </td>
         <td>
             <fieldset style="width:350px">
-                <legend>Compass 3 parameters</legend>
+                <legend>Compass 3 parameters
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Selected calibration parameters for the third compass. These will be saved in the downloaded parameter file if "Save Parameters" is clicked.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
                 <p id="MAG_3_PARAM_INFO"></p>
                 <p>
                     <input id="COMPASS_ORIENT3" name="COMPASS_ORIENT3" type="number" style="width: 100px"/>
@@ -287,6 +353,9 @@
                 'Line Number: '+ linenumber)
         return false
     }
+
+    // Load tool tips
+    tippy('#TT')
 
     // load parameter metadata
     let params = []
