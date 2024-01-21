@@ -2732,7 +2732,12 @@ async function initial_load() {
 
 function save_text(text, file_postfix) {
 
-    const log_file_name = document.getElementById("fileItem").value.replace(/.*[\/\\]/, '')
+    let log_file_name = document.getElementById("fileItem").value.replace(/.*[\/\\]/, '')
+    if (log_file_name.length == 0) {
+        // May not have a file name if loaded with "open in"
+        log_file_name = "log"
+    }
+
     const file_name = (log_file_name.substr(0, log_file_name.lastIndexOf('.')) || log_file_name) + file_postfix
 
     var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
