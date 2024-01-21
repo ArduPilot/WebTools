@@ -1724,6 +1724,27 @@ function load(log_file) {
 
     MAG_Data = []
 
+    // Helper to create tool tip returning a element
+    function add_tip(parent, text, html) {
+        parent.appendChild(document.createTextNode(" "))
+
+        let img = document.createElement("img")
+        parent.appendChild(img)
+
+        img.src = "../images/question-circle.svg"
+        img.style.width = "1em"
+        img.style.verticalAlign = "bottom"
+        img.setAttribute('data-tippy-content', text)
+        img.setAttribute('data-tippy-maxWidth', '750px')
+
+        if (html === true) {
+            img.setAttribute('data-tippy-allowHTML', 'true')
+        }
+
+        tippy(img)
+        return img
+    }
+
     // Get MAG data
     MAG_Data.start_time = null
     MAG_Data.end_time = null
@@ -1808,6 +1829,7 @@ function load(log_file) {
         info.appendChild(document.createTextNode("Coverage: "))
         MAG_Data[i].coverage = document.createElement("progress")
         info.appendChild(MAG_Data[i].coverage)
+        add_tip(info, "This represents how many vehicle orientations are present in the log, higher coverage give more confidence in the results. It is out of all possible orientations (including upside-down), greater than 30% is good.")
 
         info.appendChild(half_gap())
 
@@ -1880,7 +1902,7 @@ function load(log_file) {
     document.getElementById("TimeStart").value = MAG_Data.start_time
     document.getElementById("TimeEnd").value = MAG_Data.end_time
 
-    // Assume constant earth felid
+    // Assume constant earth field
     // Use origin msg
     // Use last EKF origin for earth field
     log.parseAtOffset("ORGN")
@@ -2003,10 +2025,14 @@ function load(log_file) {
         if (MAG_Data[i] == null) {
             continue
         }
+
+        const tip_text = "Fits with no motor compensation.<ul><li>Offsets: Fit of only X Y Z offset parameters.</li><li>Offsets and scale: Fit of X Y Z offsets and single scale factor.</li><li>Offsets and iron: Fit of X Y Z offsets and iron compensation matrix diagonals and off-diagonals.</li></ul>"
+
         MAG_Data[i].fits.push({
             value: null,
             type: 0,
             name: "No motor comp",
+            tip: { text: tip_text, html: true },
             offsets: {},
             scale: {},
             iron: {}
@@ -2043,10 +2069,12 @@ function load(log_file) {
                 if (MAG_Data[j] == null) {
                     continue
                 }
+                const name =  "Battery " + (i+1) + " current"
                 MAG_Data[j].fits.push({
                     value: linear_interp(value, time, MAG_Data[i].time),
                     type: 2,
-                    name: "Battery " + (i+1) + " current",
+                    name: name,
+                    tip: { text: "Fits with motor compensation from " + name + ". Ensure battery monitor is calibrated and functioning correctly."},
                     offsets: {},
                     scale: {},
                     iron: {}
@@ -2090,6 +2118,8 @@ function load(log_file) {
 
         let param_legend = document.createElement("legend")
         param_legend.innerHTML = "Parameter changes"
+        add_tip(param_legend, "Include parameter change in saved parameter file. Use sensor allows the use parameter to be changed. Orientation allows the tool to fix incorrect orientations to the nearest 90 deg or 45 deg orientations. The tool will alert you if the orientation may be incorrect.")
+
         param_fieldset.appendChild(param_legend)
 
         function setup_radio(parent, type, label_txt, value) {
@@ -2142,6 +2172,7 @@ function load(log_file) {
 
         let cal_legend = document.createElement("legend")
         cal_legend.innerHTML = "Calibrations"
+        add_tip(cal_legend, 'Select calibrations to be shown on plots, the last calibration selected will be saved when "Save Parameters" is clicked')
         cal_fieldset.appendChild(cal_legend)
 
 
@@ -2173,6 +2204,8 @@ function load(log_file) {
 
             let legend = document.createElement("legend")
             legend.innerHTML = MAG_Data[i].fits[j].name
+            add_tip(legend, MAG_Data[i].fits[j].tip.text, MAG_Data[i].fits[j].tip.html)
+
             fieldset.appendChild(legend)
 
             for (const [key, value] of Object.entries(fit_types)) {
