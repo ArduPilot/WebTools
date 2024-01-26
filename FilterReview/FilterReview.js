@@ -8,6 +8,20 @@ const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
 var DataflashParser
 import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
+// Delete message to free memory
+function delete_parsed_log_msg(log, msg) {
+    const all = Object.keys(log.messages)
+    if (all.includes(msg)) {
+        delete log.messages[msg]
+        const inst_prefix = msg + "["
+        for (const msg_name of all) {
+            if (msg_name.startsWith(inst_prefix)) {
+                delete log.messages[msg_name]
+            }
+        }
+    }
+}
+
 // Generic Class to hold source for notch target
 class NotchTarget {
     constructor(log, msg_name, key_name, name, mode_value) {
@@ -126,6 +140,7 @@ class StaticTarget extends NotchTarget {
 class ThrottleTarget extends NotchTarget {
     constructor(log) {
         super(log, "RATE", "AOut", "Throttle", 1)
+        // Note that we don't delete the RATE log, it is used again for the flight data plot
     }
 
     get_target(config, AOut) {
@@ -145,6 +160,7 @@ class ThrottleTarget extends NotchTarget {
 class RPMTarget extends NotchTarget {
     constructor(log, instance, mode_value) {
         super(log, "RPM", "rpm" + instance, "RPM" + instance, mode_value)
+        delete_parsed_log_msg(log, "RPM")
     }
 
     get_target(config, rpm) {
@@ -171,6 +187,7 @@ class ESCTarget extends NotchTarget {
         const msg = "ESC"
         log.parseAtOffset(msg)
         if ((log.messages[msg] == null) || (log.messages[msg].length == 0)) {
+            delete_parsed_log_msg(log, msg)
             return
         }
 
@@ -188,6 +205,7 @@ class ESCTarget extends NotchTarget {
                 instance_map[i] = instances
                 instances++
             }
+            delete log.messages[inst_msg]
         }
 
         // Average RPM
@@ -236,6 +254,7 @@ class ESCTarget extends NotchTarget {
                 }
             }
         }
+        delete_parsed_log_msg(log, msg)
     }
 
     interpolate(instance, time) {
@@ -334,13 +353,16 @@ class ESCTarget extends NotchTarget {
 class FFTTarget extends NotchTarget {
     constructor(log) {
         super(log, "FTN1", "PkAvg", "FFT", 4)
+        delete_parsed_log_msg(log, "FTN1")
 
         // Grab data from log, have to do it a little differently to get instances
         const msg = "FTN2"
         log.parseAtOffset(msg)
         if ((log.messages[msg] == null) || (log.messages[msg].length == 0)) {
+            delete_parsed_log_msg(log, msg)
             return
         }
+        delete log.messages[msg]
 
         for (let i=0;i<3;i++) {
             // FFT can track three peaks
@@ -366,7 +388,9 @@ class FFTTarget extends NotchTarget {
                     this.data[i].time[j] = log.messages[inst_msg].time_boot_ms[j] / 1000
                 }
             }
+            delete log.messages[inst_msg]
         }
+        delete_parsed_log_msg(log, msg)
     }
 
     interpolate(instance, time) {
@@ -476,8 +500,10 @@ class LoggedNotch extends NotchTarget {
             this.data.freq = Array.from(log.messages[static_inst].NF)
 
             // If we have a static instance there should not be a dynamic for this instance
+            delete_parsed_log_msg(log, static_msg)
             return
         }
+        delete_parsed_log_msg(log, static_msg)
 
         // Load dynamic msg
         const dynamic_msg = "FTN"
@@ -494,7 +520,7 @@ class LoggedNotch extends NotchTarget {
                 this.data.freq[i] = Array.from(log.messages[dynamic_inst][name])
             }
         }
-
+        delete_parsed_log_msg(log, dynamic_msg)
     }
 
     get_target_freq() {
@@ -2747,6 +2773,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
             }
 
         }
+        delete log.messages[instance_name]
 
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
@@ -2843,6 +2870,7 @@ function load(log_file) {
             num_gyro++
         }
     }
+    delete_parsed_log_msg(log, "IMU")
 
     // Check for some data that we can use
     log.parseAtOffset("ISBH")
@@ -2892,7 +2920,7 @@ function load(log_file) {
     // Delete log data now it has been used
     delete log.messages.ISBH
     delete log.messages.ISBD
-    delete log.messages.GYR
+    delete_parsed_log_msg(log, "GYR")
 
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
@@ -2953,7 +2981,9 @@ function load(log_file) {
         flight_data.data[1].x = ATT_time
         flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
     }
+    delete log.messages.ATT
 
+    // RATE msg is already loaded by the throttle target notch tracking
     let first_throttle_time
     let last_throttle_time
     if (Object.keys(log.messages.RATE).length > 0) {
@@ -2978,12 +3008,14 @@ function load(log_file) {
             last_throttle_time = RATE_time[last_index]
         }
     }
+    delete log.messages.RATE
 
     log.parseAtOffset("POS")
     if (Object.keys(log.messages.POS).length > 0) {
         flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
     }
+    delete log.messages.POS
 
     // Try and work out which is the primary sensor
     let primary_gyro = 0
