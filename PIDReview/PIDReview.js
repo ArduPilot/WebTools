@@ -1613,9 +1613,6 @@ function load(log_file) {
 
     // Plot flight data from log
     log.parseAtOffset("ATT")
-    log.parseAtOffset("RATE")
-    log.parseAtOffset("POS")
-
     if (Object.keys(log.messages.ATT).length > 0) {
         const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
         flight_data.data[0].x = ATT_time
@@ -1624,17 +1621,21 @@ function load(log_file) {
         flight_data.data[1].x = ATT_time
         flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
     }
+    delete log.messages.ATT
 
+    log.parseAtOffset("RATE")
     if (Object.keys(log.messages.RATE).length > 0) {
         flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
         flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
     }
+    delete log.messages.RATE
 
     log.parseAtOffset("POS")
     if (Object.keys(log.messages.POS).length > 0) {
         flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
         flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
     }
+    delete log.messages.POS
 
     Plotly.redraw("FlightData")
 
