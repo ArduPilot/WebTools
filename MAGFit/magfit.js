@@ -1670,6 +1670,20 @@ function add_attitude_source(quaternion, name) {
 
 }
 
+// Delete message to free memory
+function delete_parsed_log_msg(log, msg) {
+    const all = Object.keys(log.messages)
+    if (all.includes(msg)) {
+        delete log.messages[msg]
+        const inst_prefix = msg + "["
+        for (const msg_name of all) {
+            if (msg_name.startsWith(inst_prefix)) {
+                delete log.messages[msg_name]
+            }
+        }
+    }
+}
+
 var MAG_Data
 var fits
 var body_frame_earth_field
@@ -1677,7 +1691,7 @@ var earth_field
 function load(log_file) {
 
     let log = new DataflashParser()
-    log.processData(log_file, ["MAG", "PARM"])
+    log.processData(log_file, [])
 
     // Plot flight data from log
     log.parseAtOffset("ATT")
@@ -1694,6 +1708,7 @@ function load(log_file) {
         flight_data.data[1].x = null
         flight_data.data[1].y = null
     }
+    delete log.messages.ATT
 
     log.parseAtOffset("RATE")
     if (Object.keys(log.messages.RATE).length > 0) {
@@ -1703,6 +1718,7 @@ function load(log_file) {
         flight_data.data[2].x = null
         flight_data.data[2].y = null
     }
+    delete log.messages.RATE
 
     log.parseAtOffset("POS")
     if (Object.keys(log.messages.POS).length > 0) {
@@ -1712,6 +1728,8 @@ function load(log_file) {
         flight_data.data[3].x = null
         flight_data.data[3].y = null
     }
+    // Note POS is not deleted as it is used to get location later
+
     Plotly.redraw("FlightData")
 
     // html helper
@@ -1746,6 +1764,8 @@ function load(log_file) {
     }
 
     // Get MAG data
+    log.parseAtOffset("MAG")
+    log.parseAtOffset("PARM")
     MAG_Data.start_time = null
     MAG_Data.end_time = null
     for (let i = 0; i < 3; i++) {
@@ -1891,7 +1911,9 @@ function load(log_file) {
         MAG_Data[i].raw = { x: x, y: y, z: z }
         MAG_Data[i].rotate = rotate
 
+        delete log.messages[msg_name]
     }
+    delete_parsed_log_msg(log, "MAG")
 
     if (MAG_Data.length == 0) {
         alert("No compass data in log")
@@ -1914,6 +1936,8 @@ function load(log_file) {
         return
     }
     console.log("EF: " + earth_field.vector[0] + ", " + earth_field.vector[1] + ", " + earth_field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
+    delete_parsed_log_msg(log, "ORGN")
+    delete log.messages.POS
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
@@ -1946,6 +1970,7 @@ function load(log_file) {
  
         body_frame_earth_field.push(field)
     }
+    delete log.messages[msg_name]
 
     log.parseAtOffset("NKQ")
     msg_name = "NKQ[0]"
@@ -1972,6 +1997,7 @@ function load(log_file) {
 
         body_frame_earth_field.push(field)
     }
+    delete_parsed_log_msg(log, "NKQ")
 
     log.parseAtOffset("XKQ")
     if (Object.keys(log.messages["XKQ"]).length > 0) {
@@ -2007,6 +2033,7 @@ function load(log_file) {
             body_frame_earth_field.push(field)
         }
     }
+    delete_parsed_log_msg(log, "XKQ")
 
     if (body_frame_earth_field.length == 0) {
         alert("Unknown attitude source")
@@ -2094,6 +2121,14 @@ function load(log_file) {
             })
         }
     }
+    delete_parsed_log_msg(log, "BAT")
+
+    // Were now done with the log, delete it to save memory before starting calculations
+    delete log.buffer
+    delete log.data
+    delete log.messages
+    log_file = null
+    log = null
 
     // Redraw motor comp plot
     Plotly.newPlot("motor_comp", motor_comp.data, motor_comp.layout, {displaylogo: false});
