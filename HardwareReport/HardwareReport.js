@@ -914,6 +914,7 @@ function load_compass(log) {
                     found_instance = true
                     compass[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
                 }
+                delete log.messages[name]
             }
         }
         if (!found_instance && (Object.keys(log.messages.MAG).length > 0) && ('I' in log.messages.MAG)) {
@@ -922,6 +923,7 @@ function load_compass(log) {
                 compass[instance].all_healthy = array_all_equal(log.messages.MAG.Health, 1)
             }
         }
+        delete log.messages.MAG
     }
 
     function print_compass(inst, params) {
@@ -1028,6 +1030,7 @@ function load_baro(log) {
                     found_instance = true
                     baro[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
                 }
+                delete log.messages[name]
             }
         }
         if (!found_instance && (Object.keys(log.messages.BARO).length > 0) && ('I' in log.messages.BARO)) {
@@ -1036,6 +1039,7 @@ function load_baro(log) {
                 baro[instance].all_healthy = array_all_equal(log.messages.BARO.Health, 1)
             }
         }
+        delete log.messages.BARO
     }
 
     function print_baro(inst, params) {
@@ -1132,6 +1136,7 @@ function load_airspeed(log) {
                     found_instance = true
                     airspeed[i].all_healthy = array_all_equal(log.messages[name].H, 1)
                 }
+                delete log.messages[name]
             }
         }
         if (!found_instance && (Object.keys(log.messages.ARSP).length > 0)) {
@@ -1140,6 +1145,7 @@ function load_airspeed(log) {
                 airspeed[instance].all_healthy = array_all_equal(log.messages.ARSP.H, 1)
             }
         }
+        delete log.messages.ARSP
     }
 
     function print_airspeed(inst, params) {
@@ -1838,13 +1844,15 @@ let params = {}
 let defaults = {}
 function load_log(log_file) {
     let log = new DataflashParser()
-    log.processData(log_file, ['PARM', 'CAND', 'VER', 'MSG', 'HEAT', 'POWR', 'MCU', 'IMU', 'PM', 'STAK'])
+    log.processData(log_file, [])
 
+    log.parseAtOffset("CAND")
     if (('CAND' in log.messages) && (Object.keys(log.messages.CAND).length > 0)) {
         load_can(log.messages.CAND)
-        delete log.messages.CAND
     }
+    delete log.messages.CAND
 
+    log.parseAtOffset("PARM")
     let param_changes = {}
     let param_time = {}
     for (let i = 0; i < log.messages.PARM.Name.length; i++) {
@@ -1884,10 +1892,12 @@ function load_log(log_file) {
 
     load_params(log)
 
+    log.parseAtOffset("MSG")
     const have_msg = ('MSG' in log.messages) && (Object.keys(log.messages.MSG).length > 0)
     let flight_controller = null
     let board_id = null
 
+    log.parseAtOffset("VER")
     if (('VER' in log.messages) && (Object.keys(log.messages.VER).length > 0)) {
         // Assume version does not change, just use first msg
         const fw_string = log.messages.VER.FWS[0]
@@ -1923,6 +1933,9 @@ function load_log(log_file) {
         check_release(hash, section)
 
     }
+    delete log.messages.VER
+    delete log.messages.MSG
+
 
     if ((flight_controller != null) || (board_id != null)) {
         let section = document.getElementById("FC")
@@ -1981,7 +1994,9 @@ function load_log(log_file) {
     }
     delete log.messages.IOMC
 
-
+    log.parseAtOffset("HEAT")
+    log.parseAtOffset("POWR")
+    log.parseAtOffset("MCU")
     const have_HEAT = ('HEAT' in log.messages) && (Object.keys(log.messages.HEAT).length > 0)
     const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
     const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
@@ -2021,6 +2036,7 @@ function load_log(log_file) {
                     Temperature.data[3+i].x = array_scale(Array.from(log.messages[inst_name].time_boot_ms), 1 / 1000)
                     Temperature.data[3+i].y = Array.from(log.messages[inst_name].T)
                 }
+                delete log.messages[inst_name]
             }
 
             if (!have_instance) {
@@ -2032,6 +2048,8 @@ function load_log(log_file) {
 
         Plotly.redraw(plot)
     }
+    delete log.messages.HEAT
+    delete log.messages.IMU
 
     // Voltage plot
     if (have_POWR || have_MCU) {
@@ -2073,6 +2091,7 @@ function load_log(log_file) {
     delete log.messages.MCU
 
     // Performance
+    log.parseAtOffset("PM")
     if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
         document.getElementById("CPU").hidden = false
 
@@ -2113,6 +2132,7 @@ function load_log(log_file) {
     }
     delete log.messages.PM
 
+    log.parseAtOffset("STAK")
     if (('STAK' in log.messages) && (Object.keys(log.messages.STAK).length > 0)) {
         let stack = []
         for (let i = 0; i <= 255; i++) {
@@ -2126,6 +2146,7 @@ function load_log(log_file) {
                              total_size: Array.from(log.messages[name].Total),
                              free: Array.from(log.messages[name].Free)})
             }
+            delete log.messages[name]
         }
 
         // Sort by priority, most important first
@@ -2186,6 +2207,7 @@ function load_log(log_file) {
         }
     }
     delete log.messages.FILE
+    delete log.files
 
     // Logging dropped packets and free buffer
     log.parseAtOffset("DSF")
