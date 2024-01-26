@@ -1022,7 +1022,7 @@ function load_baro(log) {
         log.parseAtOffset("BARO")
         let found_instance = false
         for (let i = 0; i < 3; i++) {
-            if (compass[i] != null) {
+            if (baro[i] != null) {
                 const name = "BARO[" + i + "]"
                 if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
                     found_instance = true
