@@ -43,6 +43,8 @@ compass_types = {
     0x12 : "RM3100",
     0x13 : "MMC5883",
     0x14 : "AK09918",
+    0x15 : "AK09915",
+    0x16 : "QMC5883P"
 }
 
 imu_types = {
