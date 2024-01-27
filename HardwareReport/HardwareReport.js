@@ -1843,6 +1843,8 @@ function plot_visibility(plot, hide) {
 let params = {}
 let defaults = {}
 function load_log(log_file) {
+    const start = performance.now()
+
     let log = new DataflashParser()
     log.processData(log_file, [])
 
@@ -2264,6 +2266,8 @@ function load_log(log_file) {
         )
     }
 
+    const end = performance.now();
+    console.log(`Load took: ${end - start} ms`);
 }
 
 async function load(e) {
