@@ -1150,7 +1150,8 @@ function select_body_frame_attitude() {
         }
     }
     if (source == null) {
-        error("No attitude source selected")
+        alert("No attitude source selected")
+        throw new Error()
     }
 
     // Calculate expected for this source
