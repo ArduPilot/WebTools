@@ -1497,19 +1497,14 @@ function load_param_file(text) {
 }
 
 let can
-function load_can(can_msgs) {
+function load_can(log) {
 
-    function add_msg(msg) {
-        can[msg.NodeId] = { name: msg.Name, 
-                                version: msg.Major + "." + msg.Minor }
-    }
-
-    if (Array.isArray(can_msgs)) {
-        for (const can_msg of can_msgs) {
-            add_msg(can_msg)
+    for (let i = 0; i < 255; i++) {
+        const name = "CAND[" + i + "]"
+        if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
+            can[i] = { name: log.messages[name].Name[0],
+                       version: log.messages[name].Major[0] + "." + log.messages[name].Minor[0] }
         }
-    } else {
-        add_msg(can_msgs)
     }
 
     function print_can(inst, info) {
@@ -1850,7 +1845,7 @@ function load_log(log_file) {
 
     log.parseAtOffset("CAND")
     if (('CAND' in log.messages) && (Object.keys(log.messages.CAND).length > 0)) {
-        load_can(log.messages.CAND)
+        load_can(log)
     }
     delete log.messages.CAND
 
@@ -2003,7 +1998,7 @@ function load_log(log_file) {
     const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
     const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
     const have_MCU = ('MCU' in log.messages) && (Object.keys(log.messages.MCU).length > 0)
-    const have_IMU = ('IMU' in log.messages) && (Object.keys(log.messages.IMU).length > 0) && ('I' in log.messages.IMU)
+    const have_IMU = 'IMU' in log.messages
     if (have_HEAT || have_POWR_temp || have_MCU || have_IMU) {
         let plot = document.getElementById("Temperature")
         plot_visibility(plot, false)
