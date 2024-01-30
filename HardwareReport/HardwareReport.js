@@ -126,10 +126,16 @@ async function check_release(hash, paragraph) {
 
 }
 
-function show_watchdog(WDOG) {
+function show_watchdog(log) {
+
+    if (!('WDOG' in log.messageTypes)) {
+        return
+    }
+
+    const WDOG = log.get("WDOG")
 
     let watchdogs = []
-    for (let i = 0; i < WDOG.time_boot_ms.length; i++) {
+    for (let i = 0; i < WDOG.TimeUS.length; i++) {
         let watchdog = { 
             scheduler_task: WDOG.Tsk[i],
             internal_errors: WDOG.IE[i],
@@ -451,31 +457,33 @@ function show_internal_errors(log) {
     let internal_errors = []
 
     // Add from PM
-    if (('PM' in log.messages) &&
-        ("time_boot_ms" in log.messages.PM) &&
-        ("IntE" in log.messages.PM) &&
-        ("ErrL" in log.messages.PM) &&
-        ("ErrC" in log.messages.PM)) {
-        const len = log.messages.PM.time_boot_ms.length
+    if (('PM' in log.messageTypes) &&
+        log.messageTypes.PM.expressions.includes("IntE") &&
+        log.messageTypes.PM.expressions.includes("ErrL") &&
+        log.messageTypes.PM.expressions.includes("ErrC")) {
+        
+        const PM = log.get("PM")
+        const len = PM.TimeUS.length
         for (let i = 0; i < len; i++) {
             internal_errors.push({
-                time: log.messages.PM.time_boot_ms[i],
-                mask: log.messages.PM.IntE[i],
-                line: log.messages.PM.ErrL[i],
-                count: log.messages.PM.ErrC[i]
+                time: PM.TimeUS[i],
+                mask: PM.IntE[i],
+                line: PM.ErrL[i],
+                count: PM.ErrC[i]
             })
         }
     }
 
     // Add from MON
-    if (('MON' in log.messages) && (Object.keys(log.messages.MON).length > 0)) {
-        const len = log.messages.MON.time_boot_ms.length
+    if ('MON' in log.messageTypes) {
+        const MON = log.get("MON")
+        const len = MON.TimeUS.length
         for (let i = 0; i < len; i++) {
             internal_errors.push({
-                time: log.messages.MON.time_boot_ms[i],
-                mask: log.messages.MON.IErr[i],
-                line: log.messages.MON.IErrLn[i],
-                count: log.messages.MON.IErrCnt[i]
+                time: MON.TimeUS[i],
+                mask: MON.IErr[i],
+                line: MON.IErrLn[i],
+                count: MON.IErrCnt[i]
             })
         }
     }
@@ -757,24 +765,12 @@ function load_ins(log) {
     for (let i = 0; i < max_num_ins; i++) {
         ins[i] = get_instance(params, i)
     }
-    if (log != null) {
-        log.parseAtOffset("IMU")
-        let found_instance = false
-        for (let i = 0; i < max_num_ins; i++) {
+    if ((log != null) && ("IMU" in log.messageTypes)) {
+        for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
+            const i = parseFloat(inst)
             if (ins[i] != null) {
-                const name = "IMU[" + i + "]"
-                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
-                    found_instance = true
-                    ins[i].acc_all_healthy = array_all_equal(log.messages[name].AH, 1)
-                    ins[i].gyro_all_healthy = array_all_equal(log.messages[name].GH, 1)
-                }
-            }
-        }
-        if (!found_instance && (Object.keys(log.messages.IMU).length > 0) && ('I' in log.messages.IMU)) {
-            const instance = log.messages.IMU.I[0]
-            if (ins[instance] != null) {
-                ins[instance].acc_all_healthy = array_all_equal(log.messages.IMU.AH, 1)
-                ins[instance].gyro_all_healthy = array_all_equal(log.messages.IMU.GH, 1)
+                ins[i].acc_all_healthy = array_all_equal(log.get_instance("IMU", inst, "AH"), 1)
+                ins[i].gyro_all_healthy = array_all_equal(log.get_instance("IMU", inst, "GH"), 1)
             }
         }
     }
@@ -904,28 +900,14 @@ function load_compass(log) {
         }
     }
 
-    if (log != null) {
-        log.parseAtOffset("MAG")
-        let found_instance = false
-        for (let i = 0; i < 3; i++) {
+    if ((log != null) && ("MAG" in log.messageTypes)) {
+        for (const inst of Object.keys(log.messageTypes.MAG.instances)) {
+            const i = parseFloat(inst)
             if (compass[i] != null) {
-                const name = "MAG[" + i + "]"
-                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
-                    found_instance = true
-                    compass[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
-                }
-                delete log.messages[name]
+                compass[i].all_healthy = array_all_equal(log.get_instance("MAG", inst, "Health"), 1)
             }
         }
-        if (!found_instance && (Object.keys(log.messages.MAG).length > 0) && ('I' in log.messages.MAG)) {
-            const instance = log.messages.MAG.I[0]
-            if (compass[instance] != null) {
-                compass[instance].all_healthy = array_all_equal(log.messages.MAG.Health, 1)
-            }
-        }
-        delete log.messages.MAG
     }
-
     function print_compass(inst, params) {
         let fieldset = document.createElement("fieldset")
 
@@ -1020,26 +1002,13 @@ function load_baro(log) {
         }
     }
 
-    if (log != null) {
-        log.parseAtOffset("BARO")
-        let found_instance = false
-        for (let i = 0; i < 3; i++) {
+    if ((log != null) && ("BARO" in log.messageTypes)) {
+        for (const inst of Object.keys(log.messageTypes.BARO.instances)) {
+            const i = parseFloat(inst)
             if (baro[i] != null) {
-                const name = "BARO[" + i + "]"
-                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
-                    found_instance = true
-                    baro[i].all_healthy = array_all_equal(log.messages[name].Health, 1)
-                }
-                delete log.messages[name]
+                baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "Health"), 1)
             }
         }
-        if (!found_instance && (Object.keys(log.messages.BARO).length > 0) && ('I' in log.messages.BARO)) {
-            const instance = log.messages.BARO.I[0]
-            if (baro[instance] != null) {
-                baro[instance].all_healthy = array_all_equal(log.messages.BARO.Health, 1)
-            }
-        }
-        delete log.messages.BARO
     }
 
     function print_baro(inst, params) {
@@ -1125,27 +1094,13 @@ function load_airspeed(log) {
             airspeed[i] = { id: id, use: params[names.use] }
         }
     }
-
-    if (log != null) {
-        log.parseAtOffset("ARSP")
-        let found_instance = false
-        for (let i = 0; i < 2; i++) {
+    if ((log != null) && ("ARSP" in log.messageTypes)) {
+        for (const inst of Object.keys(log.messageTypes.ARSP.instances)) {
+            const i = parseFloat(inst)
             if (airspeed[i] != null) {
-                const name = "ARSP[" + i + "]"
-                if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
-                    found_instance = true
-                    airspeed[i].all_healthy = array_all_equal(log.messages[name].H, 1)
-                }
-                delete log.messages[name]
+                airspeed[i].all_healthy = array_all_equal(log.get_instance("ARSP", inst, "H"), 1)
             }
         }
-        if (!found_instance && (Object.keys(log.messages.ARSP).length > 0)) {
-            const instance = log.messages.ARSP.I[0]
-            if (airspeed[instance] != null) {
-                airspeed[instance].all_healthy = array_all_equal(log.messages.ARSP.H, 1)
-            }
-        }
-        delete log.messages.ARSP
     }
 
     function print_airspeed(inst, params) {
@@ -1499,12 +1454,14 @@ function load_param_file(text) {
 let can
 function load_can(log) {
 
-    for (let i = 0; i < 255; i++) {
-        const name = "CAND[" + i + "]"
-        if ((name in log.messages) && (Object.keys(log.messages[name]).length > 0)) {
-            can[i] = { name: log.messages[name].Name[0],
-                       version: log.messages[name].Major[0] + "." + log.messages[name].Minor[0] }
-        }
+    if (!('CAND' in log.messageTypes)) {
+        return
+    }
+
+    for (const inst of Object.keys(log.messageTypes.CAND.instances)) {
+        const CAND = log.get_instance("CAND", inst)
+        can[parseFloat(inst)] = { name: CAND.Name[0],
+                                  version: CAND.Major[0] + "." + CAND.Minor[0] }
     }
 
     function print_can(inst, info) {
@@ -1600,24 +1557,24 @@ function load_waypoints(log) {
     }
 
     // Load missions
-    log.parseAtOffset("CMD")
-    if (('CMD' in log.messages) && (Object.keys(log.messages.CMD).length > 0)) {
+    if ('CMD' in log.messageTypes) {
+        const CMD = log.get("CMD")
 
         let missions = []
         let mission_inst = 0
-        for (let i = 0; i < log.messages.CMD.CTot.length; i++) {
+        for (let i = 0; i < CMD.CTot.length; i++) {
             const item = { 
-                command_total : log.messages.CMD.CTot[i],
-                sequence      : log.messages.CMD.CNum[i],
-                command       : log.messages.CMD.CId[i],
-                param1        : log.messages.CMD.Prm1[i],
-                param2        : log.messages.CMD.Prm2[i],
-                param3        : log.messages.CMD.Prm3[i],
-                param4        : log.messages.CMD.Prm4[i],
-                latitude      : log.messages.CMD.Lat[i],
-                longitude     : log.messages.CMD.Lng[i],
-                altitude      : log.messages.CMD.Alt[i],
-                frame         : log.messages.CMD.Frame[i]
+                command_total : CMD.CTot[i],
+                sequence      : CMD.CNum[i],
+                command       : CMD.CId[i],
+                param1        : CMD.Prm1[i],
+                param2        : CMD.Prm2[i],
+                param3        : CMD.Prm3[i],
+                param4        : CMD.Prm4[i],
+                latitude      : CMD.Lat[i],
+                longitude     : CMD.Lng[i],
+                altitude      : CMD.Alt[i],
+                frame         : CMD.Frame[i]
             }
 
             const index = item.sequence
@@ -1652,27 +1609,26 @@ function load_waypoints(log) {
             para2.appendChild(get_download_link("waypoints_" + i + ".txt", missions[i]))
         }
     }
-    delete log.messages.CMD
 
     // Load fence
-    log.parseAtOffset("FNCE")
-    if (('FNCE' in log.messages) && (Object.keys(log.messages.FNCE).length > 0)) {
+    if ('FNCE' in log.messageTypes) {
+        const FNCE = log.get("FNCE")
 
         let fences = []
         let fence_inst = 0
-        for (let i = 0; i < log.messages.FNCE.Tot.length; i++) {
+        for (let i = 0; i < FNCE.Tot.length; i++) {
 
             let command
             let p1
-            switch (log.messages.FNCE.Type[i]) {
+            switch (FNCE.Type[i]) {
                 case 98:
                     command = 5001
-                    p1 = log.messages.FNCE.Count[i]
+                    p1 = FNCE.Count[i]
                     break
 
                 case 97:
                     command = 5002
-                    p1 = log.messages.FNCE.Count[i]
+                    p1 = FNCE.Count[i]
                     break
 
                 case 95:
@@ -1682,12 +1638,12 @@ function load_waypoints(log) {
 
                 case 93:
                     command = 5004
-                    p1 = log.messages.FNCE.Radius[i]
+                    p1 = FNCE.Radius[i]
                     break
 
                 case 92:
                     command = 5003
-                    p1 = log.messages.FNCE.Radius[i]
+                    p1 = FNCE.Radius[i]
                     break
 
                 default:
@@ -1696,15 +1652,15 @@ function load_waypoints(log) {
             }
 
             const item = { 
-                command_total : log.messages.FNCE.Tot[i],
-                sequence      : log.messages.FNCE.Seq[i] + 1, // Offset by 1 since home it not included
+                command_total : FNCE.Tot[i],
+                sequence      : FNCE.Seq[i] + 1, // Offset by 1 since home it not included
                 command       : command,
                 param1        : p1,
                 param2        : 0,
                 param3        : 0,
                 param4        : 0,
-                latitude      : log.messages.FNCE.Lat[i],
-                longitude     : log.messages.FNCE.Lng[i],
+                latitude      : FNCE.Lat[i],
+                longitude     : FNCE.Lng[i],
                 altitude      : 0,
                 frame         : 0
             }
@@ -1741,21 +1697,20 @@ function load_waypoints(log) {
             para2.appendChild(get_download_link("fence_" + i + ".txt", fences[i]))
         }
     }
-    delete log.messages.FNCE
 
     // Load rally points
-    log.parseAtOffset("RALY")
-    if (('RALY' in log.messages) && (Object.keys(log.messages.RALY).length > 0)) {
+    if ('RALY' in log.messageTypes) {
+        const RALY = log.get("RALY")
 
         let rallypoints = []
         let rallyinst = 0
-        for (let i = 0; i < log.messages.RALY.Tot.length; i++) {
+        for (let i = 0; i < RALY.Tot.length; i++) {
 
             let alt_frame = 3 // MAV_FRAME_GLOBAL_RELATIVE_ALT
 
             // Decode flags if available
-            if ("Flags" in log.messages.RALY) {
-                const flags = log.messages.RALY.Flags[i]
+            if ("Flags" in RALY) {
+                const flags = RALY.Flags[i]
                 const alt_frame_valid = (flags & 0b0000100) != 0
                 const AP_alt_frame = (flags & 0b00011000) >> 3
 
@@ -1781,16 +1736,16 @@ function load_waypoints(log) {
             }
 
             const item = { 
-                command_total : log.messages.RALY.Tot[i],
-                sequence      : log.messages.RALY.Seq[i] + 1, // Offset by 1 since home it not included
+                command_total : RALY.Tot[i],
+                sequence      : RALY.Seq[i] + 1, // Offset by 1 since home it not included
                 command       : 5100, // MAV_CMD_NAV_RALLY_POINT
                 param1        : 0,
                 param2        : 0,
                 param3        : 0,
                 param4        : 0,
-                latitude      : log.messages.RALY.Lat[i],
-                longitude     : log.messages.RALY.Lng[i],
-                altitude      : log.messages.RALY.Alt[i],
+                latitude      : RALY.Lat[i],
+                longitude     : RALY.Lng[i],
+                altitude      : RALY.Alt[i],
                 frame         : alt_frame
             }
 
@@ -1827,7 +1782,6 @@ function load_waypoints(log) {
         }
 
     }
-    delete log.messages.RALY
 
 }
 
@@ -1843,19 +1797,28 @@ function load_log(log_file) {
     let log = new DataflashParser()
     log.processData(log_file, [])
 
-    log.parseAtOffset("CAND")
-    if (('CAND' in log.messages) && (Object.keys(log.messages.CAND).length > 0)) {
-        load_can(log)
+    if (!('PARM' in log.messageTypes)) {
+        // The whole tool assumes it has param values
+        alert("No parameter values found in log")
+        return
     }
-    delete log.messages.CAND
 
-    log.parseAtOffset("PARM")
+    // Loading CAN first allows Driver IDs to be anotated with node name when params are loaded
+    load_can(log)
+
+    // micro seconds to seconds helpers
+    const US2S = 1 / 1000000
+    function TimeUS_to_seconds(TimeUS) {
+        return array_scale(TimeUS, US2S)
+    }
+
+    const PARM = log.get("PARM")
     let param_changes = {}
     let param_time = {}
-    for (let i = 0; i < log.messages.PARM.Name.length; i++) {
-        const name = log.messages.PARM.Name[i]
-        const time = log.messages.PARM.time_boot_ms[i] * (1/1000)
-        const value = log.messages.PARM.Value[i]
+    for (let i = 0; i < PARM.Name.length; i++) {
+        const name = PARM.Name[i]
+        const time = PARM.TimeUS[i] * US2S
+        const value = PARM.Value[i]
 
         if ((name in params) && (params[name] != value)) {
             // Already seen this param with a different value record change
@@ -1868,18 +1831,15 @@ function load_log(log_file) {
 
         params[name] = value
         param_time[name] = time
-        if ("Default" in log.messages.PARM) {
-            const default_val = log.messages.PARM.Default[i]
+        if ("Default" in PARM) {
+            const default_val = PARM.Default[i]
             if (!isNaN(default_val)) {
                 defaults[name] = default_val
             }
         }
     }
-    delete log.messages.PARM
-    delete param_time
 
     show_param_changes(param_changes)
-    delete param_changes
 
     if (Object.keys(defaults).length > 0) {
         document.getElementById("SaveChangedParams").hidden = false
@@ -1889,49 +1849,45 @@ function load_log(log_file) {
 
     load_params(log)
 
-    log.parseAtOffset("MSG")
-    const have_msg = ('MSG' in log.messages) && (Object.keys(log.messages.MSG).length > 0)
     let flight_controller = null
     let board_id = null
 
-    log.parseAtOffset("VER")
-    if (('VER' in log.messages) && (Object.keys(log.messages.VER).length > 0)) {
+    if ('VER' in log.messageTypes) {
+        const VER = log.get("VER")
+
         // Assume version does not change, just use first msg
-        const fw_string = log.messages.VER.FWS[0]
-        const hash = log.messages.VER.GH[0].toString(16)
-        board_id = log.messages.VER.APJ[0]
-        delete log.messages.VER
+        const fw_string = VER.FWS[0]
+        const hash = VER.GH[0].toString(16)
+        board_id = VER.APJ[0]
 
         let section = document.getElementById("VER")
         section.hidden = false
         section.previousElementSibling.hidden = false
         section.appendChild(document.createTextNode(fw_string))
 
-        if (have_msg) {
+        if ('MSG' in log.messageTypes) {
+            const MSG = log.get("MSG")
             // Look for firmware string in MSGs, this marks the start of the log start msgs
             // The subsequent messages give more info, this is a bad way of doing it
-            const len = log.messages.MSG.Message.length
-            for (let i = 0; i < log.messages.MSG.Message.length - 3; i++) {
-                const msg = log.messages.MSG.Message[i]
+            const len = MSG.Message.length
+            for (let i = 0; i < MSG.Message.length - 3; i++) {
+                const msg = MSG.Message[i]
                 if (fw_string != msg) {
                     continue
                 }
-                if (!log.messages.MSG.Message[i+3].startsWith("Param space used:")) {
+                if (!MSG.Message[i+3].startsWith("Param space used:")) {
                     // Check we have bracketed the messages we need
                     continue
                 }
                 section.appendChild(document.createElement("br"))
-                section.appendChild(document.createTextNode(log.messages.MSG.Message[i+1]))
-                flight_controller = log.messages.MSG.Message[i+2]
+                section.appendChild(document.createTextNode(MSG.Message[i+1]))
+                flight_controller = MSG.Message[i+2]
                 break
             }
         }
 
         check_release(hash, section)
-
     }
-    delete log.messages.VER
-    delete log.messages.MSG
 
 
     if ((flight_controller != null) || (board_id != null)) {
@@ -1954,99 +1910,76 @@ function load_log(log_file) {
     }
 
     // Look for watchdog
-    log.parseAtOffset("WDOG")
-    if (('WDOG' in log.messages) && (Object.keys(log.messages.WDOG).length > 0)) {
-        show_watchdog(log.messages.WDOG)
-    }
-    delete log.messages.WDOG
+    show_watchdog(log)
 
     // Look for internal errors
-    log.parseAtOffset("MON")
     show_internal_errors(log)
-    delete log.messages.MON
 
     // IOMCU
-    log.parseAtOffset("IOMC")
-    if (('IOMC' in log.messages) && (Object.keys(log.messages.IOMC).length > 0)) {
+    if ('IOMC' in log.messageTypes) {
+        const IOMC = log.get("IOMC")
+
         let para = document.getElementById("IOMCU")
         para.hidden = false
         para.previousElementSibling.hidden = false
 
-        if ("RSErr" in log.messages.IOMC) {
-            const read_satus_error = Math.max(...log.messages.IOMC.RSErr)
+        if ("RSErr" in IOMC) {
+            const read_satus_error = Math.max(...IOMC.RSErr)
             para.appendChild(document.createTextNode("Status read errors: " + read_satus_error + " " + (read_satus_error == 0 ? "\u2705" : "\u274C")))
             para.appendChild(document.createElement("br"))
         }
 
-        const total_errors =  Math.max(...log.messages.IOMC.Nerr)
+        const total_errors =  Math.max(...IOMC.Nerr)
         para.appendChild(document.createTextNode("Flight Controller errors: " + total_errors + " " + (total_errors == 0 ? "\u2705" : "\u274C")))
         para.appendChild(document.createElement("br"))
 
-        const IOMCU_total_errors =  Math.max(...log.messages.IOMC.Nerr2)
+        const IOMCU_total_errors =  Math.max(...IOMC.Nerr2)
         para.appendChild(document.createTextNode("IOMCU errors: " + IOMCU_total_errors + " " + (IOMCU_total_errors == 0 ? "\u2705" : "\u274C")))
         para.appendChild(document.createElement("br"))
 
-        const delayed_packets =  Math.max(...log.messages.IOMC.NDel)
+        const delayed_packets =  Math.max(...IOMC.NDel)
         para.appendChild(document.createTextNode("Delayed packets: " + delayed_packets + " " + (delayed_packets == 0 ? "\u2705" : "\u274C")))
     }
-    delete log.messages.IOMC
 
-    log.parseAtOffset("HEAT")
-    log.parseAtOffset("POWR")
-    log.parseAtOffset("MCU")
-    const have_HEAT = ('HEAT' in log.messages) && (Object.keys(log.messages.HEAT).length > 0)
-    const have_POWR = ('POWR' in log.messages) && (Object.keys(log.messages.POWR).length > 0)
-    const have_POWR_temp = have_POWR && ('MTemp' in log.messages.POWR)
-    const have_MCU = ('MCU' in log.messages) && (Object.keys(log.messages.MCU).length > 0)
-    const have_IMU = 'IMU' in log.messages
+    const have_HEAT = 'HEAT' in log.messageTypes
+    const have_POWR = 'POWR' in log.messageTypes
+    const have_POWR_temp = have_POWR && log.messageTypes.POWR.expressions.includes('MTemp')
+    const have_MCU = 'MCU' in log.messageTypes
+    const have_IMU = 'IMU' in log.messageTypes
     if (have_HEAT || have_POWR_temp || have_MCU || have_IMU) {
         let plot = document.getElementById("Temperature")
         plot_visibility(plot, false)
 
         if (have_HEAT) {
-            const time = array_scale(Array.from(log.messages.HEAT.time_boot_ms), 1 / 1000)
+            const time = TimeUS_to_seconds(log.get("HEAT", "TimeUS"))
 
             Temperature.data[0].x = time
-            Temperature.data[0].y = Array.from(log.messages.HEAT.Targ)
+            Temperature.data[0].y = log.get("HEAT", "Targ")
 
             Temperature.data[1].x = time
-            Temperature.data[1].y = Array.from(log.messages.HEAT.Temp)
+            Temperature.data[1].y = log.get("HEAT", "Temp")
         }
 
         if (have_MCU) {
-            Temperature.data[2].x = array_scale(Array.from(log.messages.MCU.time_boot_ms), 1 / 1000)
-            Temperature.data[2].y = Array.from(log.messages.MCU.MTemp)
+            Temperature.data[2].x = TimeUS_to_seconds(log.get("MCU", "TimeUS"))
+            Temperature.data[2].y = log.get("MCU", "MTemp")
 
         } else if (have_POWR_temp) {
-            Temperature.data[2].x = array_scale(Array.from(log.messages.POWR.time_boot_ms), 1 / 1000)
-            Temperature.data[2].y = Array.from(log.messages.POWR.MTemp)
+            Temperature.data[2].x = TimeUS_to_seconds(log.get("POWR", "TimeUS"))
+            Temperature.data[2].y = log.get("POWR", "MTemp")
 
         }
 
         if (have_IMU) {
-            let have_instance = false
-            for (let i = 0; i < max_num_ins; i++) {
-                const inst_name = "IMU[" + i + "]"
-                if (inst_name in log.messages) {
-                    have_instance = true
-
-                    Temperature.data[3+i].x = array_scale(Array.from(log.messages[inst_name].time_boot_ms), 1 / 1000)
-                    Temperature.data[3+i].y = Array.from(log.messages[inst_name].T)
-                }
-                delete log.messages[inst_name]
-            }
-
-            if (!have_instance) {
-                const instance = log.messages.IMU.I[0]
-                Temperature.data[3+instance].x = array_scale(Array.from(log.messages.IMU.time_boot_ms), 1 / 1000)
-                Temperature.data[3+instance].y = Array.from(log.messages.IMU.T)
+            for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
+                const i = parseFloat(inst)
+                Temperature.data[3+i].x = TimeUS_to_seconds(log.get_instance("IMU", inst, "TimeUS"))
+                Temperature.data[3+i].y = log.get_instance("IMU", inst, "T")
             }
         }
 
         Plotly.redraw(plot)
     }
-    delete log.messages.HEAT
-    delete log.messages.IMU
 
     // Voltage plot
     if (have_POWR || have_MCU) {
@@ -2054,52 +1987,51 @@ function load_log(log_file) {
         plot_visibility(plot, false)
 
         if (have_POWR) {
-            const time = array_scale(Array.from(log.messages.POWR.time_boot_ms), 1 / 1000)
+            const time = TimeUS_to_seconds(log.get("POWR", "TimeUS"))
 
             Board_Voltage.data[1].x = time
-            Board_Voltage.data[1].y = Array.from(log.messages.POWR.VServo)
+            Board_Voltage.data[1].y = log.get("POWR", "VServo")
 
             Board_Voltage.data[2].x = time
-            Board_Voltage.data[2].y = Array.from(log.messages.POWR.Vcc)
+            Board_Voltage.data[2].y = log.get("POWR", "Vcc")
 
-            if (!have_MCU && ('MVolt' in log.messages.POWR)) {
+            if (!have_MCU && log.messageTypes.POWR.expressions.includes('MVolt')) {
                 Board_Voltage.data[3].x = time
-                Board_Voltage.data[3].y = Array.from(log.messages.POWR.MVolt)
+                Board_Voltage.data[3].y = log.get("POWR", "MVolt")
 
                 Board_Voltage.data[0].x = [...time, ...time.toReversed()]
-                Board_Voltage.data[0].y = [...Array.from(log.messages.POWR.MVmax), ...Array.from(log.messages.POWR.MVmin).toReversed()]
+                Board_Voltage.data[0].y = [...log.get("POWR", "MVmax"), ...log.get("POWR", "MVmin").toReversed()]
             }
         }
 
         if (have_MCU) {
-            const time = array_scale(Array.from(log.messages.MCU.time_boot_ms), 1 / 1000)
+            const time = TimeUS_to_seconds(log.get("MCU", "TimeUS"))
 
             Board_Voltage.data[3].x = time
-            Board_Voltage.data[3].y = Array.from(log.messages.MCU.MVolt)
+            Board_Voltage.data[3].y = log.get("MCU", "MVolt")
 
             Board_Voltage.data[0].x = [...time, ...time.toReversed()]
-            Board_Voltage.data[0].y = [...Array.from(log.messages.MCU.MVmax), ...Array.from(log.messages.MCU.MVmin).toReversed()]
+            Board_Voltage.data[0].y = [...log.get("MCU", "MVmax"), ...log.get("MCU", "MVmin").toReversed()]
 
         }
 
         Plotly.redraw(plot)
     }
-    delete log.messages.POWR
-    delete log.messages.MCU
 
     // Performance
-    log.parseAtOffset("PM")
-    if (('PM' in log.messages) && (Object.keys(log.messages.PM).length > 0)) {
+    if ('PM' in log.messageTypes) {
+        const PM = log.get("PM")
+
         document.getElementById("CPU").hidden = false
 
         // Load
         let plot = document.getElementById("performance_load")
         plot_visibility(plot, false)
 
-        const time = array_scale(Array.from(log.messages.PM.time_boot_ms), 1 / 1000)
+        const time = TimeUS_to_seconds(PM.TimeUS)
 
         performance_load.data[0].x = time
-        performance_load.data[0].y = array_scale(Array.from(log.messages.PM.Load), 1 / 10)
+        performance_load.data[0].y = array_scale(PM.Load, 1 / 10)
         
         Plotly.redraw(plot)
 
@@ -2108,7 +2040,7 @@ function load_log(log_file) {
         plot_visibility(plot, false)
 
         performance_mem.data[0].x = time
-        performance_mem.data[0].y = Array.from(log.messages.PM.Mem)
+        performance_mem.data[0].y = PM.Mem
 
         Plotly.redraw(plot)
 
@@ -2117,33 +2049,28 @@ function load_log(log_file) {
         plot_visibility(plot, false)
 
         performance_time.data[0].x = time
-        performance_time.data[0].y = array_inverse(array_scale(Array.from(log.messages.PM.MaxT), 1 / 1000000))
+        performance_time.data[0].y = array_inverse(array_scale(PM.MaxT, 1 / 1000000))
 
-        if ("LR" in log.messages.PM) {
+        if ("LR" in PM) {
             performance_time.data[1].x = time
-            performance_time.data[1].y = Array.from(log.messages.PM.LR)
+            performance_time.data[1].y = PM.LR
         }
 
         Plotly.redraw(plot)
 
     }
-    delete log.messages.PM
 
-    log.parseAtOffset("STAK")
-    if (('STAK' in log.messages) && (Object.keys(log.messages.STAK).length > 0)) {
+    if ('STAK' in log.messageTypes) {
         let stack = []
-        for (let i = 0; i <= 255; i++) {
-            const name = "STAK[" + i + "]"
-            if (name in log.messages) {
-                // Assume id, priority and name do not change
-                stack.push({ id: i, 
-                             priority: log.messages[name].Pri[0],
-                             name: log.messages[name].Name[0],
-                             time: array_scale(Array.from(log.messages[name].time_boot_ms), 1 / 1000),
-                             total_size: Array.from(log.messages[name].Total),
-                             free: Array.from(log.messages[name].Free)})
-            }
-            delete log.messages[name]
+        for (const inst of Object.keys(log.messageTypes.STAK.instances)) {
+            // Assume id, priority and name do not change
+            const STAK_inst = log.get_instance("STAK", inst)
+            stack.push({ id: parseFloat(inst), 
+                         priority: STAK_inst.Pri[0],
+                         name: STAK_inst.Name[0],
+                         time: TimeUS_to_seconds(STAK_inst.TimeUS),
+                         total_size: STAK_inst.Total,
+                         free: STAK_inst.Free})
         }
 
         // Sort by priority, most important first
@@ -2172,53 +2099,55 @@ function load_log(log_file) {
         Plotly.newPlot(plot, stack_pct.data, stack_pct.layout, {displaylogo: false});
 
     }
-    delete log.messages.STAK
 
     // Add download link for missions, fence and rally points
     load_waypoints(log)
 
     // Add download link for embedded files
-    log.parseAtOffset("FILE")
-    log.processFiles()
-    if (Object.keys(log.files).length > 0) {
-        let para = document.getElementById("FILES")
-        para.hidden = false
-        para.previousElementSibling.hidden = false
+    if ('FILE' in log.messageTypes) {
+        log.parseAtOffset("FILE")
+        log.processFiles()
+        if (Object.keys(log.files).length > 0) {
+            let para = document.getElementById("FILES")
+            para.hidden = false
+            para.previousElementSibling.hidden = false
 
-        let first_item = true
-        for (const [name, contents] of Object.entries(log.files)) {
-            if (!first_item) {
-                para.appendChild(document.createTextNode(", "))
+            let first_item = true
+            for (const [name, contents] of Object.entries(log.files)) {
+                if (!first_item) {
+                    para.appendChild(document.createTextNode(", "))
+                }
+                first_item = false
+
+
+                let link = document.createElement("a")
+                link.title = "download file"
+                link.innerHTML = name
+                link.href = "#"
+                link.addEventListener('click', function() { saveAs(new Blob([contents]), name) })
+
+                para.appendChild(link)
+
             }
-            first_item = false
-
-
-            let link = document.createElement("a")
-            link.title = "download file"
-            link.innerHTML = name
-            link.href = "#"
-            link.addEventListener('click', function() { saveAs(new Blob([contents]), name) })
-
-            para.appendChild(link)
-
         }
+        log.messages.FILE = null
+        log.files = null
     }
-    delete log.messages.FILE
-    delete log.files
 
     // Logging dropped packets and free buffer
-    log.parseAtOffset("DSF")
-    if (('DSF' in log.messages) && (Object.keys(log.messages.DSF).length > 0)) {
+    if ('DSF' in log.messageTypes) {
+        const DSF = log.get("DSF")
+
         document.getElementById("log_stats_header").hidden = false
 
-        const time = array_scale(Array.from(log.messages.DSF.time_boot_ms), 1 / 1000)
+        const time = TimeUS_to_seconds(DSF.TimeUS)
 
         // Dropped packets
         plot = document.getElementById("log_dropped")
         plot_visibility(plot, false)
 
         log_dropped.data[0].x = time
-        log_dropped.data[0].y = Array.from(log.messages.DSF.Dp)
+        log_dropped.data[0].y = DSF.Dp
 
         Plotly.redraw(plot)
 
@@ -2227,17 +2156,16 @@ function load_log(log_file) {
         plot_visibility(plot, false)
 
         log_buffer.data[0].x = time
-        log_buffer.data[0].y = Array.from(log.messages.DSF.FMx)
+        log_buffer.data[0].y = DSF.FMx
 
         log_buffer.data[1].x = time
-        log_buffer.data[1].y = Array.from(log.messages.DSF.FAv)
+        log_buffer.data[1].y = DSF.FAv
 
         log_buffer.data[2].x = time
-        log_buffer.data[2].y = Array.from(log.messages.DSF.FMn)
+        log_buffer.data[2].y = DSF.FMn
 
         Plotly.redraw(plot)
     }
-    delete log.messages.DSF
 
     // Plot stats
     let stats = log.stats()
@@ -2261,8 +2189,8 @@ function load_log(log_file) {
         )
     }
 
-    const end = performance.now();
-    console.log(`Load took: ${end - start} ms`);
+    const end = performance.now()
+    console.log(`Load took: ${end - start} ms`)
 }
 
 async function load(e) {
