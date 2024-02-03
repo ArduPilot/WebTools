@@ -766,11 +766,13 @@ function load_ins(log) {
         ins[i] = get_instance(params, i)
     }
     if ((log != null) && ("IMU" in log.messageTypes)) {
-        for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
-            const i = parseFloat(inst)
-            if (ins[i] != null) {
-                ins[i].acc_all_healthy = array_all_equal(log.get_instance("IMU", inst, "AH"), 1)
-                ins[i].gyro_all_healthy = array_all_equal(log.get_instance("IMU", inst, "GH"), 1)
+        if ("instances" in log.messageTypes.IMU) {
+            for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
+                const i = parseFloat(inst)
+                if (ins[i] != null) {
+                    ins[i].acc_all_healthy = array_all_equal(log.get_instance("IMU", inst, "AH"), 1)
+                    ins[i].gyro_all_healthy = array_all_equal(log.get_instance("IMU", inst, "GH"), 1)
+                }
             }
         }
     }
@@ -901,10 +903,12 @@ function load_compass(log) {
     }
 
     if ((log != null) && ("MAG" in log.messageTypes)) {
-        for (const inst of Object.keys(log.messageTypes.MAG.instances)) {
-            const i = parseFloat(inst)
-            if (compass[i] != null) {
-                compass[i].all_healthy = array_all_equal(log.get_instance("MAG", inst, "Health"), 1)
+        if ("instances" in log.messageTypes.MAG) {
+            for (const inst of Object.keys(log.messageTypes.MAG.instances)) {
+                const i = parseFloat(inst)
+                if (compass[i] != null) {
+                    compass[i].all_healthy = array_all_equal(log.get_instance("MAG", inst, "Health"), 1)
+                }
             }
         }
     }
@@ -1003,10 +1007,12 @@ function load_baro(log) {
     }
 
     if ((log != null) && ("BARO" in log.messageTypes)) {
-        for (const inst of Object.keys(log.messageTypes.BARO.instances)) {
-            const i = parseFloat(inst)
-            if (baro[i] != null) {
-                baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "Health"), 1)
+        if ("instances" in log.messageTypes.BARO) {
+            for (const inst of Object.keys(log.messageTypes.BARO.instances)) {
+                const i = parseFloat(inst)
+                if (baro[i] != null) {
+                    baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "Health"), 1)
+                }
             }
         }
     }
@@ -1095,10 +1101,12 @@ function load_airspeed(log) {
         }
     }
     if ((log != null) && ("ARSP" in log.messageTypes)) {
-        for (const inst of Object.keys(log.messageTypes.ARSP.instances)) {
-            const i = parseFloat(inst)
-            if (airspeed[i] != null) {
-                airspeed[i].all_healthy = array_all_equal(log.get_instance("ARSP", inst, "H"), 1)
+        if ("instances" in log.messageTypes.ARSP) {
+            for (const inst of Object.keys(log.messageTypes.ARSP.instances)) {
+                const i = parseFloat(inst)
+                if (airspeed[i] != null) {
+                    airspeed[i].all_healthy = array_all_equal(log.get_instance("ARSP", inst, "H"), 1)
+                }
             }
         }
     }
@@ -1971,10 +1979,12 @@ function load_log(log_file) {
         }
 
         if (have_IMU) {
-            for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
-                const i = parseFloat(inst)
-                Temperature.data[3+i].x = TimeUS_to_seconds(log.get_instance("IMU", inst, "TimeUS"))
-                Temperature.data[3+i].y = log.get_instance("IMU", inst, "T")
+            if ("instances" in log.messageTypes.IMU) {
+                for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
+                    const i = parseFloat(inst)
+                    Temperature.data[3+i].x = TimeUS_to_seconds(log.get_instance("IMU", inst, "TimeUS"))
+                    Temperature.data[3+i].y = log.get_instance("IMU", inst, "T")
+                }
             }
         }
 
