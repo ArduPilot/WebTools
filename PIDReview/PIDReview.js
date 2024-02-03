@@ -1469,9 +1469,16 @@ function load(log_file) {
     }
 
     let log = new DataflashParser()
-    log.processData(log_file , ['PARM'])
+    log.processData(log_file , [])
+
+    // micro seconds to seconds helpers
+    const US2S = 1 / 1000000
+    function TimeUS_to_seconds(TimeUS) {
+        return array_scale(TimeUS, US2S)
+    }
 
     // Load params, split for any changes
+    const PARM = log.get('PARM')
     for (let i = 0; i < PID_log_messages.length; i++) {
         PID_log_messages[i].params = { prefix: null, sets: [] }
         for (const prefix of PID_log_messages[i].prefixes) {
@@ -1485,14 +1492,14 @@ function load(log_file) {
 
             let found_param = false
             let last_set_end
-            for (let j = 0; j < log.messages.PARM.Name.length; j++) {
-                const param_name = log.messages.PARM.Name[j]
+            for (let j = 0; j < PARM.Name.length; j++) {
+                const param_name = PARM.Name[j]
                 for (const [name, param_string] of Object.entries(names)) {
                     if (param_name !== param_string) {
                         continue
                     }
-                    const time = log.messages.PARM.time_boot_ms[j] / 1000
-                    const value = log.messages.PARM.Value[j]
+                    const time = PARM.TimeUS[j] * US2S
+                    const value = PARM.Value[j]
                     found_param = true
                     if (param_values[name] != null  && (param_values[name] != value)) {
                         if ((last_set_end == null) || (time - last_set_end > 1.0)) {
@@ -1526,9 +1533,6 @@ function load(log_file) {
         }
     }
 
-    // Don't need params any more
-    delete log.messages.PARM
-
     // Load each log msg type
     PID_log_messages.start_time = null
     PID_log_messages.end_time = null
@@ -1542,16 +1546,11 @@ function load(log_file) {
             // Dont have log message
             continue
         }
-        log.parseAtOffset(id)
+        const log_msg = log.get(id)
 
-        const have_msg = Object.keys(log.messages[id]).length > 0
-        if (!have_msg) {
-            // Do have log, but nothing in it
-            continue
-        }
         const is_RATE_msg = id === "RATE"
 
-        const time = array_scale(Array.from(log.messages[id].time_boot_ms), 1/1000)
+        const time = TimeUS_to_seconds(log_msg.TimeUS)
 
         const batches = split_into_batches(PID_log_messages, i, time)
 
@@ -1567,22 +1566,22 @@ function load(log_file) {
                     // Note that is not quite the same, PID logs report the filtered target value where as RATE gets the raw
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
                                                                      sample_rate: batch.sample_rate,
-                                                                     Tar: Array.from(log.messages[id][axis_prefix + "Des"].slice(batch.batch_start, batch.batch_end)),
-                                                                     Act: Array.from(log.messages[id][axis_prefix        ].slice(batch.batch_start, batch.batch_end)),
-                                                                     Out: Array.from(log.messages[id][axis_prefix + "Out"].slice(batch.batch_start, batch.batch_end))})
+                                                                     Tar: Array.from(log_msg[axis_prefix + "Des"].slice(batch.batch_start, batch.batch_end)),
+                                                                     Act: Array.from(log_msg[axis_prefix        ].slice(batch.batch_start, batch.batch_end)),
+                                                                     Out: Array.from(log_msg[axis_prefix + "Out"].slice(batch.batch_start, batch.batch_end))})
 
                 } else {
                     // Convert radians to degress
                     const rad2deg = 180.0 / Math.PI
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
                                                                      sample_rate: batch.sample_rate,
-                                                                     Tar: array_scale(Array.from(log.messages[id].Tar.slice(batch.batch_start, batch.batch_end)), rad2deg),
-                                                                     Act: array_scale(Array.from(log.messages[id].Act.slice(batch.batch_start, batch.batch_end)), rad2deg),
-                                                                     Err: array_scale(Array.from(log.messages[id].Err.slice(batch.batch_start, batch.batch_end)), rad2deg),
-                                                                     P:   Array.from(log.messages[id].P.slice(batch.batch_start, batch.batch_end)),
-                                                                     I:   Array.from(log.messages[id].I.slice(batch.batch_start, batch.batch_end)),
-                                                                     D:   Array.from(log.messages[id].D.slice(batch.batch_start, batch.batch_end)),
-                                                                     FF:  Array.from(log.messages[id].FF.slice(batch.batch_start, batch.batch_end))})
+                                                                     Tar: array_scale(Array.from(log_msg.Tar.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     Act: array_scale(Array.from(log_msg.Act.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     Err: array_scale(Array.from(log_msg.Err.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     P:   Array.from(log_msg.P.slice(batch.batch_start, batch.batch_end)),
+                                                                     I:   Array.from(log_msg.I.slice(batch.batch_start, batch.batch_end)),
+                                                                     D:   Array.from(log_msg.D.slice(batch.batch_start, batch.batch_end)),
+                                                                     FF:  Array.from(log_msg.FF.slice(batch.batch_start, batch.batch_end))})
                 }
             }
 
@@ -1599,11 +1598,6 @@ function load(log_file) {
             PID_log_messages[i].have_data = true
             PID_log_messages.have_data = true
         }
-
-        if (!is_RATE_msg) {
-            delete log.messages[id]
-        }
-
     }
 
     if (!PID_log_messages.have_data) {
@@ -1612,39 +1606,27 @@ function load(log_file) {
     }
 
     // Plot flight data from log
-    log.parseAtOffset("ATT")
-    if (Object.keys(log.messages.ATT).length > 0) {
-        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+    if ("ATT" in log.messageTypes) {
+        const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
         flight_data.data[0].x = ATT_time
-        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+        flight_data.data[0].y = log.get("ATT", "Roll")
 
         flight_data.data[1].x = ATT_time
-        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+        flight_data.data[1].y = log.get("ATT", "Pitch")
     }
-    delete log.messages.ATT
 
-    log.parseAtOffset("RATE")
-    if (Object.keys(log.messages.RATE).length > 0) {
-        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
-    }
-    delete log.messages.RATE
 
-    log.parseAtOffset("POS")
-    if (Object.keys(log.messages.POS).length > 0) {
-        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
-        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    if ("RATE" in log.messageTypes) {
+        flight_data.data[2].x = TimeUS_to_seconds(log.get("RATE", "TimeUS"))
+        flight_data.data[2].y = log.get("RATE", "AOut")
     }
-    delete log.messages.POS
+
+    if ("POS" in log.messageTypes) {
+        flight_data.data[3].x = TimeUS_to_seconds(log.get("POS", "TimeUS"))
+        flight_data.data[3].y = log.get("POS", "RelHomeAlt")
+    }
 
     Plotly.redraw("FlightData")
-
-    // Were now done with the log, delete it to save memory before starting calculations
-    delete log.buffer
-    delete log.data
-    delete log.messages
-    log_file = null
-    log = null
 
     // Caculate output
     for (var PID of PID_log_messages) {
