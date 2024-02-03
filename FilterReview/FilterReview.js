@@ -8,18 +8,10 @@ const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
 var DataflashParser
 import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
-// Delete message to free memory
-function delete_parsed_log_msg(log, msg) {
-    const all = Object.keys(log.messages)
-    if (all.includes(msg)) {
-        delete log.messages[msg]
-        const inst_prefix = msg + "["
-        for (const msg_name of all) {
-            if (msg_name.startsWith(inst_prefix)) {
-                delete log.messages[msg_name]
-            }
-        }
-    }
+// micro seconds to seconds helpers
+const US2S = 1 / 1000000
+function TimeUS_to_seconds(TimeUS) {
+    return array_scale(TimeUS, US2S)
 }
 
 // Generic Class to hold source for notch target
@@ -34,20 +26,14 @@ class NotchTarget {
             return
         }
 
-        // Grab data from log
-        log.parseAtOffset(msg_name)
-        if ((log.messages[msg_name] == null) || (Object.keys(log.messages[msg_name]).length == 0)) {
+        if (!(msg_name in log.messageTypes)) {
+            // Log message not found
             return
         }
 
-        // Grab all given keys to data struct
-        const len = log.messages[msg_name].time_boot_ms.length
-        this.data.time = new Array(len)
-        this.data.value = new Array(len)
-        for (var i=0; i < len; i++) {
-            this.data.time[i] = log.messages[msg_name].time_boot_ms[i] / 1000
-            this.data.value[i] = log.messages[msg_name][key_name][i]
-        }
+        // Grab data from log
+        this.data.time = TimeUS_to_seconds(log.get(msg_name, "TimeUS"))
+        this.data.value = log.get(msg_name, key_name)
     }
 
     interpolate(instance, time) {
@@ -140,7 +126,6 @@ class StaticTarget extends NotchTarget {
 class ThrottleTarget extends NotchTarget {
     constructor(log) {
         super(log, "RATE", "AOut", "Throttle", 1)
-        // Note that we don't delete the RATE log, it is used again for the flight data plot
     }
 
     get_target(config, AOut) {
@@ -160,7 +145,6 @@ class ThrottleTarget extends NotchTarget {
 class RPMTarget extends NotchTarget {
     constructor(log, instance, mode_value) {
         super(log, "RPM", "rpm" + instance, "RPM" + instance, mode_value)
-        delete_parsed_log_msg(log, "RPM")
     }
 
     get_target(config, rpm) {
@@ -183,50 +167,51 @@ class ESCTarget extends NotchTarget {
     constructor(log) {
         super(null, null, null, "ESC", 3)
 
-        // Grab data from log, have to do it a little differently to get instances
         const msg = "ESC"
-        log.parseAtOffset(msg)
-        if ((log.messages[msg] == null) || (log.messages[msg].length == 0)) {
-            delete_parsed_log_msg(log, msg)
+        if (!(msg in log.messageTypes) || !("instances" in log.messageTypes[msg])) {
+            // No log data found
             return
         }
 
         // Individual RPM
         var instances = 0
         var instance_map = []
-        for (let i=0;i<16;i++) {
-            const inst_msg = msg + "[" + i + "]"
-            if (log.messages[inst_msg] != null) {
-                this.data[instances] = { time:[], freq:[] }
-                for (var j=0; j < log.messages[inst_msg].time_boot_ms.length; j++) {
-                    this.data[instances].time[j] = log.messages[inst_msg].time_boot_ms[j] / 1000
-                    this.data[instances].freq[j] = log.messages[inst_msg].RPM[j] / 60
-                }
-                instance_map[i] = instances
-                instances++
-            }
-            delete log.messages[inst_msg]
+        for (const inst of Object.keys(log.messageTypes[msg].instances)) {
+            this.data[instances] = {}
+            this.data[instances].time = TimeUS_to_seconds(log.get_instance(msg, inst, "TimeUS"))
+            this.data[instances].freq = array_scale(log.get_instance(msg, inst, "RPM"), 1 / 60)
+            instance_map[parseFloat(inst)] = instances
+            instances++
         }
 
         // Average RPM
         this.data.avg_freq = []
         this.data.avg_time = []
         var inst = []
+        let all = []
         for (let i=0;i<instances;i++) {
-            inst[i] = { rpm:null, time_ms:null }
+            inst[i] = { freq:null, time:null }
+            const len = this.data[i].time.length
+            for (let j=0;j<len;j++) {
+                all.push({time: this.data[i].time[j], freq: this.data[i].freq[j], inst: i})
+            }
         }
-        for (let i=0;i<log.messages[msg].length;i++) {
+
+        // Sort by time
+        all.sort((a, b) => { return a.time - b.time })
+
+        const len = all.length
+        for (let i=0;i<len;i++) {
             // Update instance
-            const instance = instance_map[log.messages[msg][i].Instance]
-            const time_ms = log.messages[msg][i].time_boot_ms
-            inst[instance].rpm = log.messages[msg][i].RPM
-            inst[instance].time_ms = time_ms
+            const instance = instance_map[all[i].inst]
+            inst[instance].freq = all[i].freq
+            inst[instance].time_ms = all[i].time
 
             // Invalidate any instance that has timed out
             for (let j=0;j<instances;j++) {
-                if ((j != instance) && (inst[j].time_ms != null) && ((time_ms - inst[j].time_ms) > 1000)) {
-                    inst[j].time_ms = null
-                    inst[j].rpm = null
+                if ((j != instance) && (inst[j].time != null) && ((time_ms - inst[j].time) > 1)) {
+                    inst[j].time = null
+                    inst[j].freq = null
                 }
             }
 
@@ -235,9 +220,9 @@ class ESCTarget extends NotchTarget {
             var count = 0
             var sum = 0
             for (let j=0;j<instances;j++) {
-                if (inst[j].rpm != null) {
+                if (inst[j].freq != null) {
                     count++
-                    sum += inst[j].rpm
+                    sum += inst[j].freq
                 }
                 if (inst[j].time_ms != null) {
                     expected_count++
@@ -245,16 +230,15 @@ class ESCTarget extends NotchTarget {
             }
 
             if ((count > 0) && (count == expected_count)) {
-                this.data.avg_freq.push((sum / count) / 60)
-                this.data.avg_time.push(time_ms / 1000)
+                this.data.avg_freq.push(sum / count)
+                this.data.avg_time.push(all[i].time)
 
                 // Invalidate used values
                 for (let j=0;j<instances;j++) {
-                    inst[j].rpm = null
+                    inst[j].freq = null
                 }
             }
         }
-        delete_parsed_log_msg(log, msg)
     }
 
     interpolate(instance, time) {
@@ -353,44 +337,39 @@ class ESCTarget extends NotchTarget {
 class FFTTarget extends NotchTarget {
     constructor(log) {
         super(log, "FTN1", "PkAvg", "FFT", 4)
-        delete_parsed_log_msg(log, "FTN1")
 
-        // Grab data from log, have to do it a little differently to get instances
+        // Grab data from log
         const msg = "FTN2"
-        log.parseAtOffset(msg)
-        if ((log.messages[msg] == null) || (log.messages[msg].length == 0)) {
-            delete_parsed_log_msg(log, msg)
+        if (!(msg in log.messageTypes) || !("instances" in log.messageTypes[msg])) {
             return
         }
-        delete log.messages[msg]
 
-        for (let i=0;i<3;i++) {
-            // FFT can track three peaks
-            const inst_msg = msg + "[" + i + "]"
-            if (log.messages[inst_msg] != null) {
-                this.data[i] = { time:[], freq:[] }
-                for (var j=0; j < log.messages[inst_msg].time_boot_ms.length; j++) {
+        // FFT can track three peaks
+        for (const inst of Object.keys(log.messageTypes[msg].instances)) {
+            const i = parseFloat(inst)
+            this.data[i] = {
+                time: TimeUS_to_seconds(log.get_instance(msg, inst, "TimeUS")),
+            }
+            const len = this.data[i].time.length
+            this.data[i].freq = new Array(len)
 
-                    // Do noise weighting between axis to get a single frequency
-                    // Same as `get_weighted_freq_hz` function in AP_GyroFFT
-                    const energy_x = log.messages[inst_msg].EnX[j]
-                    const energy_y = log.messages[inst_msg].EnY[j]
-                    const freq_x = log.messages[inst_msg].PkX[j]
-                    const freq_y = log.messages[inst_msg].PkY[j]
+            // Do noise weighting between axis to get a single frequency
+            // Same as `get_weighted_freq_hz` function in AP_GyroFFT
+            const energy_x = log.get_instance(msg, inst, "EnX")
+            const energy_y = log.get_instance(msg, inst,"EnY")
+            const freq_x = log.get_instance(msg, inst, "PkX")
+            const freq_y = log.get_instance(msg, inst, "PkY")
 
-                    if ((energy_x > 0) && (energy_y > 0)) {
-                        // Weighted by relative energy
-                        this.data[i].freq[j] = (freq_x*energy_x + freq_y*energy_y) / (energy_x + energy_y)
-                    } else {
-                        // Just take average
-                        this.data[i].freq[j] = (freq_x + freq_y) * 0.5
-                    }
-                    this.data[i].time[j] = log.messages[inst_msg].time_boot_ms[j] / 1000
+            for (var j=0; j < len; j++) {
+                if ((energy_x[j] > 0) && (energy_y[j] > 0)) {
+                    // Weighted by relative energy
+                    this.data[i].freq[j] = (freq_x[j]*energy_x[j] + freq_y[j]*energy_y[j]) / (energy_x[j] + energy_y[j])
+                } else {
+                    // Just take average
+                    this.data[i].freq[j] = (freq_x[j] + freq_y[j]) * 0.5
                 }
             }
-            delete log.messages[inst_msg]
         }
-        delete_parsed_log_msg(log, msg)
     }
 
     interpolate(instance, time) {
@@ -473,54 +452,44 @@ class LoggedNotch extends NotchTarget {
 
         this.harmonics = null
 
-        function find_instance_key(msg) {
-            let instance_key = msg + "[" + instance + "]"
-            if (log.messages[instance_key] != null) {
-                // Multiple instances
-                return instance_key
-            }
-
-            if (("I" in log.messages[msg]) && Array.from(log.messages[msg].I).every((x) => x == instance)) {
-                // Single instance
-                return msg
-    
-            }
-
-            // No instances
-        }
-
         // Load static notch message
         const static_msg = "FTNS"
-        log.parseAtOffset(static_msg)
-        const static_inst = find_instance_key(static_msg)
-        if ((static_inst != null) && (Object.keys(log.messages[static_inst]).length > 0)) {
-            this.name += " static"
+        if ((static_msg in log.messageTypes) && ("instances" in log.messageTypes[static_msg])) {
+            for (const inst of Object.keys(log.messageTypes[static_msg].instances)) {
+                if (parseFloat(inst) != instance) {
+                    // Not selected instance
+                    continue
+                }
+                this.name += " static"
 
-            this.data.time = array_scale(Array.from(log.messages[static_inst].time_boot_ms), 1 / 1000)
-            this.data.freq = Array.from(log.messages[static_inst].NF)
-
-            // If we have a static instance there should not be a dynamic for this instance
-            delete_parsed_log_msg(log, static_msg)
-            return
+                this.data.time = TimeUS_to_seconds(log.get_instance(static_msg, inst, "TimeUS"))
+                this.data.freq = Array.from(log.get_instance(static_msg, inst, "NF"))
+                // If we have a static instance there should not be a dynamic for this instance
+                return
+            }
         }
-        delete_parsed_log_msg(log, static_msg)
 
         // Load dynamic msg
         const dynamic_msg = "FTN"
-        log.parseAtOffset(dynamic_msg)
-        const dynamic_inst = find_instance_key(dynamic_msg)
-        if ((dynamic_inst != null) && (Object.keys(log.messages[dynamic_inst]).length > 0)) {
-            const num_notches = Math.max(...Array.from(log.messages[dynamic_inst].NDn))
+        if ((dynamic_msg in log.messageTypes) && ("instances" in log.messageTypes[dynamic_msg])) {
+            for (const inst of Object.keys(log.messageTypes[dynamic_msg].instances)) {
+                if (parseFloat(inst) != instance) {
+                    // Not selected instance
+                    continue
+                }
 
-            this.data.time = array_scale(Array.from(log.messages[dynamic_inst].time_boot_ms), 1 / 1000)
+                const num_notches = Math.max(...log.get_instance(dynamic_msg, inst, "NDn"))
 
-            this.data.freq = []
-            for (let i = 0; i<num_notches; i++) {
-                const name = "NF" + (i + 1)
-                this.data.freq[i] = Array.from(log.messages[dynamic_inst][name])
+                this.data.time = TimeUS_to_seconds(log.get_instance(dynamic_msg, inst, "TimeUS"))
+
+                this.data.freq = new Array(num_notches)
+                for (let i = 0; i<num_notches; i++) {
+                    const name = "NF" + (i + 1)
+                    this.data.freq[i] = Array.from(log.get_instance(dynamic_msg, inst, name))
+                }
+                return
             }
         }
-        delete_parsed_log_msg(log, dynamic_msg)
     }
 
     get_target_freq() {
@@ -2541,7 +2510,7 @@ async function load_parameters(file) {
 }
 
 // Load from batch logging messages
-function load_from_batch(log, num_gyro, gyro_rate) {
+function load_from_batch(log, num_gyro, gyro_rate, get_param) {
     Gyro_batch = []
     Gyro_batch.type = "batch"
 
@@ -2557,13 +2526,17 @@ function load_from_batch(log, num_gyro, gyro_rate) {
     const IMU_SENSOR_TYPE_GYRO = 1
     let data_index = 0
     let max_instance = 0
-    for (let i = 0; i < log.messages.ISBH.N.length; i++) {
+
+    const ISBH = log.get("ISBH")
+    const ISBD = log.get("ISBD")
+
+    for (let i = 0; i < ISBH.N.length; i++) {
         // Parse headers
-        if (log.messages.ISBH.type[i] != IMU_SENSOR_TYPE_GYRO) {
+        if (ISBH.type[i] != IMU_SENSOR_TYPE_GYRO) {
             continue
         }
 
-        const instance = log.messages.ISBH.instance[i]
+        const instance = ISBH.instance[i]
         if (Gyro_batch[instance] == null) {
             Gyro_batch[instance] = []
             max_instance = Math.max(max_instance, instance)
@@ -2572,12 +2545,12 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         let decode_complete = false
 
         // Advance data index until sequence match
-        const seq_num = log.messages.ISBH.N[i]
-        while (log.messages.ISBD.N[data_index] != seq_num) {
+        const seq_num = ISBH.N[i]
+        while (ISBD.N[data_index] != seq_num) {
             data_index++
-            if (data_index >= log.messages.ISBD.N.length) {
+            if (data_index >= ISBD.N.length) {
                 // This is expected at the end of a log, no more msgs to add, break here
-                console.log("Could not find next sequence " + i + " of " + log.messages.ISBH.N.length-1)
+                console.log("Could not find next sequence " + i + " of " + ISBH.N.length-1)
                 decode_complete = true
                 break
             }
@@ -2589,23 +2562,23 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         let x = []
         let y = []
         let z = []
-        const num_samples = log.messages.ISBH.smp_cnt[i]
+        const num_samples = ISBH.smp_cnt[i]
         const num_data_msg = num_samples / 32
         for (let j = 0; j < num_data_msg; j++) {
             // Read in expected number of samples
-            if ((log.messages.ISBD.N[data_index] != seq_num) || (log.messages.ISBD.seqno[data_index] != j)) {
+            if ((ISBD.N[data_index] != seq_num) || (ISBD.seqno[data_index] != j)) {
                 console.log("Missing or extra data msg")
                 return
             }
 
             // Accumulate data for this batch
-            x.push(...log.messages.ISBD.x[data_index])
-            y.push(...log.messages.ISBD.y[data_index])
-            z.push(...log.messages.ISBD.z[data_index])
+            x.push(...ISBD.x[data_index])
+            y.push(...ISBD.y[data_index])
+            z.push(...ISBD.z[data_index])
 
             data_index++
-            if (data_index >= log.messages.ISBD.N.length) {
-                console.log("Sequence incomplete " + i + " of " + (log.messages.ISBH.N.length-1) + ", Got " + (j+1) + " batches out of " + num_data_msg)
+            if (data_index >= ISBD.N.length) {
+                console.log("Sequence incomplete " + i + " of " + (ISBH.N.length-1) + ", Got " + (j+1) + " batches out of " + num_data_msg)
                 decode_complete = true
                 break
             }
@@ -2620,21 +2593,21 @@ function load_from_batch(log, num_gyro, gyro_rate) {
         }
 
         // Remove logging scale factor
-        const mul = 1/log.messages.ISBH.mul[i]
+        const mul = 1 / ISBH.mul[i]
         x = array_scale(x, mul)
         y = array_scale(y, mul)
         z = array_scale(z, mul)
 
         // Add to batches for this instance
-        Gyro_batch[instance].push({ sample_time: log.messages.ISBH.SampleUS[i] / 1000000,
-                                    sample_rate: log.messages.ISBH.smp_rate[i],
+        Gyro_batch[instance].push({ sample_time: ISBH.SampleUS[i] * US2S,
+                                    sample_rate: ISBH.smp_rate[i],
                                     x: x,
                                     y: y,
                                     z: z })
     }
 
     // Work out if logging is pre/post from param value
-    const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT", false)
+    const INS_LOG_BAT_OPT = get_param("INS_LOG_BAT_OPT", false)
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
     const _doing_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 1)) != 0
     const _doing_pre_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 2)) != 0
@@ -2706,7 +2679,7 @@ function load_from_batch(log, num_gyro, gyro_rate) {
 }
 
 // Log from raw sensor logging
-function load_from_raw_log(log, num_gyro, gyro_rate) {
+function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
     Gyro_batch = []
     Gyro_batch.type = "raw"
 
@@ -2717,7 +2690,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     Gyro_batch.quantization_noise = 0.0
 
     // Work out if logging is pre/post from param value
-    const INS_RAW_LOG_OPT = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT", false)
+    const INS_RAW_LOG_OPT = get_param("INS_RAW_LOG_OPT", false)
     const post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 2)) != 0)
     const pre_post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 3)) != 0)
     if (post_filter && pre_post_filter) {
@@ -2726,22 +2699,15 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
     }
 
     // Load in a one massive batch, split for large gaps in log
-    for (let i = 0; i < 6; i++) {
-        var instance_name = "GYR[" + i + "]"
-        if (log.messages[instance_name] == null) {
-            // Try single gyro instance
-            if (!("I" in log.messages.GYR) || !Array.from(log.messages.GYR.I).every((x) => x == i)) {
-                continue
-            }
-            instance_name = "GYR"
-        }
-        if (log.messages[instance_name].length == 0) {
-            continue
-        }
+    for (const inst of Object.keys(log.messageTypes.GYR.instances)) {
+        const i = parseFloat(inst)
 
         Gyro_batch[i] = []
 
-        const time = Array.from(log.messages[instance_name].SampleUS)
+        const time = log.get_instance("GYR", inst, "SampleUS")
+        const GyrX = log.get_instance("GYR", inst, "GyrX")
+        const GyrY = log.get_instance("GYR", inst, "GyrY")
+        const GyrZ = log.get_instance("GYR", inst, "GyrZ")
 
         let sample_rate_sum = 0
         let sample_rate_count = 0
@@ -2760,11 +2726,11 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
                     sample_rate_sum += sample_rate
                     sample_rate_count++
 
-                    Gyro_batch[i].push({ sample_time: log.messages[instance_name].SampleUS[batch_start] / 1000000,
+                    Gyro_batch[i].push({ sample_time: time[batch_start] * US2S,
                                         sample_rate: sample_rate,
-                                        x: Array.from(log.messages[instance_name].GyrX.slice(batch_start, j-i)),
-                                        y: Array.from(log.messages[instance_name].GyrY.slice(batch_start, j-i)),
-                                        z: Array.from(log.messages[instance_name].GyrZ.slice(batch_start, j-i)) })
+                                        x: GyrX.slice(batch_start, j-i),
+                                        y: GyrY.slice(batch_start, j-i),
+                                        z: GyrZ.slice(batch_start, j-i) })
                 }
 
                 // Start the next batch from this point
@@ -2773,7 +2739,6 @@ function load_from_raw_log(log, num_gyro, gyro_rate) {
             }
 
         }
-        delete log.messages[instance_name]
 
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
@@ -2828,11 +2793,16 @@ function load(log_file) {
     reset()
 
     let log = new DataflashParser()
-    log.processData(log_file, ['PARM', 'IMU'])
+    log.processData(log_file, [])
 
-    if ((Object.keys(log.messages.PARM).length == 0) && (Object.keys(log.messages.IMU).length == 0)) {
+
+    if (!("PARM" in log.messageTypes) || !("IMU" in log.messageTypes)) {
         alert("No params or IMU in log")
         return
+    }
+    const PARM = log.get("PARM")
+    function get_param(name, allow_change) {
+        return get_param_value(PARM, name, allow_change)
     }
 
     // Try and decode device IDs and rate
@@ -2840,27 +2810,13 @@ function load(log_file) {
     var gyro_rate = []
     for (let i = 0; i < 3; i++) {
         const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
-        const ID = get_param_value(log.messages.PARM, ID_param)
+        const ID = get_param(ID_param)
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
 
-            if (log.messages.IMU != null) {
-                let msg_key
-                const instance_key = "IMU[" + i + "]"
-                if (log.messages[instance_key] != null) {
-                    // Multiple IMU instances
-                    msg_key = instance_key
-
-                } else if (("I" in log.messages.IMU) && Array.from(log.messages.IMU.I).every((x) => x == i)) {
-                    // Single instance
-                    msg_key = "IMU"
-
-                }
-                if (msg_key != null) {
-                    // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
-                    gyro_rate[i] = array_mean(Array.from(log.messages[msg_key].GHz))
-                }
-
+            if (i in log.messageTypes.IMU.instances) {
+                // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
+                gyro_rate[i] = array_mean(log.get_instance("IMU", i, "GHz"))
             }
 
             if (decoded != null) {
@@ -2870,14 +2826,10 @@ function load(log_file) {
             num_gyro++
         }
     }
-    delete_parsed_log_msg(log, "IMU")
 
     // Check for some data that we can use
-    log.parseAtOffset("ISBH")
-    log.parseAtOffset("ISBD")
-    log.parseAtOffset("GYR")
-    const have_batch_log = (Object.keys(log.messages.ISBH).length > 0) && (Object.keys(log.messages.ISBD).length > 0)
-    const have_raw_log = Object.keys(log.messages.GYR).length > 0
+    const have_batch_log = ("ISBH" in log.messageTypes) && ("ISBD" in log.messageTypes)
+    const have_raw_log = ("GYR" in log.messageTypes)
 
     if (!have_batch_log && !have_raw_log) {
         alert("No batch data or raw IMU found in log")
@@ -2910,17 +2862,12 @@ function load(log_file) {
 
 
     if (use_batch) {
-        load_from_batch(log, num_gyro, gyro_rate)
+        load_from_batch(log, num_gyro, gyro_rate, get_param)
 
     } else {
-        load_from_raw_log(log, num_gyro, gyro_rate)
+        load_from_raw_log(log, num_gyro, gyro_rate, get_param)
 
     }
-
-    // Delete log data now it has been used
-    delete log.messages.ISBH
-    delete log.messages.ISBD
-    delete_parsed_log_msg(log, "GYR")
 
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
@@ -2944,7 +2891,7 @@ function load(log_file) {
     document.getElementById("SpecNotchShowLogged").disabled = !show_logged_notch
 
     // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
-    const have_16_harmonics = get_param_value(log.messages.PARM, "INS_RAW_LOG_OPT") != null
+    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
 
     // Read from log into HTML box
     const HNotch_params = get_HNotch_param_names()
@@ -2955,7 +2902,7 @@ function load(log_file) {
                 // Although only 16 harmonic are supported the underlying param type was changed to 32bit
                 set_bitmask_size(param, have_16_harmonics ? 32 : 8)
             }
-            const value = get_param_value(log.messages.PARM, param)
+            const value = get_param(param)
             if (value != null) {
                 parameter_set_value(param, value)
             }
@@ -2964,32 +2911,28 @@ function load(log_file) {
 
     const other_params = ["INS_GYRO_FILTER", "SCHED_LOOP_RATE"]
     for (const param of other_params) {
-        const value = get_param_value(log.messages.PARM, param)
+        const value = get_param(param)
         if (value != null) {
             parameter_set_value(param, value)
         }
     }
 
     // Plot flight data from log
-    log.parseAtOffset("ATT")
-
-    if (Object.keys(log.messages.ATT).length > 0) {
-        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+    if ("ATT" in log.messageTypes) {
+        const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
         flight_data.data[0].x = ATT_time
-        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+        flight_data.data[0].y = log.get("ATT", "Roll")
 
         flight_data.data[1].x = ATT_time
-        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+        flight_data.data[1].y = log.get("ATT", "Pitch")
     }
-    delete log.messages.ATT
 
-    // RATE msg is already loaded by the throttle target notch tracking
     let first_throttle_time
     let last_throttle_time
-    if (Object.keys(log.messages.RATE).length > 0) {
+    if ("RATE" in log.messageTypes) {
         // Get values
-        const RATE_time = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-        const throttle = Array.from(log.messages.RATE.AOut)
+        const RATE_time = TimeUS_to_seconds(log.get("RATE", "TimeUS"))
+        const throttle = log.get("RATE", "AOut")
 
         // Plot
         flight_data.data[2].x = RATE_time
@@ -3008,19 +2951,16 @@ function load(log_file) {
             last_throttle_time = RATE_time[last_index]
         }
     }
-    delete log.messages.RATE
 
-    log.parseAtOffset("POS")
-    if (Object.keys(log.messages.POS).length > 0) {
-        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
-        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    if ("POS" in log.messageTypes) {
+        flight_data.data[3].x = TimeUS_to_seconds(log.get("POS", "TimeUS"))
+        flight_data.data[3].y = log.get("POS", "RelHomeAlt")
     }
-    delete log.messages.POS
 
     // Try and work out which is the primary sensor
     let primary_gyro = 0
-    const AHRS_EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
-    const EK3_PRIMARY = get_param_value(log.messages.PARM, "EK3_PRIMARY")
+    const AHRS_EKF_TYPE = get_param("AHRS_EKF_TYPE")
+    const EK3_PRIMARY = get_param("EK3_PRIMARY")
     if ((AHRS_EKF_TYPE == 3) && (EK3_PRIMARY != null)) {
         primary_gyro = EK3_PRIMARY
 
@@ -3044,13 +2984,6 @@ function load(log_file) {
     if (!have_primary) {
         primary_gyro = null
     }
-
-    // Were now done with the log, delete it to save memory before starting caculations
-    delete log.buffer
-    delete log.data
-    delete log.messages
-    log_file = null
-    log = null
 
     // Enable top level filter params
     parameter_set_disable("INS_GYRO_FILTER", false)
