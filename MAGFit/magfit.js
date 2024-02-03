@@ -1622,15 +1622,17 @@ function calc_error(A, B) {
 
 function extractLatLon(log) {
   var Lat, Lng
-  if (log.messages["ORGN[0]"] !== undefined) {
-    Lat = log.messages["ORGN[0]"].Lat[log.messages["ORGN[0]"].Lat.length-1] * 10**-7
-    Lng = log.messages["ORGN[0]"].Lng[log.messages["ORGN[0]"].Lng.length-1] * 10**-7
+  if (("ORGN" in log.messageTypes) && ("instances" in log.messageTypes.ORGN) && (0 in log.messageTypes.ORGN.instances)) {
+    const ORGN = log.get_instance("ORGN", 0)
+    Lat = ORGN.Lat[ORGN.Lat.length-1] * 10**-7
+    Lng = ORGN.Lng[ORGN.Lng.length-1] * 10**-7
     return [Lat, Lng]
   }
   console.warn("no ORGN message found")
-  if (Object.keys(log.messages["POS"]).length > 0) {
-    Lat = log.messages["POS"].Lat[log.messages["POS"].Lat.length-1] * 10**-7
-    Lng = log.messages["POS"].Lng[log.messages["POS"].Lng.length-1] * 10**-7
+  if ("POS" in log.messageTypes) {
+    const POS = log.get("POS")
+    Lat = POS.Lat[POS.Lat.length-1] * 10**-7
+    Lng = POS.Lng[POS.Lng.length-1] * 10**-7
     return [Lat, Lng]
   }
   return [Lat, Lng]
@@ -1671,20 +1673,6 @@ function add_attitude_source(quaternion, name) {
 
 }
 
-// Delete message to free memory
-function delete_parsed_log_msg(log, msg) {
-    const all = Object.keys(log.messages)
-    if (all.includes(msg)) {
-        delete log.messages[msg]
-        const inst_prefix = msg + "["
-        for (const msg_name of all) {
-            if (msg_name.startsWith(inst_prefix)) {
-                delete log.messages[msg_name]
-            }
-        }
-    }
-}
-
 var MAG_Data
 var fits
 var body_frame_earth_field
@@ -1694,42 +1682,47 @@ function load(log_file) {
     let log = new DataflashParser()
     log.processData(log_file, [])
 
+    if (!("MAG" in log.messageTypes) || !("instances" in log.messageTypes.MAG)) {
+        alert("No compass data in log")
+        return
+    }
+
+    // micro seconds to seconds helpers
+    const US2S = 1 / 1000000
+    function TimeUS_to_seconds(TimeUS) {
+        return array_scale(TimeUS, US2S)
+    }
+
     // Plot flight data from log
-    log.parseAtOffset("ATT")
-    if (Object.keys(log.messages.ATT).length > 0) {
-        const ATT_time = array_scale(Array.from(log.messages.ATT.time_boot_ms), 1 / 1000)
+    if ("ATT" in log.messageTypes) {
+        const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
         flight_data.data[0].x = ATT_time
-        flight_data.data[0].y = Array.from(log.messages.ATT.Roll)
+        flight_data.data[0].y = log.get("ATT", "Roll")
 
         flight_data.data[1].x = ATT_time
-        flight_data.data[1].y = Array.from(log.messages.ATT.Pitch)
+        flight_data.data[1].y = log.get("ATT", "Pitch")
     } else {
         flight_data.data[0].x = null
         flight_data.data[0].y = null
         flight_data.data[1].x = null
         flight_data.data[1].y = null
     }
-    delete log.messages.ATT
 
-    log.parseAtOffset("RATE")
-    if (Object.keys(log.messages.RATE).length > 0) {
-        flight_data.data[2].x = array_scale(Array.from(log.messages.RATE.time_boot_ms), 1 / 1000)
-        flight_data.data[2].y = Array.from(log.messages.RATE.AOut)
+    if ("RATE" in log.messageTypes) {
+        flight_data.data[2].x = TimeUS_to_seconds(log.get("RATE", "TimeUS"))
+        flight_data.data[2].y = log.get("RATE", "AOut")
     } else {
         flight_data.data[2].x = null
         flight_data.data[2].y = null
     }
-    delete log.messages.RATE
 
-    log.parseAtOffset("POS")
-    if (Object.keys(log.messages.POS).length > 0) {
-        flight_data.data[3].x = array_scale(Array.from(log.messages.POS.time_boot_ms), 1 / 1000)
-        flight_data.data[3].y = Array.from(log.messages.POS.RelHomeAlt)
+    if ("POS" in log.messageTypes) {
+        flight_data.data[3].x = TimeUS_to_seconds(log.get("POS", "TimeUS"))
+        flight_data.data[3].y = log.get("POS", "RelHomeAlt")
     } else {
         flight_data.data[3].x = null
         flight_data.data[3].y = null
     }
-    // Note POS is not deleted as it is used to get location later
 
     Plotly.redraw("FlightData")
 
@@ -1764,9 +1757,12 @@ function load(log_file) {
         return img
     }
 
+    const PARM = log.get("PARM")
+    function get_param(name, allow_change) {
+        return get_param_value(PARM, name, allow_change)
+    }
+
     // Get MAG data
-    log.parseAtOffset("MAG")
-    log.parseAtOffset("PARM")
     MAG_Data.start_time = null
     MAG_Data.end_time = null
     for (let i = 0; i < 3; i++) {
@@ -1776,25 +1772,19 @@ function load(log_file) {
         let info = document.getElementById(name)
         info.replaceChildren()
 
-        var msg_name = 'MAG[' + i + ']'
-        if ((log.messages[msg_name] == null) && ("I" in log.messages.MAG)) {
-            // Try single instance, deal with change in instance string
-            if (Array.from(log.messages.MAG.I).every((x) => x == i)) {
-                msg_name = "MAG"
-            }
-        }
-
-        if (log.messages[msg_name] == null) {
+        if (!(i in log.messageTypes.MAG.instances)) {
             info.appendChild(document.createTextNode("Not found"))
             document.getElementById("MAG_" + (i + 1) + "_PARAM_INFO").replaceChildren(document.createTextNode("Not found"))
             continue
         }
 
+        const MAG_msg = log.get_instance("MAG", i)
+
         // Load data from log
-        MAG_Data[i] = { orig: { x: Array.from(log.messages[msg_name].MagX),
-                                y: Array.from(log.messages[msg_name].MagY),
-                                z: Array.from(log.messages[msg_name].MagZ)},
-                        time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
+        MAG_Data[i] = { orig: { x: Array.from(MAG_msg.MagX),
+                                y: Array.from(MAG_msg.MagY),
+                                z: Array.from(MAG_msg.MagZ)},
+                        time: TimeUS_to_seconds(MAG_msg.TimeUS),
                         names: get_compass_param_names(i+1),
                         fits: [],
                         param_selection: [] }
@@ -1807,23 +1797,23 @@ function load(log_file) {
         MAG_Data.end_time = (MAG_Data.end_time == null) ? MAG_Data[i].end_time : Math.max(MAG_Data.end_time, MAG_Data[i].end_time)
 
         // Get param values
-        MAG_Data[i].params = { offsets:  [ get_param_value(log.messages.PARM, MAG_Data[i].names.offsets[0]),
-                                           get_param_value(log.messages.PARM, MAG_Data[i].names.offsets[1]),
-                                           get_param_value(log.messages.PARM, MAG_Data[i].names.offsets[2])],
-                               diagonals: [ get_param_value(log.messages.PARM, MAG_Data[i].names.diagonals[0]),
-                                            get_param_value(log.messages.PARM, MAG_Data[i].names.diagonals[1]),
-                                            get_param_value(log.messages.PARM, MAG_Data[i].names.diagonals[2])],
-                               off_diagonals: [ get_param_value(log.messages.PARM, MAG_Data[i].names.off_diagonals[0]),
-                                                get_param_value(log.messages.PARM, MAG_Data[i].names.off_diagonals[1]),
-                                                get_param_value(log.messages.PARM, MAG_Data[i].names.off_diagonals[2])],
-                               scale: get_param_value(log.messages.PARM, MAG_Data[i].names.scale),
-                               motor: [ get_param_value(log.messages.PARM, MAG_Data[i].names.motor[0]),
-                                        get_param_value(log.messages.PARM, MAG_Data[i].names.motor[1]),
-                                        get_param_value(log.messages.PARM, MAG_Data[i].names.motor[2])],
-                               id: get_param_value(log.messages.PARM, MAG_Data[i].names.id),
-                               use: get_param_value(log.messages.PARM, MAG_Data[i].names.use),
-                               external: get_param_value(log.messages.PARM, MAG_Data[i].names.external),
-                               orientation: get_param_value(log.messages.PARM, MAG_Data[i].names.orientation) }
+        MAG_Data[i].params = { offsets:  [ get_param(MAG_Data[i].names.offsets[0]),
+                                           get_param(MAG_Data[i].names.offsets[1]),
+                                           get_param(MAG_Data[i].names.offsets[2])],
+                               diagonals: [ get_param(MAG_Data[i].names.diagonals[0]),
+                                            get_param(MAG_Data[i].names.diagonals[1]),
+                                            get_param(MAG_Data[i].names.diagonals[2])],
+                               off_diagonals: [ get_param(MAG_Data[i].names.off_diagonals[0]),
+                                                get_param(MAG_Data[i].names.off_diagonals[1]),
+                                                get_param(MAG_Data[i].names.off_diagonals[2])],
+                               scale: get_param(MAG_Data[i].names.scale),
+                               motor: [ get_param(MAG_Data[i].names.motor[0]),
+                                        get_param(MAG_Data[i].names.motor[1]),
+                                        get_param(MAG_Data[i].names.motor[2])],
+                               id: get_param(MAG_Data[i].names.id),
+                               use: get_param(MAG_Data[i].names.use),
+                               external: get_param(MAG_Data[i].names.external),
+                               orientation: get_param(MAG_Data[i].names.orientation) }
 
 
         // Print some device info, offset is first param in fieldset
@@ -1843,7 +1833,7 @@ function load(log_file) {
         info.appendChild(document.createTextNode(", "))
         info.appendChild(document.createTextNode("External: " + ((MAG_Data[i].params.external > 0) ? "\u2705" : "\u274C")))
         info.appendChild(document.createTextNode(", "))
-        info.appendChild(document.createTextNode("Health: " + (array_all_equal(log.messages[msg_name].Health, 1) ? "\u2705" : "\u274C")))
+        info.appendChild(document.createTextNode("Health: " + (array_all_equal(MAG_msg.Health, 1) ? "\u2705" : "\u274C")))
 
         info.appendChild(half_gap())
 
@@ -1857,9 +1847,9 @@ function load(log_file) {
         // Remove calibration to get raw values
 
         // Subtract compass-motor compensation
-        let x = array_sub(MAG_Data[i].orig.x, Array.from(log.messages[msg_name].MOX))
-        let y = array_sub(MAG_Data[i].orig.y, Array.from(log.messages[msg_name].MOY))
-        let z = array_sub(MAG_Data[i].orig.z, Array.from(log.messages[msg_name].MOZ))
+        let x = array_sub(MAG_Data[i].orig.x, Array.from(MAG_msg.MOX))
+        let y = array_sub(MAG_Data[i].orig.y, Array.from(MAG_msg.MOY))
+        let z = array_sub(MAG_Data[i].orig.z, Array.from(MAG_msg.MOZ))
 
         // Remove iron correction
         if (!array_all_equal(MAG_Data[i].params.diagonals, 0.0)) {
@@ -1889,9 +1879,9 @@ function load(log_file) {
         }
 
         // remove offsets
-        x = array_sub(x, Array.from(log.messages[msg_name].OfsX))
-        y = array_sub(y, Array.from(log.messages[msg_name].OfsY))
-        z = array_sub(z, Array.from(log.messages[msg_name].OfsZ))
+        x = array_sub(x, Array.from(MAG_msg.OfsX))
+        y = array_sub(y, Array.from(MAG_msg.OfsY))
+        z = array_sub(z, Array.from(MAG_msg.OfsZ))
 
         // Rotate external compasses back into raw sensor frame
         let rotation = new Quaternion()
@@ -1911,14 +1901,6 @@ function load(log_file) {
 
         MAG_Data[i].raw = { x: x, y: y, z: z }
         MAG_Data[i].rotate = rotate
-
-        delete log.messages[msg_name]
-    }
-    delete_parsed_log_msg(log, "MAG")
-
-    if (MAG_Data.length == 0) {
-        alert("No compass data in log")
-        return
     }
 
     // Set start and end time
@@ -1928,8 +1910,6 @@ function load(log_file) {
     // Assume constant earth field
     // Use origin msg
     // Use last EKF origin for earth field
-    log.parseAtOffset("ORGN")
-    log.parseAtOffset("POS")
     var [Lat, Lng] = extractLatLon(log)
     earth_field = expected_earth_field_lat_lon(Lat, Lng)
     if (earth_field == null) {
@@ -1937,11 +1917,9 @@ function load(log_file) {
         return
     }
     console.log("EF: " + earth_field.vector[0] + ", " + earth_field.vector[1] + ", " + earth_field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
-    delete_parsed_log_msg(log, "ORGN")
-    delete log.messages.POS
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
-    const EKF_TYPE = get_param_value(log.messages.PARM, "AHRS_EKF_TYPE")
+    const EKF_TYPE = get_param("AHRS_EKF_TYPE")
 
     // Load various attitude sources and calculate body frame earth field
 
@@ -1952,16 +1930,14 @@ function load(log_file) {
     body_frame_earth_field = []
     source = null
 
-    log.parseAtOffset("AHR2")
-    msg_name = "AHR2"
-    if (Object.keys(log.messages[msg_name]).length > 0) {
+    if ("AHR2" in log.messageTypes) {
 
         const quaternion = {
-            time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
-            q1: Array.from(log.messages[msg_name].Q1),
-            q2: Array.from(log.messages[msg_name].Q2),
-            q3: Array.from(log.messages[msg_name].Q3),
-            q4: Array.from(log.messages[msg_name].Q4)
+            time: TimeUS_to_seconds(log.get("AHR2", "TimeUS")),
+            q1: Array.from(log.get("AHR2", "Q1")),
+            q2: Array.from(log.get("AHR2", "Q2")),
+            q3: Array.from(log.get("AHR2", "Q3")),
+            q4: Array.from(log.get("AHR2", "Q4"))
         }
 
         let field = add_attitude_source(quaternion, "DCM")
@@ -1971,24 +1947,15 @@ function load(log_file) {
  
         body_frame_earth_field.push(field)
     }
-    delete log.messages[msg_name]
 
-    log.parseAtOffset("NKQ")
-    msg_name = "NKQ[0]"
-    if (!(msg_name in log.messages) && ("C" in log.messages.NKQ)) {
-        // Try single instance, deal with change in instance string
-        if (Array.from(log.messages.NKQ.C).every((x) => x == 0)) {
-            msg_name = "NKQ"
-        }
-    }
-    if ((msg_name in log.messages) && (Object.keys(log.messages[msg_name]).length > 0)) {
+    if (("NKQ" in log.messageTypes) && ("instances" in log.messageTypes.NKQ) && (0 in log.messageTypes.NKQ.instances)) {
 
         const quaternion = {
-            time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
-            q1: Array.from(log.messages[msg_name].Q1),
-            q2: Array.from(log.messages[msg_name].Q2),
-            q3: Array.from(log.messages[msg_name].Q3),
-            q4: Array.from(log.messages[msg_name].Q4)
+            time: TimeUS_to_seconds(log.get_instance("NKQ", 0, "TimeUS")),
+            q1: Array.from(log.get_instance("NKQ", 0, "Q1")),
+            q2: Array.from(log.get_instance("NKQ", 0, "Q2")),
+            q3: Array.from(log.get_instance("NKQ", 0, "Q3")),
+            q4: Array.from(log.get_instance("NKQ", 0, "Q4"))
         }
 
         let field = add_attitude_source(quaternion, "EKF 2 IMU 1")
@@ -1998,33 +1965,23 @@ function load(log_file) {
 
         body_frame_earth_field.push(field)
     }
-    delete_parsed_log_msg(log, "NKQ")
 
-    log.parseAtOffset("XKQ")
-    if (Object.keys(log.messages["XKQ"]).length > 0) {
+    if (("XKQ" in log.messageTypes) && ("instances" in log.messageTypes.XKQ)) {
 
         var primary = 0
-        const EKF3_PRIMARY = get_param_value(log.messages.PARM, "EK3_PRIMARY")
+        const EKF3_PRIMARY = get_param("EK3_PRIMARY")
         if (EKF3_PRIMARY != null) {
             primary = EKF3_PRIMARY
         }
-        msg_name = "XKQ[" + primary + "]"
 
-        if ((log.messages[msg_name] == null) && ("C" in log.messages.XKQ)) {
-            // Try single instance, deal with change in instance string
-            if (Array.from(log.messages.XKQ.C).every((x) => x == primary)) {
-                msg_name = "XKQ"
-            }
-        }
+        if (primary in log.messageTypes.XKQ.instances) {
 
-        if (Object.keys(log.messages[msg_name]).length > 0) {
-
-            quaternion = { 
-                time: array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000),
-                q1: Array.from(log.messages[msg_name].Q1),
-                q2: Array.from(log.messages[msg_name].Q2),
-                q3: Array.from(log.messages[msg_name].Q3),
-                q4: Array.from(log.messages[msg_name].Q4)
+            const quaternion = { 
+                time: TimeUS_to_seconds(log.get_instance("XKQ", primary, "TimeUS")),
+                q1: Array.from(log.get_instance("XKQ", primary, "Q1")),
+                q2: Array.from(log.get_instance("XKQ", primary, "Q2")),
+                q3: Array.from(log.get_instance("XKQ", primary, "Q3")),
+                q4: Array.from(log.get_instance("XKQ", primary, "Q4"))
             }
 
             let field = add_attitude_source(quaternion, "EKF 3 IMU " + (primary + 1))
@@ -2034,7 +1991,6 @@ function load(log_file) {
             body_frame_earth_field.push(field)
         }
     }
-    delete_parsed_log_msg(log, "XKQ")
 
     if (body_frame_earth_field.length == 0) {
         alert("Unknown attitude source")
@@ -2067,32 +2023,17 @@ function load(log_file) {
         })
     }
 
-    log.parseAtOffset("BAT")
-    if (Object.keys(log.messages.BAT).length > 0) {
+    if (("BAT" in log.messageTypes) && ("instances" in log.messageTypes.BAT)) {
         for (let i = 0; i < 1; i++) {
-            let msg_name = "BAT[" + i + "]"
-            if (log.messages[msg_name] == null) {
-                // Try single instance, deal with change in instance string
-                let found_inst = false
-                for (const inst of ["Inst", "Instance"]) {
-                    if ((inst in log.messages.BAT) && Array.from(log.messages.BAT[inst]).every((x) => x == i)) {
-                        found_inst = true
-                    }
-                }
-                if (!found_inst) {
-                    continue
-                }
-                msg_name = "BAT"
-            }
-            if (log.messages[msg_name].length == 0) {
+            if (!(i in log.messageTypes.BAT.instances)) {
                 continue
             }
-            const value = Array.from(log.messages[msg_name].Curr)
+            const value = Array.from(log.get_instance("BAT", i, "Curr"))
             if (array_all_NaN(value) || array_all_equal(value, 0)) {
                 // Battery does not support current
                 continue
             }
-            const time = array_scale(Array.from(log.messages[msg_name].time_boot_ms), 1 / 1000)
+            const time = TimeUS_to_seconds(log.get_instance("BAT", i, "TimeUS"))
             for (let j = 0; j < 3; j++) {
                 if (MAG_Data[j] == null) {
                     continue
@@ -2122,14 +2063,6 @@ function load(log_file) {
             })
         }
     }
-    delete_parsed_log_msg(log, "BAT")
-
-    // Were now done with the log, delete it to save memory before starting calculations
-    delete log.buffer
-    delete log.data
-    delete log.messages
-    log_file = null
-    log = null
 
     // Redraw motor comp plot
     Plotly.newPlot("motor_comp", motor_comp.data, motor_comp.layout, {displaylogo: false});
