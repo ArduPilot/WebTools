@@ -46,7 +46,7 @@
 </style>
 
 <p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
-This tool takes a .bin log with either batch samples or raw IMU samples and display the noise spectrum present before and after any filtering. It also estimates the post filter noise spectrums WOULD be if the filter parameters are changed.
+This tool takes a .bin log with either batch samples or raw IMU samples and display the noise spectrum present before and after any filtering. To setup the logging required by this tool see: <a href="https://ardupilot.org/copter/docs/common-raw-imu-logging.html">Raw IMU Logging setup</a>. It also estimates the post filter noise spectrums WOULD be if the filter parameters are changed.
 This allows a single flight with pre filter logging enabled before the notch's are setup, and experiment with notch filter parameters to see the estimated effects.
 These params can then be saved and loaded into the autopilot without the need for repetitive test flights to see filter change results.
 </p>
