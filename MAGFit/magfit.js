@@ -2010,7 +2010,7 @@ function load(log_file) {
             continue
         }
 
-        const tip_text = "Fits with no motor compensation.<ul><li>Offsets: Fit of only X Y Z offset parameters.</li><li>Offsets and scale: Fit of X Y Z offsets and single scale factor.</li><li>Offsets and iron: Fit of X Y Z offsets and iron compensation matrix diagonals and off-diagonals.</li></ul>"
+        const tip_text = "Calibrations with no motor compensation.<ul><li>Offsets: calibration of only X Y Z offset parameters.</li><li>Offsets and scale: calibration of X Y Z offsets and single scale factor.</li><li>Offsets and iron: calibration of X Y Z offsets and iron compensation matrix diagonals and off-diagonals.</li></ul> If a calibration cannot be selected the tool was unable to find a valid solution, a longer flight with better coverage will give a better chance of finding a solution."
 
         MAG_Data[i].fits.push({
             value: null,
@@ -2043,7 +2043,7 @@ function load(log_file) {
                     value: linear_interp(value, time, MAG_Data[i].time),
                     type: 2,
                     name: name,
-                    tip: { text: "Fits with motor compensation from " + name + ". Ensure battery monitor is calibrated and functioning correctly."},
+                    tip: { text: "Calibrations with motor compensation from " + name + ". Ensure battery monitor is calibrated and functioning correctly."},
                     offsets: {},
                     scale: {},
                     iron: {}
@@ -2141,7 +2141,7 @@ function load(log_file) {
 
         let cal_legend = document.createElement("legend")
         cal_legend.innerHTML = "Calibrations"
-        add_tip(cal_legend, 'Select calibrations to be shown on plots, the last calibration selected will be saved when "Save Parameters" is clicked')
+        add_tip(cal_legend, 'Select calibrations to be shown on plots, the last calibration selected will be saved when "Save Parameters" is clicked.')
         cal_fieldset.appendChild(cal_legend)
 
 
