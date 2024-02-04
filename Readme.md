@@ -1,18 +1,13 @@
-# ArduPilot Web Tools
+## ArduPilot Web Tools
 
-This repository contains a number of web based tools for giving insight into how ArduPilot works and for targeted log review. For general review see: https://github.com/ArduPilot/UAVLogViewer
+This repository contains a number of web based tools for targeted ArduPilot log review and insight. These tools are live on [ardupilot.org](https://firmware.ardupilot.org/Tools/WebTools). For general review see [UAVLogViewer](https://github.com/ArduPilot/UAVLogViewer).
 
-# Try it out
+## Development setup
 
-These tools are hosted on the ArduPilot server:
+Host locally by running this command in the root of the repo:
 
-https://firmware.ardupilot.org/Tools/FilterTool/
+```
+python -m http.server --bind 127.0.0.1
+```
 
-https://firmware.ardupilot.org/Tools/FilterReview/
-
-
-# Dev setup
-
-Run locally with: 
-
-```python -m http.server --bind 127.0.0.1```
+The landing page can then be found at http://127.0.0.1:8000/
