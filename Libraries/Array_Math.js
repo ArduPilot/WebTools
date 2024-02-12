@@ -214,13 +214,17 @@ function array_sqrt(A) {
     return ret
 }
 
-function array_mean(A) {
+function array_sum(A) {
     const len = A.length
     let ret = 0
     for (let i = 0; i<len; i++) {
         ret += A[i]
     }
-    return ret / len
+    return ret
+}
+
+function array_mean(A) {
+    return array_sum(A) / A.length
 }
 
 // Return a range, including start and end points
