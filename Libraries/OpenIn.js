@@ -17,7 +17,7 @@ function setup_open_in(div_id, file_id, load_fun) {
 
     // Add drop down div
     let dropdown = document.createElement("div")
-    dropdown.style = "display: none; position: absolute; width: 100%; overflow: auto; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);"
+    dropdown.style = "display: none; position: absolute; width: 100%; overflow: auto; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1;"
     div.appendChild(dropdown)
 
     // Show and hide drop down
