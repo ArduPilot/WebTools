@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Stream Stats</title>
+<script type="text/javascript" src="StreamStats.js"></script>
+<script type="text/javascript" src="mavlink_msgs.js"></script>
+
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+
+<script src='https://cdn.plot.ly/plotly-2.29.1.min.js'></script>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+</head>
+<table style="width:1200px"><tr><td>
+  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <br>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<style>
+  div.plotly-notifier {
+    visibility: hidden;
+  }
+
+  .tippy-box {
+    font-size: 20px;
+  }
+</style>
+
+<h1><a href="" style="color: #000000; text-decoration:none;">Stream Stats</a></h1>
+
+<body onload="reset();">
+<input id="fileItem" type="file" accept=".bin,.tlog" onchange="load(this)">
+
+<div id="OpenIn"></div>
+
+<h3 hidden>MAVLink</h3>
+<p id="MAVLink"></p>
+
+<div hidden>
+  <h4>Time and size</h4>
+  <div id="time_size" style="width:1200px;height:400px"></div>
+</div>
+
+<div hidden>
+  <h4>Total Rate</h4>
+  <div id="total_rate" style="width:1200px;height:400px"></div>
+</div>
+
+<div hidden>
+  <h4>Message Rates</h4>
+  <div id="data_rates" style="width:1200px;height:400px"></div>
+</div>
+
+<table id="plotsetup" hidden>
+  <tr>
+  <td style="width: 300px;"></td>
+  <td>
+    <table>
+      <td>
+        <fieldset style="width:550px;height:40px">
+          <legend>Setup
+              <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+              data-tippy-content=''
+              data-tippy-maxWidth='750px'/>
+          </legend>
+              <input type="radio" id="Unit_bps" name="YAxis" onchange="replot()" checked>
+              <label for="Unit_bps">Bits per second</label>&nbsp&nbsp&nbsp&nbsp
+
+              <input type="radio" id="Unit_count" name="YAxis" onchange="replot()">
+              <label for="Unit_count">Messages per second</label>&nbsp&nbsp&nbsp&nbsp
+
+              <label for="WindowSize">Window size (s):</label>
+              <input id="WindowSize" type="number" min="0.1" step="1" value="10" onchange="replot()" style="width:75px"/>
+        </fieldset>
+    </td>
+  </table>
+</td>
+</tr>
+</table>
+
+<div hidden>
+  <h4>Composition</h4>
+  <p id="LOGSTATS"></p>
+  <div id="log_stats" style="width:800px;height:800px;margin-left:200px"></div>
+</div>
+
+<script>
+
+
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+            msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+
+  // Load tool tips
+  tippy('#TT')
+
+
+  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) })
+
+  init_loading_overlay()
+
+</script>
+
+</body>
+</html>
