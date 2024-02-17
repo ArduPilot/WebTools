@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot Kinematic Tool</title>
+<script type="text/javascript" src="KinematicTool.js"></script>
+<script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+
+<script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+</head>
+<table style="width:1200px"><tr><td>
+  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <br>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<style>
+  div.plotly-notifier {
+    visibility: hidden;
+  }
+</style>
+
+<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Kinematic Tool</a></h1>
+
+<body onload="initial_load(); run_attitude()">
+
+<table><tr><td style="width:1200px">
+  <h2 style="text-align:center">Attitude Control Input Shaping</h2>
+</td></tr></table>
+
+<p style="width:1150px; text-align:justify; padding-left:15px; margin-block-start: 0; margin-block-end: 0.5em;">
+  The attitude controller limits its demands based on a kinematic model of the vehicle. This model is defined by a velocity limit, a acceleration limit and a time constant. This is visualized for a single axis. This is only valid if input shaping is enabled with ATC_RATE_FF_ENAB.
+</p>
+
+<table>
+  <tr>
+    <td>
+      <fieldset style="width:60px;height:120px">
+        <legend>Axis
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='Change the parameters used to the selected axis',
+            data-tippy-maxWidth='750px'/>
+        </legend>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="axis_roll" name="axis" value="R" onchange="run_attitude()" checked>
+          <label for="axis_roll">Roll</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="axis_pitch" name="axis" value="P" onchange="run_attitude()">
+          <label for="axis_pitch">Pitch</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="axis_yaw" name="axis" value="Y" onchange="run_attitude()">
+          <label for="axis_yaw">Yaw</label>
+        </p>
+      </fieldset>
+    </td>
+    <td>
+      <fieldset style="width:110px;height:120px">
+        <legend>Mode
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='Change the parameters used to the selected axis',
+            data-tippy-maxWidth='750px'/>
+        </legend>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="mode_pos" name="mode" value="angle" onchange="run_attitude()" checked>
+          <label for="mode_pos">Angle</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="mode_rate" name="mode" value="rate" onchange="run_attitude()">
+          <label for="mode_rate">Rate</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="radio" id="mode_pos_rate" name="mode" value="angle+rate" onchange="run_attitude()">
+          <label for="mode_pos_rate">Angle + Rate</label>
+        </p>
+      </fieldset>
+    </td>
+    <td>
+      <fieldset style="width:245px;height:120px">
+        <legend>Inputs
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='Desired angle and rate from the pilot or position controller. End time set the minimum runtime of the simulation.',
+            data-tippy-maxWidth='750px'/>
+        </legend>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="number" id="desired_pos" value="30" style="width: 50px" onchange="run_attitude()">
+          <label for="desired_pos">Desired angle (deg)</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="number" id="desired_vel" value="0" style="width: 50px" onchange="run_attitude()">
+          <label for="desired_vel">Desired angular rate (deg/s)</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="number" id="end_time" value="1" min="0.1" step="0.1" max="10" style="width: 50px" onchange="run_attitude()">
+          <label for="desired_vel">End time (s)</label>
+        </p>
+      </fieldset>
+    </td>
+    <td>
+      <fieldset style="width:245px;height:120px">
+        <legend>Initial conditions
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='The angle and rate that the vehicle starts at.',
+            data-tippy-maxWidth='750px'/>
+        </legend>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="number" id="initial_pos" value="0" style="width: 50px" onchange="run_attitude()">
+          <label for="initial_pos">Starting angle (deg)</label>
+        </p>
+
+        <p style="margin-top:5px; margin-bottom:5px;">
+          <input type="number" id="initial_vel" value="0" style="width: 50px" onchange="run_attitude()">
+          <label for="initial_vel">Starting angular rate (deg/s)</label>
+        </p>
+      </fieldset>
+    </td>
+    <td>
+      <fieldset style="width:330px;height:120px">
+        <legend>Parameters
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='The ArduPilot parameters that define the input shaping vehicle model. Note that in some flight modes ATC_SLEW_YAW provides secondary yaw rate limit. Rate time constant also changes for acro mode.',
+            data-tippy-maxWidth='750px'/>
+        </legend>
+        <div id="roll_params">
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_RATE_R_MAX" name="ATC_RATE_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="0" onchange="run_attitude()"/>
+          </p>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_ACCEL_R_MAX" name="ATC_ACCEL_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="110000" onchange="run_attitude()"/>
+          </p>
+        </div>
+        <div id="pitch_params" hidden>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_RATE_P_MAX" name="ATC_RATE_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="0" onchange="run_attitude()"/>
+          </p>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_ACCEL_P_MAX" name="ATC_ACCEL_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="110000" onchange="run_attitude()"/>
+          </p>
+        </div>
+        <div id="yaw_params" hidden>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_RATE_Y_MAX" name="ATC_RATE_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="0" onchange="run_attitude()"/>
+          </p>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ATC_ACCEL_Y_MAX" name="ATC_ACCEL_R_MAX" type="number" style="width: 100px" data-paramValues="false" value="27000" onchange="run_attitude()"/>
+          </p>
+        </div>
+        <div id="rp_rate_tc" hidden>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="ACRO_RP_RATE_TC" name="ACRO_RP_RATE_TC" type="number" style="width: 100px" data-paramValues="false" value="0" onchange="run_attitude()"/>
+          </p>
+        </div>
+        <div id="yaw_rate_tc" hidden>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="PILOT_Y_RATE_TC" name="PILOT_Y_RATE_TC" type="number" style="width: 100px" data-paramValues="false" value="0" onchange="run_attitude()"/>
+          </p>
+        </div>
+        <p style="margin-top:0px; margin-bottom:0px;">
+          <input id="ATC_INPUT_TC" name="ATC_INPUT_TC" type="number" style="width: 100px" data-paramValues="false" value="0.15" onchange="run_attitude()"/>
+        </p>
+      </fieldset>
+    </td>
+  </tr>
+</table>
+
+<div id="ang_pos" style="width:1200px;height:300px"></div>
+<div id="ang_vel" style="width:1200px;height:300px"></div>
+<div id="ang_accel" style="width:1200px;height:300px"></div>
+
+<script>
+
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+            msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+
+  // Load tool tips
+  tippy('#TT')
+
+  let params = new Set(["ATC_INPUT_TC"])
+  for (const axi of ["R", "P", "Y"]) {
+      for (const name of Object.values(get_param_names_for_axi(axi))) {
+          params.add(name)
+      }
+  }
+
+  load_param_inputs("params.json", Array.from(params))
+
+</script>
+
+</body>
+</html>
