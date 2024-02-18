@@ -646,8 +646,15 @@ function print_device(parent, id) {
         // DroneCAN
         parent.appendChild(document.createTextNode(id.bus_type + " bus: " + id.bus + " node id: " + id.address + " sensor: " + id.sensor_id))
         parent.appendChild(document.createElement("br"))
-        if (can[id.address] != null) {
-            parent.appendChild(document.createTextNode("Name: " + can[id.address].name))
+        let can_device
+        if (id.bus in can) {
+            can_device = can[id.bus][id.address][0]
+        } else if ("all" in can) {
+            can_device = can.all[id.address][0]
+        }
+
+        if (can_device != null) {
+            parent.appendChild(document.createTextNode("Name: " + can_device.name))
         }
     } else {
         parent.appendChild(document.createTextNode(id.name + " via " + id.bus_type))
@@ -1466,10 +1473,49 @@ function load_can(log) {
         return
     }
 
+    const have_driver_num = log.messageTypes.CAND.expressions.includes("Driver")
     for (const inst of Object.keys(log.messageTypes.CAND.instances)) {
         const CAND = log.get_instance("CAND", inst)
-        can[parseFloat(inst)] = { name: CAND.Name[0],
-                                  version: CAND.Major[0] + "." + CAND.Minor[0] }
+        const node_id = parseFloat(inst)
+
+        for (let i = 0; i < CAND.Name.length; i++) {
+            let driver = "all"
+            if (have_driver_num) {
+                driver = CAND.Driver[i]
+            }
+            if (can[driver] == null) {
+                can[driver] = []
+            }
+
+            if (can[driver][node_id] == null) {
+                can[driver][node_id] = []
+            }
+
+            // New obj
+            let can_obj = { 
+                name: CAND.Name[i],
+                version: CAND.Major[i] + "." + CAND.Minor[i],
+                UID1: CAND.UID1[i],
+                UID2: CAND.UID2[i]
+            }
+
+            // Check for duplicates
+            let found = false
+            for (const existing of can[driver][node_id]) {
+                if ((existing.name == can_obj.name) && 
+                    (existing.version == can_obj.version) &&
+                    (existing.UID1 == can_obj.UID1) &&
+                    (existing.UID2 == can_obj.UID2)) {
+                    found = true
+                    break
+                }
+            }
+
+            if (!found) {
+                // Add if not found
+                can[driver][node_id].push(can_obj)
+            }
+        }
     }
 
     function print_can(inst, info) {
@@ -1482,23 +1528,40 @@ function load_can(log) {
 
         fieldset.appendChild(document.createTextNode("Name: " + info.name))
         fieldset.appendChild(document.createElement("br"))
+
         fieldset.appendChild(document.createTextNode("Firmware version: " + info.version))
+        fieldset.appendChild(document.createElement("br"))
+
+        fieldset.appendChild(document.createTextNode("UID1: 0x" + info.UID1.toString(16)))
+        fieldset.appendChild(document.createElement("br"))
+
+        fieldset.appendChild(document.createTextNode("UID2: 0x" + info.UID2.toString(16)))
 
         return fieldset
     }
 
     let section = document.getElementById("DroneCAN")
-    let table = document.createElement("table")
-    section.appendChild(table)
 
     let have_section = false
-    for (let i = 0; i < can.length; i++) {
-        if (can[i] != null) {
-            have_section = true
-            let colum = document.createElement("td")
+    for (const [driver_num, can_driver] of Object.entries(can)) {
+        if (have_driver_num) {
+            let heading = document.createElement("h4")
+            heading.appendChild(document.createTextNode("Driver " + driver_num + ":"))
+            section.appendChild(heading)
+        }
 
-            colum.appendChild(print_can(i, can[i]))
-            table.appendChild(colum)
+        let table = document.createElement("table")
+        section.appendChild(table)
+        for (let i = 0; i < can_driver.length; i++) {
+            if (can_driver[i] != null) {
+                for (let j = 0; j < can_driver[i].length; j++) {
+                    have_section = true
+                    let colum = document.createElement("td")
+
+                    colum.appendChild(print_can(i, can_driver[i][j]))
+                    table.appendChild(colum)
+                }
+            }
         }
     }
 
