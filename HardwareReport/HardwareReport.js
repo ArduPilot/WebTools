@@ -647,9 +647,9 @@ function print_device(parent, id) {
         parent.appendChild(document.createTextNode(id.bus_type + " bus: " + id.bus + " node id: " + id.address + " sensor: " + id.sensor_id))
         parent.appendChild(document.createElement("br"))
         let can_device
-        if (id.bus in can) {
+        if ((id.bus in can) && (id.address in can[id.bus])) {
             can_device = can[id.bus][id.address][0]
-        } else if ("all" in can) {
+        } else if (("all" in can) && (id.address in can.all)) {
             can_device = can.all[id.address][0]
         }
 
