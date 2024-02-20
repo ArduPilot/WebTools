@@ -175,12 +175,10 @@ class ESCTarget extends NotchTarget {
 
         // Individual RPM
         var instances = 0
-        var instance_map = []
         for (const inst of Object.keys(log.messageTypes[msg].instances)) {
             this.data[instances] = {}
             this.data[instances].time = TimeUS_to_seconds(log.get_instance(msg, inst, "TimeUS"))
             this.data[instances].freq = array_scale(log.get_instance(msg, inst, "RPM"), 1 / 60)
-            instance_map[parseFloat(inst)] = instances
             instances++
         }
 
@@ -203,7 +201,7 @@ class ESCTarget extends NotchTarget {
         const len = all.length
         for (let i=0;i<len;i++) {
             // Update instance
-            const instance = instance_map[all[i].inst]
+            const instance = all[i].inst
             inst[instance].freq = all[i].freq
             inst[instance].time_ms = all[i].time
 
