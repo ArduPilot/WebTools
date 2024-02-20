@@ -1204,9 +1204,9 @@ function load_rangefinder() {
         if (type_name in params) {
             const type = params[type_name]
             if (type != 0) {
-                const pos_prefix = prefix + "POS"
+                const pos_prefix = prefix + "POS_"
                 rangefinder[i] = { type: type,
-                                   pos: get_param_vector(params, pos_prefix) }
+                                   pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
             }
         }
     }
@@ -1223,9 +1223,9 @@ function load_flow() {
     if (type_name in params) {
         const type = params[type_name]
         if (type != 0) {
-            const pos_prefix = prefix + "POS"
+            const pos_prefix = prefix + "POS_"
             flow[0] = { type: type,
-                        pos: get_param_vector(params, pos_prefix) }
+                        pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
         }
     }
 
@@ -1234,15 +1234,16 @@ function load_flow() {
 // load VISO
 let viso
 const max_num_viso = 1
-function load_flow() {
+function load_viso() {
 
     const prefix = "VISO_"
     const type_name = prefix + "TYPE"
     if (type_name in params) {
         const type = params[type_name]
         if (type != 0) {
+            const pos_prefix = prefix + "POS_"
             viso[0] = { type: type,
-                        pos: get_param_vector(params, pos_prefix) }
+                        pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
         }
     }
 
@@ -1429,6 +1430,7 @@ function load_params(log) {
     load_airspeed(log)
     load_gps()
     load_flow()
+    load_viso()
 
 
     if (Object.keys(params).length > 0) {
