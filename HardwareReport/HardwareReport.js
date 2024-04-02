@@ -1175,7 +1175,8 @@ function load_airspeed(log) {
 // Load GPS
 let gps
 const max_num_gps = 2
-function load_gps() {
+function load_gps(log) {
+    let gps_instances = []
 
     for (let i = 0; i < max_num_gps; i++) {
         let index = String(i+1)
@@ -1194,6 +1195,50 @@ function load_gps() {
         }
     }
 
+    let messages = log.get("MSG").Message
+
+    let section = document.getElementById("GPS")
+    let gps_num;
+    // This regular expression is used to get the word after "as" to get the GPS device name. (?<=as\s) will exclude the "as" and a whitespace from the regex and then (\S+) will match the next word.
+    let regex_gps_device = /(?<=as\s)(\S+)/i;
+    let regex_gps_number = /(?<=GPS\s)(\S)/
+    for (let i = 0; i < messages.length; i++) {
+        if (messages[i].startsWith("GPS")) {
+            gps_num = parseInt(messages[i].match(regex_gps_number)[0]);
+            let gps_device = messages[i].match(regex_gps_device)[0];
+            gps_instances[gps_num] = { gps: gps_device }
+        }
+    }
+
+    function print_gps(inst, params) {
+        let fieldset = document.createElement("fieldset")
+
+        let heading = document.createElement("legend")
+        heading.innerHTML = "GPS " + inst
+        fieldset.appendChild(heading)
+
+        fieldset.appendChild(document.createTextNode(params.gps))
+        fieldset.appendChild(document.createElement("br"))
+
+        return fieldset
+    }
+
+    let table = document.createElement("table")
+    section.appendChild(table)
+
+    let have_section = false
+    for (let i = 0; i < gps_instances.length; i++) {
+        if (gps_instances[i] != null) {
+            have_section = true
+            let colum = document.createElement("td")
+
+            colum.appendChild(print_gps(i, gps_instances[i]))
+            table.appendChild(colum)
+        }
+    }
+
+    section.previousElementSibling.hidden = !have_section
+    section.hidden = !have_section
 }
 
 // Load Rangefinder
@@ -1435,7 +1480,7 @@ function load_params(log) {
     load_compass(log)
     load_baro(log)
     load_airspeed(log)
-    load_gps()
+    load_gps(log)
     load_flow()
     load_viso()
 
@@ -2431,6 +2476,7 @@ function reset() {
     setup_section(document.getElementById("DroneCAN"))
     setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
+    setup_section(document.getElementById("GPS"))
 
     ins = []
     compass = []
