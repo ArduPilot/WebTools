@@ -2627,6 +2627,11 @@ function load_from_batch(log, num_gyro, gyro_rate, get_param) {
             Gyro_batch[i].sensor_num = i
             Gyro_batch[i].post_filter = _doing_post_filter_logging && !_doing_pre_post_filter_logging
         }
+
+        // Only support 3 IMUs for now
+        if (Gyro_batch[i].sensor_num >= 3) {
+            Gyro_batch[i] = null
+        }
     }
 
     // Assume sample rate is always higher than logging rate
@@ -2702,6 +2707,20 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
 
         Gyro_batch[i] = []
 
+        if (pre_post_filter && (i >= num_gyro)) {
+            Gyro_batch[i].sensor_num = i - num_gyro
+            Gyro_batch[i].post_filter = true
+        } else {
+            Gyro_batch[i].sensor_num = i
+            Gyro_batch[i].post_filter = post_filter
+        }
+
+        // Only support 3 IMUs for now
+        if (Gyro_batch[i].sensor_num >= 3) {
+            Gyro_batch[i] = null
+            continue
+        }
+
         const time = log.get_instance("GYR", inst, "SampleUS")
         const GyrX = log.get_instance("GYR", inst, "GyrX")
         const GyrY = log.get_instance("GYR", inst, "GyrY")
@@ -2744,14 +2763,6 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
         if (gyro_rate[i] != null) {
             // Make sure rate is at least the reported sampling rate
             Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], Gyro_batch[i].gyro_rate)
-        }
-
-        if (pre_post_filter && (i >= num_gyro)) {
-            Gyro_batch[i].sensor_num = i - num_gyro
-            Gyro_batch[i].post_filter = true
-        } else {
-            Gyro_batch[i].sensor_num = i
-            Gyro_batch[i].post_filter = post_filter
         }
 
     }
