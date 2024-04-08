@@ -26,7 +26,7 @@ function init_loading_overlay() {
 
 }
 
-function loading_call(fun) {
+async function loading_call(fun) {
 
     // Show loading screen
     let overlay = document.getElementById("loading")
@@ -35,14 +35,18 @@ function loading_call(fun) {
     // https://forum.freecodecamp.org/t/how-to-make-js-wait-until-dom-is-updated/122067/2
 
     // this double requestAnimationFrame ensures that the loading screen is rendered before the load starts
+    async function run() {
+        // Call the passed in function
+        await fun()
 
-    let intermediate = function () { window.requestAnimationFrame(() => {
-            // Call the passed in function
-            fun()
+        // Hide loading screen
+        overlay.style.visibility = 'hidden'
+    }
 
-            // Hide loading screen
-            overlay.style.visibility = 'hidden'
-    })}
+    async function intermediate() {
+        window.requestAnimationFrame(run)
+    }
+
     window.requestAnimationFrame(intermediate)
 
 }
