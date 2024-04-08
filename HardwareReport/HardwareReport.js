@@ -896,11 +896,17 @@ function load_compass(log) {
                  full_inst: true }
     }
 
-    compass[0] = get_instance(params, "COMPASS_PRIO1_ID")
-    compass[1] = get_instance(params, "COMPASS_PRIO2_ID")
-    compass[2] = get_instance(params, "COMPASS_PRIO3_ID")
-    for (let i = 3; i < 7; i++) {
-        const dev_id_name = "COMPASS_DEV_ID" + (i+1)
+    let dev_id_start = 0
+    for (let i = 0; i < 3; i++) {
+        const prio = get_instance(params, "COMPASS_PRIO" + (i+1) + "_ID")
+        if (prio != null) {
+            compass[0] = prio
+            dev_id_start = i + 1
+        }
+    }
+    for (let i = dev_id_start; i < 7; i++) {
+        const inst_num = (i == 0) ? "" : String(i+1)
+        const dev_id_name = "COMPASS_DEV_ID" + inst_num
         if (dev_id_name in params) {
             const id = params[dev_id_name]
             if (id != 0) {
