@@ -2209,6 +2209,11 @@ function load_log(log_file) {
 
                 para.appendChild(link)
 
+                if (name.endsWith("crash_dump.bin")) {
+                    // The dev-team want to hear about crash dumps.
+                    alert("Crash dump file detected, please share the log")
+                }
+
             }
         }
         log.messages.FILE = null
