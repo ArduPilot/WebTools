@@ -178,6 +178,21 @@ function show_watchdog(log) {
 
     const WDOG = log.get("WDOG")
 
+    // The dev-team want to hear about watchdogs dumps.
+    const content = document.createElement("div")
+    content.appendChild(document.createTextNode("Watchdog reboot detected, see Watchdog section."))
+    content.appendChild(document.createElement("br"))
+    content.appendChild(document.createTextNode("For more information see ArduPilot "))
+
+    const link = document.createElement("a")
+    link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#independent-watchdog-and-crash-dump"
+    link.appendChild(document.createTextNode("documentation"))
+
+    content.appendChild(link)
+    content.appendChild(document.createTextNode("."))
+
+    add_warning("exclamation-triangle-red", content)
+
     let watchdogs = []
     for (let i = 0; i < WDOG.TimeUS.length; i++) {
         let watchdog = { 
@@ -1644,9 +1659,9 @@ function load_params(log) {
 
     update_pos_plot()
 
-    // Be annoying if arming checks are disabled
+    // Add warning if arming checks are disabled
     if (("ARMING_CHECK" in params) && (params.ARMING_CHECK == 0)) {
-        alert("Arming checks disabled")
+        add_warning("exclamation-triangle-orange", document.createTextNode("Arming checks disabled"))
     }
 
 }
@@ -2352,6 +2367,33 @@ function plot_data_rate(log) {
     }
 }
 
+// Add a new warning to the top of the page
+function add_warning(image, content) {
+    const warning_section = document.getElementById("warnings")
+    warning_section.hidden = false
+    warning_section.previousElementSibling.hidden = false
+
+    const table = document.createElement("table")
+    warning_section.appendChild(table)
+
+    const row = document.createElement("tr")
+    table.appendChild(row)
+
+    const icon_cell = document.createElement("td")
+    row.appendChild(icon_cell)
+
+    const img = document.createElement("img")
+    img.style.width = "40px"
+    img.style.verticalAlign = "bottom"
+    img.src = "../images/" + image + ".svg"
+    icon_cell.appendChild(img)
+
+    const content_cell = document.createElement("td")
+    row.appendChild(content_cell)
+
+    content_cell.appendChild(content)
+}
+
 // micro seconds to seconds helpers
 const US2S = 1 / 1000000
 function TimeUS_to_seconds(TimeUS) {
@@ -2679,6 +2721,23 @@ async function load_log(log_file) {
 
                 para.appendChild(link)
 
+                if (name.endsWith("crash_dump.bin")) {
+                    // The dev-team want to hear about crash dumps.
+                    const content = document.createElement("div")
+                    content.appendChild(document.createTextNode("Crash dump file detected."))
+                    content.appendChild(document.createElement("br"))
+                    content.appendChild(document.createTextNode("For more information see ArduPilot "))
+
+                    const link = document.createElement("a")
+                    link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#crash-dump"
+                    link.appendChild(document.createTextNode("documentation"))
+
+                    content.appendChild(link)
+                    content.appendChild(document.createTextNode("."))
+
+                    add_warning("exclamation-triangle-red", content)
+                }
+
             }
         }
         log.messages.FILE = null
@@ -2885,6 +2944,7 @@ function reset() {
         section.previousElementSibling.hidden = true
     }
 
+    setup_section(document.getElementById("warnings"))
     setup_section(document.getElementById("VER"))
     setup_section(document.getElementById("FC"))
     setup_section(document.getElementById("WDOG"))
