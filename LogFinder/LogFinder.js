@@ -213,14 +213,24 @@ function setup_table(logs) {
 
                     } else if (prev_params[name] != params[name]) {
                         // In both with different value
-                        changed[name] = { from: prev_params[name], to: params[name]}
+
+                        // Check if this change should be ignored
+                        let show_change = true
+                        for (const ignore of param_diff_ignore) {
+                            if (ignore.check.checked && ignore.fun(name)) {
+                                show_change = false
+                                break
+                            }
+                        }
+
+                        if (show_change) {
+                            changed[name] = { from: prev_params[name], to: params[name]}
+                        }
                     }
                 }
 
                 let tippy_div = document.createElement("div")
-                tippy_div.style.width = '500px';
-                tippy_div.style.maxHeight = '90vh';
-                tippy_div.style.overflow = 'auto';
+                instance.setContent(tippy_div)
 
                 const have_added = Object.keys(added).length > 0
                 const have_missing = Object.keys(missing).length > 0
@@ -230,6 +240,10 @@ function setup_table(logs) {
                     tippy_div.appendChild(document.createTextNode("No change"))
                     return
                 }
+
+                tippy_div.style.width = '500px';
+                tippy_div.style.maxHeight = '90vh';
+                tippy_div.style.overflow = 'auto';
 
                 if (have_added) {
                     const details = document.createElement("details")
@@ -282,7 +296,6 @@ function setup_table(logs) {
                     }
                 }
 
-                instance.setContent(tippy_div)
             }
 
             tippy(button, {
@@ -656,10 +669,54 @@ function reset() {
     progress.parentElement.hidden = true
 }
 
+let param_diff_ignore = [
+    { name: "Statistics (STAT_)", fun: (name) => { return name.startsWith("STAT_") || (name == "SYS_NUM_RESETS") } },
+    { name: "Gyro offsets", fun: (name) => { return /(:?(INS)[45]?_(GYR)[23]?(OFFS_)[XYZ])/gm.test(name)} },
+    { name: "Gyro cal temperature", fun: (name) => { return /(:?(INS)[45]?(_GYR)[123]?(_CALTEMP))/gm.test(name)} },
+    { name: "Baro ground pressure", fun: (name) => { return /(:?(BARO)[123]?(_GND_PRESS))/gm.test(name)} },
+    { name: "Compass declination", fun: (name) => { return name == "COMPASS_DEC"} },
+    { name: "Airspeed offset", fun: (name) => { return /(:?(ARSPD)[123]?(_OFFSET))/gm.test(name)} },
+    { name: "Stream rates", fun: (name) => {
+        return /(:?(SR)[0123456]_(RAW_SENS))/gm.test(name) ||
+            /(:?(SR)[0123456]_(EXT_STAT))/gm.test(name) ||
+            /(:?(SR)[0123456]_(RC_CHAN))/gm.test(name) ||
+            /(:?(SR)[0123456]_(RAW_CTRL))/gm.test(name) ||
+            /(:?(SR)[0123456]_(POSITION))/gm.test(name) ||
+            /(:?(SR)[0123456]_(EXTRA1))/gm.test(name) ||
+            /(:?(SR)[0123456]_(EXTRA2))/gm.test(name) ||
+            /(:?(SR)[0123456]_(EXTRA3))/gm.test(name) ||
+            /(:?(SR)[0123456]_(PARAMS))/gm.test(name) ||
+            /(:?(SR)[0123456]_(ADSB))/gm.test(name)
+        }
+    },
+]
+
 let board_types = {}
 async function initial_load() {
 
     document.getElementById("reload").disabled = true
+
+    const fieldset = document.getElementById("param_diff_ignore")
+    for (let i=0; i<param_diff_ignore.length; i++) {
+        if (i > 0) {
+            fieldset.appendChild(document.createTextNode(", "))
+        }
+
+        const ignore = param_diff_ignore[i]
+        const id = "param_diff_ignore" + i
+
+        ignore.check = document.createElement("input")
+        ignore.check.setAttribute('type', 'checkbox')
+        ignore.check.setAttribute('id', id)
+        ignore.check.checked = true
+
+        let label = document.createElement("label")
+        label.setAttribute('for', id)
+        label.appendChild(document.createTextNode(ignore.name))
+
+        fieldset.appendChild(ignore.check)
+        fieldset.appendChild(label)
+    }
 
     function load_board_types(text) {
         const lines = text.match(/[^\r\n]+/g)

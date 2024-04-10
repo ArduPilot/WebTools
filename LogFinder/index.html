@@ -33,6 +33,20 @@
 
 <body onload="initial_load(); reset();">
 
+<table>
+  <tr>
+    <td>
+      <fieldset id="param_diff_ignore" style="width:1000px;">
+        <legend>Ignore parameter changes
+            <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+            data-tippy-content='Ignore parameter changes for the selected items when doing a parameter compare. These parameters are expected to change each boot'/>
+        </legend>
+
+      </fieldset>
+    </td>
+  </tr>
+</table>
+
 <P>
 <button id="get_dir" type="button" onclick="loading_call(get_dir_then_load)">Search directory</button>
 <button id="reload" type="button" onclick="loading_call(load_from_dir)">Reload</button>
@@ -59,6 +73,9 @@
             'URL: '+ url +'\n' +
             'Line Number: '+ linenumber)
   }
+
+  // Load tool tips
+  tippy('#TT')
 
   init_loading_overlay()
 
