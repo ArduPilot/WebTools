@@ -27,6 +27,9 @@ async function load_from_dir() {
 
     reset()
 
+    let progress = document.getElementById("load")
+    progress.parentElement.hidden = false
+
     async function get_logs() {
         async function* getFilesRecursively(entry, path) {
             let relativePath
@@ -55,8 +58,21 @@ async function load_from_dir() {
         }
 
         // Have handle, get logs
-        let logs = {}
+
+        // Do pre-count for progresses bar
+        const count_start = performance.now()
+        let count = 0
         for await (const fileHandle of getFilesRecursively(dirHandle)) {
+            count++
+        }
+        console.log(`Counted ${count} logs in: ${performance.now() - count_start} ms`);
+        progress.setAttribute("max", count)
+
+        let logs = {}
+        count = 0
+        for await (const fileHandle of getFilesRecursively(dirHandle)) {
+            count++
+            progress.setAttribute("value", count)
 
             // Helper to allow waiting for file to load
             const wait_for_load = () => {
@@ -93,6 +109,8 @@ async function load_from_dir() {
 
     const end = performance.now();
     console.log(`Loaded ${Object.values(logs).length} logs in: ${end - start} ms`);
+    progress.parentElement.hidden = true
+
 }
 
 function setup_table(logs) {
@@ -631,6 +649,11 @@ function reset() {
     // Remove all tables
     document.getElementById("tables").replaceChildren()
 
+    // Reset progress
+    let progress = document.getElementById("load")
+    progress.setAttribute("value", 0)
+    progress.setAttribute("max", 0)
+    progress.parentElement.hidden = true
 }
 
 let board_types = {}
