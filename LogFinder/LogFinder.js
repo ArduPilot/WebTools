@@ -439,10 +439,6 @@ function load_log(log_file) {
         return
     }
 
-    if (!('VER' in log.messageTypes)) {
-        return
-    }
-
     let fw_string
     let git_hash
     let board_id
@@ -451,17 +447,20 @@ function load_log(log_file) {
     let board_name
     let vehicle_type
 
-    const VER = log.get("VER")
+    if ('VER' in log.messageTypes) {
+        const VER = log.get("VER")
 
-    // Assume version does not change, just use first msg
-    fw_string = VER.FWS[0]
-    git_hash = VER.GH[0].toString(16)
-    if (VER.APJ[0] != 0) {
-        board_id = VER.APJ[0]
+        // Assume version does not change, just use first msg
+        fw_string = VER.FWS[0]
+        git_hash = VER.GH[0].toString(16)
+        if (VER.APJ[0] != 0) {
+            board_id = VER.APJ[0]
+        }
+        if ("BU" in VER) {
+            vehicle_type = VER.BU[0]
+        }
     }
-    if ("BU" in VER) {
-        vehicle_type = VER.BU[0]
-    }
+
 
     if ('MSG' in log.messageTypes) {
         const MSG = log.get("MSG")
@@ -470,7 +469,27 @@ function load_log(log_file) {
         const len = MSG.Message.length
         for (let i = 0; i < len - 3; i++) {
             const msg = MSG.Message[i]
-            if (fw_string != msg) {
+            if (fw_string != null) {
+                // If we have a firmware string it should match the message
+                if (fw_string != msg) {
+                    continue
+                }
+
+            } else {
+                const vehicles = ["ArduPlane V", "ArduCopter V", "Blimp V", "ArduRover V", "ArduSub V", "AntennaTracker V"]
+                let found_match = false
+                for (const vehicle of vehicles) {
+                    if (msg.startsWith(vehicle)) {
+                        fw_string = msg
+                        found_match = true
+                        break
+                    }
+                }
+                if (!found_match) {
+                    continue
+                }
+            }
+            if ((fw_string != null) && (fw_string != msg)) {
                 continue
             }
             if (!MSG.Message[i+3].startsWith("Param space used:")) {
