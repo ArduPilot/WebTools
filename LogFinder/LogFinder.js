@@ -114,16 +114,22 @@ function setup_table(logs) {
 
     for (const [board_id, board_logs] of Object.entries(boards)) {
 
-        const section = document.createElement("P")
-        tables_div.appendChild(section)
+        const board_details = document.createElement("details")
+        board_details.setAttribute("open", true);
+        tables_div.appendChild(board_details)
 
-        const heading = document.createElement("h3")
-        heading.appendChild(document.createTextNode(board_id))
-        section.appendChild(heading)
+        const board_summary = document.createElement("summary")
+        board_summary.appendChild(document.createTextNode(board_id))
+        board_summary.style.fontSize = " 1.17em"
+        board_summary.style.fontWeight = "bold"
+        board_details.style.marginBottom = "15px"
+        board_details.appendChild(board_summary)
+
+        board_details.appendChild(document.createElement("br"))
 
         const table_div = document.createElement("div")
         table_div.style.width = "1200px"
-        section.appendChild(table_div)
+        board_details.appendChild(table_div)
 
         // custom formatter to add a param download button
         function param_download_button(cell, formatterParams, onRendered) {
