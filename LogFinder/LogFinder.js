@@ -346,11 +346,69 @@ function setup_table(logs) {
         }
 
         // Formatter to add custom buttons
+        function check_warnings(cell, formatterParams, onRendered) {
+            const log = cell.getRow().getData()
+            const arming_checks_disabled = ("ARMING_CHECK" in log.info.params) && (log.info.params["ARMING_CHECK"] == 0)
+            if (!arming_checks_disabled && !log.info.watchdog && !log.info.crash_dump) {
+                // Nothing to warn about
+                return
+            }
+
+            let img = document.createElement("img")
+            img.style.width = "20px"
+            img.style.verticalAlign = "bottom"
+
+            if (log.info.crash_dump || log.info.watchdog) {
+                img.src = "../images/exclamation-triangle-red.svg"
+
+            } else {
+                // Arming checks 0
+                img.src = "../images/exclamation-triangle-orange.svg"
+
+            }
+
+            let tippy_div = document.createElement("div")
+
+            if (log.info.crash_dump) {
+                const para = document.createElement("p")
+                tippy_div.appendChild(para)
+                para.appendChild(document.createTextNode("Crash Dump file detected, please report to dev team."))
+            }
+
+            if (log.info.watchdog) {
+                const para = document.createElement("p")
+                tippy_div.appendChild(para)
+                para.appendChild(document.createTextNode("Watchdog reboot detected."))
+            }
+
+            if (arming_checks_disabled) {
+                const para = document.createElement("p")
+                tippy_div.appendChild(para)
+                para.appendChild(document.createTextNode("Arming checks disabled."))
+            }
+
+            tippy(img, {
+                content: tippy_div,
+                placement: 'left',
+                interactive: true,
+                appendTo: () => document.body,
+            })
+
+            return img
+        }
+
+        // Formatter to add custom buttons
         function buttons(cell, formatterParams, onRendered) {
             let div = document.createElement("div")
             div.appendChild(param_download_button(cell, formatterParams, onRendered))
             div.appendChild(document.createTextNode(" "))
             div.appendChild(open_in_button(cell, formatterParams, onRendered))
+
+            const warning = check_warnings(cell, formatterParams, onRendered)
+            if (warning != null) {
+                div.appendChild(document.createTextNode(" "))
+                div.appendChild(warning)
+            }
             return div
         }
 
@@ -365,6 +423,7 @@ function setup_table(logs) {
 
             tippy(div, {
                 content: file.relativePath,
+                interactive: true,
                 appendTo: () => document.body,
             })
 
@@ -419,7 +478,7 @@ function setup_table(logs) {
                 { title: "Size", field: "info.size", formatter:size_format },
                 { title: "Firmware Version", field:"info.fw_string" },
                 { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format },
-                { title: "" , headerSort:false, formatter:buttons, width: 160 },
+                { title: "" , headerSort:false, formatter:buttons, width: 185 },
             ],
             initialSort: [
                 { column:"info.time_stamp", dir:"asc"},
@@ -534,6 +593,22 @@ function load_log(log_file) {
     // Get start time, convert to luxon format to work with table
     const time_stamp = luxon.DateTime.fromJSDate(log.extractStartTime())
 
+    // Check for bad things we should warn about
+    const watchdog = 'WDOG' in log.messageTypes
+
+    let crash_dump
+    if ('FILE' in log.messageTypes) {
+        crash_dump = false
+        const names = log.get('FILE', 'FileName')
+        const len = names.length
+        for (let i = 0; i<len; i++) {
+            if (names[i].endsWith("crash_dump.bin")) {
+                crash_dump = true
+                break
+            }
+        }
+    }
+
     return {
         size: log_file.byteLength,
         fw_string,
@@ -545,7 +620,9 @@ function load_log(log_file) {
         vehicle_type,
         params,
         time_stamp,
-        flight_time
+        flight_time,
+        watchdog,
+        crash_dump
     }
 }
 
