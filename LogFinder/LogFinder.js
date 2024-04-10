@@ -43,7 +43,13 @@ async function load_from_dir() {
                 }
             } else if (entry.kind === "directory") {
                 for await (const handle of entry.values()) {
-                    yield* getFilesRecursively(handle, relativePath)
+                    try {
+                        yield* getFilesRecursively(handle, relativePath)
+                    } catch {
+                        if (handle.kind === "directory") {
+                            console.log("Opening " + handle.name + " in " + relativePath + " failed")
+                        }
+                    }
                 }
             }
         }
