@@ -1,9 +1,10 @@
 
+let import_done = []
 var DataflashParser
-import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+import_done[0] = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 var octokitRequest
-import('https://esm.sh/@octokit/request').then((mod) => { octokitRequest = mod.request });
+import_done[1] = import('https://esm.sh/@octokit/request').then((mod) => { octokitRequest = mod.request });
 
 async function check_release(hash, paragraph) {
     paragraph.appendChild(document.createElement("br"))
@@ -1870,7 +1871,12 @@ function plot_visibility(plot, hide) {
 
 let params = {}
 let defaults = {}
-function load_log(log_file) {
+async function load_log(log_file) {
+
+    // Make sure imports are fully loaded before starting
+    // This is needed when called from "open in"
+    await Promise.allSettled(import_done)
+
     const start = performance.now()
 
     let log = new DataflashParser()
