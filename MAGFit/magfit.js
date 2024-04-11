@@ -1,7 +1,7 @@
 // MAGFit tool for compass calibration
 
 var DataflashParser
-import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 const axis = ['x', 'y', 'z']
 const fit_types = { offsets: "Offsets", scale: "Offsets and scale", iron: "Offsets and iron" }
@@ -1677,7 +1677,11 @@ var MAG_Data
 var fits
 var body_frame_earth_field
 var earth_field
-function load(log_file) {
+async function load(log_file) {
+
+    // Make sure imports are fully loaded before starting
+    // This is needed when called from "open in"
+    await import_done
 
     let log = new DataflashParser()
     log.processData(log_file, [])
