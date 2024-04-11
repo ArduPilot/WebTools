@@ -900,7 +900,7 @@ function load_compass(log) {
     for (let i = 0; i < 3; i++) {
         const prio = get_instance(params, "COMPASS_PRIO" + (i+1) + "_ID")
         if (prio != null) {
-            compass[0] = prio
+            compass[i] = prio
             dev_id_start = i + 1
         }
     }
