@@ -6,7 +6,7 @@
 const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
 
 var DataflashParser
-import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 // Keys in data object to run FFT of
 const fft_keys = ["Tar", "Act", "Err", "P", "I", "D", "FF", "Out"]
@@ -1444,7 +1444,11 @@ function split_into_batches(PID_log_messages, index, time) {
 }
 
 var PID_log_messages = []
-function load(log_file) {
+async function load(log_file) {
+
+    // Make sure imports are fully loaded before starting
+    // This is needed when called from "open in"
+    await import_done
 
     const start = performance.now()
 
