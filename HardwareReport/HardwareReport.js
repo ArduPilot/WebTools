@@ -1937,7 +1937,9 @@ function load_log(log_file) {
         // Assume version does not change, just use first msg
         const fw_string = VER.FWS[0]
         const hash = VER.GH[0].toString(16)
-        board_id = VER.APJ[0]
+        if (VER.APJ[0] != 0) {
+            board_id = VER.APJ[0]
+        }
 
         let section = document.getElementById("VER")
         section.hidden = false
