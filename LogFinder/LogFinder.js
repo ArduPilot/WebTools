@@ -317,58 +317,12 @@ function setup_table(logs) {
             button.setAttribute('value', 'Open In')
             button.setAttribute('type', 'button')
 
-            // Div that contains buttons for other tools
-            let tippy_div = document.createElement("div")
-
-            const destinations = [["UAV Log Viewer", "https://plotbeta.ardupilot.org/#"],
-                                  ["Hardware Report", "../HardwareReport"],
-                                  ["Filter Review","../FilterReview"],
-                                  ["MAGFit", "../MAGFit"],
-                                  ["PID Review", "../PIDReview"]]
-
-            // Add button for each tool
-            for (const dest of destinations) {
-                // Add button
-                let dest_button = document.createElement("input")
-                dest_button.setAttribute('value', dest[0])
-                dest_button.setAttribute('type', 'button')
-                dest_button.style.margin  = "3px 0px"
-                tippy_div.appendChild(dest_button)
-
-                function open_in(e) {
-                    const file = cell.getRow().getData().fileHandle
-                    if (file == null) {
-                        return
-                    }
-
-                    const reader = new FileReader()
-                    reader.onload = function(e) {
-                        const arrayBuffer = e.target.result
-
-                        // Open the new page and keep a reference to it
-                        const newWindow = window.open(dest[1])
-
-                        // Wait a bit to ensure the new page is fully loaded
-                        setTimeout(() => {
-                            // Send the ArrayBuffer to the new window using postMessage
-                            newWindow.postMessage({ type: 'arrayBuffer', data: arrayBuffer}, '*')
-                        }, 2000)
-                    }
-
-                    // Load file
-                    reader.readAsArrayBuffer(file)
-                }
-
-                // Add click callback
-                dest_button.addEventListener("click", open_in)
-
-                // New line
-                tippy_div.appendChild(document.createElement("br"))
-
+            function get_file_fun() {
+                return cell.getRow().getData().fileHandle
             }
 
             tippy(button, {
-                content: tippy_div,
+                content: open_in_tippy_div(get_file_fun),
                 placement: 'left',
                 interactive: true,
                 appendTo: () => document.body,
