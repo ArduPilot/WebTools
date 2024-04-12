@@ -12,6 +12,9 @@
 <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
 
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
 </head>
 <table style="width:1200px"><tr><td>
     <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
@@ -96,7 +99,8 @@
         <td style="width: 10px;"></td>
         <td>
             <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
-            <div id="OpenIn"></div><br><br>
+            <input id="OpenIn" type="button" value="Open In" disabled>
+            <br><br>
             <input type="button" id="calculate" value="Calculate" onclick="loading_call(re_calc)">
         </td>
     </table>

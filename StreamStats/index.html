@@ -40,7 +40,7 @@
 <body onload="reset();">
 <input id="fileItem" type="file" accept=".bin,.tlog" onchange="load(this)">
 
-<div id="OpenIn"></div>
+<input id="OpenIn" type="button" value="Open In" disabled>
 
 <h3 hidden>MAVLink</h3>
 <p id="MAVLink"></p>
@@ -111,7 +111,7 @@
   tippy('#TT')
 
 
-  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) })
+  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
 
   init_loading_overlay()
 
