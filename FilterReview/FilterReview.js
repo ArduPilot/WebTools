@@ -3,7 +3,7 @@
 // Use browser-cjs to load fft lib
 // https://github.com/indutny/fft.js
 // Much faster than math.fft!
-const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
+const FFT_lib = require("../Packages/fft.js-4.0.4/lib/fft.js")
 
 var DataflashParser
 const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
