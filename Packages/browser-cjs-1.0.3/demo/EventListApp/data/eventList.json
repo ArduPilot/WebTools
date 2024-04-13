@@ -1,0 +1,57 @@
+[
+  {
+    "title": "Scuba Merit Badge",
+    "date": "August 28 | 8am - 3pm",
+    "desc": "Earn your scuba diving merit badge. Pre-req: Requirement 1a, 2b, 4ab",
+    "address": "503 Harbor Blvd, Destine, FL",
+    "pic": "https://images.unsplash.com/photo-1484507175567-a114f764f78b?ixlib=rb-0.3.5&s=abc2cb4d7e6d8aca1e8914c1b5e909a6&auto=format&fit=crop&w=500&q=60",
+    "month": "Aug",
+    "day": "28",
+    "important": true,
+    "upcoming": true
+  },
+  {
+    "title": "Backpacking Hike",
+    "date": "June 4th, 2018",
+    "desc": "10mi backpacking hike at Thunder Mountain. Remember to pack properly",
+    "address": "Thunder Mtn, Disney, FL",
+    "pic": "https://images.unsplash.com/photo-1467139701929-18c0d27a7516?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=874439394c29dfb8f4b5a794a51a52f2&auto=format&fit=crop&w=750&q=80",
+    "month": "Jun",
+    "day": "04",
+    "important": false,
+    "upcoming": true
+  },
+  {
+    "title": "Black Forest Camp",
+    "date": "March 3 - March 5, 2018",
+    "desc": "Weekend campout in the Black Forest",
+    "address": "Black Forest, Baden-Württemberg, DE",
+    "pic": "https://images.unsplash.com/photo-1501703979959-797917eb21c8?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d4132e8087781addd674e137a9f596dc&auto=format&fit=crop&w=889&q=80",
+    "month": "Mar",
+    "day": "03",
+    "important": false,
+    "upcoming": true
+  },
+  {
+    "title": "Arctic Campout",
+    "date": "December 14 - 18, 2018",
+    "desc": "Campout in the arctic. Freeze your toes off. See cute penguins.",
+    "address": "Barrow, Alaska, US",
+    "pic": "https://images.unsplash.com/photo-1498279898147-67f541d32b6a?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=af428042e69ac5152855548d8b4f7989&auto=format&fit=crop&w=667&q=80",
+    "month": "Dec",
+    "day": "14",
+    "important": false,
+    "upcoming": false
+  },
+  {
+    "title": "Sailing",
+    "date": "April 23 | 11am - 7pm",
+    "desc": "Sail the high seas. Get lost in the Bermuda Triangle.",
+    "address": "Second star to the right, and straight on till morning",
+    "pic": "https://images.unsplash.com/photo-1500514966906-fe245eea9344?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=9193225514494f3e830d444d4ae58819&auto=format&fit=crop&w=667&q=80",
+    "month": "Apr",
+    "day": "23",
+    "important": false,
+    "upcoming": false
+  }
+]

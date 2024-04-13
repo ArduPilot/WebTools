@@ -1,0 +1,40 @@
+{
+  "name": "browser-cjs",
+  "version": "1.0.3",
+  "description": "A minimal CommonJS-compatible module loader for the browser environment.",
+  "main": "require.js",
+  "scripts": {
+    "deploy": "npm run minify && npm run build:demo:eventList && bash scripts/deployChromeServer.sh",
+    "build": "babel --presets @babel/env src/require.es6 --out-file require.js",
+    "build:watch": "babel --presets @babel/env --watch src/require.es6 --out-file require.js",
+    "minify": "npm run build && uglifyjs require.js -o require.min.js",
+    "build:demo:eventList": "babel --presets @babel/env,@babel/react ./demo/EventListApp/src --out-dir ./demo/EventListApp/dist",
+    "build:watch:demo:eventList": "npm run build && babel --presets @babel/env,@babel/react --watch ./demo/EventListApp/src --out-dir ./demo/EventListApp/dist"
+  },
+  "keywords": [
+    "require",
+    "js",
+    "browser",
+    "commonjs",
+    "cjs",
+    "module loader",
+    "nodejs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luciVuc/browser-cjs"
+  },
+  "homepage": "https://github.com/luciVuc/browser-cjs#readme.md",
+  "author": "Lucian Vuc (https://github.com/luciVuc)",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "@babel/preset-react": "^7.0.0",
+    "mocha": "^6.2.0",
+    "sinon": "^7.3.2",
+    "uglify-js": "^3.6.0"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,12 @@
+{
+  "name": "event-list-app",
+  "displayName": "EventList Demo App",
+  "version": "1.0.0",
+  "description": "A simple ReactJS app, that displays a list of upcoming events, uses 'browser-cjs' as a module loader for the custom ReactJS Components it is built with.",
+  "main": "./dist/index.js",
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "Lucian Vuc (https://github.com/luciVuc)",
+  "license": "ISC"
+}
