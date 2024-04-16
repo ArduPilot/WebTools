@@ -2278,6 +2278,99 @@ async function load_log(log_file) {
         )
     }
 
+    // Plot clock drift
+    if (('GPS' in log.messageTypes) && ("instances" in log.messageTypes.GPS)) {
+
+        let start_us
+        let end_us
+        let max_drift
+
+        for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+            // Check each instance
+            if (inst == 2) {
+                // Ignore blended instance
+                continue
+            } 
+
+            const time_us = log.get_instance("GPS", inst, "TimeUS")
+            const status = log.get_instance("GPS", inst, "Status")
+            const weeks = log.get_instance("GPS", inst, "GWk")
+            const ms = log.get_instance("GPS", inst, "GMS")
+
+            const len = time_us.length
+            const drift_ms = new Array(len).fill(NaN)
+            let first
+            let have_drift = false
+            for (let i = 0; i<len; i++) {
+                if (status[i] < 3) {
+                    // Fix not good enough for valid time
+                    continue
+                }
+
+                // Calculate GPS time in milli seconds
+                const ms_per_week = 7 * 24 * 60 * 60 * 1000
+                const GPS_ms = (weeks[i] * ms_per_week) + ms[i]
+
+                if (first == null) {
+                    // sync at first point
+                    drift_ms[i] = 0
+                    first = { GPS_ms, time_us: time_us[i] }
+                    continue
+                }
+
+                const GPS_dt = GPS_ms - first.GPS_ms
+                const clock_dt = (time_us[i] - first.time_us) * 0.001
+
+                drift_ms[i] = GPS_dt - clock_dt
+                have_drift = true;
+
+                if ((start_us == null) || (first.time_us < start_us)) {
+                    start_us = first.time_us
+                }
+                if ((end_us == null) || (time_us[i] > end_us)) {
+                    end_us = time_us[i]
+                }
+                const abs_drift = Math.abs(drift_ms[i])
+                if ((max_drift == null) || (abs_drift > max_drift)) {
+                    max_drift = abs_drift
+                }
+            }
+
+            if (!have_drift) {
+                // nothing to plot
+                continue
+            }
+
+            const name = "GPS " + inst
+
+            clock_drift.data.push({
+                mode: 'lines',
+                x: TimeUS_to_seconds(time_us),
+                y: drift_ms,
+                name: name,
+                meta: name,
+                hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} ms"
+            })
+        }
+
+        if (clock_drift.data.length > 0) {
+            plot = document.getElementById("clock_drift")
+
+            // Set range such that only bad drift will show
+            const time_range_ms = (end_us - start_us) * 0.001
+
+            // Set full scale to +-1000ppm so expected jitter does not look bad
+            const min_drift = time_range_ms * 1000 * 10**-6
+            if (max_drift < min_drift) {
+                plot.layout.yaxis.range = [ -min_drift,  min_drift ]
+                plot.layout.yaxis.autorange = false
+            }
+
+            plot_visibility(plot, false)
+            Plotly.redraw(plot)
+        }
+    }
+
     const end = performance.now()
     console.log(`Load took: ${end - start} ms`)
 }
@@ -2314,6 +2407,7 @@ let stack_pct = {}
 let log_dropped = {}
 let log_buffer = {}
 let log_stats = {}
+let clock_drift = {}
 function reset() {
 
     function setup_section(section) {
@@ -2735,6 +2829,20 @@ function reset() {
     plot = document.getElementById("log_stats")
     Plotly.purge(plot)
     Plotly.newPlot(plot, log_stats.data, log_stats.layout, {displaylogo: false});
+    plot_visibility(plot, true)
+
+    // Clock drift
+    clock_drift.data = []
+    clock_drift.layout = { 
+        legend: { itemclick: false, itemdoubleclick: false }, 
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Clock drift (ms)" } }
+    }
+
+    plot = document.getElementById("clock_drift")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, clock_drift.data, clock_drift.layout, {displaylogo: false});
     plot_visibility(plot, true)
 
 }
