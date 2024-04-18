@@ -235,7 +235,7 @@ const scale_range = [0.8, 1.2]
 function save_parameters() {
 
     function param_string(name, value) {
-        return name + "," + value + "\n"
+        return name + "," + param_to_string(value) + "\n"
     }
     
     function save_params(names, values) {
