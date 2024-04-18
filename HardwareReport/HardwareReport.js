@@ -2896,12 +2896,7 @@ function save_all_parameters() {
         return
     }
 
-    let text = ""
-    for (const [name, value] of Object.entries(params)) {
-        text += name + "," + value + "\n";
-    }
-
-    save_text(text, ".param")
+    save_text(get_param_download_text(params), ".param")
 
 }
 
@@ -2911,15 +2906,15 @@ function save_changed_parameters() {
         return
     }
 
-    let text = ""
+    let changed = {}
     for (const [name, value] of Object.entries(params)) {
         if ((name in defaults) && (value == defaults[name])) {
             continue
         }
-        text += name + "," + value + "\n";
+        changed[name] = value
     }
 
-    save_text(text, "_changed.param")
+    save_text(get_param_download_text(changed), "_changed.param")
 
 }
 
@@ -2946,7 +2941,7 @@ function save_minimal_parameters() {
         }
     }
 
-    let text = ""
+    let minimal = {}
     for (const [name, value] of Object.entries(params)) {
         if (changed && (name in defaults) && (value == defaults[name])) {
             continue
@@ -2954,10 +2949,10 @@ function save_minimal_parameters() {
         if (skip_params.includes(name)) {
             continue
         }
-        text += name + "," + value + "\n";
+        minimal[name] = value
     }
 
-    save_text(text, "_minimal.param")
+    save_text(get_param_download_text(minimal), "_minimal.param")
 
 }
 

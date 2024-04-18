@@ -63,3 +63,43 @@ function get_param_value(param_log, name, allow_change) {
     return value
 }
 
+// Return a string for a given param value
+function param_to_string(value)
+{
+    // Make sure number can be represented by 32 bit float
+    const float_val = Math.fround(value)
+
+    const significant_figures = [7,8,9]
+    for (figures of significant_figures) {
+        // Convert to a string with the given number of figures
+        // This gives the value we want, but with trailing zeros
+        const string_val = float_val.toPrecision(figures)
+
+        // Go back to number
+        const number_val = Number(string_val)
+        if (float_val != Math.fround(number_val)) {
+            // Did not get original value, try more digits
+            continue
+        }
+
+        // Convert number back to string with no trailing zeros
+        return number_val.toString()
+    }
+
+    throw new Error("Could not convert " + value.toString() + " to float string")
+}
+
+// Return formatted text for param download
+function get_param_download_text(params)
+{
+    // Sort alphabetically, localeCompare does underscores differently to built in sort
+    const keys = Object.keys(params).sort((a, b) =>
+        a.localeCompare(b)
+    )
+
+    let text = ""
+    for (const key of keys) {
+        text += key + "," + param_to_string(params[key]) + "\n";
+    }
+    return text
+}

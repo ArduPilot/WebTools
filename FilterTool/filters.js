@@ -920,7 +920,7 @@ function save_parameters() {
             var name = "" + inputs[v].id;
             if (name.startsWith("INS_")) {
                 var value = inputs[v].value;
-                params += name + "," + value + "\n";
+                params += name + "," + param_to_string(value) + "\n";
             }
         }
         return params

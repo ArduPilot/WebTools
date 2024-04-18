@@ -160,12 +160,10 @@ function setup_table(logs) {
                     return
                 }
 
-                let text = ""
-                for (const [name, value] of Object.entries(params)) {
-                    text += name + "," + value + "\n";
-                }
+                // Get contents of file to download
+                const text = get_param_download_text(params)
 
-                // make sure there are no slashes
+                // make sure there are no slashes in file name
                 let log_file_name = log.info.name.replace(/.*[\/\\]/, '')
 
                 // Replace the file extension
@@ -256,7 +254,7 @@ function setup_table(logs) {
                     details.appendChild(summary)
 
                     for (const [name, value] of Object.entries(added)) {
-                        const text = name + ": " + value.toString()
+                        const text = name + ": " + param_to_string(value)
                         details.appendChild(document.createTextNode(text))
                         details.appendChild(document.createElement("br"))
                     }
@@ -273,7 +271,7 @@ function setup_table(logs) {
                     details.appendChild(summary)
 
                     for (const [name, value] of Object.entries(missing)) {
-                        const text = name + ": " + value.toString()
+                        const text = name + ": " + param_to_string(value)
                         details.appendChild(document.createTextNode(text))
                         details.appendChild(document.createElement("br"))
                     }
@@ -290,7 +288,7 @@ function setup_table(logs) {
                     details.appendChild(summary)
 
                     for (const [name, values] of Object.entries(changed)) {
-                        const text = name + ": " + values.from.toString() + " => " + values.to.toString()
+                        const text = name + ": " + param_to_string(values.from) + " => " + param_to_string(values.to)
                         details.appendChild(document.createTextNode(text))
                         details.appendChild(document.createElement("br"))
                     }
