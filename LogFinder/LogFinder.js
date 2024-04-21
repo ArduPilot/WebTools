@@ -116,6 +116,7 @@ async function load_from_dir() {
 
 }
 
+let tables = []
 function setup_table(logs) {
 
     // Sort in to sections based on hardware ID
@@ -202,130 +203,6 @@ function setup_table(logs) {
             button.setAttribute('type', 'button')
             button.addEventListener("click", save_parameters)
             button.disabled = Object.keys(cell.getRow().getData().info.params).length == 0
-
-            // Dynamically update tool tip to show param diff
-            function tippy_show(instance) {
-                const prev_row = cell.getRow().getPrevRow()
-                if (prev_row === false) {
-                    // Don't show if there is no previous row
-                    return false
-                }
-
-                const prev_params = prev_row.getData().info.params
-                const params = cell.getRow().getData().info.params
-
-                // Superset of param names from both files
-                const names = new Set([...Object.keys(prev_params), ...Object.keys(params)])
-
-                // Do param diff
-                let added = {}
-                let missing = {}
-                let changed = {}
-                for (const name of names) {
-                    const have_old = name in prev_params
-                    const have_new = name in params
-                    if (have_new && !have_old) {
-                        // Only in new
-                        added[name] = params[name]
-
-                    } else if (!have_new && have_old) {
-                        // Only in old
-                        missing[name] = prev_params[name]
-
-                    } else if (prev_params[name] != params[name]) {
-                        // In both with different value
-
-                        // Check if this change should be ignored
-                        let show_change = true
-                        for (const ignore of param_diff_ignore) {
-                            if (ignore.check.checked && ignore.fun(name)) {
-                                show_change = false
-                                break
-                            }
-                        }
-
-                        if (show_change) {
-                            changed[name] = { from: prev_params[name], to: params[name]}
-                        }
-                    }
-                }
-
-                let tippy_div = document.createElement("div")
-                instance.setContent(tippy_div)
-
-                const have_added = Object.keys(added).length > 0
-                const have_missing = Object.keys(missing).length > 0
-                const have_changed = Object.keys(changed).length > 0
-
-                if (!have_added && !have_missing && !have_changed) {
-                    tippy_div.appendChild(document.createTextNode("No change"))
-                    return
-                }
-
-                tippy_div.style.width = '500px';
-                tippy_div.style.maxHeight = '90vh';
-                tippy_div.style.overflow = 'auto';
-
-                if (have_added) {
-                    const details = document.createElement("details")
-                    details.setAttribute("open", true);
-                    details.style.marginBottom = "5px"
-                    tippy_div.appendChild(details)
-
-                    const summary = document.createElement("summary")
-                    summary.appendChild(document.createTextNode("New:"))
-                    details.appendChild(summary)
-
-                    for (const [name, value] of Object.entries(added)) {
-                        const text = name + ": " + param_to_string(value)
-                        details.appendChild(document.createTextNode(text))
-                        details.appendChild(document.createElement("br"))
-                    }
-                }
-
-                if (have_missing) {
-                    const details = document.createElement("details")
-                    details.setAttribute("open", true);
-                    details.style.marginBottom = "5px"
-                    tippy_div.appendChild(details)
-
-                    const summary = document.createElement("summary")
-                    summary.appendChild(document.createTextNode("Missing:"))
-                    details.appendChild(summary)
-
-                    for (const [name, value] of Object.entries(missing)) {
-                        const text = name + ": " + param_to_string(value)
-                        details.appendChild(document.createTextNode(text))
-                        details.appendChild(document.createElement("br"))
-                    }
-                }
-
-                if (have_changed) {
-                    const details = document.createElement("details")
-                    details.setAttribute("open", true);
-                    details.style.marginBottom = "5px"
-                    tippy_div.appendChild(details)
-
-                    const summary = document.createElement("summary")
-                    summary.appendChild(document.createTextNode("Changed:"))
-                    details.appendChild(summary)
-
-                    for (const [name, values] of Object.entries(changed)) {
-                        const text = name + ": " + param_to_string(values.from) + " => " + param_to_string(values.to)
-                        details.appendChild(document.createTextNode(text))
-                        details.appendChild(document.createElement("br"))
-                    }
-                }
-
-            }
-
-            tippy(button, {
-                maxWidth: '750px',
-                placement: 'left',
-                interactive: true,
-                appendTo: () => document.body,
-                onShow: tippy_show
-            })
 
             return button
         }
@@ -463,7 +340,113 @@ function setup_table(logs) {
             //return dur.toFormat("hh:mm:ss")
         }
 
-        new Tabulator(table_div, {
+        // Format a param diff count and popup with details
+        function param_diff_format(cell, formatterParams, onRendered) {
+            const diff = cell.getRow().getData().param_diff
+            if (diff == null) {
+                return "-"
+            }
+
+            const count = Object.keys(diff.added).length + Object.keys(diff.missing).length + Object.keys(diff.changed).length
+            const count_div = document.createElement("div")
+            count_div.appendChild(document.createTextNode(count))
+
+            let tippy_div = document.createElement("div")
+            if (count == 0) {
+                tippy_div.appendChild(document.createTextNode("No change"))
+
+            } else {
+                tippy_div.style.width = '325px'
+                tippy_div.style.maxHeight = '90vh'
+                tippy_div.style.overflow = 'auto'
+
+                // Sort alphabetically, localeCompare does underscores differently to built in sort
+                function param_sort(a, b) {
+                    return a.localeCompare(b)
+                }
+
+                if (Object.keys(diff.added).length > 0) {
+
+
+                    const details = document.createElement("details")
+                    details.setAttribute("open", true);
+                    details.style.marginBottom = "5px"
+                    tippy_div.appendChild(details)
+
+                    const summary = document.createElement("summary")
+                    summary.appendChild(document.createTextNode("New:"))
+                    details.appendChild(summary)
+
+                    for (const name of Object.keys(diff.added).sort(param_sort)) {
+                        const text = name + ": " + param_to_string(diff.added[name])
+                        details.appendChild(document.createTextNode(text))
+                        details.appendChild(document.createElement("br"))
+                    }
+                }
+
+                if (Object.keys(diff.missing).length > 0) {
+                    const details = document.createElement("details")
+                    details.setAttribute("open", true);
+                    details.style.marginBottom = "5px"
+                    tippy_div.appendChild(details)
+
+                    const summary = document.createElement("summary")
+                    summary.appendChild(document.createTextNode("Missing:"))
+                    details.appendChild(summary)
+
+                    for (const name of Object.keys(diff.missing).sort(param_sort)) {
+                        const text = name + ": " + param_to_string(diff.missing[name])
+                        details.appendChild(document.createTextNode(text))
+                        details.appendChild(document.createElement("br"))
+                    }
+                }
+
+                if (Object.keys(diff.changed).length > 0) {
+                    const details = document.createElement("details")
+                    details.setAttribute("open", true);
+                    details.style.marginBottom = "5px"
+                    tippy_div.appendChild(details)
+
+                    const summary = document.createElement("summary")
+                    summary.appendChild(document.createTextNode("Changed:"))
+                    details.appendChild(summary)
+
+                    for (const name of Object.keys(diff.changed).sort(param_sort)) {
+                        const text = name + ": " + param_to_string(diff.changed[name].from) + " => " + param_to_string(diff.changed[name].to)
+                        details.appendChild(document.createTextNode(text))
+                        details.appendChild(document.createElement("br"))
+                    }
+                }
+            }
+
+            tippy(count_div, {
+                content: tippy_div,
+                maxWidth: '350px',
+                placement: 'left',
+                interactive: true,
+                appendTo: () => document.body,
+            })
+
+            return count_div
+        }
+
+        // Find the param diff between the first and last row
+        function total_param_diff_calc(values, data, calcParams) {
+            const len = data.length
+            if (len <= 1) {
+                return null
+            }
+            return get_param_diff(data[len-1].info.params, data[0].info.params)
+        }
+
+        // Tabulator will still show the bottom row if there is only one data row
+        // manually disable in this case
+        const multiple_rows = board_logs.length > 1
+        const size_bottom_calc = multiple_rows ? "sum" : false
+        const flight_time_bottom_calc = multiple_rows ? "sum" : false
+        const param_diff_bottom_calc = multiple_rows ? total_param_diff_calc : false
+
+        const table = new Tabulator(table_div, {
             height: "fit-content",
             data: board_logs,
             index: "info.rel_path",
@@ -481,9 +464,10 @@ function setup_table(logs) {
                     sorter:"datetime",
                 },
                 { title: "Name", field: "info.name", formatter:name_format },
-                { title: "Size", field: "info.size", formatter:size_format },
+                { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format },
                 { title: "Firmware Version", field:"info.fw_string" },
-                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format },
+                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format },
+                { title: "Param Changes", field:"param_diff", formatter:param_diff_format, headerSort:false, width: 110, bottomCalc:param_diff_bottom_calc, bottomCalcFormatter:param_diff_format },
                 { title: "" , headerSort:false, formatter:buttons, width: 185 },
             ],
             initialSort: [
@@ -491,8 +475,66 @@ function setup_table(logs) {
             ]
         })
 
+        table.on("dataSorted", (sorters, rows) => { update_param_diff(table, rows) })
+
+        tables.push(table)
     }
 
+}
+
+// Calculate the diff between two param sets
+function get_param_diff(params, prev_params) {
+    // Superset of param names from both files
+    const names = new Set([...Object.keys(prev_params), ...Object.keys(params)])
+
+    // Do param diff
+    let added = {}
+    let missing = {}
+    let changed = {}
+    for (const name of names) {
+        const have_old = name in prev_params
+        const have_new = name in params
+        if (have_new && !have_old) {
+            // Only in new
+            added[name] = params[name]
+
+        } else if (!have_new && have_old) {
+            // Only in old
+            missing[name] = prev_params[name]
+
+        } else if (prev_params[name] != params[name]) {
+            // In both with different value
+
+            // Check if this change should be ignored
+            let show_change = true
+            for (const ignore of param_diff_ignore) {
+                if (ignore.check.checked && ignore.fun(name)) {
+                    show_change = false
+                    break
+                }
+            }
+
+            if (show_change) {
+                changed[name] = { from: prev_params[name], to: params[name]}
+            }
+        }
+    }
+
+    return { added, missing, changed }
+}
+
+function update_param_diff(table, rows) {
+    // Never any change in first row
+    rows[0].getData().param_diff = null
+
+    // Calculate diff for each row
+    for (i = 1; i<rows.length; i++) {
+        const param_diff = get_param_diff(rows[i].getData().info.params, rows[i-1].getData().info.params)
+        rows[i].getData().param_diff = param_diff
+    }
+
+    // Trigger re-format
+    table.redraw(true)
 }
 
 function load_log(log_file) {
@@ -639,6 +681,7 @@ function reset() {
 
     // Remove all tables
     document.getElementById("tables").replaceChildren()
+    tables = []
 
     // Reset progress
     let progress = document.getElementById("load")
@@ -687,6 +730,13 @@ async function initial_load() {
         ignore.check.setAttribute('type', 'checkbox')
         ignore.check.setAttribute('id', id)
         ignore.check.checked = true
+
+        function redraw_tables() {
+            for (const table of tables) {
+                update_param_diff(table, table.getRows())
+            }
+        }
+        ignore.check.addEventListener('change', redraw_tables)
 
         let label = document.createElement("label")
         label.setAttribute('for', id)
