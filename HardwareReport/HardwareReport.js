@@ -1191,6 +1191,19 @@ function load_gps(log) {
                            pos: get_param_array(params, pos_names),
                            node_id: params["GPS_CAN_NODEID" + (i+1)] }
             }
+            continue
+        }
+        const new_prefix = "GPS" + (i+1)
+        const new_type_name = new_prefix + "_TYPE"
+        if (new_type_name in params) {
+            // New per-instance params for 4.6+
+            const type = params[new_type_name]
+            if (type != 0) {
+                const pos_names = get_param_name_vector3(new_prefix + "_POS_")
+                gps[i] = { type: type,
+                           pos: get_param_array(params, pos_names),
+                           node_id: params[new_prefix + "_CAN_NODEID"] }
+            }
         }
     }
 
