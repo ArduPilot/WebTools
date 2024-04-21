@@ -114,6 +114,12 @@ async function load_from_dir() {
     console.log(`Loaded ${Object.values(logs).length} logs in: ${end - start} ms`);
     progress.parentElement.hidden = true
 
+    let total_size = 0
+    for (const log of Object.values(logs)) {
+        total_size += log.info.size
+    }
+    console.log("Total size: " + total_size + " B");
+
 }
 
 let tables = []
