@@ -1176,7 +1176,6 @@ function load_airspeed(log) {
 let gps
 const max_num_gps = 2
 function load_gps(log) {
-    let gps_instances = []
 
     for (let i = 0; i < max_num_gps; i++) {
         let index = String(i+1)
@@ -1195,44 +1194,49 @@ function load_gps(log) {
         }
     }
 
-    let messages = log.get("MSG").Message
+    if ('MSG' in log.messageTypes) {
+        const messages = log.get("MSG").Message
 
-    let section = document.getElementById("GPS")
-    let gps_num;
-    // This regular expression is used to get the word after "as" to get the GPS device name. (?<=as\s) will exclude the "as" and a whitespace from the regex and then (\S+) will match the next word.
-    let regex_gps_device = /(?<=as\s)(\S+)/i;
-    let regex_gps_number = /(?<=GPS\s)(\S)/
-    for (let i = 0; i < messages.length; i++) {
-        if (messages[i].startsWith("GPS")) {
-            gps_num = parseInt(messages[i].match(regex_gps_number)[0]);
-            let gps_device = messages[i].match(regex_gps_device)[0];
-            gps_instances[gps_num] = { gps: gps_device }
+        // This regular expression is used to get the word after "as" to get the GPS device name.
+        // (?<=as\s) will exclude the "as" and a whitespace from the regex and then (\S+) will match the next word.
+        const regex_gps_device = /(?<=as\s)(\S+)/i;
+        const regex_gps_number = /(?<=GPS\s)(\S)/
+        for (const message of messages) {
+            if (message.startsWith("GPS")) {
+                const num_match = message.match(regex_gps_number)
+                const device_match = message.match(regex_gps_device)
+                if ((num_match != null) && (device_match != null)) {
+                    const gps_num = parseInt(num_match[0]) - 1
+                    gps[gps_num].device = device_match[0]
+                }
+            }
         }
     }
 
-    function print_gps(inst, params) {
+    function print_gps(inst, gps_info) {
         let fieldset = document.createElement("fieldset")
 
         let heading = document.createElement("legend")
-        heading.innerHTML = "GPS " + inst
+        heading.innerHTML = "GPS " + (inst+1)
         fieldset.appendChild(heading)
 
-        fieldset.appendChild(document.createTextNode(params.gps))
+        fieldset.appendChild(document.createTextNode(gps_info.device))
         fieldset.appendChild(document.createElement("br"))
 
         return fieldset
     }
 
+    let section = document.getElementById("GPS")
     let table = document.createElement("table")
     section.appendChild(table)
 
     let have_section = false
-    for (let i = 0; i < gps_instances.length; i++) {
-        if (gps_instances[i] != null) {
+    for (let i = 0; i < gps.length; i++) {
+        if ((gps[i] != null) && ("device" in gps[i])) {
             have_section = true
             let colum = document.createElement("td")
 
-            colum.appendChild(print_gps(i, gps_instances[i]))
+            colum.appendChild(print_gps(i, gps[i]))
             table.appendChild(colum)
         }
     }
