@@ -27,6 +27,9 @@ async function load_from_dir() {
 
     reset()
 
+    // Set page title to folder name
+    document.title = "Logs in: " + dirHandle.name + "/"
+
     let progress = document.getElementById("load")
     progress.parentElement.hidden = false
 
@@ -132,12 +135,32 @@ function setup_table(logs) {
 
     for (const [board_id, board_logs] of Object.entries(boards)) {
 
+        function get_common_path(board_logs) {
+            const first_path = board_logs[0].fileHandle.relativePath
+            // Loop through the letters of the first string
+            for (let i = 0; i <= first_path.length; i++) {
+                // Loop through the other strings
+                for (let j = 1; j < board_logs.length; j++) {
+                    // Check if this character is also present in the same position of each string
+                    if (first_path[i] !== board_logs[j].fileHandle.relativePath[i]) {
+                        // If not, return the string up to and including the previous character
+                        return first_path.slice(0, i);
+                    }
+                }
+            }
+            return first_path
+        }
+        const common_path = get_common_path(board_logs)
+
         const board_details = document.createElement("details")
         board_details.setAttribute("open", true);
         tables_div.appendChild(board_details)
 
         const board_summary = document.createElement("summary")
         board_summary.appendChild(document.createTextNode(board_id))
+        if (common_path.length > 0) {
+            board_summary.appendChild(document.createTextNode(": " + common_path))
+        }
         board_summary.style.fontSize = " 1.17em"
         board_summary.style.fontWeight = "bold"
         board_details.style.marginBottom = "15px"
@@ -610,6 +633,9 @@ function load_log(log_file) {
 }
 
 function reset() {
+
+    // Reset title
+    document.title = "ArduPilot Log Finder"
 
     // Remove all tables
     document.getElementById("tables").replaceChildren()
