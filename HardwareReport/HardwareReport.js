@@ -1233,8 +1233,59 @@ function load_gps(log) {
         heading.innerHTML = "GPS " + (inst+1)
         fieldset.appendChild(heading)
 
+        // Try and decode the type param
+        let types = []
+        types[0] = "None"
+        types[1] = "AUTO"
+        types[2] = "uBlox"
+        types[5] = "NMEA"
+        types[6] = "SiRF"
+        types[7] = "HIL"
+        types[8] = "SwiftNav"
+        types[9] = "DroneCAN"
+        types[10] = "SBF"
+        types[11] = "GSOF"
+        types[13] = "ERB"
+        types[14] = "MAV"
+        types[15] = "NOVA"
+        types[16] = "HemisphereNMEA"
+        types[17] = "uBlox-MovingBaseline-Base"
+        types[18] = "uBlox-MovingBaseline-Rover"
+        types[19] = "MSP"
+        types[20] = "AllyStar"
+        types[21] = "ExternalAHRS"
+        types[22] = "DroneCAN-MovingBaseline-Base"
+        types[23] = "DroneCAN-MovingBaseline-Rover"
+        types[24] = "UnicoreNMEA"
+        types[25] = "UnicoreMovingBaselineNMEA"
+        types[26] = "SBF-DualAntenna"
+
+        if (types[gps_info.type] != null) {
+            fieldset.appendChild(document.createTextNode("Type " + gps_info.type + ": " + types[gps_info.type]))
+            fieldset.appendChild(document.createElement("br"))
+        }
+
         fieldset.appendChild(document.createTextNode(gps_info.device))
         fieldset.appendChild(document.createElement("br"))
+
+        // If DroneCAN type we can print the node name
+        if ((gps_info.type == 9) || (gps_info.type == 22) || (gps_info.type == 23)) {
+
+            // Can't tell which bus, so give up if the node ID is found on both
+            let can_device
+            let can_count = 0
+            for (const [driver_num, can_driver] of Object.entries(can)) {
+                if (gps_info.node_id in can_driver) {
+                    can_device = can_driver[gps_info.node_id][0]
+                    can_count++
+                }
+            }
+
+            if ((can_device != null) && (can_count == 1)) {
+                fieldset.appendChild(document.createTextNode("Name: " + can_device.name))
+                fieldset.appendChild(document.createElement("br"))
+            }
+        }
 
         return fieldset
     }
