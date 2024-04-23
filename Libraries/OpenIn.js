@@ -30,12 +30,23 @@ function open_in_tippy_div(get_file_fun) {
         dest_button.style.margin  = "3px 0px"
         tippy_div.appendChild(dest_button)
 
-        function open_in(e) {
+        async function open_in(e) {
             const file = get_file_fun()
             if (file == null) {
                 return
             }
 
+            if (dest.hook_load) {
+                // Open the new page and keep a reference to it
+                const newWindow = window.open(dest.path)
+
+                // For WebTools with the same origin we can hook the load and send the file handle
+                // This means they get the file name and can recursively "open in"
+                newWindow.addEventListener('load', () => { newWindow.postMessage({ type: 'file', data: file}, '*') })
+                return
+            }
+
+            // Not allowed to listen for load cross domains, wait a bit and then try
             const reader = new FileReader()
             reader.onload = function(e) {
                 const arrayBuffer = e.target.result
@@ -43,18 +54,7 @@ function open_in_tippy_div(get_file_fun) {
                 // Open the new page and keep a reference to it
                 const newWindow = window.open(dest.path)
 
-                function send_log() {
-                    newWindow.postMessage({ type: 'arrayBuffer', data: arrayBuffer}, '*')
-                }
-
-                if (dest.hook_load) {
-                    // For WebTools with the same origin we can hook the load
-                    newWindow.addEventListener('load', send_log)
-
-                } else {
-                    // Not allowed to listen for load cross domains, wait a bit and then try
-                    setTimeout(send_log, 2000)
-                }
+                setTimeout(() => { newWindow.postMessage({ type: 'arrayBuffer', data: arrayBuffer}, '*') }, 2000)
             }
 
             // Load file
@@ -107,6 +107,15 @@ function setup_open_in(button_id, file_id, load_fun, placement) {
     window.addEventListener('message', (event) => {
         if (event.data.type === 'arrayBuffer') {
             load_fun(event.data.data)
+
+        } else if (event.data.type === 'file') {
+            // Trick to populate file input button
+            const dataTransfer = new DataTransfer()
+            dataTransfer.items.add(event.data.data)
+            input.files = dataTransfer.files
+
+            // "Click" button
+            input.dispatchEvent(new Event('change'))
         }
     })
 
