@@ -2496,6 +2496,8 @@ async function load(e) {
         return
     }
 
+    document.title = "Hardware Report: " + file.name
+
     if (file.name.toLowerCase().endsWith(".bin")) {
         let reader = new FileReader()
         reader.onload = function (e) {
@@ -2522,6 +2524,8 @@ let log_buffer = {}
 let log_stats = {}
 let clock_drift = {}
 function reset() {
+
+    document.title = "ArduPilot Hardware Report"
 
     function setup_section(section) {
         // Remove all children

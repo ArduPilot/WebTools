@@ -15,6 +15,8 @@ var error_bars = {}
 const gauss_hovertemplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} mGauss"
 function setup_plots() {
 
+    document.title = "ArduPilot MAGFit"
+
     // Turn off buttons that should not be pressed
     document.getElementById("calculate").disabled = true
     document.getElementById("SaveParams").disabled = true

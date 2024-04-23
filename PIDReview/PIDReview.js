@@ -107,6 +107,8 @@ function get_axis_index() {
 // Attempt to put page back to for a new log
 function reset() {
 
+    document.title = "ArduPilot PID Review"
+
     const types = ["PIDP",   "PIDR",   "PIDY",
                    "PIQP",   "PIQR",   "PIQY",
                    "RATE_R", "RATE_P", "RATE_Y"]

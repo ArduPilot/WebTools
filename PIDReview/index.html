@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>ArduPilot PID Review Tool</title>
+<title>ArduPilot PID Review</title>
 <link rel="icon" href="../images/AP_favicon.png">
 <script src='https://cdn.plot.ly/plotly-2.20.0.min.js'></script>
 <script src="https://unpkg.com/browser-cjs/require.min.js"></script>
@@ -281,7 +281,10 @@
         }
         let reader = new FileReader()
         reader.onload = function (e) {
-            loading_call(() => { load(reader.result) })
+            loading_call( async () => { 
+                await load(reader.result)
+                document.title = "PID Review: " + file.name
+            })
         }
         reader.readAsArrayBuffer(file)
     }
