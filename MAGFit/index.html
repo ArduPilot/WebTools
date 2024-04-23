@@ -385,7 +385,10 @@ For best results use a flight log that covers as many orientations as possible. 
         }
         let reader = new FileReader()
         reader.onload = function (e) {
-            loading_call(() => { load(reader.result) })
+            loading_call( async () => { 
+                await load(reader.result)
+                document.title = "MAGFit: " + file.name
+            })
         }
         reader.readAsArrayBuffer(file)
     }

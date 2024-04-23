@@ -813,6 +813,8 @@ function get_FFT_data_index(gyro_num, plot_type, axi) {
 // Attempt to put page back to for a new log
 function reset() {
 
+    document.title = "ArduPilot Filter Review"
+
     document.getElementById("log_type_raw").checked = true
     document.getElementById("log_type_batch").disabled = false
     document.getElementById("log_type_raw").disabled = false
