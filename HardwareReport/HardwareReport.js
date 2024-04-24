@@ -1207,7 +1207,7 @@ function load_gps(log) {
         }
     }
 
-    if ('MSG' in log.messageTypes) {
+    if ((log != null) && ('MSG' in log.messageTypes)) {
         const messages = log.get("MSG").Message
 
         // This regular expression is used to get the word after "as" to get the GPS device name.
