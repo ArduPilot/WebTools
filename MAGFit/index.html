@@ -354,6 +354,9 @@ For best results use a flight log that covers as many orientations as possible. 
                 'Line Number: '+ linenumber)
         return false
     }
+    window.addEventListener('unhandledrejection', function (e) {
+        throw new Error(e.reason.stack)
+    })
 
     // Load tool tips
     tippy('#TT')
