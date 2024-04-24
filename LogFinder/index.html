@@ -76,6 +76,9 @@
             'URL: '+ url +'\n' +
             'Line Number: '+ linenumber)
   }
+  window.addEventListener('unhandledrejection', function (e) {
+    throw new Error(e.reason.stack)
+  })
 
   // Load tool tips
   tippy('#TT')

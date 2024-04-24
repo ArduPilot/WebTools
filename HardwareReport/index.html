@@ -307,6 +307,9 @@
             'Line Number: '+ linenumber)
       return false
   }
+  window.addEventListener('unhandledrejection', function (e) {
+    throw new Error(e.reason.stack)
+  })
 
   setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
 

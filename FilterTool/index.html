@@ -349,6 +349,9 @@ ArduPilot 4.2 filter setup.
             'Line Number: '+ linenumber)
       return false
   }
+  window.addEventListener('unhandledrejection', function (e) {
+        throw new Error(e.reason.stack)
+  })
 
   var calc_btn = document.getElementById('calculate');
   calc_btn.onclick = function() {
