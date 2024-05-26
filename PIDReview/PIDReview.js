@@ -1,10 +1,5 @@
 // A js tool for plotting ArduPilot PID log data
 
-// Use browser-cjs to load fft lib
-// https://github.com/indutny/fft.js
-// Much faster than math.fft!
-const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
-
 var DataflashParser
 const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
@@ -31,7 +26,7 @@ function run_batch_fft(data_set) {
     const window_correction = window_correction_factors(windowing_function)
 
     // FFT library
-    const fft = new FFT_lib(window_size);
+    const fft = new FFTJS(window_size);
 
     // Calculate average sample time
     var sample_rate_sum = 0
@@ -1088,7 +1083,7 @@ function redraw_step() {
     // FFT library, use window size and sample rate from original FFT
     const window_size = PID.sets.FFT.window_size
     const real_len = real_length(window_size)
-    const fft = new FFT_lib(window_size);
+    const fft = new FFTJS(window_size);
     var transfer_function = fft.createComplexArray()
     var impulse_response = fft.createComplexArray()
 

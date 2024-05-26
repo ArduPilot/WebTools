@@ -1,10 +1,5 @@
 // A js tool for plotting ArduPilot batch log data
 
-// Use browser-cjs to load fft lib
-// https://github.com/indutny/fft.js
-// Much faster than math.fft!
-const FFT_lib = require("https://unpkg.com/fft.js@4.0.4/lib/fft.js")
-
 var DataflashParser
 const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
@@ -775,7 +770,7 @@ function run_batch_fft(data_set) {
     // Get bins
     var bins = rfft_freq(window_size, sample_time)
 
-    const fft = new FFT_lib(window_size);
+    const fft = new FFTJS(window_size);
 
     var x = []
     var y = []
