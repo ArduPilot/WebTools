@@ -1,3 +1,24 @@
 [submodule "JsDataflashParser"]
 	path = JsDataflashParser
 	url = https://github.com/Williangalvani/JsDataflashParser
+[submodule "modules/plotly.js"]
+	path = modules/plotly.js
+	url = https://github.com/plotly/plotly.js.git
+[submodule "modules/fft.js"]
+	path = modules/fft.js
+	url = https://github.com/indutny/fft.js.git
+[submodule "modules/luxon"]
+	path = modules/luxon
+	url = https://github.com/moment/luxon.git
+[submodule "modules/matrix"]
+	path = modules/matrix
+	url = https://github.com/mljs/matrix.git
+[submodule "modules/tabulator"]
+	path = modules/tabulator
+	url = https://github.com/olifolkerd/tabulator.git
+[submodule "modules/tippyjs"]
+	path = modules/tippyjs
+	url = https://github.com/atomiks/tippyjs.git
+[submodule "modules/floating-ui"]
+	path = modules/floating-ui
+	url = https://github.com/floating-ui/floating-ui.git
