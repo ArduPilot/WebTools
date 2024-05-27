@@ -2134,8 +2134,8 @@ function plot_data_rate(log) {
             const Tx_name = "Transmit"
             const Rx_name = "Receive"
             const data = [
-                { x: time, y: UART_inst.Rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s" },
-                { x: time, y: UART_inst.Tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s" }
+                { x: time, y: UART_inst.Rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B/s" },
+                { x: time, y: UART_inst.Tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B/s" }
             ]
 
             if (baud != null) {
@@ -2146,7 +2146,7 @@ function plot_data_rate(log) {
                 const limit_x = [time[0], time[time.length-1]]
                 const limit_y = [bytes_per_sec, bytes_per_sec]
 
-                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s", line: { dash: "dot", color: "#000000" },})
+                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B/s", line: { dash: "dot", color: "#000000" },})
             }
 
             const layout = { 
@@ -2218,9 +2218,9 @@ function plot_data_rate(log) {
             const Rx_name = "Receive"
             const Total_name = "Total"
             const data = [
-                { x: time, y: rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" },
-                { x: time, y: tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" },
-                { x: time, y: total, name: Total_name, meta: Total_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" }
+                { x: time, y: rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s" },
+                { x: time, y: tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s" },
+                { x: time, y: total, name: Total_name, meta: Total_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s" }
             ]
 
             const layout = { 
