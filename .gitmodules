@@ -1,5 +1,5 @@
 [submodule "JsDataflashParser"]
-	path = JsDataflashParser
+	path = modules/JsDataflashParser
 	url = https://github.com/Williangalvani/JsDataflashParser
 [submodule "modules/plotly.js"]
 	path = modules/plotly.js
