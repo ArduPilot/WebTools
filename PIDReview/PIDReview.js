@@ -1,7 +1,7 @@
 // A js tool for plotting ArduPilot PID log data
 
 var DataflashParser
-const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 // Keys in data object to run FFT of
 const fft_keys = ["Tar", "Act", "Err", "P", "I", "D", "FF", "Out"]

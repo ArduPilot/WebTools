@@ -1,7 +1,7 @@
 // MAGFit tool for compass calibration
 
 var DataflashParser
-const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 const axis = ['x', 'y', 'z']
 const fit_types = { offsets: "Offsets", scale: "Offsets and scale", iron: "Offsets and iron" }
