@@ -1,7 +1,7 @@
 
 let import_done = []
 var DataflashParser
-import_done[0] = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+import_done[0] = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 var octokitRequest
 import_done[1] = import('https://esm.sh/@octokit/request').then((mod) => { octokitRequest = mod.request });

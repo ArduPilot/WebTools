@@ -1,6 +1,6 @@
 
 var DataflashParser
-import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 var dirHandle
 async function get_dir_then_load() {

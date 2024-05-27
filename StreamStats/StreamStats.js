@@ -1,6 +1,6 @@
 
 var DataflashParser
-import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 function plot_visibility(plot, hide) {
     plot.parentElement.hidden = hide

@@ -1,7 +1,7 @@
 // A js tool for plotting ArduPilot batch log data
 
 var DataflashParser
-const import_done = import('../JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 // micro seconds to seconds helpers
 const US2S = 1 / 1000000
