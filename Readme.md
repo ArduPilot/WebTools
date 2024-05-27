@@ -4,7 +4,16 @@ This repository contains a number of web based tools for targeted ArduPilot log 
 
 ## Development setup
 
-Host locally by running this command in the root of the repo:
+These steps allow hosting of the tools locally for development purposes or for use without a internet connection.
+
+Clone this repository (or your fork) and update the submodules:
+
+```
+git clone https://github.com/ArduPilot/WebTools.git
+git submodule update --init
+```
+
+Host locally using python by running the following command in the root of the repo:
 
 ```
 python -m http.server --bind 127.0.0.1
