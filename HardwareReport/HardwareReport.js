@@ -1992,6 +1992,256 @@ function plot_visibility(plot, hide) {
     plot.parentElement.hidden = hide
 }
 
+function plot_data_rate(log) {
+
+    function add_datarate(name) {
+        const section = document.getElementById("DataRates")
+
+        section.hidden = false
+        section.previousElementSibling.hidden = false
+
+        const div = document.createElement("div")
+        section.appendChild(div)
+
+        const title = document.createElement("h4")
+        title.innerHTML = name
+        div.appendChild(title)
+
+        const plot = document.createElement("div")
+        plot.style = "width:800px; height:400px"
+        div.appendChild(plot)
+        return plot
+    }
+
+    // UART data rates
+    if ('UART' in log.messageTypes) {
+
+        // Iterate over each instance
+        for (const inst of Object.keys(log.messageTypes.UART.instances)) {
+
+            // convert baud rate param value into baudrate
+            function map_baudrate(rate)
+            {
+                if (rate == null) {
+                    return
+                }
+                rate = parseInt(rate)
+
+                if (rate <= 0) {
+                    rate = 57
+                }
+                switch (rate) {
+                    case 1:    return 1200
+                    case 2:    return 2400
+                    case 4:    return 4800
+                    case 9:    return 9600
+                    case 19:   return 19200
+                    case 38:   return 38400
+                    case 57:   return 57600
+                    case 100:  return 100000
+                    case 111:  return 111100
+                    case 115:  return 115200
+                    case 230:  return 230400
+                    case 256:  return 256000
+                    case 460:  return 460800
+                    case 500:  return 500000
+                    case 921:  return 921600
+                    case 1500:  return 1500000
+                    case 2000:  return 2000000
+                }
+            
+                if (rate > 2000) {
+                    // assume it is a direct baudrate. This allows for users to
+                    // set an exact baudrate as long as it is over 2000 baud
+                    return rate
+                }
+            
+                // otherwise allow any other kbaud rate
+                return rate * 1000
+            }
+
+            const serial_protocols = {
+                "-1": "None",
+                 "0": "None",
+                 "1": "MAVLink1",
+                "10": "FrSky SPort Passthrough (OpenTX)",
+                "11": "Lidar360",
+                "13": "Beacon",
+                "14": "Volz servo out",
+                "15": "SBus servo out",
+                "16": "ESC Telemetry",
+                "17": "Devo Telemetry",
+                "18": "OpticalFlow",
+                "19": "RobotisServo",
+                 "2": "MAVLink2",
+                "20": "NMEA Output",
+                "21": "WindVane",
+                "22": "SLCAN",
+                "23": "RCIN",
+                "24": "EFI Serial",
+                "25": "LTM",
+                "26": "RunCam",
+                "27": "HottTelem",
+                "28": "Scripting",
+                "29": "Crossfire VTX",
+                 "3": "Frsky D",
+                "30": "Generator",
+                "31": "Winch",
+                "32": "MSP",
+                "33": "DJI FPV",
+                "34": "AirSpeed",
+                "35": "ADSB",
+                "36": "AHRS",
+                "37": "SmartAudio",
+                "38": "FETtecOneWire",
+                "39": "Torqeedo",
+                 "4": "Frsky SPort",
+                "40": "AIS",
+                "41": "CoDevESC",
+                "42": "DisplayPort",
+                "43": "MAVLink High Latency",
+                "44": "IRC Tramp",
+                "45": "DDS XRCE",
+                "46": "IMUDATA",
+                 "5": "GPS",
+                 "7": "Alexmos Gimbal Serial",
+                 "8": "Gimbal",
+                 "9": "Rangefinder"
+            }
+
+            // Get protocol and baud rate
+            const param_prefix = "SERIAL" + inst + "_"
+            const protocol_num = params[param_prefix + "PROTOCOL"]
+
+            let protocol_name = protocol_num
+            if (protocol_num in serial_protocols) {
+                protocol_name = serial_protocols[protocol_num]
+            }
+
+            const baud = map_baudrate(params[param_prefix + "BAUD"])
+
+            let title = "Serial " + inst
+            if (protocol_name != null) {
+                title += ": " + protocol_name
+                if (baud != null) {
+                    title += ", " + baud + " baud"
+                }
+            }
+
+            const UART_inst = log.get_instance("UART", inst)
+            const time = TimeUS_to_seconds(UART_inst.TimeUS)
+
+            const Tx_name = "Transmit"
+            const Rx_name = "Receive"
+            const data = [
+                { x: time, y: UART_inst.Rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s" },
+                { x: time, y: UART_inst.Tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s" }
+            ]
+
+            if (baud != null) {
+                // 10 bits per byte, 8 + start + stop
+                const bytes_per_sec = baud / 10
+
+                const limit_name = "Baud limit"
+                const limit_x = [time[0], time[time.length-1]]
+                const limit_y = [bytes_per_sec, bytes_per_sec]
+
+                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B/s", line: { dash: "dot", color: "#000000" },})
+            }
+
+            const layout = { 
+                legend: {itemclick: false, itemdoubleclick: false }, 
+                margin: { b: 50, l: 60, r: 50, t: 20 },
+                xaxis: { title: {text: "Time (s)" } },
+                yaxis: { title: {text: "Data rate (bytes/second)"}}
+            }
+
+            const plot_div = add_datarate(title)
+            Plotly.newPlot(plot_div, data, layout, {displaylogo: false});
+
+        }
+    }
+
+    // CAN data rates
+    if ('CANS' in log.messageTypes) {
+
+        // Iterate over each instance
+        for (const inst of Object.keys(log.messageTypes.CANS.instances)) {
+            const driver_inst = parseInt(inst) + 1
+
+            const options = params["CAN_D" + driver_inst + "_UC_OPTION"]
+            let FD = false
+            if ((options != null) && ((options & (1<<2)) != 0)) {
+                FD = true
+            }
+
+            let bitrate
+            for (let i = 1; i < 10; i++) {
+                const driver = params["CAN_P" + i + "_DRIVER"]
+                if (driver == driver_inst) {
+                    if (!FD) { 
+                        bitrate = parseInt(params["CAN_P" + i + "_BITRATE"])
+                    } else {
+                        bitrate = parseInt(params["CAN_P" + i + "_FDBITRATE"]) * 1000000
+                    }
+                    break
+                }
+            }
+
+            let title = "DroneCAN " + inst
+            if (bitrate != null) {
+                title += ": " + (bitrate/1000000) + "Mbit/s"
+            }
+
+            // It would be nice to convert the bitrate to a frame rate limit,
+            // however, this is quite tricky frame sizes can differ and there is bitstuffing
+
+            const CANS_inst = log.get_instance("CANS", inst)
+            let time = TimeUS_to_seconds(CANS_inst.TimeUS)
+
+            // Convert cumulative counts into data rates
+            const len = time.length
+            let tx = new Array(len - 1)
+            let rx = new Array(len - 1)
+            let total = new Array(len - 1)
+            for (let i = 0; i<(len - 1); i++) {
+                const dt = time[i+1] - time[i]
+                tx[i] = (CANS_inst.T[i+1] - CANS_inst.T[i]) / dt
+                rx[i] = (CANS_inst.R[i+1] - CANS_inst.R[i]) / dt
+                total[i] = tx[i] + rx[i]
+            }
+
+            // Taking the diff means we have one less point
+            time.shift()
+
+            const Tx_name = "Transmit"
+            const Rx_name = "Receive"
+            const Total_name = "Total"
+            const data = [
+                { x: time, y: rx, name: Rx_name, meta: Rx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" },
+                { x: time, y: tx, name: Tx_name, meta: Tx_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" },
+                { x: time, y: total, name: Total_name, meta: Total_name, mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} f/s" }
+            ]
+
+            const layout = { 
+                legend: {itemclick: false, itemdoubleclick: false }, 
+                margin: { b: 50, l: 60, r: 50, t: 20 },
+                xaxis: { title: {text: "Time (s)" } },
+                yaxis: { title: {text: "Data rate (CAN frames/second)"}}
+            }
+
+            const plot_div = add_datarate(title)
+            Plotly.newPlot(plot_div, data, layout, {displaylogo: false});
+        }
+    }
+}
+
+// micro seconds to seconds helpers
+const US2S = 1 / 1000000
+function TimeUS_to_seconds(TimeUS) {
+    return array_scale(TimeUS, US2S)
+}
+
 let params = {}
 let defaults = {}
 async function load_log(log_file) {
@@ -2013,12 +2263,6 @@ async function load_log(log_file) {
 
     // Loading CAN first allows Driver IDs to be anotated with node name when params are loaded
     load_can(log)
-
-    // micro seconds to seconds helpers
-    const US2S = 1 / 1000000
-    function TimeUS_to_seconds(TimeUS) {
-        return array_scale(TimeUS, US2S)
-    }
 
     const PARM = log.get("PARM")
     let param_changes = {}
@@ -2271,6 +2515,8 @@ async function load_log(log_file) {
         Plotly.redraw(plot)
 
     }
+
+    plot_data_rate(log)
 
     if ('STAK' in log.messageTypes) {
         let stack = []
@@ -2559,6 +2805,7 @@ function reset() {
     setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
     setup_section(document.getElementById("GPS"))
+    setup_section(document.getElementById("DataRates"))
 
     ins = []
     compass = []
