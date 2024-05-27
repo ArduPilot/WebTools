@@ -2194,8 +2194,20 @@ function plot_data_rate(log) {
                 title += ": " + (bitrate/1000000) + "Mbit/s"
             }
 
-            // It would be nice to convert the bitrate to a frame rate limit,
-            // however, this is quite tricky frame sizes can differ and there is bitstuffing
+            // Converting bitrate into a frame rate is a bit complicated.
+            // CANFD is even worse
+            let max_frame_limit
+            if ((bitrate != null) && !FD) {
+                // Give a worst case value by assumeing max size frames and worst bit stuffing.
+                // Bit stuffing gives a worst case frame length of 157 bits
+                // https://en.wikipedia.org/wiki/CAN_bus#Bit_stuffing
+                // There is also a 3 bit gap required between frames
+                // https://en.wikipedia.org/wiki/CAN_bus#Interframe_spacing
+                max_frame_limit = Math.floor(bitrate / (157 + 3))
+
+                // In relity not all frames will be max lenght and less bit stuffing will be required.
+                // Could add a less pessimistic estimate too...
+            }
 
             const CANS_inst = log.get_instance("CANS", inst)
             let time = TimeUS_to_seconds(CANS_inst.TimeUS)
@@ -2224,6 +2236,14 @@ function plot_data_rate(log) {
                 { x: time, y: total, name: Total_name, meta: Total_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s" }
             ]
 
+            if (max_frame_limit != null) {
+                const limit_name = "Worst case limit"
+                const limit_x = [time[0], time[time.length-1]]
+                const limit_y = [max_frame_limit, max_frame_limit]
+
+                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s", line: { dash: "dot", color: "#000000" },})
+            }
+
             const layout = { 
                 legend: {itemclick: false, itemdoubleclick: false }, 
                 margin: { b: 50, l: 60, r: 50, t: 20 },
@@ -2233,6 +2253,15 @@ function plot_data_rate(log) {
 
             const plot_div = add_datarate(title)
             Plotly.newPlot(plot_div, data, layout, {displaylogo: false});
+
+            if (max_frame_limit != null) {
+                // Add a note to make the limit less scary
+                const txt = "Limit is a very pessimistic worst case. It assumes max length frames and worst data. The best case is more than twice as many frames, the reality will be somewhere in between."
+                const para = document.createElement("p")
+                para.style = "width:600px"
+                para.appendChild(document.createTextNode(txt))
+                plot_div.parentElement.insertBefore(para, plot_div)
+            }
         }
     }
 }
