@@ -1,0 +1,1 @@
+This is directory contains all the modules used by the WebTools. By including them directly they work offline while keeping the simple dev setup. For those modules that do not include a build in tree a build has been done manually and can be found in the build directory.
