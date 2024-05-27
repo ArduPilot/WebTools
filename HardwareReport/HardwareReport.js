@@ -1,13 +1,23 @@
 
 let import_done = []
 var DataflashParser
-import_done[0] = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+import_done[0] = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
 
+// This is the one package we do get from a CDN.
+// If we are offline the GitHub API will not work, so there is no need for a local copy for offline use.
+// Catch the error for the offline case, the version request will report that it failed because its offline.
 var octokitRequest
-import_done[1] = import('https://esm.sh/@octokit/request').then((mod) => { octokitRequest = mod.request });
+import_done[1] = import('https://esm.sh/@octokit/request')
+    .then((mod) => { octokitRequest = mod.request })
+    .catch(error => console.log(error))
 
 async function check_release(hash, paragraph) {
     paragraph.appendChild(document.createElement("br"))
+
+    if (octokitRequest == null) {
+        paragraph.appendChild(document.createTextNode("Version check failed, offline."))
+        return
+    }
 
     let request
     try {
@@ -21,7 +31,7 @@ async function check_release(hash, paragraph) {
         })
     }
     catch(err) {
-        paragraph.appendChild(document.createTextNode("Version check failed to get whitelist"))
+        paragraph.appendChild(document.createTextNode("Version check failed to get whitelist."))
         return
     }
 
@@ -56,7 +66,7 @@ async function check_release(hash, paragraph) {
     }
 
     // Note that dev builds from master don't have tags, so will get this warning
-    paragraph.appendChild(document.createTextNode("Warning: not official firmware release"))
+    paragraph.appendChild(document.createTextNode("Warning: not official firmware release."))
     paragraph.appendChild(document.createElement("br"))
 
     // Try and find hash in AP repo, this should find dev builds
@@ -70,7 +80,7 @@ async function check_release(hash, paragraph) {
         })
     }
     catch(err) {
-        paragraph.appendChild(document.createTextNode("Version check failed to get commit"))
+        paragraph.appendChild(document.createTextNode("Version check failed to get commit."))
         return
     }
 
@@ -97,7 +107,7 @@ async function check_release(hash, paragraph) {
           })
     }
     catch(err) {
-        paragraph.appendChild(document.createTextNode("Version check failed to get branches"))
+        paragraph.appendChild(document.createTextNode("Version check failed to get branches."))
         return
     }
 
