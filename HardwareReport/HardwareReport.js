@@ -1385,7 +1385,7 @@ function update_pos_plot() {
     let plot_index = 1
 
     function set_plot_data(plot_data, pos_inst, max_offset) {
-        if (pos_inst == null) {
+        if ((pos_inst == null) || (pos_inst.pos[0] == null) || (pos_inst.pos[1] == null) || (pos_inst.pos[2] == null)) {
             return max_offset
         }
         plot_data.x = [pos_inst.pos[0]]
@@ -1559,6 +1559,7 @@ function load_params(log) {
     load_baro(log)
     load_airspeed(log)
     load_gps(log)
+    load_rangefinder()
     load_flow()
     load_viso()
 
