@@ -2115,11 +2115,18 @@ function plot_data_rate(log) {
             const protocol_num = params[param_prefix + "PROTOCOL"]
 
             let protocol_name = protocol_num
-            if (protocol_num in serial_protocols) {
+            let IOMCU = false
+            if ((protocol_num == null) && (inst == 100)) {
+                // Intneral IOMCU UART is logged as instance 100
+                IOMCU = true
+                protocol_name = "IOMCU"
+
+            } else if (protocol_num in serial_protocols) {
                 protocol_name = serial_protocols[protocol_num]
+
             }
 
-            const baud = map_baudrate(params[param_prefix + "BAUD"])
+            const baud = IOMCU ? 1500000 : map_baudrate(params[param_prefix + "BAUD"])
 
             let title = "Serial " + inst
             if (protocol_name != null) {
