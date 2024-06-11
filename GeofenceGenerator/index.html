@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="../images/AP_favicon.png">
+    <title>ArduPilot Geofence generator</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-editable@1.2.0/src/Leaflet.Editable.js"></script>
+    <script src="https://unpkg.com/@bagage/leaflet.restoreview@1.0.1/leaflet.restoreview.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <script type="text/javascript" src="GeofenceGenerator.js"></script>
+    <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
+    <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+    <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+
+    <style type="text/css">
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            width: 100%
+        }
+
+        #mapid {
+            height: 100%;
+            width: 100%;
+        }
+
+        #menu {
+            position: absolute;
+            z-index: 2000;
+            width: 1200px;
+            background-color: azure;
+            margin: 5px;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="menu">
+        <table style="width:1200px"><tr><td>
+            <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+        </td>
+        <td style="width:480px;vertical-align:top;">
+            <h1 style="margin-top:0px;margin-bottom:5px">Geofence Generator</h1>
+            Fences generated using <a href="https://www.openstreetmap.org/">OpenStreetMap</a> <a href="https://wiki.openstreetmap.org/wiki/Overpass_API">Overpass API</a>.
+            <br><br>
+            <input id="search" type="button" value="Search" onclick="loading_call(request)" disabled>
+            <input id="crop" type="button" value="Crop" onclick="add_crop()" disabled>
+            <br>
+        </td>
+        <td>
+            <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+            <br>
+            <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+        </td></tr></table>
+    </div>
+    <div id="mapid" style="position: absolute;height: 100%;"></div>
+</body>
+<br />
+<script>
+
+    window.onerror = function(msg, url, linenumber) {
+        alert('Sorry, something went wrong.\n\n' + 
+              'Please try a hard reload of this page to clear its cache.\n\n' +
+              'If the error persists open an issue on the GitHub repo.\n' +
+              'Include a copy of the log and the following error message:\n\n' +
+               msg + '\n' +
+              'URL: '+ url +'\n' +
+              'Line Number: '+ linenumber)
+        return false
+    }
+    window.addEventListener('unhandledrejection', function (e) {
+        throw new Error(e.reason.stack)
+    })
+
+    let map = L.map('mapid', {
+        editable: true,
+        zoomControl: false // Disable default zoom control
+    })
+
+    // Get the users last location, else pick a default
+    if (!map.restoreView()) {
+        map.setView([51.505, -0.09], 5)
+    }
+    map_zoom()
+
+    // Add zoom control in bottom right
+    L.control.zoom({
+        position: 'bottomright'
+    }).addTo(map);
+
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map)
+
+    map.on('zoomend', map_zoom)
+
+    init_loading_overlay()
+
+    // Bump up the loading Z index so it show on top of the map
+    document.getElementById("loading").style.zIndex = 2001
+
+</script>
