@@ -105,6 +105,7 @@ baro_types = {
     0x12 : "MS5837",
     0x13 : "MS5637",
     0x14 : "BMP390",
+    0x15 : "BMP581",
 }
 
 airspeed_types = {
