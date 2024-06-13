@@ -12,6 +12,7 @@ function map_zoom() {
 
 // Request data from API
 let polygons = []
+let features = []
 let crop_polygon
 async function request() {
     if (map.getZoom() < min_zoom) {
@@ -70,36 +71,42 @@ async function request() {
     // Convert XML to GeoJSON
     const json = osmtogeojson(xml)
 
-    function add_polygon(feature) {
-        const polygon = L.geoJSON(feature)
+    // Add to map
+    features = json.features
+    for (const feature of features) {
+        add_feature(feature)
+    }
+
+}
+
+function add_feature(feature) {
+
+    function add_polygon(poly) {
+        const polygon = L.geoJSON(poly)
         polygon.bindPopup(create_popup)
         polygon.addTo(map)
         polygons.push(polygon)
     }
 
-    // Add to map
-    for (const feature of json.features) {
-        if (feature.geometry.type == "Polygon") {
-            add_polygon(feature)
+    if (feature.geometry.type == "Polygon") {
+        add_polygon(feature)
 
-        } else if (feature.geometry.type == "MultiPolygon") {
-            // Add each sub polygon as its own feature
-            const len = feature.geometry.coordinates.length
-            for (let i = 0; i < len; i += 1) {
-                const poly = {
-                    geometry: {
-                        type: "Polygon",
-                        coordinates: feature.geometry.coordinates[i]
-                    },
-                    id: feature.id,
-                    type: feature.type,
-                    properties: feature.properties
-                }
-                add_polygon(poly)
+    } else if (feature.geometry.type == "MultiPolygon") {
+        // Add each sub polygon as its own feature
+        const len = feature.geometry.coordinates.length
+        for (let i = 0; i < len; i += 1) {
+            const poly = {
+                geometry: {
+                    type: "Polygon",
+                    coordinates: feature.geometry.coordinates[i]
+                },
+                id: feature.id,
+                type: feature.type,
+                properties: feature.properties
             }
+            add_polygon(poly)
         }
     }
-
 }
 
 // Add a editable cropping polygon
@@ -128,6 +135,33 @@ function add_crop() {
 
     crop_polygon = L.polygon(crop_poly_points, { color: '#FF0000', fill: false }).addTo(map)
     crop_polygon.enableEdit()
+
+    apply_crop()
+}
+
+// Apply crop polygon and update map
+function apply_crop() {
+    if (crop_polygon == null) {
+        return
+    }
+
+    // Clear existing polygons
+    for (let i = 0; i < polygons.length; i += 1) {
+        polygons[i].remove()
+    }
+    polygons = []
+
+    // Apply to all features
+    const crop_JSON = crop_polygon.toGeoJSON()
+    for (const feature of features) {
+        const cropped = turf.intersect(feature, crop_JSON)
+        if (cropped != null) {
+            cropped.id = feature.id,
+            cropped.type = feature.type,
+            cropped.properties = feature.properties
+            add_feature(cropped)
+        }
+    }
 }
 
 // Make the popup for the given item
@@ -187,17 +221,7 @@ function create_popup(polygon) {
 
 async function generate_fence(feature, name) {
 
-    let polys = feature.geometry.coordinates
-    if (crop_polygon != null) {
-        // Apply crop polygon
-        const cropped = turf.intersect(feature, crop_polygon.toGeoJSON())
-        if (cropped == null) {
-            alert("Selected polygon not in crop area")
-            return
-        }
-        polys = cropped.geometry.coordinates
-    }
-
+    const polys = feature.geometry.coordinates
     const len = polys.length
 
     // Origin for conversion to cartesian
