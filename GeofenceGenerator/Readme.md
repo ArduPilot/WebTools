@@ -13,5 +13,4 @@ So far only body's of water are implemented with the following tags:
 * [water=pond](https://wiki.openstreetmap.org/wiki/Tag:water%3Dpond)
 
 > [!NOTE]
-> Unlike the other tools this will not work offline. This is because it is reliant on the OSM Overpass API, so would not operate at all offline. Due to this the packages it needs are also loaded from CNDs.
-
+> Unlike the other tools this will not work offline. This is because it is reliant on the OSM Overpass API, so would not operate at all offline. Due to this the packages it needs are also loaded from CDNs.
