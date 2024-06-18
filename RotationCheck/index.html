@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot Rotation Helper</title>
+<link rel="icon" href="../images/AP_favicon.png">
+
+<script type="text/javascript" src="RotationCheck.js"></script>
+<script type="text/javascript" src="Matrix3.js"></script>
+
+<script src='../modules/plotly.js/dist/plotly.min.js'></script>
+
+<script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
+<script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
+
+</head>
+<table style="width:1200px"><tr><td>
+  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <br>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<style>
+  div.plotly-notifier {
+    visibility: hidden;
+  }
+</style>
+
+<h1><a href="" style="color: #000000; text-decoration:none;padding-left:10px;">ArduPilot Rotation Check</a></h1>
+
+<body onload="reset(); update()">
+
+<p style="width:1100px; text-align:justify; padding-left:10px; margin-block-start: 0; margin-block-end: 0.5em;">
+
+  This tool helps visualizing ArduPilots standard rotations, these are used to configure sensor orientations such as AHRS_ORIENTATION. A custom rotation can also be selected and the euler angles entered manually.
+  The rotation is intrinsic in 321 order. For more information see <a href="https://github.com/ArduPilot/Datasheets/blob/main/References/EulerAngles.pdf">Computing Euler Angles from Direction Cosines</a> by William Premerlani.
+  The rotations are shown in forward (blue), right (red), down (green) reference frame as this is what is typically used to show position offsets.
+
+  <br><br>
+  <select id="rotations" onchange="update()"></select>
+
+  <label for="EulerRoll">Roll (deg):</label>
+  <input id="EulerRoll" name="EulerRoll" type="number" onchange="update()" style="width:50px" disabled/>
+
+  <label for="EulerPitch">Pitch (deg):</label>
+  <input id="EulerPitch" name="EulerPitch" type="number"onchange="update()" style="width:50px" disabled/>
+
+  <label for="EulerYaw">Yaw (deg):</label>
+  <input id="EulerYaw" name="EulerYaw" type="number" onchange="update()" style="width:50px" disabled/>
+</p>
+
+<div style="width:1200px;height:1200px;margin:auto">
+<div id="plot" style="width:1000px;height:1000px"></div>
+</div>
+
+<script>
+
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+            msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+  window.addEventListener('unhandledrejection', function (e) {
+    throw new Error(e.reason.stack)
+  })
+
+  let Rotations = {
+        "0": "None",
+        "1": "Yaw45",
+        "2": "Yaw90",
+        "3": "Yaw135",
+        "4": "Yaw180",
+        "5": "Yaw225",
+        "6": "Yaw270",
+        "7": "Yaw315",
+        "8": "Roll180",
+        "9": "Yaw45Roll180",
+        "10": "Yaw90Roll180",
+        "11": "Yaw135Roll180",
+        "12": "Pitch180",
+        "13": "Yaw225Roll180",
+        "14": "Yaw270Roll180",
+        "15": "Yaw315Roll180",
+        "16": "Roll90",
+        "17": "Yaw45Roll90",
+        "18": "Yaw90Roll90",
+        "19": "Yaw135Roll90",
+        "20": "Roll270",
+        "21": "Yaw45Roll270",
+        "22": "Yaw90Roll270",
+        "23": "Yaw135Roll270",
+        "24": "Pitch90",
+        "25": "Pitch270",
+        "26": "Yaw90Pitch180",
+        "27": "Yaw270Pitch180",
+        "28": "Pitch90Roll90",
+        "29": "Pitch90Roll180",
+        "30": "Pitch90Roll270",
+        "31": "Pitch180Roll90",
+        "32": "Pitch180Roll270",
+        "33": "Pitch270Roll90",
+        "34": "Pitch270Roll180",
+        "35": "Pitch270Roll270",
+        "36": "Yaw90Pitch180Roll90",
+        "37": "Yaw270Roll90",
+        "38": "Yaw293Pitch68Roll180",
+        "39": "Pitch315",
+        "40": "Pitch315Roll90",
+        "41": "Pitch7",
+        "42": "Roll45",
+        "43": "Roll315",
+        "101": "Custom 1",
+        "102": "Custom 2",
+  }
+
+  let value_list = document.getElementById("rotations")
+  for (const [value, desc] of Object.entries(Rotations)) {
+      // Add to drop down
+      let list_item = document.createElement("option")
+      list_item.setAttribute('value', value)
+      list_item.innerHTML = value + ':' + desc
+      value_list.appendChild(list_item)
+  }
+
+  // Record and check euler angles for every rotation
+  let euler = []
+  for (const [value, desc] of Object.entries(Rotations)) {
+
+    let rotation = parseInt(value)
+
+    let mat = new Matrix3()
+    if (!mat.from_rotation(rotation)) {
+      continue
+    }
+
+    // Extract euler's from text
+    const lower = desc.toLocaleLowerCase()
+
+    let roll_match = lower.match(/roll(\d+)/)
+    let roll_angle = 0
+    if (roll_match != null) {
+      roll_angle = parseFloat(roll_match[1])
+    }
+
+    let pitch_match = lower.match(/pitch(\d+)/)
+    let pitch_angle = 0
+    if (pitch_match != null) {
+      pitch_angle = parseFloat(pitch_match[1])
+    }
+
+    let yaw_match = lower.match(/yaw(\d+)/)
+    let yaw_angle = 0
+    if (yaw_match != null) {
+      yaw_angle = parseFloat(yaw_match[1])
+    }
+
+    if (rotation == 38) {
+      // This is a special case where the full euler angle resolution are not in the name
+      roll_angle = 90
+      pitch_angle = 68.8
+      yaw_angle = 293.3
+    }
+
+    // Create new matrix
+    let mat_B = new Matrix3()
+    const deg2rad = Math.PI / 180.0
+    mat_B.from_euler(roll_angle * deg2rad, pitch_angle * deg2rad, yaw_angle * deg2rad)
+
+    // Check that is is the same
+    let diff = 0
+    for (let key of ["a", "b", "c"]) {
+      for (let axis of ["x", "y", "z"]) {
+        diff += Math.abs(mat[key][axis] - mat_B[key][axis])
+      }
+    }
+
+    // The diff of all 9 elements should be 0
+    if (diff > (Number.EPSILON * 9)) {
+      throw new Error("Rotation check failed")
+    }
+
+    // Record the euler angles
+    euler[rotation] = [roll_angle, pitch_angle, yaw_angle]
+
+  }
+
+</script>
+
+</body>
+</html>
