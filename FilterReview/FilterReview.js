@@ -2818,8 +2818,11 @@ async function load(log_file) {
     // Try and decode device IDs and rate
     var num_gyro = 0
     var gyro_rate = []
-    for (let i = 0; i < 3; i++) {
-        const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
+    for (let i = 0; i < 5; i++) {
+        var ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
+        if (i > 2) {
+            ID_param = "INS" + (i + 1) + "_GYR_ID"
+        }
         const ID = get_param(ID_param)
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
@@ -2829,7 +2832,7 @@ async function load(log_file) {
                 gyro_rate[i] = array_mean(log.get_instance("IMU", i, "GHz"))
             }
 
-            if (decoded != null) {
+            if ((decoded != null) && (i < 3)) {
                 const rate = (gyro_rate[i] == null) ? "?" : Math.round(gyro_rate[i])
                 document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type + " at " + rate + " Hz"
             }
