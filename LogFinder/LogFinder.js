@@ -114,12 +114,6 @@ async function load_from_dir() {
     console.log(`Loaded ${Object.values(logs).length} logs in: ${end - start} ms`);
     progress.parentElement.hidden = true
 
-    let total_size = 0
-    for (const log of Object.values(logs)) {
-        total_size += log.info.size
-    }
-    console.log("Total size: " + total_size + " B");
-
 }
 
 let tables = []
@@ -445,6 +439,83 @@ function setup_table(logs) {
             return get_param_diff(data[len-1].info.params, data[0].info.params)
         }
 
+        function get_dist_string(cell) {
+            const dist_m = cell.getRow().getData().info.distance_traveled
+            if (dist_m == null) {
+                return "-"
+            }
+            if (dist_m < 2000) {
+                return dist_m.toFixed(2) + " m"
+            }
+            const dist_km = dist_m / 1000.0
+            return dist_km.toFixed(2) + " km"
+        }
+
+        function distance_format(cell, formatterParams, onRendered) {
+
+            if (cell.getRow().getData().info.distance_traveled == null) {
+                return "-"
+            }
+
+            const div = document.createElement("div")
+            div.appendChild(document.createTextNode(get_dist_string(cell)))
+
+            // Add map tool tip
+            function tippy_show(instance) {
+                let tippy_div = document.createElement("div")
+                instance.setContent(tippy_div)
+
+                tippy_div.style.width = '500px';
+                tippy_div.style.height = '500px';
+
+                let map = L.map(tippy_div)
+
+                L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map)
+
+                const reader = new FileReader()
+                reader.onload = function (e) {
+                    let log = new DataflashParser()
+                    log.processData(reader.result, [])
+
+                    if (!('POS' in log.messageTypes)) {
+                        return
+                    }
+
+                    const lat = log.get('POS', 'Lat')
+                    const lng = log.get('POS', 'Lng')
+
+                    const len = lat.length
+                    const latlngs = new Array(len)
+                    for (let i = 0; i<len; i++) {
+                        latlngs[i] = [lat[i] * 1e-7, lng[i] * 1e-7]
+                    }
+
+                    var polyline = L.polyline(latlngs).addTo(map)
+
+                    map.fitBounds(polyline.getBounds());
+                }
+
+                const file = cell.getRow().getData().fileHandle
+                reader.readAsArrayBuffer(file)
+            }
+
+            if (typeof L !== 'undefined') {
+                // Add map tool tip if leaflet is available
+                tippy(div, {
+                    maxWidth: '750px',
+                    placement: 'left',
+                    delay: [500, 0],
+                    interactive: true,
+                    appendTo: () => document.body,
+                    onShow: tippy_show
+                })
+            }
+
+            return div
+        }
+
         // Tabulator will still show the bottom row if there is only one data row
         // manually disable in this case
         const multiple_rows = board_logs.length > 1
@@ -470,9 +541,10 @@ function setup_table(logs) {
                     sorter:"datetime",
                 },
                 { title: "Name", field: "info.name", formatter:name_format },
-                { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format },
+                { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format, width: 90 },
                 { title: "Firmware Version", field:"info.fw_string" },
-                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format },
+                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format, width: 105 },
+                { title: "Flight distance", field:"info.distance_traveled", formatter:distance_format, bottomCalc:"sum", bottomCalcFormatter:get_dist_string, width: 125 },
                 { title: "Param Changes", field:"param_diff", formatter:param_diff_format, headerSort:false, width: 110, bottomCalc:param_diff_bottom_calc, bottomCalcFormatter:param_diff_format },
                 { title: "" , headerSort:false, formatter:buttons, width: 185 },
             ],
@@ -663,6 +735,42 @@ function load_log(log_file) {
         }
     }
 
+    // Calculate distance traveled
+    let distance_traveled = null
+    if ('POS' in log.messageTypes) {
+        distance_traveled = 0
+
+        const lat = log.get('POS', 'Lat')
+        const lng = log.get('POS', 'Lng')
+        const alt = log.get('POS', 'Alt')
+
+        function diff_longitude(lon1, lon2) {
+            let dlon = lon1-lon2
+            if (dlon > 1800000000) {
+                dlon -= 3600000000
+            } else if (dlon < -1800000000) {
+                dlon += 3600000000
+            }
+            return dlon
+        }
+
+        function longitude_scale(lat) {
+            const scale = Math.cos(lat * (1.0e-7 * (Math.PI / 180.0)))
+            return Math.max(scale, 0.01)
+        }
+
+        const LATLON_TO_M = 0.011131884502145034
+
+        const len = lat.length
+        for (let i = 1; i<len; i++) {
+            const x = (lat[i - 1] - lat[i]) * LATLON_TO_M
+            const y = diff_longitude(lng[i - 1], lng[i]) * LATLON_TO_M * longitude_scale((lat[i - 1]+lat[i])/2)
+            const z = alt[i - 1] - alt[i]
+
+            distance_traveled += Math.sqrt(x**2 + y**2 + z**2)
+        }
+    }
+
     return {
         size: log_file.byteLength,
         fw_string,
@@ -676,7 +784,8 @@ function load_log(log_file) {
         time_stamp,
         flight_time,
         watchdog,
-        crash_dump
+        crash_dump,
+        distance_traveled
     }
 }
 
