@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+  </head>
+  <body>
+    <div>
+      <p>Output:</p>
+      <textarea id="output" style="width: 100%; height: 500px;" rows="10" disabled></textarea>
+    </div>
+
+    <input type="file" id="input_data" disabled>
+
+    <script type="text/javascript">
+      async function main() {
+        const output = document.getElementById("output");
+
+        function addToOutput(message) {
+          output.value += message + "\n";
+        }
+
+        addToOutput("Initializing Pyodide...");
+        let pyodide = await loadPyodide();
+
+        addToOutput("Loading micropip package...");
+        await pyodide.loadPackage("micropip");
+        const micropip = pyodide.pyimport("micropip");
+
+        addToOutput("Installing matplotlib package...");
+        await micropip.install("matplotlib");
+
+        // Strictly control wants matplotlib > 3.6. We don't have this, but setting deps=false means we don't fail.
+        addToOutput("Installing control package...");
+        await micropip.install("control", keep_going=true, deps=false);
+
+        const packageUrl = "../modules/pyAircraftIden/pyAircraftIden-1.0-py3-none-any.whl";
+        addToOutput(`Installing pyAircraftIden package from ${packageUrl}...`);
+        try {
+          await micropip.install(packageUrl, keep_going=true);
+          addToOutput("pyAircraftIden package installed successfully.");
+        } catch (error) {
+          addToOutput(`Failed to install pyAircraftIden package: ${error}`);
+        }
+
+        // Define a custom Python function to capture print statements
+        await pyodide.runPython(`
+          import sys
+          from js import document
+
+          class JsOutput:
+              def __init__(self):
+                  self.output_element = document.getElementById("output")
+
+              def write(self, message):
+                  self.output_element.value += message
+
+              def flush(self):
+                  pass
+
+          sys.stdout = JsOutput()
+          sys.stderr = JsOutput()`
+        );
+
+        // Load test file
+        const script = await fetch("./Tests/x8SSM_yaw.py")
+        const script_text = await script.text();
+        await pyodide.runPython(script_text)
+
+        // Call setup function
+        await pyodide.runPython('js_setup()')
+
+        // Enable file button
+        document.getElementById("input_data").disabled = false
+
+      }
+
+      main().catch((error) => {
+        console.error(error);
+        const output = document.getElementById("output");
+        output.value += '\nError during execution:\n' + error;
+      });
+    </script>
+  </body>
+</html>
