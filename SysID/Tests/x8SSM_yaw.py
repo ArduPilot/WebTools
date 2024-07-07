@@ -3,9 +3,12 @@
 #sys.path.insert(0, '../')
 from AircraftIden import FreqIdenSIMO, TransferFunctionFit
 import math
-import matplotlib.pyplot as plt
+import matplotlib
+plt = matplotlib.pyplot
 #import pickle
 #import multiprocessing
+
+matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
 
 import sympy as sp
 from AircraftIden.StateSpaceIden import StateSpaceIdenSIMO, StateSpaceParamModel
