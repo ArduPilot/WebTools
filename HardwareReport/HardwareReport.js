@@ -2338,64 +2338,39 @@ async function load_log(log_file) {
 
     load_params(log)
 
-    let flight_controller = null
-    let board_id = null
+    const version = get_version_and_board(log)
 
-    if ('VER' in log.messageTypes) {
-        const VER = log.get("VER")
-
-        // Assume version does not change, just use first msg
-        const fw_string = VER.FWS[0]
-        const hash = VER.GH[0].toString(16)
-        if (VER.APJ[0] != 0) {
-            board_id = VER.APJ[0]
-        }
-
+    if (version.fw_string != null) {
         let section = document.getElementById("VER")
         section.hidden = false
         section.previousElementSibling.hidden = false
-        section.appendChild(document.createTextNode(fw_string))
+        section.appendChild(document.createTextNode(version.fw_string))
 
-        if ('MSG' in log.messageTypes) {
-            const MSG = log.get("MSG")
-            // Look for firmware string in MSGs, this marks the start of the log start msgs
-            // The subsequent messages give more info, this is a bad way of doing it
-            const len = MSG.Message.length
-            for (let i = 0; i < MSG.Message.length - 3; i++) {
-                const msg = MSG.Message[i]
-                if (fw_string != msg) {
-                    continue
-                }
-                if (!MSG.Message[i+3].startsWith("Param space used:")) {
-                    // Check we have bracketed the messages we need
-                    continue
-                }
-                section.appendChild(document.createElement("br"))
-                section.appendChild(document.createTextNode(MSG.Message[i+1]))
-                flight_controller = MSG.Message[i+2]
-                break
-            }
+        if (version.os_string != null) {
+            section.appendChild(document.createElement("br"))
+            section.appendChild(document.createTextNode(version.os_string))
         }
 
-        check_release(hash, section)
+        if (version.fw_hash != null) {
+            check_release(version.fw_hash, section)
+        }
     }
 
-
-    if ((flight_controller != null) || (board_id != null)) {
+    if ((version.flight_controller != null) || (version.board_id != null)) {
         let section = document.getElementById("FC")
         section.hidden = false
         section.previousElementSibling.hidden = false
-        if (flight_controller != null) {
+        if (version.flight_controller != null) {
             // Print name given in log
-            section.appendChild(document.createTextNode(flight_controller))
+            section.appendChild(document.createTextNode(version.flight_controller))
         }
-        if (board_id != null) {
+        if (version.board_id != null) {
             // Lookup the board ID
             section.appendChild(document.createElement("br"))
             section.appendChild(document.createElement("br"))
-            section.appendChild(document.createTextNode("Board ID: " + board_id))
-            if (board_id in board_types) {
-                section.appendChild(document.createTextNode(" " + board_types[board_id]))
+            section.appendChild(document.createTextNode("Board ID: " + version.board_id))
+            if (version.board_id in board_types) {
+                section.appendChild(document.createTextNode(" " + board_types[version.board_id]))
             }
         }
     }
