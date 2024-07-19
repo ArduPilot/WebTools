@@ -624,72 +624,12 @@ function load_log(log_file) {
         return
     }
 
-    let fw_string
-    let git_hash
-    let board_id
-    let fc_string
-    let os_string
-    let board_name
-    let vehicle_type
-
-    if ('VER' in log.messageTypes) {
-        const VER = log.get("VER")
-
-        // Assume version does not change, just use first msg
-        fw_string = VER.FWS[0]
-        git_hash = VER.GH[0].toString(16)
-        if (VER.APJ[0] != 0) {
-            board_id = VER.APJ[0]
-        }
-        if ("BU" in VER) {
-            vehicle_type = VER.BU[0]
-        }
-    }
-
-
-    if ('MSG' in log.messageTypes) {
-        const MSG = log.get("MSG")
-        // Look for firmware string in MSGs, this marks the start of the log start msgs
-        // The subsequent messages give more info, this is a bad way of doing it
-        const len = MSG.Message.length
-        for (let i = 0; i < len - 3; i++) {
-            const msg = MSG.Message[i]
-            if (fw_string != null) {
-                // If we have a firmware string it should match the message
-                if (fw_string != msg) {
-                    continue
-                }
-
-            } else {
-                const vehicles = ["ArduPlane V", "ArduCopter V", "Blimp V", "ArduRover V", "ArduSub V", "AntennaTracker V"]
-                let found_match = false
-                for (const vehicle of vehicles) {
-                    if (msg.startsWith(vehicle)) {
-                        fw_string = msg
-                        found_match = true
-                        break
-                    }
-                }
-                if (!found_match) {
-                    continue
-                }
-            }
-            if ((fw_string != null) && (fw_string != msg)) {
-                continue
-            }
-            if (!MSG.Message[i+3].startsWith("Param space used:")) {
-                // Check we have bracketed the messages we need
-                continue
-            }
-            os_string = MSG.Message[i+1]
-            fc_string = MSG.Message[i+2]
-            break
-        }
-    }
+    const version = get_version_and_board(log)
 
     // Populate the board name from boards lookup
-    if ((board_id != null) && (board_id in board_types)) {
-        board_name = board_types[board_id]
+    let board_name
+    if ((version.board_id != null) && (version.board_id in board_types)) {
+        board_name = board_types[version.board_id]
     }
 
     // Get params, extract flight time
@@ -773,13 +713,13 @@ function load_log(log_file) {
 
     return {
         size: log_file.byteLength,
-        fw_string,
-        git_hash,
-        board_id,
-        fc_string,
-        os_string,
+        fw_string: version.fw_string,
+        git_hash: version.fw_hash,
+        board_id: version.board_id,
+        fc_string: version.flight_controller,
+        os_string: version.os_string,
         board_name,
-        vehicle_type,
+        build_type: version.build_type,
         params,
         time_stamp,
         flight_time,
