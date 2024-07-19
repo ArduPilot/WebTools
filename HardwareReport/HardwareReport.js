@@ -1187,6 +1187,22 @@ let gps
 const max_num_gps = 2
 function load_gps(log) {
 
+    function get_moving_base(prefix) {
+        const type_name = prefix + "TYPE"
+        if (!(type_name in params)) {
+            // Not found
+            return
+        }
+
+        if (params[type_name] != 1) {
+            // Must be type 1 to be using offsets
+            return
+        }
+
+        const names = get_param_name_vector3(prefix + "OFS_")
+        return get_param_array(params, names)
+    }
+
     for (let i = 0; i < max_num_gps; i++) {
         let index = String(i+1)
         if (i == 0) {
@@ -1199,7 +1215,8 @@ function load_gps(log) {
                 const pos_names = get_param_name_vector3("GPS_POS" + (i+1) + "_")
                 gps[i] = { type: type,
                            pos: get_param_array(params, pos_names),
-                           node_id: params["GPS_CAN_NODEID" + (i+1)] }
+                           node_id: params["GPS_CAN_NODEID" + (i+1)],
+                           moving_base: get_moving_base("GPS_MB" + (i+1) + "_" ) }
             }
             continue
         }
@@ -1212,7 +1229,8 @@ function load_gps(log) {
                 const pos_names = get_param_name_vector3(new_prefix + "_POS_")
                 gps[i] = { type: type,
                            pos: get_param_array(params, pos_names),
-                           node_id: params[new_prefix + "_CAN_NODEID"] }
+                           node_id: params[new_prefix + "_CAN_NODEID"],
+                           moving_base: get_moving_base(new_prefix + "_MB_") }
             }
         }
     }
@@ -1384,39 +1402,57 @@ function update_pos_plot() {
     let max_offset = 0
     let plot_index = 1
 
-    function set_plot_data(plot_data, pos_inst, max_offset) {
-        if ((pos_inst == null) || (pos_inst.pos[0] == null) || (pos_inst.pos[1] == null) || (pos_inst.pos[2] == null)) {
-            return max_offset
-        }
-        plot_data.x = [pos_inst.pos[0]]
-        plot_data.y = [pos_inst.pos[1]]
-        plot_data.z = [pos_inst.pos[2]]
+    function pos_valid(pos) {
+        return (pos[0] != null) && (pos[1] != null) && (pos[2] != null)
+    }
+
+    function set_plot_data(plot_data, pos) {
+        plot_data.x = [pos[0]]
+        plot_data.y = [pos[1]]
+        plot_data.z = [pos[2]]
         plot_data.visible = true
-        return Math.max(max_offset, Math.abs(pos_inst.pos[0]), Math.abs(pos_inst.pos[1]), Math.abs(pos_inst.pos[2]))
+        max_offset = Math.max(max_offset, Math.abs(pos[0]), Math.abs(pos[1]), Math.abs(pos[2]))
+    }
+
+    function set_plot_data_if_valid(plot_data, pos_inst) {
+        if ((pos_inst != null) && pos_valid(pos_inst.pos)) {
+            set_plot_data(plot_data, pos_inst.pos)
+        }
     }
 
     for (let i = 0; i < max_num_ins; i++) {
-        max_offset = set_plot_data(Sensor_Offset.data[plot_index], ins[i], max_offset)
+        set_plot_data_if_valid(Sensor_Offset.data[plot_index], ins[i])
         plot_index++
     }
 
     for (let i = 0; i < max_num_gps; i++) {
-        max_offset = set_plot_data(Sensor_Offset.data[plot_index], gps[i], max_offset)
-        plot_index++
+        set_plot_data_if_valid(Sensor_Offset.data[plot_index], gps[i])
+        if ((gps[i] != null) && pos_valid(gps[i].pos) && (gps[i].moving_base != null) && pos_valid(gps[i].moving_base)) {
+            Sensor_Offset.data[plot_index].name += " Master"
+            Sensor_Offset.data[plot_index].meta += " Master"
+            Sensor_Offset.data[plot_index + 1].name += " Slave"
+            Sensor_Offset.data[plot_index + 1].meta += " Slave"
+
+            // Slave position is relative to master
+            const slave_pos = array_sub(gps[i].pos, gps[i].moving_base)
+
+            set_plot_data(Sensor_Offset.data[plot_index + 1], slave_pos)
+        }
+        plot_index += 2
     }
 
     for (let i = 0; i < max_num_rangefinder; i++) {
-        max_offset = set_plot_data(Sensor_Offset.data[plot_index], rangefinder[i], max_offset)
+        set_plot_data_if_valid(Sensor_Offset.data[plot_index], rangefinder[i])
         plot_index++
     }
 
     for (let i = 0; i < max_num_flow; i++) {
-        max_offset = set_plot_data(Sensor_Offset.data[plot_index], flow[i], max_offset)
+        set_plot_data_if_valid(Sensor_Offset.data[plot_index], flow[i])
         plot_index++
     }
 
     for (let i = 0; i < max_num_viso; i++) {
-        max_offset = set_plot_data(Sensor_Offset.data[plot_index], viso[i], max_offset)
+        set_plot_data_if_valid(Sensor_Offset.data[plot_index], viso[i])
         plot_index++
     }
 
@@ -2982,7 +3018,9 @@ function reset() {
     }
 
     for (let i = 0; i < max_num_gps; i++) {
+        // Push two point for each GPS to allow ploting of master and slave
         name = "GPS " + (i+1)
+        Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
