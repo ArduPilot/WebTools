@@ -64,12 +64,16 @@
     <div id="ss_form" style="display:none;">
       <label for="No. of Inputs">Inputs:</label>                  
       <input type="number" id="num_Inputs" name="Inputs">
-      <input type="submit">
 
       <label for="No. of Outputs">Outputs:</label>
       <input type="number" id="num_Outputs" name="Outputs">
-      <input type="submit">
 
+      <button id="createFieldsButton" type="button">Submit</button>
+      <br><br>
+
+      <div id="inputFieldsContainer"></div>
+      <div id="outputFieldsContainer"></div>
+      
       <label for="A">Matrix: A:</label>
       <input type="text" id="A" name="MatrixA"><br><br>
 
@@ -84,16 +88,70 @@
     <script type="text/javascript">
       async function main() {
         const output = document.getElementById("output");
-
+        output.value = '';
         function addToOutput(message) {
           output.value += message + "\n";
         }
 
-        function getFieldData(log_data, field_name) {
-          const parser = new DataflashParser();
-          parser.processData(log_data);
-          return parser.get(field_name);
+        function createInputFields(containerId, labelPrefix, inputNamePrefix, numFields) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';  // Clear any existing fields
+
+          for (let i = 0; i < numFields; i++) {
+            const label = document.createElement('label');
+            label.textContent = `${labelPrefix} ${i + 1}:`;
+            container.appendChild(label);
+
+            const inputName = document.createElement('input');
+            inputName.type = 'text';
+            inputName.name = `${inputNamePrefix}_name_${i + 1}`;
+            inputName.id = `${inputNamePrefix}_name_${i + 1}`;
+            container.appendChild(inputName);
+
+            const inputField = document.createElement('input');
+            inputField.type = 'text';
+            inputField.name = `${inputNamePrefix}_field_${i + 1}`;
+            inputField.id = `${inputNamePrefix}_field_${i + 1}`;
+            container.appendChild(inputField);
+
+            container.appendChild(document.createElement('br'));
+          }
         }
+
+        document.getElementById("tf_checkbox").addEventListener("change", function () {
+        if (this.checked) {
+          document.getElementById("ss_checkbox").checked = false;
+          document.getElementById("tf_form").style.display = "block";
+          document.getElementById("ss_form").style.display = "none";
+        } else {
+          document.getElementById("tf_form").style.display = "none";
+        }
+        });
+
+        document.getElementById("ss_checkbox").addEventListener("change", function () {
+        if (this.checked) {
+          document.getElementById("tf_checkbox").checked = false;
+          document.getElementById("ss_form").style.display = "block";
+          document.getElementById("tf_form").style.display = "none";
+
+          document.getElementById('createFieldsButton').addEventListener('click', function () {
+          
+          const numInputs = parseInt(document.getElementById('num_Inputs').value, 10);
+          const numOutputs = parseInt(document.getElementById('num_Outputs').value, 10);
+
+          if (isNaN(numInputs) || isNaN(numOutputs) || numInputs <= 0 || numOutputs <= 0) {
+            alert('Please enter valid numbers for inputs and outputs.');
+            return;
+          }
+
+          createInputFields('inputFieldsContainer', 'Input', 'input', numInputs);
+          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs);
+        });
+        } else {
+          document.getElementById("ss_form").style.display = "none";
+        }
+        });
+
 
         addToOutput("Initializing Pyodide...");
         let pyodide = await loadPyodide();
@@ -108,11 +166,11 @@
         addToOutput("Installing control package...");
         await micropip.install("control", keep_going=true, deps=false);
 
-        const packageUrl = "../modules/pyAircraftIden/pyAircraftIden-1.0-py3-none-any.whl";
+        const packageUrl = "../modules/pyAircraftIden/gi.whl";
         
         addToOutput(`Installing pyAircraftIden package from ${packageUrl}...`);
         try {
-          await micropip.install(packageUrl, { keep_going: true });
+          await micropip.install(packageUrl, { keep_going: true, upgrade: true });
           addToOutput("pyAircraftIden package installed successfully.");
         } catch (error) {
           addToOutput(`Failed to install pyAircraftIden package: ${error}`);
@@ -143,9 +201,13 @@
           sys.stdout = JsOutput()
           sys.stderr = JsOutput()
         `);
-
+        
         document.getElementById('parseButton').addEventListener('click', async () => {
           const fileInput = document.getElementById('fileInput');
+          const tfCheckbox = document.getElementById('tf_checkbox').checked;
+          const ssCheckbox = document.getElementById('ss_checkbox').checked;
+          if(tfCheckbox)
+          {
           const inputname = document.getElementById('input_name').value.trim();
           const inputField = document.getElementById('input_field').value.trim();
           const outputname = document.getElementById('output_name').value.trim();
@@ -240,12 +302,45 @@
             tfpm = TransferFunctionParamModel(num, den, tau)
             fitter = TransferFunctionFit(freq, H, gamma2, tfpm, nw=20, iter_times=1, reg = 0.1)
             tf = fitter.estimate(2, 20, accept_J=50)
+            num, den, tau = fitter.get_coefficients()
+            print("numerator: ",num)
+            print("denominator: ",den)
             plot_fitter(fitter,str(input_field)+"->"+str(output_field))
             plt.show()
 
           `);
         };
-          reader.readAsArrayBuffer(file);
+          reader.readAsArrayBuffer(file); 
+          }
+        else if(ssCheckbox)
+        {
+          alert("State Space checkbox selected");
+          if (fileInput.files.length === 0) {
+            alert('Please select a log file');
+            return;
+          }
+
+          if (!inputField || !outputField) {
+            alert('Please enter input and output fields');
+            return;
+          }
+
+          const file = fileInput.files[0];
+          const reader = new FileReader();
+          reader.onload = async function (event) {
+          const logData = event.target.result;
+
+          const parser = new DataflashParser();
+          parser.processData(logData);
+
+          const num_Inputs = document.getElementById('num_Inputs').value.trim();
+          const num_Outputs = document.getElementById('num_Outputs').value.trim();
+
+          await pyodide.runPython(`
+            print("testing")
+          `)
+          }
+        }
         });
       }
 
@@ -253,26 +348,6 @@
         console.error(error);
         const output = document.getElementById("output");
         output.value += '\nError during execution:\n' + error;
-      });
-
-      document.getElementById("tf_checkbox").addEventListener("change", function () {
-        if (this.checked) {
-          document.getElementById("ss_checkbox").checked = false;
-          document.getElementById("tf_form").style.display = "block";
-          document.getElementById("ss_form").style.display = "none";
-        } else {
-          document.getElementById("tf_form").style.display = "none";
-        }
-      });
-
-      document.getElementById("ss_checkbox").addEventListener("change", function () {
-        if (this.checked) {
-          document.getElementById("tf_checkbox").checked = false;
-          document.getElementById("ss_form").style.display = "block";
-          document.getElementById("tf_form").style.display = "none";
-        } else {
-          document.getElementById("ss_form").style.display = "none";
-        }
       });
 
       function addToOutput(message) {
