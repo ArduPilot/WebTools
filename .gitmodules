@@ -24,4 +24,4 @@
 	url = https://github.com/floating-ui/floating-ui.git
 [submodule "modules/pyAircraftIden"]
 	path = modules/pyAircraftIden
-	url = https://github.com/bnsgeyer/pyAircraftIden.git
+	url = https://github.com/Astik-2002/pyAircraftIden/tree/development_webtool
