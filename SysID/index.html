@@ -40,6 +40,12 @@
       <label for="Output">Output:</label>
       <input type="text" id="output_field" name="output_field"><br><br>
 
+      <label for="start time">Start time (in microseconds):</label>
+      <input type="number" id="starttime" name="starttime"><br><br>
+
+      <label for="end time">End time (in microseconds):</label>
+      <input type="number" id="endtime" name="endtime"><br><br>
+
       <label for="customNumerator">Numerator:</label>
       <input type="text" id="customNumerator" name="customNumerator"><br><br>
 
@@ -147,6 +153,8 @@
           const Numerator = document.getElementById('customNumerator').value.trim();
           const Denominator = document.getElementById('customDenominator').value.trim();
           const symbolic_var = document.getElementById('tf_params').value.trim();
+          const t_start = document.getElementById('starttime').value.trim();
+          const t_end = document.getElementById('endtime').value.trim();
           const output = document.getElementById('output');
 
           if (fileInput.files.length === 0) {
@@ -169,6 +177,7 @@
           const timeData = parser.get(inputname,"TimeUS");            
           const fieldData1 = parser.get(inputname,inputField);
           const fieldData2 = parser.get(outputname,outputField);
+          const Mode = parser.get("MODE","Mode")
 
           await pyodide.globals.set("input_data", fieldData1);
           await pyodide.globals.set("output_data", fieldData2);
@@ -178,6 +187,9 @@
           await pyodide.globals.set("numerator", Numerator);
           await pyodide.globals.set("denominator", Denominator);
           await pyodide.globals.set("symbols",symbolic_var);
+          await pyodide.globals.set("t_start",t_start);
+          await pyodide.globals.set("t_end",t_end)
+          
           await pyodide.runPython(`
             import numpy as np
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit
@@ -187,13 +199,30 @@
             from AircraftIden.TransferFunctionFit import plot_fitter
             import matplotlib
             plt = matplotlib.pyplot
-
+            t_start = float(t_start)/1000000
+            t_end = float(t_end)/1000000
             matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
-
-            time_seq_source = np.array(time_data)/1000000
-            yout_source = np.array(input_data)
-            gz_source = np.array(output_data)
+            time_seq_source = np.array(time_data).flatten()/1000000
+            ind1 = 0
+            ind2 = time_seq_source.size
+            for i in range(time_seq_source.size):
+              if time_seq_source[i] == t_start or (time_seq_source[i] < t_start and time_seq_source[i+1] > t_start):
+                ind1 = i
+              
+              if time_seq_source[i] == t_end or (time_seq_source[i] < t_end and time_seq_source[i+1] > t_end):
+                ind2 = i
+                break
+            print("start index: ",ind1," end index: ",ind2)
+            time_seq_source = time_seq_source[ind1:ind2]
+            print("no error in time_seq: ", time_seq_source.size)
+            yout_source = np.array(input_data).flatten()
+            print("youy size before splicing: ", yout_source.size, yout_source.shape)
+            yout_source = yout_source[ind1:ind2]
+            print("no error in yout: ", yout_source.size)
+            gz_source = np.array(output_data).flatten()
             gz_source = gz_source*math.pi / 180
+            gz_source = gz_source[ind1:ind2]
+            print("no error in gz_source: ", gz_source.size)
             simo_iden = FreqIdenSIMO(time_seq_source,1, 15, yout_source, gz_source, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
