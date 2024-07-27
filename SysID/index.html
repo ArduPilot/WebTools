@@ -40,10 +40,10 @@
       <label for="Output">Output:</label>
       <input type="text" id="output_field" name="output_field"><br><br>
 
-      <label for="start time">Start time (in microseconds):</label>
+      <label for="start time">Start time (s):</label>
       <input type="number" id="starttime" name="starttime"><br><br>
 
-      <label for="end time">End time (in microseconds):</label>
+      <label for="end time">End time (s):</label>
       <input type="number" id="endtime" name="endtime"><br><br>
 
       <label for="customNumerator">Numerator:</label>
@@ -55,31 +55,62 @@
       <label for="tf_params">Symbolic params:</label>
       <input type="text" id="tf_params" name="tf_params"><br><br>
 
-      <label for="file">Log File:</label>
-      <input type="file" id="fileInput" name="file">
-      <button id="parseButton" type="button">Submit</button>
     </div>
 
     <!-- FOR STATE SPACE MODEL -->
     <div id="ss_form" style="display:none;">
-      <label for="No. of Inputs">Inputs:</label>                  
-      <input type="number" id="num_Inputs" name="Inputs">
 
       <label for="No. of Outputs">Outputs:</label>
       <input type="number" id="num_Outputs" name="Outputs">
+
+      <label for="Matrix A order">Matrix A order:</label>                  
+      <input type="number" id="A_order" name="Inputs">
+
+      <label for="number of params">Number of params:</label>                  
+      <input type="number" id="num_params" name="Inputs">
+
+      <label for="number of constraints">Number of Constraints:</label>                  
+      <input type="number" id="num_cons" name="Inputs">
+      
+      
+      <label for="start time">Start time (s):</label>
+      <input type="number" id="starttime" name="starttime"><br><br>
+
+      <label for="end time">End time (s):</label>
+      <input type="number" id="endtime" name="endtime"><br><br>
 
       <button id="createFieldsButton" type="button">Submit</button>
       <br><br>
 
       <div id="inputFieldsContainer"></div>
+      <br><br>
       <div id="outputFieldsContainer"></div>
-      
+      <br><br>
+      <div id="symbolicparams"></div>
+      <br><br>
+      <div id="boundsContainer"></div>
+      <br><br>
       <label for="A">Matrix: A:</label>
-      <input type="text" id="A" name="MatrixA"><br><br>
+      <table id="matrixA"></table>
+      <br><br>
 
       <label for="B">Matrix: B:</label>
-      <input type="text" id="B" name="MatrixB"><br><br>
+      <table id="matrixB"></table>
+      <br><br>
 
+      <div id="constraintsinput"></div>
+      <br><br>
+
+      <label for="H0">H0</label>
+      <table id="H0"></table>
+      <br><br>
+
+      <label for="H1">H1</label>
+      <table id="H1"></table>
+      <br><br>
+    </div>
+
+    <div>
       <label for="file">Log File:</label>
       <input type="file" id="fileInput" name="file">
       <button id="parseButton" type="button">Submit</button>
@@ -93,7 +124,92 @@
           output.value += message + "\n";
         }
 
-        function createInputFields(containerId, labelPrefix, inputNamePrefix, numFields) {
+        function createMatrixTable(tableId, rows, cols) {
+          const table = document.getElementById(tableId);
+          table.innerHTML = ''; // Clear any existing cells
+
+          for (let i = 0; i < rows; i++) {
+          const row = table.insertRow();
+          for (let j = 0; j < cols; j++) {
+            const cell = row.insertCell();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `${tableId}_r${i}_c${j}`;
+            cell.appendChild(input);
+            }
+          }
+        }
+        function createsymbolicfields(containerId, labelPrefix, numFields) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+
+          for (let i=0; i< numFields; i++) {
+            const label = document.createElement('label');
+            label.textContent = `${labelPrefix} ${i + 1}:`;
+            container.appendChild(label);
+
+            const inputName = document.createElement('input');
+            inputName.type = 'text';
+            inputName.name = `${'param'}_name_${i + 1}`;
+            inputName.id = `${'param'}_name_${i + 1}`;
+            container.appendChild(inputName);
+          }
+          container.appendChild(document.createElement('br'));
+        }
+
+        function createBoundsField(containerId, labelPrefix, numParams) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+
+          for (let i=0; i< numParams; i++) {
+            const label = document.createElement('label');
+            label.textContent = `${labelPrefix} ${i + 1}:`;
+            container.appendChild(label);
+
+            const inputName = document.createElement('input');
+            inputName.type = 'number';
+            inputName.name = `${'Bound'}_min_${i + 1}`;
+            inputName.id = `${'Bound'}_min_${i + 1}`;
+            container.appendChild(inputName);
+
+            const inputField = document.createElement('input');
+            inputField.type = 'number';
+            inputField.name = `${'Bound'}_max_${i + 1}`;
+            inputField.id = `${'Bound'}_max_${i + 1}`;
+            container.appendChild(inputField);
+
+          }
+          container.appendChild(document.createElement('br'));
+        }
+
+
+        function createConstraintsField(containerId, labelPrefix, numParams) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+
+          for (let i=0; i< numParams; i++) {
+            const label = document.createElement('label');
+            label.textContent = `${labelPrefix} ${i + 1}:`;
+            container.appendChild(label);
+
+            const inputName = document.createElement('input');
+            inputName.type = 'text';
+            inputName.name = `${'Constraint'}_A_${i + 1}`;
+            inputName.id = `${'Constraint'}_A_${i + 1}`;
+            container.appendChild(inputName);
+
+            const inputField = document.createElement('input');
+            inputField.type = 'text';
+            inputField.name = `${'Constraint'}_B_${i + 1}`;
+            inputField.id = `${'Constraint'}_B_${i + 1}`;
+            container.appendChild(inputField);
+
+          }
+          container.appendChild(document.createElement('br'));
+        }
+
+
+        function createInputFields(containerId, labelPrefix, inputNamePrefix, numFields, includeMultiplier = false) {
           const container = document.getElementById(containerId);
           container.innerHTML = '';  // Clear any existing fields
 
@@ -114,9 +230,116 @@
             inputField.id = `${inputNamePrefix}_field_${i + 1}`;
             container.appendChild(inputField);
 
+            if (includeMultiplier) {
+              const multiplierCheckbox = document.createElement('input');
+              multiplierCheckbox.type = 'checkbox';
+              multiplierCheckbox.id = `multiplier_checkbox_${i + 1}`;
+              multiplierCheckbox.name = `multiplierCheckbox_${i + 1}`;
+              container.appendChild(multiplierCheckbox);
+
+              const multiplierLabel = document.createElement('label');
+              multiplierLabel.htmlFor = `multiplier_checkbox_${i + 1}`;
+              multiplierLabel.textContent = 'Multiplier';
+              container.appendChild(multiplierLabel);
+      
+              const multiplierInput = document.createElement('input');
+              multiplierInput.type = 'text';
+              multiplierInput.id = `multiplier_${i + 1}`;
+              multiplierInput.name = `multiplier_${i + 1}`;
+              multiplierInput.style.display = 'none';
+              container.appendChild(multiplierInput);
+
+              multiplierCheckbox.addEventListener('change', function () {
+              multiplierInput.style.display = this.checked ? 'inline' : 'none';
+            });
+          }
+
             container.appendChild(document.createElement('br'));
           }
         }
+        function getParamValues(numParams) {
+          const sym_vars = [];
+          for (let i=0;i<numParams;i++) {
+            sym_vars.push(document.getElementById(`${'param'}_name_${i + 1}`).value.trim());
+          }
+          return sym_vars;
+        }
+        function getFieldValues(prefix, numFields) {
+          const names = [];
+          const fields = [];
+          const multipliers = [];
+
+          for (let i = 0; i < numFields; i++) {
+            names.push(document.getElementById(`${prefix}_name_${i + 1}`).value.trim());
+            fields.push(document.getElementById(`${prefix}_field_${i + 1}`).value.trim());
+
+            const multiplierCheckbox = document.getElementById(`multiplier_checkbox_${i + 1}`);
+            if (multiplierCheckbox && multiplierCheckbox.checked) {
+              multipliers.push(document.getElementById(`multiplier_${i + 1}`).value.trim());
+            } else {
+              multipliers.push(null);
+            }
+          }
+          return { names, fields, multipliers };
+        }
+
+        function getConstraintList(num_constraints) {
+          ans = []
+          for (let i = 0; i<num_constraints; i++) {
+            constraint_arr = [];
+            constraint_arr.push(document.getElementById(`${`Constraint`}_A_${i + 1}`).value.trim());
+            constraint_arr.push(document.getElementById(`${`Constraint`}_B_${i + 1}`).value.trim());
+            ans.push(constraint_arr);
+          }
+          return ans;
+        }
+        function getBounds(numParams) {
+          ans = []
+          bound_min = []
+          bound_max = []
+
+          for (let i = 0; i < numParams; i++ ) {
+            bound_min.push(parseFloat(document.getElementById(`${`Bound`}_min_${i + 1}`).value,10));
+            bound_max.push(parseFloat(document.getElementById(`${`Bound`}_max_${i + 1}`).value,10));
+          }
+
+          ans.push(bound_min)
+          ans.push(bound_max)
+
+          return ans;
+        }
+
+        function getMatrixValues(matrixId, rows, cols) {
+          const values = [];
+          for (let i = 0; i < rows; i++) {
+            const row = [];
+            for (let j = 0; j < cols; j++) {
+            // Construct the selector for each input field
+            const cellSelector = `#${matrixId} input[name=${matrixId}_r${i}_c${j}]`;
+            const inputElement = document.querySelector(cellSelector);
+
+            if (inputElement) {
+              const cellValue = inputElement.value.trim();
+
+              // Check if the value is numeric
+              if (!isNaN(cellValue) && cellValue !== '') {
+                row.push(parseFloat(cellValue)); // Convert to number
+              } else if (cellValue !== '') {
+                  row.push(cellValue); // Keep as string for symbolic/text values
+              } else {
+                  row.push(null); // Handle empty inputs
+              }
+            } else {
+          row.push(null); // Handle cases where the input field might not exist
+        }
+      }
+      values.push(row);
+    }
+    return values;
+          
+        }
+
+
 
         document.getElementById("tf_checkbox").addEventListener("change", function () {
         if (this.checked) {
@@ -133,19 +356,34 @@
           document.getElementById("tf_checkbox").checked = false;
           document.getElementById("ss_form").style.display = "block";
           document.getElementById("tf_form").style.display = "none";
-
           document.getElementById('createFieldsButton').addEventListener('click', function () {
           
-          const numInputs = parseInt(document.getElementById('num_Inputs').value, 10);
           const numOutputs = parseInt(document.getElementById('num_Outputs').value, 10);
+          const num_params = parseInt(document.getElementById('num_params').value, 10);
+          const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
-          if (isNaN(numInputs) || isNaN(numOutputs) || numInputs <= 0 || numOutputs <= 0) {
+          if (isNaN(numOutputs) || numOutputs <= 0) {
             alert('Please enter valid numbers for inputs and outputs.');
             return;
           }
 
-          createInputFields('inputFieldsContainer', 'Input', 'input', numInputs);
-          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs);
+          createInputFields('inputFieldsContainer', 'Input', 'input', 1);
+          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true);
+          createsymbolicfields('symbolicparams',' Param',num_params);
+          createBoundsField('boundsContainer',' Bound',num_params);
+          createConstraintsField('constraintsinput', 'Constraint',num_constraints)
+
+          const orderA = parseInt(document.getElementById('A_order').value, 10);
+
+          if (isNaN(orderA) || orderA < 1) {
+            alert('Please enter valid numbers for inputs and outputs.');
+            return;
+          }
+
+          createMatrixTable('matrixA', orderA, orderA);
+          createMatrixTable('matrixB', orderA, 1);
+          createMatrixTable('H0',numOutputs, orderA);
+          createMatrixTable('H1',numOutputs, orderA);
         });
         } else {
           document.getElementById("ss_form").style.display = "none";
@@ -161,11 +399,11 @@
         const micropip = pyodide.pyimport("micropip");
 
         addToOutput("Installing matplotlib package...");
-        await micropip.install("matplotlib");
+        await micropip.install("matplotlib", deps=false);
 
         addToOutput("Installing control package...");
         await micropip.install("control", keep_going=true, deps=false);
-
+        
         const packageUrl = "../modules/pyAircraftIden/pyAircraftIden-1.0-py3-none-any.whl";
         
         addToOutput(`Installing pyAircraftIden package from ${packageUrl}...`);
@@ -254,15 +492,14 @@
           
           await pyodide.runPython(`
             import numpy as np
-            from AircraftIden import FreqIdenSIMO, TransferFunctionFit
             import math
             import sympy as sp
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit, TransferFunctionParamModel
             from AircraftIden.TransferFunctionFit import plot_fitter
             import matplotlib
             plt = matplotlib.pyplot
-            t_start = float(t_start)/1000000
-            t_end = float(t_end)/1000000
+            t_start = float(t_start)
+            t_end = float(t_end)
             matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
             time_seq_source = np.array(time_data).flatten()/1000000
             ind1 = 0
@@ -278,7 +515,6 @@
             time_seq_source = time_seq_source[ind1:ind2]
             print("no error in time_seq: ", time_seq_source.size)
             yout_source = np.array(input_data).flatten()
-            print("youy size before splicing: ", yout_source.size, yout_source.shape)
             yout_source = yout_source[ind1:ind2]
             print("no error in yout: ", yout_source.size)
             gz_source = np.array(output_data).flatten()
@@ -314,32 +550,180 @@
           }
         else if(ssCheckbox)
         {
-          alert("State Space checkbox selected");
           if (fileInput.files.length === 0) {
             alert('Please select a log file');
             return;
           }
-
-          if (!inputField || !outputField) {
-            alert('Please enter input and output fields');
-            return;
-          }
-
+          console.debug("In state space loop");
           const file = fileInput.files[0];
           const reader = new FileReader();
+          console.debug("File reader initialized")
           reader.onload = async function (event) {
           const logData = event.target.result;
 
           const parser = new DataflashParser();
           parser.processData(logData);
 
-          const num_Inputs = document.getElementById('num_Inputs').value.trim();
-          const num_Outputs = document.getElementById('num_Outputs').value.trim();
+          const numOutputs = parseInt(document.getElementById('num_Outputs').value.trim());
+          const orderA = parseInt(document.getElementById('A_order').value, 10);
+          const numParams = parseInt(document.getElementById('num_params').value, 10);
+
+          
+          console.log("order A: ", orderA);
+
+          if (isNaN(numOutputs) || numOutputs <= 0) {
+            alert('Please enter valid numbers for inputs and outputs.');
+            return;
+          }
+          const inputValues = getFieldValues('input', 1);
+          const outputValues = getFieldValues('output', numOutputs);
+          const symbolic_var = getParamValues(numParams);
+          const t_start = parseFloat(document.getElementById('starttime').value.trim(), 10);
+          const t_end = parseFloat(document.getElementById('endtime').value.trim(), 10);
+          const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
+
+
+          let inputData = [];
+          let outputData = [];
+          const timeData = parser.get(inputValues.names[0], "TimeUS");
+
+          for (let i = 0; i < 1; i++) {
+            inputData.push(parser.get(inputValues.names[i], inputValues.fields[i]));
+          }
+          console.log("input data: ",inputData[0][0])
+
+          for (let i = 0; i < numOutputs; i++) {
+            let data = parser.get(outputValues.names[i], outputValues.fields[i]);
+            if (outputValues.multipliers[i]) {
+              const multiplier = parseFloat(outputValues.multipliers[i]);
+              data = data.map(value => value * multiplier);
+            }
+            outputData.push(data);
+          }
+          
+          console.log("output data: ", outputData[0][0])
+
+          inputData = inputData.map(arr => Array.from(arr));
+          outputData = outputData.map(arr => Array.from(arr));
+          const bounds_array = getBounds(numParams);
+          const matrixA = getMatrixValues('matrixA', orderA, orderA);
+          const matrixB = getMatrixValues('matrixB', orderA, 1);
+          const H0 = getMatrixValues('H0',numOutputs,orderA);
+          const H1 = getMatrixValues('H1',numOutputs,orderA);
+          const constraints_array = getConstraintList(num_constraints);
+          console.log(matrixA[0][0])
+          console.log(matrixB)
+
+
+          await pyodide.globals.set("input_data", inputData);
+          await pyodide.globals.set("output_data", outputData);
+          await pyodide.globals.set("time_data", timeData);
+          await pyodide.globals.set("numInputs",1);
+          await pyodide.globals.set("numOutputs",numOutputs);
+          await pyodide.globals.set("sym_var", symbolic_var);
+          await pyodide.globals.set("matrixA", matrixA);
+          await pyodide.globals.set("matrixB", matrixB);
+          await pyodide.globals.set("matrixH0", H0);
+          await pyodide.globals.set("matrixH1",H1);
+          await pyodide.globals.set("orderA", orderA);
+          await pyodide.globals.set("bounds_array", bounds_array);
+          await pyodide.globals.set("con_str", constraints_array);
+          await pyodide.globals.set("t_start", t_start);
+          await pyodide.globals.set("t_end", t_end);
 
           await pyodide.runPython(`
-            print("testing")
+            from AircraftIden import FreqIdenSIMO, TransferFunctionFit
+            import math
+            import matplotlib.pyplot as plt
+            import control
+
+            import sympy as sp
+            from AircraftIden.StateSpaceIden import StateSpaceIdenSIMO, StateSpaceParamModel
+            from AircraftIden.FreqIden import time_seq_preprocess
+
+            import numpy as np
+            import csv
+            import sympy as sp
+
+            plt = matplotlib.pyplot
+
+            M = sp.Matrix(np.eye(int(orderA)))
+
+            g = 9.81
+
+            input_data = np.array(input_data)
+            output_data = np.array(output_data)
+            syms = []
+            sym_var = list(sym_var)
+
+            def tofloat(element):
+              try:
+                float(element)
+                return True
+              except ValueError:
+                return False
+
+            def getMatrixJs(mjs, num_rows, num_cols, sym_var):
+              ans = []
+              for i in range(num_rows):
+                empty_row = []
+                for j in range(num_cols):
+                  if tofloat(str(mjs[i][j])):
+                    empty_row.append(float(str(mjs[i][j])))
+                  elif mjs[i][j][0] == '-':
+                    temp = sp.Symbol(mjs[i][j][1:])
+                    if temp in syms:
+                      raise TypeError("duplicate symbol")
+                    syms.append(temp)
+                    empty_row.append(-temp)
+                  else:
+                    temp = sp.Symbol(mjs[i][j])
+                    if temp in syms:
+                      raise TypeError("duplicate symbol")
+                    syms.append(temp)
+                    empty_row.append(temp)
+                ans.append(empty_row)
+              
+              return ans
+
+            F = getMatrixJs(matrixA, orderA, orderA, sym_var)
+            G = getMatrixJs(matrixB, orderA, numInputs, sym_var)
+            H0 = getMatrixJs(matrixH0, numOutputs, orderA, sym_var)
+            H1 = getMatrixJs(matrixH1, numOutputs, orderA, sym_var)
+            
+            t_start = float(t_start)
+            t_end = float(t_end)
+
+            time_seq_source = np.array(time_data).flatten()/1000000
+            
+            ind1 = 0
+            ind2 = time_seq_source.size
+            for i in range(time_seq_source.size):
+              if time_seq_source[i] == t_start or (time_seq_source[i] < t_start and time_seq_source[i+1] > t_start):
+                ind1 = i
+              
+              if time_seq_source[i] == t_end or (time_seq_source[i] < t_end and time_seq_source[i+1] > t_end):
+                ind2 = i
+                break
+
+            for i in range(numInputs):
+              input_data[i] = input_data[i][ind1:ind2]
+            
+            for i in range(numOutputs):
+              output_data[i] = output_data[i][ind1:ind2]
+            
+            F = sp.Matrix(F)
+            G = sp.Matrix(G)
+            H0 = sp.Matrix(H0)
+            H1 = sp.Matrix(H1)
+            bnd = tuple(bounds_array)
+            con_str = list(con_str)
+
+
+            
           `)
-          }
+          };
+          reader.readAsArrayBuffer(file);
         }
         });
       }
