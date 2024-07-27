@@ -11,35 +11,66 @@ import_done[1] = import('https://esm.sh/@octokit/request')
     .then((mod) => { octokitRequest = mod.request })
     .catch(error => console.log(error))
 
+
+let ArduPilot_GitHub_tags
+let octokitRequest_ratelimit_reset
 async function check_release(hash, paragraph) {
     paragraph.appendChild(document.createElement("br"))
 
     if (octokitRequest == null) {
-        paragraph.appendChild(document.createTextNode("Version check failed, offline."))
+        paragraph.appendChild(document.createTextNode("Version check failed, offline (" + hash + ")"))
         return
     }
 
-    let request
-    try {
-        // Get all tags from AP repo
-        request = await octokitRequest('GET /repos/:owner/:repo/git/refs/tags', {
-            owner: 'ArduPilot',
-            repo: 'ardupilot',
-            headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-            }
-        })
-    }
-    catch(err) {
-        paragraph.appendChild(document.createTextNode("Version check failed to get whitelist."))
-        return
+    function log_rate_reset(now) {
+        const wait = octokitRequest_ratelimit_reset - now
+        const wait_m = Math.floor(wait / 60)
+        const wait_s = Math.floor(wait % 60)
+        console.log("GitHub API rate limit exceeded, try again in " + wait_m + "m " + wait_s + "s" )
     }
 
-    const tags = request.data
+    if (octokitRequest_ratelimit_reset) {
+        const now = Date.now() / 1000
+        if (now < octokitRequest_ratelimit_reset) {
+            log_rate_reset(now)
+            return
+        }
+        octokitRequest_ratelimit_reset = null
+    }
+
+    function api_error(err) {
+        if ((err.status == 403) || (err.status == 429)) {
+            octokitRequest_ratelimit_reset = parseInt(err.response.headers["x-ratelimit-reset"])
+            log_rate_reset(Date.now() / 1000)
+            return
+        }
+
+        console.log(err)
+    }
+
+    if (ArduPilot_GitHub_tags == null) {
+        let request
+        try {
+            // Get all tags from AP repo
+            request = await octokitRequest('GET /repos/:owner/:repo/git/refs/tags', {
+                owner: 'ArduPilot',
+                repo: 'ardupilot',
+                headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+        }
+        catch(err) {
+            paragraph.appendChild(document.createTextNode("Version check failed to get whitelist (" + hash + ")"))
+            api_error(err)
+            return
+        }
+        ArduPilot_GitHub_tags = request.data
+    }
 
     // Search tags for matching hash
     let found_tag = false
-    for (tag of tags) {
+    for (tag of ArduPilot_GitHub_tags) {
         if (tag.object.sha.startsWith(hash)) {
             // Add link to tag
             if (found_tag) {
@@ -80,7 +111,8 @@ async function check_release(hash, paragraph) {
         })
     }
     catch(err) {
-        paragraph.appendChild(document.createTextNode("Version check failed to get commit."))
+        paragraph.appendChild(document.createTextNode("Version check failed to get commit (" + hash + ")"))
+        api_error(err)
         return
     }
 
@@ -90,10 +122,8 @@ async function check_release(hash, paragraph) {
 
     let link = document.createElement("a")
     link.href = request.data.html_url
-    link.innerHTML = sha
+    link.innerHTML = hash
     paragraph.appendChild(link)
-
-    paragraph.appendChild(document.createElement("br"))
 
     // Branches with this commit as head
     try {
@@ -107,12 +137,15 @@ async function check_release(hash, paragraph) {
           })
     }
     catch(err) {
+        paragraph.appendChild(document.createElement("br"))
         paragraph.appendChild(document.createTextNode("Version check failed to get branches."))
+        api_error(err)
         return
     }
 
 
     if (request.data.length > 0) {
+        paragraph.appendChild(document.createElement("br"))
         paragraph.appendChild(document.createTextNode("Branches @ HEAD: "))
 
         let found_branch = false
@@ -1665,7 +1698,8 @@ function load_can(log) {
                 name: CAND.Name[i],
                 version: CAND.Major[i] + "." + CAND.Minor[i],
                 UID1: CAND.UID1[i],
-                UID2: CAND.UID2[i]
+                UID2: CAND.UID2[i],
+                hash: CAND.Version[i].toString(16)
             }
 
             // Check for duplicates
@@ -1674,7 +1708,8 @@ function load_can(log) {
                 if ((existing.name == can_obj.name) && 
                     (existing.version == can_obj.version) &&
                     (existing.UID1 == can_obj.UID1) &&
-                    (existing.UID2 == can_obj.UID2)) {
+                    (existing.UID2 == can_obj.UID2) &&
+                    (existing.hash == can_obj.hash)) {
                     found = true
                     break
                 }
@@ -1699,6 +1734,14 @@ function load_can(log) {
         fieldset.appendChild(document.createElement("br"))
 
         fieldset.appendChild(document.createTextNode("Firmware version: " + info.version))
+
+        const version_div = document.createElement("div")
+        version_div.style.display = "inline"
+        fieldset.appendChild(version_div)
+        if (info.name.startsWith("org.ardupilot")) {
+            check_release(info.hash, version_div)
+        }
+
         fieldset.appendChild(document.createElement("br"))
 
         fieldset.appendChild(document.createTextNode("UID1: 0x" + info.UID1.toString(16)))
