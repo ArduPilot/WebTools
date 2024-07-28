@@ -645,8 +645,6 @@
             import csv
             import sympy as sp
 
-            plt = matplotlib.pyplot
-
             M = sp.Matrix(np.eye(int(orderA)))
 
             g = 9.81
@@ -662,6 +660,10 @@
                 return True
               except ValueError:
                 return False
+          
+            def callback(xk, state):
+              print(xk)
+              print(state)
 
             def getMatrixJs(mjs, num_rows, num_cols, sym_var):
               ans = []
@@ -719,8 +721,26 @@
             bnd = tuple(bounds_array)
             con_str = list(con_str)
 
+            g = 9.81
 
-            
+            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data[0], output_data[0], win_num=None)
+
+            plt.rc("figure", figsize=(15,10))
+            plt.figure("pout->udot")
+            simo_iden.plt_bode_plot(0)
+            LatdynSSPM = StateSpaceParamModel(M, F, G, H0, H1, syms)
+
+            plt.rc('figure', figsize=(10.0, 5.0))
+            freqres = simo_iden.get_freqres()
+
+            ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
+                                  enable_debug_plot=False,
+                                  y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1, con_str = con_str)
+            J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10)
+            ssm.check_stable()
+            ssm_iden.print_res()
+            #ssm_iden.draw_freq_res()
+
           `)
           };
           reader.readAsArrayBuffer(file);
