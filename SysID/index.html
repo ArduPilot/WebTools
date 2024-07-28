@@ -610,7 +610,12 @@
           const matrixB = getMatrixValues('matrixB', orderA, 1);
           const H0 = getMatrixValues('H0',numOutputs,orderA);
           const H1 = getMatrixValues('H1',numOutputs,orderA);
-          const constraints_array = getConstraintList(num_constraints);
+          const constraint_arr = [[]]
+          if (num_constraints == 0) {
+            constraints_array = [[]] 
+          } else {
+            constraints_array = getConstraintList(num_constraints);
+          }
           console.log(matrixA[0][0])
           console.log(matrixB)
 
@@ -723,6 +728,10 @@
 
             g = 9.81
 
+
+            resampled_input = time_seq_preprocess(time_seq_source, input_data[0])
+            resampled_output = time_seq_preprocess(time_seq_source, output_data[0])
+
             simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data[0], output_data[0], win_num=None)
 
             plt.rc("figure", figsize=(15,10))
@@ -732,13 +741,45 @@
 
             plt.rc('figure', figsize=(10.0, 5.0))
             freqres = simo_iden.get_freqres()
+            if len(con_str[0]) == 0:
+              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
+                                  enable_debug_plot=False,
+                                  y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1)
 
-            ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
+            else:
+              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
                                   enable_debug_plot=False,
                                   y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1, con_str = con_str)
-            J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10)
+
+
+            J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10, bounds = bnd)
             ssm.check_stable()
             ssm_iden.print_res()
+
+            C = np.identity(orderA)
+            D = np.zeros((orderA, 1))
+            A, B = ssm_iden.getMatrices()
+            dt = np.mean(np.diff(resampled_input[0]))
+            num_samples = len(resampled_input[0])
+            A = np.array(A).astype(np.float64)
+            B = np.array(B).astype(np.float64)
+            # Initial states and input
+            x = np.zeros((A.shape[0],1))
+            u = np.array(resampled_input[1])
+            T = resampled_output[0]  # Time vector
+            U = np.array(resampled_input[1])  # Input vector
+            sys = control.StateSpace(A, B, C, D)
+            T, y_sim = control.forced_response(sys, T, U)
+            plt.figure("Actual vs Simulated - gx")
+            plt.plot(resampled_output[0], resampled_output[1], label='Actual gx')
+            plt.plot(resampled_output[0], y_sim[0, :], label='Simulated gx')
+            plt.plot(resampled_output[0], y_sim[1, :], label='lagged input')
+            plt.plot(resampled_input[0], resampled_input[1], label='input')
+            plt.xlabel('Time (s)')
+            plt.ylabel('gx')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
             #ssm_iden.draw_freq_res()
 
           `)
