@@ -315,7 +315,7 @@
     throw new Error(e.reason.stack)
   })
 
-  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
+  const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
 
   init_loading_overlay()
 
