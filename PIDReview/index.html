@@ -12,6 +12,7 @@
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
 <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
 
 <script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
@@ -292,7 +293,7 @@
         reader.readAsArrayBuffer(file)
     }
 
-    setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+    const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
 
     init_loading_overlay()
 
