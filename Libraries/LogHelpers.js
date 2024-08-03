@@ -80,3 +80,17 @@ function get_version_and_board(log) {
         filter_version
     }
 }
+
+// Take all log and return array of available base message types (no instances)
+function get_base_log_message_types(log) {
+    let all_types = Object.keys(log.messageTypes)
+    let base_types = []
+    for (const type of all_types) {
+        if (/.+\[.+\]/gm.test(type) ) {
+            // Discard instance messages
+            continue
+        }
+        base_types.push(type)
+    }
+    return base_types
+}
