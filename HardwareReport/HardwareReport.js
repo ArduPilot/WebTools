@@ -2371,6 +2371,8 @@ async function load_log(log_file) {
     let log = new DataflashParser()
     log.processData(log_file, [])
 
+    open_in_update(log)
+
     if (!('PARM' in log.messageTypes)) {
         // The whole tool assumes it has param values
         alert("No parameter values found in log")
