@@ -21,6 +21,7 @@
 <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script type="text/javascript" src="../Libraries/DecodeDevID.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
 <script type="text/javascript" src="magfit.js"></script>
 
 </head>
@@ -396,7 +397,7 @@ For best results use a flight log that covers as many orientations as possible. 
         reader.readAsArrayBuffer(file)
     }
 
-    setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+    const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
 
     init_loading_overlay()
 

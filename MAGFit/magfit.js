@@ -1688,6 +1688,8 @@ async function load(log_file) {
     let log = new DataflashParser()
     log.processData(log_file, [])
 
+    open_in_update(log)
+
     if (!("MAG" in log.messageTypes) || !("instances" in log.messageTypes.MAG)) {
         alert("No compass data in log")
         return
