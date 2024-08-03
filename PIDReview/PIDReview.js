@@ -1472,6 +1472,8 @@ async function load(log_file) {
     let log = new DataflashParser()
     log.processData(log_file , [])
 
+    open_in_update(log)
+
     // micro seconds to seconds helpers
     const US2S = 1 / 1000000
     function TimeUS_to_seconds(TimeUS) {
