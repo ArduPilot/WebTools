@@ -219,8 +219,12 @@ function setup_table(logs) {
                 return cell.getRow().getData().fileHandle
             }
 
+            const open_in = get_open_in(get_file_fun)
+            open_in.update_enable(cell.getRow().getData().info.available_log_messages)
+
+
             tippy(button, {
-                content: open_in_tippy_div(get_file_fun),
+                content: open_in.tippy_div,
                 placement: 'left',
                 interactive: true,
                 appendTo: () => document.body,
@@ -725,7 +729,8 @@ function load_log(log_file) {
         flight_time,
         watchdog,
         crash_dump,
-        distance_traveled
+        distance_traveled,
+        available_log_messages: get_base_log_message_types(log),
     }
 }
 
