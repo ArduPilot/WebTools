@@ -100,6 +100,8 @@ function load_log(log_file) {
     log = new DataflashParser()
     log.processData(log_file, [])
 
+    open_in_update(log)
+
     plot_log()
 
     const end = performance.now()

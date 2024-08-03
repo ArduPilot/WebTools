@@ -11,6 +11,7 @@
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
 <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
 
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 
@@ -115,7 +116,7 @@
   tippy('#TT')
 
 
-  setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
+  const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
 
   init_loading_overlay()
 
