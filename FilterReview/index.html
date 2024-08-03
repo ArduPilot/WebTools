@@ -20,6 +20,7 @@
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
 <script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
 
 </head>
 <table style="width:1200px"><tr><td>
@@ -688,7 +689,7 @@ These params can then be saved and loaded into the autopilot without the need fo
         reader.readAsArrayBuffer(file)
     }
 
-    setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+    const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
 
     init_loading_overlay()
 
