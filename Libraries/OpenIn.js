@@ -1,20 +1,47 @@
 // Helper to create a "open in" buttons to pass logs between tools
 
 // Return a div populated with buttons that can be clicked
-function open_in_tippy_div(get_file_fun) {
+function get_open_in(get_file_fun) {
 
     // Div that contains buttons for other tools
     let tippy_div = document.createElement("div")
 
-    const destinations = [{ name:"UAV Log Viewer",  path:"https://plotbeta.ardupilot.org/#", hook_load:false },
-                          { name:"Hardware Report", path:"../HardwareReport",                hook_load:true },
-                          { name:"Filter Review",   path:"../FilterReview",                  hook_load:true },
-                          { name:"MAGFit",          path:"../MAGFit",                        hook_load:true },
-                          { name:"PID Review",      path:"../PIDReview",                     hook_load:true }]
+    // Helper functions return true if a particular tool can open a given log
+    function enable_hardware_report(msgs) {
+        return msgs.includes("PARM")
+    }
+
+    function enable_filter_review(msgs) {
+        const filt_log = ["GYR", "ISBD"]
+        return filt_log.some(item => msgs.includes(item));
+    }
+
+    function enable_magfit(msgs) {
+        return msgs.includes("MAG")
+    }
+
+    function enable_pid_review(msgs) {
+        const pid_log = ["RATE", "PIDR", "PIDP", "PIDY", "PIQR", "PIQP", "PIQY"]
+        return pid_log.some(item => msgs.includes(item));
+    }
+
+    // If not provided with list of available messages allow all tools
+    function enable_all(msgs) {
+        return msgs == null
+    }
+
+    const destinations = [{ name:"UAV Log Viewer",  path:"https://plotbeta.ardupilot.org/#", hook_load:false, enable: (msgs) => { return true } },
+                          { name:"Hardware Report", path:"../HardwareReport",                hook_load:true,  enable: (msgs) => { return enable_all(msgs) || enable_hardware_report(msgs)} },
+                          { name:"Filter Review",   path:"../FilterReview",                  hook_load:true,  enable: (msgs) => { return enable_all(msgs) || enable_filter_review(msgs)} },
+                          { name:"MAGFit",          path:"../MAGFit",                        hook_load:true,  enable: (msgs) => { return enable_all(msgs) || enable_magfit(msgs)} },
+                          { name:"PID Review",      path:"../PIDReview",                     hook_load:true,  enable: (msgs) => { return enable_all(msgs) || enable_pid_review(msgs)} }]
 
     // Get own path
     const path_segments = window.location.pathname.split('/');
     const own_window = path_segments.pop() || path_segments.pop()
+
+    // Array of enable functions to call, one for each button
+    const enable_fun = []
 
     // Add button for each tool
     for (const dest of destinations) {
@@ -67,9 +94,19 @@ function open_in_tippy_div(get_file_fun) {
         // New line
         tippy_div.appendChild(document.createElement("br"))
 
+        // Add function to update enabled
+        enable_fun.push((msgs) => { dest_button.disabled = !dest.enable(msgs) })
+
     }
 
-    return tippy_div
+    // Run all enable functions
+    function update_enable(msgs) {
+        for (const fun of enable_fun) {
+            fun(msgs)
+        }
+    }
+
+    return { tippy_div, update_enable }
 
 }
 
@@ -82,7 +119,7 @@ function setup_open_in(button_id, file_id, load_fun, placement) {
         return input.files[0]
     }
 
-    const tippy_div = open_in_tippy_div(get_file_fun)
+    const open_in = get_open_in(get_file_fun)
 
     // default to left placement
     if (placement == null) {
@@ -91,7 +128,7 @@ function setup_open_in(button_id, file_id, load_fun, placement) {
 
     // Create tool tip
     tippy(button, {
-        content: tippy_div,
+        content: open_in.tippy_div,
         placement,
         interactive: true,
         appendTo: () => document.body,
@@ -119,4 +156,10 @@ function setup_open_in(button_id, file_id, load_fun, placement) {
         }
     })
 
+    function update(log) {
+        const msgs = get_base_log_message_types(log)
+        open_in.update_enable(msgs)
+    }
+
+    return update
 }
