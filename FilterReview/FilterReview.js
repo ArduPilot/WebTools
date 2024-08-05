@@ -2754,6 +2754,12 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
 
         }
 
+        if (Gyro_batch[i].length == 0) {
+            // No valid batches, remove
+            delete Gyro_batch[i]
+            continue
+        }
+
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
         Gyro_batch[i].gyro_rate = sample_rate
