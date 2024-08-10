@@ -53,6 +53,8 @@
       <label for="end frequency">End frequency (rad/sec):</label>
       <input type="number" id="endfreq" name="endfreq"><br><br>
 
+      <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
+      <input type="number" id="cutofffreq" name="cutofffreq"><br><br>
 
       <label for="customNumerator">Numerator:</label>
       <input type="text" id="customNumerator" name="customNumerator"><br><br>
@@ -467,6 +469,8 @@
           const t_end = document.getElementById('endtime').value.trim();
           const f_start = document.getElementById('startfreq').value.trim();
           const f_end = document.getElementById('endfreq').value.trim();
+          const f_cutoff = document.getElementById('cutofffreq').value.trim();
+
           const output = document.getElementById('output');
 
           if (fileInput.files.length === 0) {
@@ -502,12 +506,15 @@
           await pyodide.globals.set("t_start",t_start);
           await pyodide.globals.set("t_end",t_end)
           await pyodide.globals.set("f_start",f_start);
-          await pyodide.globals.set("f_end",f_end)
+          await pyodide.globals.set("f_end",f_end);
+          await pyodide.globals.set("f_cutoff",f_cutoff);
+
           
           await pyodide.runPython(`
             from pyodide.ffi import to_js
             import numpy as np
             import math
+            from scipy.signal import butter,filtfilt
             import sympy as sp
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit, TransferFunctionParamModel
             from AircraftIden.TransferFunctionFit import plot_fitter
@@ -517,7 +524,21 @@
             t_end = float(t_end)
             f_start = float(f_start)
             f_end = float(f_end)
+            f_cutoff = float(f_cutoff)
             matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
+            
+            def butter_lowpass(cutoff, fs, order=5):
+              nyquist = 0.5 * fs
+              normal_cutoff = cutoff / nyquist
+              b, a = butter(order, normal_cutoff, btype='low', analog=False)
+              return b, a
+
+
+            def apply_lowpass_filter(data, cutoff, fs, order=5):
+              b, a = butter_lowpass(cutoff, fs, order=order)
+              y = filtfilt(b, a, data)
+              return y
+
             time_seq_source = np.array(time_data).flatten()/1000000
             ind1 = 0
             ind2 = time_seq_source.size
@@ -537,8 +558,10 @@
             gz_source = np.array(output_data).flatten()
             gz_source = gz_source*math.pi / 180
             gz_source = gz_source[ind1:ind2]
-            print("no error in gz_source: ", gz_source.size)
-            simo_iden = FreqIdenSIMO(time_seq_source,f_start, f_end, yout_source, gz_source, win_num=None)
+            dt = np.mean(np.diff(time_seq_source))
+            u = apply_lowpass_filter(yout_source, f_cutoff, 1/dt)
+            y = apply_lowpass_filter(gz_source, f_cutoff, 1/dt)            
+            simo_iden = FreqIdenSIMO(time_seq_source,f_start, f_end, u, y, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
             plt.figure("pout->udot")
@@ -553,9 +576,8 @@
             num = sp.simplify(str(numerator))
             den = sp.simplify(str(denominator))
             tfpm = TransferFunctionParamModel(num, den, tau)
-            dt = np.mean(np.diff(time_seq_source))
             fitter = TransferFunctionFit(freq, H, gamma2, tfpm, nw=20, iter_times=1, reg = 0.1)
-            init_val = fitter.setup_initvals_ARX(num, den, yout_source, gz_source, 5, dt)
+            init_val = fitter.setup_initvals_ARX(num, den, u, y, dt)
 
             tf = fitter.estimate(2, 20, accept_J=100, init_val=init_val)
             num, den, tau = fitter.get_coefficients()
