@@ -524,7 +524,7 @@
             t_end = float(t_end)
             f_start = float(f_start)
             f_end = float(f_end)
-            f_cutoff = float(f_cutoff)
+            f_cutoff = float(f_cutoff)/(2*3.14)
             matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
             
             def butter_lowpass(cutoff, fs, order=5):
