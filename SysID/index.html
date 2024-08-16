@@ -86,10 +86,10 @@
       
       
       <label for="start time">Start time (s):</label>
-      <input type="number" id="starttime" name="starttime"><br><br>
+      <input type="number" id="starttime_ss" name="starttime_ss"><br><br>
 
       <label for="end time">End time (s):</label>
-      <input type="number" id="endtime" name="endtime"><br><br>
+      <input type="number" id="endtime_ss" name="endtime_ss"><br><br>
 
       <button id="createFieldsButton" type="button">Submit</button>
       <br><br>
@@ -490,14 +490,17 @@
 
           const parser = new DataflashParser();
           parser.processData(logData);
-          const timeData = parser.get(inputname,"TimeUS");            
+          addToOutput("File Submitted successfully. Please wait!!!!!!");
+          const timeData1 = parser.get(inputname,"TimeUS");            
           const fieldData1 = parser.get(inputname,inputField);
+          const timeData2 = parser.get(outputname,"TimeUS");
           const fieldData2 = parser.get(outputname,outputField);
           const Mode = parser.get("MODE","Mode")
 
           await pyodide.globals.set("input_data", fieldData1);
           await pyodide.globals.set("output_data", fieldData2);
-          await pyodide.globals.set("time_data", timeData);
+          await pyodide.globals.set("time_data_in", timeData1);
+          await pyodide.globals.set("time_data_out", timeData2);
           await pyodide.globals.set("input_field",inputField);
           await pyodide.globals.set("output_field",outputField);
           await pyodide.globals.set("numerator", Numerator);
@@ -518,6 +521,7 @@
             import sympy as sp
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit, TransferFunctionParamModel
             from AircraftIden.TransferFunctionFit import plot_fitter
+            from AircraftIden.FreqIden import time_seq_preprocess
             import matplotlib
             plt = matplotlib.pyplot
             t_start = float(t_start)
@@ -539,29 +543,49 @@
               y = filtfilt(b, a, data)
               return y
 
-            time_seq_source = np.array(time_data).flatten()/1000000
+            time_seq_source_in = np.array(time_data_in).flatten()/1000000
             ind1 = 0
-            ind2 = time_seq_source.size
-            for i in range(time_seq_source.size):
-              if time_seq_source[i] == t_start or (time_seq_source[i] < t_start and time_seq_source[i+1] > t_start):
+            ind2 = time_seq_source_in.size
+
+            for i in range(time_seq_source_in.size):
+              if time_seq_source_in[i] == t_start or (time_seq_source_in[i] < t_start and time_seq_source_in[i+1] > t_start):
                 ind1 = i
               
-              if time_seq_source[i] == t_end or (time_seq_source[i] < t_end and time_seq_source[i+1] > t_end):
+              if time_seq_source_in[i] == t_end or (time_seq_source_in[i] < t_end and time_seq_source_in[i+1] > t_end):
                 ind2 = i
                 break
+
             print("start index: ",ind1," end index: ",ind2)
-            time_seq_source = time_seq_source[ind1:ind2]
-            print("no error in time_seq: ", time_seq_source.size)
+            time_seq_source_in = time_seq_source_in[ind1:ind2]
+            print("no error in time_seq: ", time_seq_source_in.size)
             yout_source = np.array(input_data).flatten()
             yout_source = yout_source[ind1:ind2]
             print("no error in yout: ", yout_source.size)
+
+            time_seq_source_out = np.array(time_data_out).flatten()/1000000
+            ind1 = 0
+            ind2 = time_seq_source_out.size
+
+            for i in range(time_seq_source_out.size):
+              if time_seq_source_out[i] == t_start or (time_seq_source_out[i] < t_start and time_seq_source_out[i+1] > t_start):
+                ind1 = i
+              
+              if time_seq_source_out[i] == t_end or (time_seq_source_out[i] < t_end and time_seq_source_out[i+1] > t_end):
+                ind2 = i
+                break
+
+            print("start index: ",ind1," end index: ",ind2)
+            time_seq_source_out = time_seq_source_out[ind1:ind2]
+            print("no error in time_seq: ", time_seq_source_out.size)
+
             gz_source = np.array(output_data).flatten()
             gz_source = gz_source*math.pi / 180
             gz_source = gz_source[ind1:ind2]
-            dt = np.mean(np.diff(time_seq_source))
+            dt = np.mean(np.diff(time_seq_source_in))
+
             u = apply_lowpass_filter(yout_source, f_cutoff, 1/dt)
             y = apply_lowpass_filter(gz_source, f_cutoff, 1/dt)            
-            simo_iden = FreqIdenSIMO(time_seq_source,f_start, f_end, u, y, win_num=None)
+            simo_iden = FreqIdenSIMO(time_seq_source_in,f_start, f_end, u, y, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
             plt.figure("pout->udot")
@@ -579,7 +603,7 @@
             fitter = TransferFunctionFit(freq, H, gamma2, tfpm, nw=20, iter_times=1, reg = 0.1)
             init_val = fitter.setup_initvals_ARX(num, den, u, y, dt)
 
-            tf = fitter.estimate(2, 20, accept_J=100, init_val=init_val)
+            tf = fitter.estimate(f_start, f_end, accept_J=100, init_val=init_val)
             num, den, tau = fitter.get_coefficients()
             print("numerator: ",num)
             print("denominator: ",den)
@@ -662,21 +686,21 @@
             grid: { rows: 3, columns: 1, pattern: 'independent' },
             xaxis1: {
               type: 'log',
-              title: 'Frequency (Hz)'
+              title: 'Frequency (rad/sec)'
             },
             yaxis1: {
               title: 'H Amp'
             },
             xaxis2: {
               type: 'log',
-              title: 'Frequency (Hz)'
+              title: 'Frequency (rad/sec)'
             },
             yaxis2: {
               title: 'H Phase'
             },
             xaxis3: {
               type: 'log',
-              title: 'Frequency (Hz)'
+              title: 'Frequency (rad/sec)'
             },
             yaxis3: {
               title: 'Coherence'
@@ -706,7 +730,7 @@
 
           const parser = new DataflashParser();
           parser.processData(logData);
-
+          addToOutput("File Submitted successfully. Please wait!!!!!!");
           const numOutputs = parseInt(document.getElementById('num_Outputs').value.trim());
           const orderA = parseInt(document.getElementById('A_order').value, 10);
           const numParams = parseInt(document.getElementById('num_params').value, 10);
@@ -721,8 +745,8 @@
           const inputValues = getFieldValues('input', 1);
           const outputValues = getFieldValues('output', numOutputs);
           const symbolic_var = getParamValues(numParams);
-          const t_start = parseFloat(document.getElementById('starttime').value.trim(), 10);
-          const t_end = parseFloat(document.getElementById('endtime').value.trim(), 10);
+          const t_start = parseFloat(document.getElementById('starttime_ss').value.trim(), 10);
+          const t_end = parseFloat(document.getElementById('endtime_ss').value.trim(), 10);
           const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
 
@@ -741,7 +765,7 @@
               const multiplier = parseFloat(outputValues.multipliers[i]);
               data = data.map(value => value * multiplier);
             }
-            outputData.push(data);
+            outputData.push(Array.from(data));
           }
           
           console.log("output data: ", outputData[0][0])
@@ -798,7 +822,8 @@
             g = 9.81
 
             input_data = np.array(input_data)
-            output_data = np.array(output_data)
+
+            output_data = [np.array(data) for data in output_data]
             syms = []
             sym_var = list(sym_var)
 
@@ -848,6 +873,7 @@
             
             ind1 = 0
             ind2 = time_seq_source.size
+            print("pre index: ",ind1, ind2)
             for i in range(time_seq_source.size):
               if time_seq_source[i] == t_start or (time_seq_source[i] < t_start and time_seq_source[i+1] > t_start):
                 ind1 = i
@@ -855,12 +881,11 @@
               if time_seq_source[i] == t_end or (time_seq_source[i] < t_end and time_seq_source[i+1] > t_end):
                 ind2 = i
                 break
-
-            for i in range(numInputs):
-              input_data[i] = input_data[i][ind1:ind2]
-            
-            for i in range(numOutputs):
-              output_data[i] = output_data[i][ind1:ind2]
+            print("post index: ",ind1,ind2)
+            print("pre slicing input size: ",input_data[0].size)            
+            input_data1 = input_data[0][ind1:ind2]
+            print("input size: ",input_data[0].size)            
+            output_data_sliced = [data[ind1:ind2] for data in output_data]
             
             time_seq_source = time_seq_source[ind1:ind2]
             
@@ -873,11 +898,7 @@
 
             g = 9.81
 
-
-            resampled_input = time_seq_preprocess(time_seq_source, input_data[0])
-            resampled_output = time_seq_preprocess(time_seq_source, output_data[0])
-
-            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data[0], output_data[0], win_num=None)
+            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data1, *output_data_sliced, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
             plt.figure("pout->udot")
@@ -887,12 +908,12 @@
             plt.rc('figure', figsize=(10.0, 5.0))
             freqres = simo_iden.get_freqres()
             if len(con_str[0]) == 0:
-              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
+              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
                                   enable_debug_plot=False,
                                   y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1)
 
             else:
-              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=50,
+              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
                                   enable_debug_plot=False,
                                   y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1, con_str = con_str)
 
@@ -900,31 +921,6 @@
             J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10, bounds = bnd)
             ssm.check_stable()
             ssm_iden.print_res()
-
-            C = np.identity(orderA)
-            D = np.zeros((orderA, 1))
-            A, B = ssm_iden.getMatrices()
-            dt = np.mean(np.diff(resampled_input[0]))
-            num_samples = len(resampled_input[0])
-            A = np.array(A).astype(np.float64)
-            B = np.array(B).astype(np.float64)
-            # Initial states and input
-            x = np.zeros((A.shape[0],1))
-            u = np.array(resampled_input[1])
-            T = resampled_output[0]  # Time vector
-            U = np.array(resampled_input[1])  # Input vector
-            sys = control.StateSpace(A, B, C, D)
-            T, y_sim = control.forced_response(sys, T, U)
-            plt.figure("Actual vs Simulated - gx")
-            plt.plot(resampled_output[0], resampled_output[1], label='Actual gx')
-            plt.plot(resampled_output[0], y_sim[0, :], label='Simulated gx')
-            #plt.plot(resampled_output[0], y_sim[1, :], label='lagged input')
-            #plt.plot(resampled_input[0], resampled_input[1], label='input')
-            plt.xlabel('Time (s)')
-            plt.ylabel('gx')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
             ssm_iden.draw_freq_res()
             plt.show()
           `)
