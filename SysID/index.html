@@ -221,7 +221,7 @@
         }
 
 
-        function createInputFields(containerId, labelPrefix, inputNamePrefix, numFields, includeMultiplier = false) {
+        function createInputFields(containerId, labelPrefix, inputNamePrefix, numFields, includeMultiplier = false, includeCompensation = false) {
           const container = document.getElementById(containerId);
           container.innerHTML = '';  // Clear any existing fields
 
@@ -263,9 +263,53 @@
 
               multiplierCheckbox.addEventListener('change', function () {
               multiplierInput.style.display = this.checked ? 'inline' : 'none';
-            });
-          }
+              });
+            }
 
+            if (includeCompensation) {
+              const compensationCheckbox = document.createElement('input');
+              compensationCheckbox.type = 'checkbox';
+              compensationCheckbox.id = `compensation_checkbox_${i + 1}`;
+              compensationCheckbox.name = `compensationCheckbox_${i + 1}`;
+              container.appendChild(compensationCheckbox);
+
+              const compensationLabel = document.createElement('label');
+              compensationLabel.htmlFor = `compensation_checkbox_${i + 1}`;
+              compensationLabel.textContent = 'Gravity Compensation ';
+              container.appendChild(compensationLabel);
+
+              const axisDropdown = document.createElement('select');
+              axisDropdown.id = `axis_dropdown_${i + 1}`;
+              axisDropdown.name = `axis_dropdown_${i + 1}`;
+              axisDropdown.style.display = 'none'; // Hidden by default
+
+              const option1 = document.createElement('option');
+              option1.value = 'Roll';
+              option1.text = 'Roll';
+              axisDropdown.appendChild(option1);
+
+              const option2 = document.createElement('option');
+              option2.value = 'Pitch';
+              option2.text = 'Pitch';
+              axisDropdown.appendChild(option2);
+
+              const option3 = document.createElement('option');
+              option3.value = 'Yaw';
+              option3.text = 'Yaw';
+              axisDropdown.appendChild(option3);
+
+              const axisLabel = document.createElement('label');
+              axisLabel.textContent = 'Axis:';
+              axisLabel.style.display = 'none'; // Hidden by default
+              container.appendChild(axisLabel);
+              container.appendChild(axisDropdown);
+
+              compensationCheckbox.addEventListener('change', function () {
+                const isChecked = this.checked;
+                axisDropdown.style.display = isChecked ? 'inline' : 'none';
+                axisLabel.style.display = isChecked ? 'inline' : 'none';
+              });
+            }
             container.appendChild(document.createElement('br'));
           }
         }
@@ -276,10 +320,12 @@
           }
           return sym_vars;
         }
+
         function getFieldValues(prefix, numFields) {
           const names = [];
           const fields = [];
           const multipliers = [];
+          const compensations = [];
 
           for (let i = 0; i < numFields; i++) {
             names.push(document.getElementById(`${prefix}_name_${i + 1}`).value.trim());
@@ -291,8 +337,17 @@
             } else {
               multipliers.push(null);
             }
+
+            const compensationCheckbox = document.getElementById(`compensation_checkbox_${i + 1}`);
+            if (compensationCheckbox && compensationCheckbox.checked) {
+              const selectedAxis = document.getElementById(`axis_dropdown_${i + 1}`).value;
+              compensations.push(selectedAxis); // Store the selected axis
+            } else {
+              compensations.push(null); // No compensation selected
+            }
           }
-          return { names, fields, multipliers };
+    
+          return { names, fields, multipliers, compensations };
         }
 
         function getConstraintList(num_constraints) {
@@ -320,6 +375,41 @@
 
           return ans;
         }
+
+        function nearestIndex(arr, target) {
+          let low = 0;
+          let high = arr.length - 1;
+
+          if (target <= arr[low]) {
+              return low;
+          }
+          if (target >= arr[high]) {
+              return high;
+          }
+
+          while (low <= high) {
+              let mid = Math.floor(low + (high - low) / 2);
+
+              if (arr[mid] === target) {
+                  return mid;
+              } else if (arr[mid] < target) {
+                  low = mid + 1;
+              } else {
+                  high = mid - 1;
+              }
+          }
+
+          // Now low and high are neighbors around the target
+          if (low >= arr.length) {
+              return high;
+          }
+          if (high < 0) {
+              return low;
+          }
+
+          // Return the index with the closest value to the target
+          return Math.abs(arr[low] - target) < Math.abs(arr[high] - target) ? low : high;
+      }
 
         function getMatrixValues(matrixId, rows, cols) {
           const values = [];
@@ -380,7 +470,7 @@
           }
 
           createInputFields('inputFieldsContainer', 'Input', 'input', 1);
-          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true);
+          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true, true);
           createsymbolicfields('symbolicparams',' Param',num_params);
           createBoundsField('boundsContainer',' Bound',num_params);
           createConstraintsField('constraintsinput', 'Constraint',num_constraints)
@@ -735,8 +825,6 @@
           const orderA = parseInt(document.getElementById('A_order').value, 10);
           const numParams = parseInt(document.getElementById('num_params').value, 10);
 
-          
-          console.log("order A: ", orderA);
 
           if (isNaN(numOutputs) || numOutputs <= 0) {
             alert('Please enter valid numbers for inputs and outputs.');
@@ -745,32 +833,81 @@
           const inputValues = getFieldValues('input', 1);
           const outputValues = getFieldValues('output', numOutputs);
           const symbolic_var = getParamValues(numParams);
-          const t_start = parseFloat(document.getElementById('starttime_ss').value.trim(), 10);
-          const t_end = parseFloat(document.getElementById('endtime_ss').value.trim(), 10);
+          const t_start_ss = parseFloat(document.getElementById('starttime_ss').value.trim(), 10);
+          const t_end_ss = parseFloat(document.getElementById('endtime_ss').value.trim(), 10);
           const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
 
-          let inputData = [];
           let outputData = [];
-          const timeData = parser.get(inputValues.names[0], "TimeUS");
+          let timeData_arr = parser.get(inputValues.names[0], "TimeUS");
+          const ind1_i = nearestIndex(timeData_arr, t_start_ss*1000000);
+          const ind2_i = nearestIndex(timeData_arr, t_end_ss*1000000);
+          console.log("ind1: ",ind1_i," ind2: ",ind2_i);
 
-          for (let i = 0; i < 1; i++) {
-            inputData.push(parser.get(inputValues.names[i], inputValues.fields[i]));
-          }
-          console.log("input data: ",inputData[0][0])
+          timeData = Array.from(timeData_arr);
+          console.log("time field pre slicing size: ",timeData.length);
+
+          timeData = timeData.slice(ind1_i, ind2_i);
+          console.log("time field post slicing size: ",timeData.length);
+
+          ///TODO/// multi-input configuration
+          let inputData = Array.from(parser.get(inputValues.names[0], inputValues.fields[0]));
+          console.log("input field pre slicing size: ",inputData.length);
+
+          inputData = inputData.slice(ind1_i, ind2_i);
+          console.log("input field post slicing size: ",inputData.length);
+
 
           for (let i = 0; i < numOutputs; i++) {
+            const t_data = parser.get(outputValues.names[i], "TimeUS")
+            const ind1_d = nearestIndex(t_data, t_start_ss*1000000)
+            const ind2_d = nearestIndex(t_data, t_end_ss*1000000)
             let data = parser.get(outputValues.names[i], outputValues.fields[i]);
+            let data_arr = Array.from(data)
+            console.log("data field ",outputValues.fields[i]," pre slicing size: ",data_arr.length)
+            console.log("ind1: ",ind1_d," ind2: ",ind2_d)
+            data_arr = data_arr.slice(ind1_d, ind2_d);
+            console.log("data field ",outputValues.fields[i]," post slicing size: ",data_arr.length)
+
+
             if (outputValues.multipliers[i]) {
               const multiplier = parseFloat(outputValues.multipliers[i]);
-              data = data.map(value => value * multiplier);
+              data_arr = data_arr.map(value => value * multiplier);
             }
-            outputData.push(Array.from(data));
-          }
-          
-          console.log("output data: ", outputData[0][0])
 
-          inputData = inputData.map(arr => Array.from(arr));
+            if (outputValues.compensations[i]) {
+              const ATT_t_data = parser.get("ATT", "TimeUS")
+              
+              const att_ind1 = nearestIndex(ATT_t_data, t_start_ss*1000000)
+              const att_ind2 = nearestIndex(ATT_t_data, t_end_ss*1000000)
+              let mult = 1;
+              if (outputValues.multipliers[i])
+              {
+                mult = parseFloat(outputValues.multipliers[i]);
+              }
+              let ang_data = parser.get("ATT", outputValues.compensations[i])
+              ang_data_arr = Array.from(ang_data)
+              ang_data_arr.slice(att_ind1, att_ind2)
+              console.log("data field ",outputValues.compensations[i]," pre slicing size: ",data_arr.length)
+
+              for (let i = 0; i < data_arr.length; i++) {
+                data_arr[i] = data_arr[i] + 3.14/180*mult*9.81*ang_data_arr[i];
+              }
+              
+              console.log("data field ",outputValues.fields[i]," compensation added for axis ",outputValues.compensations[i])
+              console.log("data field ",outputValues.fields[i]," post compensation size: ",data_arr.length)
+            }
+            outputData.push(data_arr);
+          }
+
+          
+          console.log("time data length: ",timeData.length)
+          console.log("input data length",inputData.length)
+          for (let i = 0; i < numOutputs; i++) {
+            console.log("output data ",i," size ",outputData[i].length)
+          }
+
+
           outputData = outputData.map(arr => Array.from(arr));
           const bounds_array = getBounds(numParams);
           const matrixA = getMatrixValues('matrixA', orderA, orderA);
@@ -783,8 +920,6 @@
           } else {
             constraints_array = getConstraintList(num_constraints);
           }
-          console.log(matrixA[0][0])
-          console.log(matrixB)
 
 
           await pyodide.globals.set("input_data", inputData);
@@ -800,8 +935,8 @@
           await pyodide.globals.set("orderA", orderA);
           await pyodide.globals.set("bounds_array", bounds_array);
           await pyodide.globals.set("con_str", constraints_array);
-          await pyodide.globals.set("t_start", t_start);
-          await pyodide.globals.set("t_end", t_end);
+          await pyodide.globals.set("t_start", t_start_ss);
+          await pyodide.globals.set("t_end", t_end_ss);
 
           await pyodide.runPython(`
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit
@@ -819,11 +954,11 @@
 
             M = sp.Matrix(np.eye(int(orderA)))
 
-            g = 9.81
 
             input_data = np.array(input_data)
 
             output_data = [np.array(data) for data in output_data]
+            print(output_data[0].size)
             syms = []
             sym_var = list(sym_var)
 
@@ -869,26 +1004,8 @@
             t_start = float(t_start)
             t_end = float(t_end)
 
-            time_seq_source = np.array(time_data).flatten()/1000000
-            
-            ind1 = 0
-            ind2 = time_seq_source.size
-            print("pre index: ",ind1, ind2)
-            for i in range(time_seq_source.size):
-              if time_seq_source[i] == t_start or (time_seq_source[i] < t_start and time_seq_source[i+1] > t_start):
-                ind1 = i
-              
-              if time_seq_source[i] == t_end or (time_seq_source[i] < t_end and time_seq_source[i+1] > t_end):
-                ind2 = i
-                break
-            print("post index: ",ind1,ind2)
-            print("pre slicing input size: ",input_data[0].size)            
-            input_data1 = input_data[0][ind1:ind2]
-            print("input size: ",input_data[0].size)            
-            output_data_sliced = [data[ind1:ind2] for data in output_data]
-            
-            time_seq_source = time_seq_source[ind1:ind2]
-            
+            time_seq_source = np.array(time_data).flatten()/1000000            
+
             F = sp.Matrix(F)
             G = sp.Matrix(G)
             H0 = sp.Matrix(H0)
@@ -896,9 +1013,8 @@
             bnd = tuple(bounds_array)
             con_str = list(con_str)
 
-            g = 9.81
 
-            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data1, *output_data_sliced, win_num=None)
+            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data, *output_data, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
             plt.figure("pout->udot")
