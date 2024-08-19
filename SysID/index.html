@@ -91,6 +91,16 @@
       <label for="end time">End time (s):</label>
       <input type="number" id="endtime_ss" name="endtime_ss"><br><br>
 
+      <label for="start frequency">Start frequency (rad/sec):</label>
+      <input type="number" id="startfreq_ss" name="startfreq_ss"><br><br>
+
+      <label for="end frequency">End frequency (rad/sec):</label>
+      <input type="number" id="endfreq_ss" name="endfreq_ss"><br><br>
+
+      <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
+      <input type="number" id="cutofffreq_ss" name="cutofffreq_ss"><br><br>
+
+
       <button id="createFieldsButton" type="button">Submit</button>
       <br><br>
 
@@ -120,6 +130,8 @@
       <label for="H1">H1</label>
       <table id="H1"></table>
       <br><br>
+
+      <div id="plotDiv_ss"></div>
     </div>
 
     <div>
@@ -720,9 +732,6 @@
           const h_phase_js = await pyodide.globals.get('h_phase_js');
           const coherence_js = await pyodide.globals.get('coherence_js');
 
-          // Debugging: Log the data to the console to verify the contents
-          console.log({ H_js, freq_js, mag_js, phase_js, h_amp_js, h_phase_js, coherence_js });
-
           const traces = [
             {
               x: freq_js,
@@ -921,6 +930,11 @@
             constraints_array = getConstraintList(num_constraints);
           }
 
+          const f_start_ss = document.getElementById('startfreq_ss').value.trim();
+          const f_end_ss = document.getElementById('endfreq_ss').value.trim();
+          const f_cutoff_ss = document.getElementById('cutofffreq_ss').value.trim();
+
+
 
           await pyodide.globals.set("input_data", inputData);
           await pyodide.globals.set("output_data", outputData);
@@ -937,12 +951,17 @@
           await pyodide.globals.set("con_str", constraints_array);
           await pyodide.globals.set("t_start", t_start_ss);
           await pyodide.globals.set("t_end", t_end_ss);
+          await pyodide.globals.set("f_start", f_start_ss);
+          await pyodide.globals.set("f_end", f_end_ss);
+          await pyodide.globals.set("f_cutoff", f_cutoff_ss);
 
           await pyodide.runPython(`
+            from pyodide.ffi import to_js
             from AircraftIden import FreqIdenSIMO, TransferFunctionFit
             import math
             import matplotlib.pyplot as plt
             import control
+            from scipy.signal import butter,filtfilt
 
             import sympy as sp
             from AircraftIden.StateSpaceIden import StateSpaceIdenSIMO, StateSpaceParamModel
@@ -954,14 +973,34 @@
 
             M = sp.Matrix(np.eye(int(orderA)))
 
+            def butter_lowpass(cutoff, fs, order=5):
+              nyquist = 0.5 * fs
+              normal_cutoff = cutoff / nyquist
+              b, a = butter(order, normal_cutoff, btype='low', analog=False)
+              return b, a
+
+
+            def apply_lowpass_filter(data, cutoff, fs, order=5):
+              b, a = butter_lowpass(cutoff, fs, order=order)
+              y = filtfilt(b, a, data)
+              return y
+
+            time_seq_source = np.array(time_data).flatten()/1000000            
 
             input_data = np.array(input_data)
 
             output_data = [np.array(data) for data in output_data]
-            print(output_data[0].size)
+
+            f_cutoff = float(f_cutoff)/(2*3.14)
+
+            dt = np.mean(np.diff(time_seq_source))
+
+            input_data = apply_lowpass_filter(input_data, f_cutoff, 1/dt)
+            output_data = [apply_lowpass_filter(data, f_cutoff, 1/dt) for data in output_data]
+
             syms = []
             sym_var = list(sym_var)
-
+            
             def tofloat(element):
               try:
                 float(element)
@@ -1004,8 +1043,6 @@
             t_start = float(t_start)
             t_end = float(t_end)
 
-            time_seq_source = np.array(time_data).flatten()/1000000            
-
             F = sp.Matrix(F)
             G = sp.Matrix(G)
             H0 = sp.Matrix(H0)
@@ -1013,8 +1050,9 @@
             bnd = tuple(bounds_array)
             con_str = list(con_str)
 
-
-            simo_iden = FreqIdenSIMO(time_seq_source,2, 10, input_data, *output_data, win_num=None)
+            f_start = float(f_start)
+            f_end = float(f_end)
+            simo_iden = FreqIdenSIMO(time_seq_source, f_start, f_end, input_data, *output_data, win_num=None)
 
             plt.rc("figure", figsize=(15,10))
             plt.figure("pout->udot")
@@ -1037,9 +1075,91 @@
             J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10, bounds = bnd)
             ssm.check_stable()
             ssm_iden.print_res()
-            ssm_iden.draw_freq_res()
-            plt.show()
-          `)
+            #ssm_iden.draw_freq_res()
+            #plt.show()
+            freq_res_data = ssm_iden.get_freq_res_data()
+
+            freq_js = to_js(freq_res_data["freq"])
+            Hs_amp_js = to_js(freq_res_data["Hs_amp"])
+            Hs_pha_js = to_js(freq_res_data["Hs_pha"])
+            Hest_amp_js = to_js(freq_res_data["Hest_amp"])
+            Hest_pha_js = to_js(freq_res_data["Hest_pha"])
+            coherence_js = to_js(freq_res_data["coherence"])
+
+          `);
+          const freq_js = await pyodide.globals.get('freq_js');
+          const Hs_amp_js = await pyodide.globals.get('Hs_amp_js');
+          const Hs_pha_js = await pyodide.globals.get('Hs_pha_js');
+          const Hest_amp_js = await pyodide.globals.get('Hest_amp_js');
+          const Hest_pha_js = await pyodide.globals.get('Hest_pha_js');
+          const coherence_js = await pyodide.globals.get('coherence_js');
+
+          // Plotting using Plotly
+          const traces = [];
+
+          for (let y_index = 0; y_index < Hs_amp_js.length; y_index++) {
+              traces.push(
+                  {
+                      x: freq_js,
+                      y: Hs_amp_js[y_index],
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: `Hs Amp ${y_index}`,
+                      xaxis: 'x1',
+                      yaxis: 'y1'
+                  },
+                  {
+                      x: freq_js,
+                      y: Hest_amp_js[y_index],
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: `Hest Amp ${y_index}`,
+                      xaxis: 'x1',
+                      yaxis: 'y1'
+                  },
+                  {
+                      x: freq_js,
+                      y: Hs_pha_js[y_index],
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: `Hs Pha ${y_index}`,
+                      xaxis: 'x2',
+                      yaxis: 'y2'
+                  },
+                  {
+                      x: freq_js,
+                      y: Hest_pha_js[y_index],
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: `Hest Pha ${y_index}`,
+                      xaxis: 'x2',
+                      yaxis: 'y2'
+                  },
+                  {
+                      x: freq_js,
+                      y: coherence_js[y_index],
+                      type: 'scatter',
+                      mode: 'lines',
+                      name: `Coherence ${y_index}`,
+                      xaxis: 'x3',
+                      yaxis: 'y3'
+                  }
+              );
+          };
+
+          const layout = {
+              title: 'State Space Frequency Response Data',
+              grid: { rows: 3, columns: 1, pattern: 'independent' },
+              xaxis1: { type: 'log', title: 'Frequency (rad/sec)' },
+              yaxis1: { title: 'Amplitude' },
+              xaxis2: { type: 'log', title: 'Frequency (rad/sec)' },
+              yaxis2: { title: 'Phase' },
+              xaxis3: { type: 'log', title: 'Frequency (rad/sec)' },
+              yaxis3: { title: 'Coherence' },
+              legend: { x: 1, xanchor: 'right', y: 1 }
+          };
+
+          Plotly.newPlot('plotDiv_ss', traces, layout);
           };
           reader.readAsArrayBuffer(file);
         }
