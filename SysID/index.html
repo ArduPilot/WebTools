@@ -305,11 +305,6 @@
               option2.text = 'Pitch';
               axisDropdown.appendChild(option2);
 
-              const option3 = document.createElement('option');
-              option3.value = 'Yaw';
-              option3.text = 'Yaw';
-              axisDropdown.appendChild(option3);
-
               const axisLabel = document.createElement('label');
               axisLabel.textContent = 'Axis:';
               axisLabel.style.display = 'none'; // Hidden by default
@@ -898,10 +893,21 @@
               ang_data_arr = Array.from(ang_data)
               ang_data_arr.slice(att_ind1, att_ind2)
               console.log("data field ",outputValues.compensations[i]," pre slicing size: ",data_arr.length)
-
-              for (let i = 0; i < data_arr.length; i++) {
-                data_arr[i] = data_arr[i] + 3.14/180*mult*9.81*ang_data_arr[i];
+              if (outputValues.compensations[i] == "Roll")
+              {
+                for (let j = 0; j < data_arr.length; j++) {
+                  temp_data = data_arr[j]
+                  data_arr[j] = data_arr[j] + 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                }
               }
+              if (outputValues.compensations[i] == "Pitch")
+              {
+                for (let j = 0; j < data_arr.length; j++) {
+                  temp_data = data_arr[j]
+                  data_arr[j] = data_arr[j] - 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                }
+              }
+
               
               console.log("data field ",outputValues.fields[i]," compensation added for axis ",outputValues.compensations[i])
               console.log("data field ",outputValues.fields[i]," post compensation size: ",data_arr.length)
