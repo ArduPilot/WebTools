@@ -2694,7 +2694,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
     const post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 2)) != 0)
     const pre_post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 3)) != 0)
     if (post_filter && pre_post_filter) {
-        allert("Both post and pre+post logging option selected")
+        alert("Both post and pre+post logging option selected")
         post_filter = false
     }
 
