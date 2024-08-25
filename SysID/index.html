@@ -321,6 +321,148 @@
           return sym_vars;
         }
 
+        function setParamValues(vehicle_axis) {
+
+          document.getElementById(`${'param'}_name_${1}`).value = "Yv";
+          document.getElementById(`${'param'}_name_${2}`).value = "Ylat";
+          document.getElementById(`${'param'}_name_${3}`).value = "Lv";
+          document.getElementById(`${'param'}_name_${4}`).value = "Llat";
+          document.getElementById(`${'param'}_name_${5}`).value = "wlag";
+          document.getElementById(`${'param'}_name_${6}`).value = "wlg";
+
+        }
+
+        function setInputFields(vehicle_axis) {
+          document.getElementById(`${'input'}_name_${1}`).value = "RATE";
+          document.getElementById(`${'input'}_field_${1}`).value = "ROut";
+        }
+
+        function setOutputFields(vehicle_axis) {
+          document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
+          document.getElementById(`${'output'}_field_${1}`).value = "Gx";
+          document.getElementById(`multiplier_checkbox_${1}`).checked = true;
+          document.getElementById(`multiplier_${1}`).style.display = "block";
+          document.getElementById(`multiplier_${1}`).value ="0.01745";
+          document.getElementById(`${'output'}_name_${2}`).value = "SIDD";
+          document.getElementById(`${'output'}_field_${2}`).value = "Ay";
+          document.getElementById(`compensation_checkbox_${2}`).checked = true;
+          document.getElementById(`axis_dropdown_${2}`).style.display = "block";
+          document.getElementById(`axis_dropdown_${2}`).value = "Roll";
+        }
+
+        function setBounds(vehicle_axis) {
+          //Yv
+          document.getElementById(`${`Bound`}_min_${1}`).value = "-1";
+          document.getElementById(`${`Bound`}_max_${1}`).value = "0";
+          //Ylat
+          document.getElementById(`${`Bound`}_min_${2}`).value = "-30";
+          document.getElementById(`${`Bound`}_max_${2}`).value = "30";
+          //Lv
+          document.getElementById(`${`Bound`}_min_${3}`).value = "-10";
+          document.getElementById(`${`Bound`}_max_${3}`).value = "0";
+          //Llat
+          document.getElementById(`${`Bound`}_min_${4}`).value = "50";
+          document.getElementById(`${`Bound`}_max_${4}`).value = "200";
+          //wlag
+          document.getElementById(`${`Bound`}_min_${5}`).value = "-50";
+          document.getElementById(`${`Bound`}_max_${5}`).value = "0";
+          //wlg
+          document.getElementById(`${`Bound`}_min_${6}`).value = "0";
+          document.getElementById(`${`Bound`}_max_${6}`).value = "50";
+        }
+
+        function setMatrixA(vehicle_axis) {
+          rows = 4;
+          cols = 4;
+          for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+              // Construct the selector for each input field
+              const cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${i}_c${j}]`;
+              const inputElement = document.querySelector(cellSelector);
+              inputElement.value = "0";
+            }
+          }
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${0}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "Yv";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${2}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "9.81";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${3}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "Ylat";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${1}_c${0}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "Lv";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${1}_c${3}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "Llat";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${2}_c${3}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "1";
+
+          cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${3}_c${3}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "wlag";
+
+        }
+
+        function setMatrixB(vehicle_axis) {
+          rows = 4;
+          cols = 1;
+          for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+              // Construct the selector for each input field
+              const cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${i}_c${j}]`;
+              const inputElement = document.querySelector(cellSelector);
+              inputElement.value = "0";
+            }
+          }
+          cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${3}_c${0}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "wlg";
+
+        }
+
+        function setH0(vehicle_axis) {
+          rows = 2;
+          cols = 4;
+          for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+              // Construct the selector for each input field
+              const cellSelector = `#${'H0'} input[name=${'H0'}_r${i}_c${j}]`;
+              const inputElement = document.querySelector(cellSelector);
+              inputElement.value = "0";
+            }
+          }
+          cellSelector = `#${'H0'} input[name=${'H0'}_r${0}_c${1}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "1";
+
+        }
+
+        function setH1(vehicle_axis) {
+          rows = 2;
+          cols = 4;
+          for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+              // Construct the selector for each input field
+              const cellSelector = `#${'H1'} input[name=${'H1'}_r${i}_c${j}]`;
+              const inputElement = document.querySelector(cellSelector);
+              inputElement.value = "0";
+            }
+          }
+          cellSelector = `#${'H1'} input[name=${'H1'}_r${1}_c${0}]`;
+          inputElement = document.querySelector(cellSelector);
+          inputElement.value = "1";
+
+        }
+
         function getFieldValues(prefix, numFields) {
           const names = [];
           const fields = [];
@@ -360,6 +502,12 @@
           }
           return ans;
         }
+
+        function setConstraintList(vehicle_axis) {
+          document.getElementById(`${`Constraint`}_A_${1}`).value = "A_3_3"
+          document.getElementById(`${`Constraint`}_B_${1}`).value = "-B_3_0"
+        }
+
         function getBounds(numParams) {
           ans = []
           bound_min = []
@@ -455,11 +603,17 @@
 
         document.getElementById("ss_checkbox").addEventListener("change", function () {
         if (this.checked) {
+          // set presets
+          document.getElementById('num_Outputs').value = "2"
+	        document.getElementById('num_params').value = "6"
+          document.getElementById('A_order').value = "4"
+          document.getElementById('num_cons').value = "1"
+
           document.getElementById("tf_checkbox").checked = false;
           document.getElementById("ss_form").style.display = "block";
           document.getElementById("tf_form").style.display = "none";
-          document.getElementById('createFieldsButton').addEventListener('click', function () {
           
+          document.getElementById('createFieldsButton').addEventListener('click', function () {
           const numOutputs = parseInt(document.getElementById('num_Outputs').value, 10);
           const num_params = parseInt(document.getElementById('num_params').value, 10);
           const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
@@ -475,6 +629,11 @@
           createBoundsField('boundsContainer',' Bound',num_params);
           createConstraintsField('constraintsinput', 'Constraint',num_constraints)
 
+          setParamValues(1);
+          setConstraintList(1);
+          setInputFields(1);
+          setOutputFields(1);
+        
           const orderA = parseInt(document.getElementById('A_order').value, 10);
 
           if (isNaN(orderA) || orderA < 1) {
@@ -486,6 +645,13 @@
           createMatrixTable('matrixB', orderA, 1);
           createMatrixTable('H0',numOutputs, orderA);
           createMatrixTable('H1',numOutputs, orderA);
+
+          setMatrixA(1);
+          setMatrixB(1);
+          setH0(1);
+          setH1(1);
+          setBounds(1);
+
         });
         } else {
           document.getElementById("ss_form").style.display = "none";
