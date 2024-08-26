@@ -51,7 +51,8 @@
     <!-- FOR STATE SPACE MODEL -->
     <div id="ss_form" style="display:none;">
 
-    
+      <div id="autopopulateContainer"></div>
+      <br><br>
 
       <label for="No. of Outputs">Outputs:</label>
       <input type="number" id="num_Outputs" name="Outputs">
@@ -132,6 +133,38 @@
           output.value += message + "\n";
         }
 
+        function createautopopulate(containerId) {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+
+          const axisDropdown = document.createElement('select');
+          axisDropdown.id = `axis_dropdown_${1}`;
+          axisDropdown.name = `axis_dropdown_${1}`;
+          axisDropdown.style.display = 'block'; // Hidden by default
+
+          const option1 = document.createElement('option');
+          option1.value = 'manual';
+          option1.text = 'Manual Entry';
+          axisDropdown.appendChild(option1);
+
+          const option2 = document.createElement('option');
+          option2.value = 'MR_Roll';
+          option2.text = 'Multirotor Roll';
+          axisDropdown.appendChild(option2);
+
+          const option3 = document.createElement('option');
+          option3.value = 'MR_Pitch';
+          option3.text = 'Multirotor Pitch';
+          axisDropdown.appendChild(option3);
+
+          const axisLabel = document.createElement('label');
+          axisLabel.textContent = 'Enter fields or select to pre-populate fields:';
+          axisLabel.style.display = 'block'; // Hidden by default
+          container.appendChild(axisLabel);
+          container.appendChild(axisDropdown);
+        }
+
+
         function createMatrixTable(tableId, rows, cols, labelname) {
 
           const container = document.getElementById(`${tableId}label`);
@@ -145,13 +178,13 @@
           table.innerHTML = ''; // Clear any existing cells
 
           for (let i = 0; i < rows; i++) {
-          const row = table.insertRow();
-          for (let j = 0; j < cols; j++) {
-            const cell = row.insertCell();
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.name = `${tableId}_r${i}_c${j}`;
-            cell.appendChild(input);
+            const row = table.insertRow();
+            for (let j = 0; j < cols; j++) {
+              const cell = row.insertCell();
+              const input = document.createElement('input');
+              input.type = 'text';
+              input.name = `${tableId}_r${i}_c${j}`;
+              cell.appendChild(input);
             }
           }
         }
@@ -536,15 +569,15 @@
           }
 
           while (low <= high) {
-              let mid = Math.floor(low + (high - low) / 2);
+            let mid = Math.floor(low + (high - low) / 2);
 
-              if (arr[mid] === target) {
-                  return mid;
-              } else if (arr[mid] < target) {
-                  low = mid + 1;
-              } else {
-                  high = mid - 1;
-              }
+            if (arr[mid] === target) {
+                return mid;
+            } else if (arr[mid] < target) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
           }
 
           // Now low and high are neighbors around the target
@@ -557,105 +590,102 @@
 
           // Return the index with the closest value to the target
           return Math.abs(arr[low] - target) < Math.abs(arr[high] - target) ? low : high;
-      }
+        }
 
         function getMatrixValues(matrixId, rows, cols) {
           const values = [];
           for (let i = 0; i < rows; i++) {
             const row = [];
             for (let j = 0; j < cols; j++) {
-            // Construct the selector for each input field
-            const cellSelector = `#${matrixId} input[name=${matrixId}_r${i}_c${j}]`;
-            const inputElement = document.querySelector(cellSelector);
+              // Construct the selector for each input field
+              const cellSelector = `#${matrixId} input[name=${matrixId}_r${i}_c${j}]`;
+              const inputElement = document.querySelector(cellSelector);
 
-            if (inputElement) {
-              const cellValue = inputElement.value.trim();
+              if (inputElement) {
+                const cellValue = inputElement.value.trim();
 
-              // Check if the value is numeric
-              if (!isNaN(cellValue) && cellValue !== '') {
-                row.push(parseFloat(cellValue)); // Convert to number
-              } else if (cellValue !== '') {
+                // Check if the value is numeric
+                if (!isNaN(cellValue) && cellValue !== '') {
+                  row.push(parseFloat(cellValue)); // Convert to number
+                } else if (cellValue !== '') {
                   row.push(cellValue); // Keep as string for symbolic/text values
-              } else {
+                } else {
                   row.push(null); // Handle empty inputs
+                }
+              } else {
+                row.push(null); // Handle cases where the input field might not exist
               }
-            } else {
-          row.push(null); // Handle cases where the input field might not exist
+            }
+            values.push(row);
+          }
+          return values;          
         }
-      }
-      values.push(row);
-    }
-    return values;
-          
-        }
-
-
 
         document.getElementById("tf_checkbox").addEventListener("change", function () {
-        if (this.checked) {
-          document.getElementById("ss_checkbox").checked = false;
-          document.getElementById("tf_form").style.display = "block";
-          document.getElementById("ss_form").style.display = "none";
-        } else {
-          document.getElementById("tf_form").style.display = "none";
-        }
+          if (this.checked) {
+            document.getElementById("ss_checkbox").checked = false;
+            document.getElementById("tf_form").style.display = "block";
+            document.getElementById("ss_form").style.display = "none";
+          } else {
+            document.getElementById("tf_form").style.display = "none";
+          }
         });
 
         document.getElementById("ss_checkbox").addEventListener("change", function () {
-        if (this.checked) {
-          // set presets
-          document.getElementById('num_Outputs').value = "2"
-	        document.getElementById('num_params').value = "6"
-          document.getElementById('A_order').value = "4"
-          document.getElementById('num_cons').value = "1"
+          if (this.checked) {
+            createautopopulate('autopopulateContainer');
+            // set presets
+            document.getElementById("tf_checkbox").checked = false;
+            document.getElementById("ss_form").style.display = "block";
+            document.getElementById("tf_form").style.display = "none";
+            
+            document.getElementById('createFieldsButton').addEventListener('click', function () {
+              const numOutputs = parseInt(document.getElementById('num_Outputs').value, 10);
+              const num_params = parseInt(document.getElementById('num_params').value, 10);
+              const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
-          document.getElementById("tf_checkbox").checked = false;
-          document.getElementById("ss_form").style.display = "block";
-          document.getElementById("tf_form").style.display = "none";
-          
-          document.getElementById('createFieldsButton').addEventListener('click', function () {
-          const numOutputs = parseInt(document.getElementById('num_Outputs').value, 10);
-          const num_params = parseInt(document.getElementById('num_params').value, 10);
-          const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
+              if (isNaN(numOutputs) || numOutputs <= 0) {
+                alert('Please enter valid numbers for inputs and outputs.');
+                return;
+              }
 
-          if (isNaN(numOutputs) || numOutputs <= 0) {
-            alert('Please enter valid numbers for inputs and outputs.');
-            return;
+              document.getElementById('num_Outputs').value = "2"
+              document.getElementById('num_params').value = "6"
+              document.getElementById('A_order').value = "4"
+              document.getElementById('num_cons').value = "1"
+
+              createInputFields('inputFieldsContainer', 'Input', 'input', 1);
+              createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true, true);
+              createsymbolicfields('symbolicparams',' Param',num_params);
+              createBoundsField('boundsContainer',' Bound',num_params);
+              createConstraintsField('constraintsinput', 'Constraint',num_constraints)
+
+              setParamValues(1);
+              setConstraintList(1);
+              setInputFields(1);
+              setOutputFields(1);
+            
+              const orderA = parseInt(document.getElementById('A_order').value, 10);
+
+              if (isNaN(orderA) || orderA < 1) {
+                alert('Please enter valid numbers for inputs and outputs.');
+                return;
+              }
+
+              createMatrixTable('matrixA', orderA, orderA, 'Matrix A');
+              createMatrixTable('matrixB', orderA, 1, 'Matrix B');
+              createMatrixTable('H0',numOutputs, orderA, 'H0');
+              createMatrixTable('H1',numOutputs, orderA, 'H1');
+
+              setMatrixA(1);
+              setMatrixB(1);
+              setH0(1);
+              setH1(1);
+              setBounds(1);
+            });
+          } else {
+            document.getElementById("ss_form").style.display = "none";
           }
-
-          createInputFields('inputFieldsContainer', 'Input', 'input', 1);
-          createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true, true);
-          createsymbolicfields('symbolicparams',' Param',num_params);
-          createBoundsField('boundsContainer',' Bound',num_params);
-          createConstraintsField('constraintsinput', 'Constraint',num_constraints)
-
-          setParamValues(1);
-          setConstraintList(1);
-          setInputFields(1);
-          setOutputFields(1);
-        
-          const orderA = parseInt(document.getElementById('A_order').value, 10);
-
-          if (isNaN(orderA) || orderA < 1) {
-            alert('Please enter valid numbers for inputs and outputs.');
-            return;
-          }
-
-          createMatrixTable('matrixA', orderA, orderA, 'Matrix A');
-          createMatrixTable('matrixB', orderA, 1, 'Matrix B');
-          createMatrixTable('H0',numOutputs, orderA, 'H0');
-          createMatrixTable('H1',numOutputs, orderA, 'H1');
-
-          setMatrixA(1);
-          setMatrixB(1);
-          setH0(1);
-          setH1(1);
-          setBounds(1);
-
-        });
-        } else {
-          document.getElementById("ss_form").style.display = "none";
-        }
         });
 
 
@@ -712,621 +742,613 @@
           const fileInput = document.getElementById('fileInput');
           const tfCheckbox = document.getElementById('tf_checkbox').checked;
           const ssCheckbox = document.getElementById('ss_checkbox').checked;
-          if(tfCheckbox)
-          {
-          const inputname = document.getElementById('input_name').value.trim();
-          const inputField = document.getElementById('input_field').value.trim();
-          const outputname = document.getElementById('output_name').value.trim();
-          const outputField = document.getElementById('output_field').value.trim();
-          const Numerator = document.getElementById('customNumerator').value.trim();
-          const Denominator = document.getElementById('customDenominator').value.trim();
-          const symbolic_var = document.getElementById('tf_params').value.trim();
-          const t_start = document.getElementById('starttime').value.trim();
-          const t_end = document.getElementById('endtime').value.trim();
-          const f_start = document.getElementById('startfreq').value.trim();
-          const f_end = document.getElementById('endfreq').value.trim();
-          const f_cutoff = document.getElementById('cutofffreq').value.trim();
+          if(tfCheckbox) {
+            const inputname = document.getElementById('input_name').value.trim();
+            const inputField = document.getElementById('input_field').value.trim();
+            const outputname = document.getElementById('output_name').value.trim();
+            const outputField = document.getElementById('output_field').value.trim();
+            const Numerator = document.getElementById('customNumerator').value.trim();
+            const Denominator = document.getElementById('customDenominator').value.trim();
+            const symbolic_var = document.getElementById('tf_params').value.trim();
+            const t_start = document.getElementById('starttime').value.trim();
+            const t_end = document.getElementById('endtime').value.trim();
+            const f_start = document.getElementById('startfreq').value.trim();
+            const f_end = document.getElementById('endfreq').value.trim();
+            const f_cutoff = document.getElementById('cutofffreq').value.trim();
 
-          const output = document.getElementById('output');
+            const output = document.getElementById('output');
 
-          if (fileInput.files.length === 0) {
-            alert('Please select a log file');
-            return;
-          }
+            if (fileInput.files.length === 0) {
+              alert('Please select a log file');
+              return;
+            }
 
-          if (!inputField || !outputField) {
-            alert('Please enter input and output fields');
-            return;
-          }
+            if (!inputField || !outputField) {
+              alert('Please enter input and output fields');
+              return;
+            }
 
-          const file = fileInput.files[0];
-          const reader = new FileReader();
-          reader.onload = async function (event) {
-          const logData = event.target.result;
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function (event) {
+              const logData = event.target.result;
 
-          const parser = new DataflashParser();
-          parser.processData(logData);
-          addToOutput("File Submitted successfully. Please wait!!!!!!");
-          const timeData1 = parser.get(inputname,"TimeUS");            
-          const fieldData1 = parser.get(inputname,inputField);
-          const timeData2 = parser.get(outputname,"TimeUS");
-          const fieldData2 = parser.get(outputname,outputField);
-          const Mode = parser.get("MODE","Mode")
+              const parser = new DataflashParser();
+              parser.processData(logData);
+              addToOutput("File Submitted successfully. Please wait!!!!!!");
+              const timeData1 = parser.get(inputname,"TimeUS");            
+              const fieldData1 = parser.get(inputname,inputField);
+              const timeData2 = parser.get(outputname,"TimeUS");
+              const fieldData2 = parser.get(outputname,outputField);
+              const Mode = parser.get("MODE","Mode")
 
-          await pyodide.globals.set("input_data", fieldData1);
-          await pyodide.globals.set("output_data", fieldData2);
-          await pyodide.globals.set("time_data_in", timeData1);
-          await pyodide.globals.set("time_data_out", timeData2);
-          await pyodide.globals.set("input_field",inputField);
-          await pyodide.globals.set("output_field",outputField);
-          await pyodide.globals.set("numerator", Numerator);
-          await pyodide.globals.set("denominator", Denominator);
-          await pyodide.globals.set("symbols",symbolic_var);
-          await pyodide.globals.set("t_start",t_start);
-          await pyodide.globals.set("t_end",t_end)
-          await pyodide.globals.set("f_start",f_start);
-          await pyodide.globals.set("f_end",f_end);
-          await pyodide.globals.set("f_cutoff",f_cutoff);
+              await pyodide.globals.set("input_data", fieldData1);
+              await pyodide.globals.set("output_data", fieldData2);
+              await pyodide.globals.set("time_data_in", timeData1);
+              await pyodide.globals.set("time_data_out", timeData2);
+              await pyodide.globals.set("input_field",inputField);
+              await pyodide.globals.set("output_field",outputField);
+              await pyodide.globals.set("numerator", Numerator);
+              await pyodide.globals.set("denominator", Denominator);
+              await pyodide.globals.set("symbols",symbolic_var);
+              await pyodide.globals.set("t_start",t_start);
+              await pyodide.globals.set("t_end",t_end)
+              await pyodide.globals.set("f_start",f_start);
+              await pyodide.globals.set("f_end",f_end);
+              await pyodide.globals.set("f_cutoff",f_cutoff);
 
-          
-          await pyodide.runPython(`
-            from pyodide.ffi import to_js
-            import numpy as np
-            import math
-            from scipy.signal import butter,filtfilt
-            import sympy as sp
-            from AircraftIden import FreqIdenSIMO, TransferFunctionFit, TransferFunctionParamModel
-            from AircraftIden.TransferFunctionFit import plot_fitter
-            from AircraftIden.FreqIden import time_seq_preprocess
-            import matplotlib
-            plt = matplotlib.pyplot
-            t_start = float(t_start)
-            t_end = float(t_end)
-            f_start = float(f_start)
-            f_end = float(f_end)
-            f_cutoff = float(f_cutoff)/(2*3.14)
-            matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
             
-            def butter_lowpass(cutoff, fs, order=5):
-              nyquist = 0.5 * fs
-              normal_cutoff = cutoff / nyquist
-              b, a = butter(order, normal_cutoff, btype='low', analog=False)
-              return b, a
+              await pyodide.runPython(`
+                from pyodide.ffi import to_js
+                import numpy as np
+                import math
+                from scipy.signal import butter,filtfilt
+                import sympy as sp
+                from AircraftIden import FreqIdenSIMO, TransferFunctionFit, TransferFunctionParamModel
+                from AircraftIden.TransferFunctionFit import plot_fitter
+                from AircraftIden.FreqIden import time_seq_preprocess
+                import matplotlib
+                plt = matplotlib.pyplot
+                t_start = float(t_start)
+                t_end = float(t_end)
+                f_start = float(f_start)
+                f_end = float(f_end)
+                f_cutoff = float(f_cutoff)/(2*3.14)
+                matplotlib.use("module://matplotlib_pyodide.html5_canvas_backend")
+                
+                def butter_lowpass(cutoff, fs, order=5):
+                  nyquist = 0.5 * fs
+                  normal_cutoff = cutoff / nyquist
+                  b, a = butter(order, normal_cutoff, btype='low', analog=False)
+                  return b, a
 
 
-            def apply_lowpass_filter(data, cutoff, fs, order=5):
-              b, a = butter_lowpass(cutoff, fs, order=order)
-              y = filtfilt(b, a, data)
-              return y
+                def apply_lowpass_filter(data, cutoff, fs, order=5):
+                  b, a = butter_lowpass(cutoff, fs, order=order)
+                  y = filtfilt(b, a, data)
+                  return y
 
-            time_seq_source_in = np.array(time_data_in).flatten()/1000000
-            ind1 = 0
-            ind2 = time_seq_source_in.size
+                time_seq_source_in = np.array(time_data_in).flatten()/1000000
+                ind1 = 0
+                ind2 = time_seq_source_in.size
 
-            for i in range(time_seq_source_in.size):
-              if time_seq_source_in[i] == t_start or (time_seq_source_in[i] < t_start and time_seq_source_in[i+1] > t_start):
-                ind1 = i
-              
-              if time_seq_source_in[i] == t_end or (time_seq_source_in[i] < t_end and time_seq_source_in[i+1] > t_end):
-                ind2 = i
-                break
+                for i in range(time_seq_source_in.size):
+                  if time_seq_source_in[i] == t_start or (time_seq_source_in[i] < t_start and time_seq_source_in[i+1] > t_start):
+                    ind1 = i
+                  
+                  if time_seq_source_in[i] == t_end or (time_seq_source_in[i] < t_end and time_seq_source_in[i+1] > t_end):
+                    ind2 = i
+                    break
 
-            print("start index: ",ind1," end index: ",ind2)
-            time_seq_source_in = time_seq_source_in[ind1:ind2]
-            print("no error in time_seq: ", time_seq_source_in.size)
-            yout_source = np.array(input_data).flatten()
-            yout_source = yout_source[ind1:ind2]
-            print("no error in yout: ", yout_source.size)
+                print("start index: ",ind1," end index: ",ind2)
+                time_seq_source_in = time_seq_source_in[ind1:ind2]
+                print("no error in time_seq: ", time_seq_source_in.size)
+                yout_source = np.array(input_data).flatten()
+                yout_source = yout_source[ind1:ind2]
+                print("no error in yout: ", yout_source.size)
 
-            time_seq_source_out = np.array(time_data_out).flatten()/1000000
-            ind1 = 0
-            ind2 = time_seq_source_out.size
+                time_seq_source_out = np.array(time_data_out).flatten()/1000000
+                ind1 = 0
+                ind2 = time_seq_source_out.size
 
-            for i in range(time_seq_source_out.size):
-              if time_seq_source_out[i] == t_start or (time_seq_source_out[i] < t_start and time_seq_source_out[i+1] > t_start):
-                ind1 = i
-              
-              if time_seq_source_out[i] == t_end or (time_seq_source_out[i] < t_end and time_seq_source_out[i+1] > t_end):
-                ind2 = i
-                break
+                for i in range(time_seq_source_out.size):
+                  if time_seq_source_out[i] == t_start or (time_seq_source_out[i] < t_start and time_seq_source_out[i+1] > t_start):
+                    ind1 = i
+                  
+                  if time_seq_source_out[i] == t_end or (time_seq_source_out[i] < t_end and time_seq_source_out[i+1] > t_end):
+                    ind2 = i
+                    break
 
-            print("start index: ",ind1," end index: ",ind2)
-            time_seq_source_out = time_seq_source_out[ind1:ind2]
-            print("no error in time_seq: ", time_seq_source_out.size)
+                print("start index: ",ind1," end index: ",ind2)
+                time_seq_source_out = time_seq_source_out[ind1:ind2]
+                print("no error in time_seq: ", time_seq_source_out.size)
 
-            gz_source = np.array(output_data).flatten()
-            gz_source = gz_source[ind1:ind2]
-            dt = np.mean(np.diff(time_seq_source_in))
+                gz_source = np.array(output_data).flatten()
+                gz_source = gz_source[ind1:ind2]
+                dt = np.mean(np.diff(time_seq_source_in))
 
-            u = apply_lowpass_filter(yout_source, f_cutoff, 1/dt)
-            y = apply_lowpass_filter(gz_source, f_cutoff, 1/dt)            
-            simo_iden = FreqIdenSIMO(time_seq_source_in,f_start, f_end, u, y, win_num=None)
+                u = apply_lowpass_filter(yout_source, f_cutoff, 1/dt)
+                y = apply_lowpass_filter(gz_source, f_cutoff, 1/dt)            
+                simo_iden = FreqIdenSIMO(time_seq_source_in,f_start, f_end, u, y, win_num=None)
 
-            plt.rc("figure", figsize=(15,10))
-            plt.figure("pout->udot")
-            simo_iden.plt_bode_plot(0)
+                plt.rc("figure", figsize=(15,10))
+                plt.figure("pout->udot")
+                simo_iden.plt_bode_plot(0)
 
-            s = sp.symbols("s")
-            tau = sp.symbols("tau")
-            
-            freq, H, gamma2, gxx, gxy, gyy = simo_iden.get_freq_iden(0)
+                s = sp.symbols("s")
+                tau = sp.symbols("tau")
+                
+                freq, H, gamma2, gxx, gxy, gyy = simo_iden.get_freq_iden(0)
 
-            tf_params = sp.symbols(str(symbols))
-            num = sp.simplify(str(numerator))
-            den = sp.simplify(str(denominator))
-            tfpm = TransferFunctionParamModel(num, den, tau)
-            fitter = TransferFunctionFit(freq, H, gamma2, tfpm, nw=20, iter_times=1, reg = 0.1)
-            init_val = fitter.setup_initvals_ARX(num, den, u, y, dt)
+                tf_params = sp.symbols(str(symbols))
+                num = sp.simplify(str(numerator))
+                den = sp.simplify(str(denominator))
+                tfpm = TransferFunctionParamModel(num, den, tau)
+                fitter = TransferFunctionFit(freq, H, gamma2, tfpm, nw=20, iter_times=1, reg = 0.1)
+                init_val = fitter.setup_initvals_ARX(num, den, u, y, dt)
 
-            tf = fitter.estimate(f_start, f_end, accept_J=100, init_val=init_val)
-            num, den, tau = fitter.get_coefficients()
-            print("numerator: ",num)
-            print("denominator: ",den)
-            print("tau: ",tau)
-            #plot_fitter(fitter,str(input_field)+"->"+str(output_field))
-            #plt.show()
-            H, freq, mag, phase, h_amp, h_phase, coherence = fitter.provide_plot_arrays()
+                tf = fitter.estimate(f_start, f_end, accept_J=100, init_val=init_val)
+                num, den, tau = fitter.get_coefficients()
+                print("numerator: ",num)
+                print("denominator: ",den)
+                print("tau: ",tau)
+                #plot_fitter(fitter,str(input_field)+"->"+str(output_field))
+                #plt.show()
+                H, freq, mag, phase, h_amp, h_phase, coherence = fitter.provide_plot_arrays()
 
-            # Export arrays to JavaScript
-            H_js = to_js(H.tolist())
-            freq_js = to_js(freq.tolist())
-            mag_js = to_js(mag.tolist())
-            phase_js = to_js(phase.tolist())
-            h_amp_js = to_js(h_amp.tolist())
-            h_phase_js = to_js(h_phase.tolist())
-            coherence_js = to_js(coherence.tolist())
+                # Export arrays to JavaScript
+                H_js = to_js(H.tolist())
+                freq_js = to_js(freq.tolist())
+                mag_js = to_js(mag.tolist())
+                phase_js = to_js(phase.tolist())
+                h_amp_js = to_js(h_amp.tolist())
+                h_phase_js = to_js(h_phase.tolist())
+                coherence_js = to_js(coherence.tolist())
 
-          `);
-          const H_js = await pyodide.globals.get('H_js');
-          const freq_js = await pyodide.globals.get('freq_js');
-          const mag_js = await pyodide.globals.get('mag_js');
-          const phase_js = await pyodide.globals.get('phase_js');
-          const h_amp_js = await pyodide.globals.get('h_amp_js');
-          const h_phase_js = await pyodide.globals.get('h_phase_js');
-          const coherence_js = await pyodide.globals.get('coherence_js');
+              `);
+              const H_js = await pyodide.globals.get('H_js');
+              const freq_js = await pyodide.globals.get('freq_js');
+              const mag_js = await pyodide.globals.get('mag_js');
+              const phase_js = await pyodide.globals.get('phase_js');
+              const h_amp_js = await pyodide.globals.get('h_amp_js');
+              const h_phase_js = await pyodide.globals.get('h_phase_js');
+              const coherence_js = await pyodide.globals.get('coherence_js');
 
-          const traces = [
-            {
-              x: freq_js,
-              y: h_amp_js,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'source H Amp',
-              xaxis: 'x1',
-              yaxis: 'y1'
-            },
-            {
-              x: freq_js,
-              y: mag_js,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'fit H Amp',
-              xaxis: 'x1',
-              yaxis: 'y1'
-            },
-            {
-              x: freq_js,
-              y: h_phase_js,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'source H Phase',
-              xaxis: 'x2',
-              yaxis: 'y2'
-            },
-            {
-              x: freq_js,
-              y: phase_js,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'fit H Phase',
-              xaxis: 'x2',
-              yaxis: 'y2'
-            },
-            {
-              x: freq_js,
-              y: coherence_js,
-              type: 'scatter',
-              mode: 'lines',
-              name: 'Coherence of xy',
-              xaxis: 'x3',
-              yaxis: 'y3'
-            }
-          ];
-
-          const layout = {
-            title: 'Frequency Response Data',
-            grid: { rows: 3, columns: 1, pattern: 'independent' },
-            xaxis1: {
-              type: 'log',
-              title: 'Frequency (rad/sec)'
-            },
-            yaxis1: {
-              title: 'H Amp'
-            },
-            xaxis2: {
-              type: 'log',
-              title: 'Frequency (rad/sec)'
-            },
-            yaxis2: {
-              title: 'H Phase'
-            },
-            xaxis3: {
-              type: 'log',
-              title: 'Frequency (rad/sec)'
-            },
-            yaxis3: {
-              title: 'Coherence'
-            },
-            legend: {
-              x: 1,
-              xanchor: 'right',
-              y: 1
-            }
-        };
-        Plotly.newPlot('plotDiv', traces, layout);
-      };
-          reader.readAsArrayBuffer(file); 
-    }
-        else if(ssCheckbox)
-        {
-          if (fileInput.files.length === 0) {
-            alert('Please select a log file');
-            return;
-          }
-          console.debug("In state space loop");
-          const file = fileInput.files[0];
-          const reader = new FileReader();
-          console.debug("File reader initialized")
-          reader.onload = async function (event) {
-          const logData = event.target.result;
-
-          const parser = new DataflashParser();
-          parser.processData(logData);
-          addToOutput("File Submitted successfully. Please wait!!!!!!");
-          const numOutputs = parseInt(document.getElementById('num_Outputs').value.trim());
-          const orderA = parseInt(document.getElementById('A_order').value, 10);
-          const numParams = parseInt(document.getElementById('num_params').value, 10);
-
-
-          if (isNaN(numOutputs) || numOutputs <= 0) {
-            alert('Please enter valid numbers for inputs and outputs.');
-            return;
-          }
-          const inputValues = getFieldValues('input', 1);
-          const outputValues = getFieldValues('output', numOutputs);
-          const symbolic_var = getParamValues(numParams);
-          const t_start_ss = parseFloat(document.getElementById('starttime').value.trim(), 10);
-          const t_end_ss = parseFloat(document.getElementById('endtime').value.trim(), 10);
-          const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
-
-
-          let outputData = [];
-          let timeData_arr = parser.get(inputValues.names[0], "TimeUS");
-          const ind1_i = nearestIndex(timeData_arr, t_start_ss*1000000);
-          const ind2_i = nearestIndex(timeData_arr, t_end_ss*1000000);
-          console.log("ind1: ",ind1_i," ind2: ",ind2_i);
-
-          timeData = Array.from(timeData_arr);
-          console.log("time field pre slicing size: ",timeData.length);
-
-          timeData = timeData.slice(ind1_i, ind2_i);
-          console.log("time field post slicing size: ",timeData.length);
-
-          ///TODO/// multi-input configuration
-          let inputData = Array.from(parser.get(inputValues.names[0], inputValues.fields[0]));
-          console.log("input field pre slicing size: ",inputData.length);
-
-          inputData = inputData.slice(ind1_i, ind2_i);
-          console.log("input field post slicing size: ",inputData.length);
-
-
-          for (let i = 0; i < numOutputs; i++) {
-            const t_data = parser.get(outputValues.names[i], "TimeUS")
-            const ind1_d = nearestIndex(t_data, t_start_ss*1000000)
-            const ind2_d = nearestIndex(t_data, t_end_ss*1000000)
-            let data = parser.get(outputValues.names[i], outputValues.fields[i]);
-            let data_arr = Array.from(data)
-            console.log("data field ",outputValues.fields[i]," pre slicing size: ",data_arr.length)
-            console.log("ind1: ",ind1_d," ind2: ",ind2_d)
-            data_arr = data_arr.slice(ind1_d, ind2_d);
-            console.log("data field ",outputValues.fields[i]," post slicing size: ",data_arr.length)
-
-
-            if (outputValues.multipliers[i]) {
-              const multiplier = parseFloat(outputValues.multipliers[i]);
-              data_arr = data_arr.map(value => value * multiplier);
-            }
-
-            if (outputValues.compensations[i]) {
-              const ATT_t_data = parser.get("ATT", "TimeUS")
-              
-              const att_ind1 = nearestIndex(ATT_t_data, t_start_ss*1000000)
-              const att_ind2 = nearestIndex(ATT_t_data, t_end_ss*1000000)
-              let mult = 1;
-              if (outputValues.multipliers[i])
-              {
-                mult = parseFloat(outputValues.multipliers[i]);
-              }
-              let ang_data = parser.get("ATT", outputValues.compensations[i])
-              ang_data_arr = Array.from(ang_data)
-              ang_data_arr.slice(att_ind1, att_ind2)
-              console.log("data field ",outputValues.compensations[i]," pre slicing size: ",data_arr.length)
-              if (outputValues.compensations[i] == "Roll")
-              {
-                for (let j = 0; j < data_arr.length; j++) {
-                  temp_data = data_arr[j]
-                  data_arr[j] = data_arr[j] + 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+              const traces = [
+                {
+                  x: freq_js,
+                  y: h_amp_js,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'source H Amp',
+                  xaxis: 'x1',
+                  yaxis: 'y1'
+                },
+                {
+                  x: freq_js,
+                  y: mag_js,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'fit H Amp',
+                  xaxis: 'x1',
+                  yaxis: 'y1'
+                },
+                {
+                  x: freq_js,
+                  y: h_phase_js,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'source H Phase',
+                  xaxis: 'x2',
+                  yaxis: 'y2'
+                },
+                {
+                  x: freq_js,
+                  y: phase_js,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'fit H Phase',
+                  xaxis: 'x2',
+                  yaxis: 'y2'
+                },
+                {
+                  x: freq_js,
+                  y: coherence_js,
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Coherence of xy',
+                  xaxis: 'x3',
+                  yaxis: 'y3'
                 }
-              }
-              if (outputValues.compensations[i] == "Pitch")
-              {
-                for (let j = 0; j < data_arr.length; j++) {
-                  temp_data = data_arr[j]
-                  data_arr[j] = data_arr[j] - 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+              ];
+
+              const layout = {
+                title: 'Frequency Response Data',
+                grid: { rows: 3, columns: 1, pattern: 'independent' },
+                xaxis1: {
+                  type: 'log',
+                  title: 'Frequency (rad/sec)'
+                },
+                yaxis1: {
+                  title: 'H Amp'
+                },
+                xaxis2: {
+                  type: 'log',
+                  title: 'Frequency (rad/sec)'
+                },
+                yaxis2: {
+                  title: 'H Phase'
+                },
+                xaxis3: {
+                  type: 'log',
+                  title: 'Frequency (rad/sec)'
+                },
+                yaxis3: {
+                  title: 'Coherence'
+                },
+                legend: {
+                  x: 1,
+                  xanchor: 'right',
+                  y: 1
                 }
-              }
-
-              
-              console.log("data field ",outputValues.fields[i]," compensation added for axis ",outputValues.compensations[i])
-              console.log("data field ",outputValues.fields[i]," post compensation size: ",data_arr.length)
+              };
+              Plotly.newPlot('plotDiv', traces, layout);
+            };
+            reader.readAsArrayBuffer(file); 
+          } else if(ssCheckbox) {
+            if (fileInput.files.length === 0) {
+              alert('Please select a log file');
+              return;
             }
-            outputData.push(data_arr);
-          }
+            console.debug("In state space loop");
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            console.debug("File reader initialized")
+            reader.onload = async function (event) {
+              const logData = event.target.result;
 
-          
-          console.log("time data length: ",timeData.length)
-          console.log("input data length",inputData.length)
-          for (let i = 0; i < numOutputs; i++) {
-            console.log("output data ",i," size ",outputData[i].length)
-          }
-
-
-          outputData = outputData.map(arr => Array.from(arr));
-          const bounds_array = getBounds(numParams);
-          const matrixA = getMatrixValues('matrixA', orderA, orderA);
-          const matrixB = getMatrixValues('matrixB', orderA, 1);
-          const H0 = getMatrixValues('H0',numOutputs,orderA);
-          const H1 = getMatrixValues('H1',numOutputs,orderA);
-          const constraint_arr = [[]]
-          if (num_constraints == 0) {
-            constraints_array = [[]] 
-          } else {
-            constraints_array = getConstraintList(num_constraints);
-          }
-
-          const f_start_ss = document.getElementById('startfreq').value.trim();
-          const f_end_ss = document.getElementById('endfreq').value.trim();
-          const f_cutoff_ss = document.getElementById('cutofffreq').value.trim();
+              const parser = new DataflashParser();
+              parser.processData(logData);
+              addToOutput("File Submitted successfully. Please wait!!!!!!");
+              const numOutputs = parseInt(document.getElementById('num_Outputs').value.trim());
+              const orderA = parseInt(document.getElementById('A_order').value, 10);
+              const numParams = parseInt(document.getElementById('num_params').value, 10);
 
 
-
-          await pyodide.globals.set("input_data", inputData);
-          await pyodide.globals.set("output_data", outputData);
-          await pyodide.globals.set("time_data", timeData);
-          await pyodide.globals.set("numInputs",1);
-          await pyodide.globals.set("numOutputs",numOutputs);
-          await pyodide.globals.set("sym_var", symbolic_var);
-          await pyodide.globals.set("matrixA", matrixA);
-          await pyodide.globals.set("matrixB", matrixB);
-          await pyodide.globals.set("matrixH0", H0);
-          await pyodide.globals.set("matrixH1",H1);
-          await pyodide.globals.set("orderA", orderA);
-          await pyodide.globals.set("bounds_array", bounds_array);
-          await pyodide.globals.set("con_str", constraints_array);
-          await pyodide.globals.set("t_start", t_start_ss);
-          await pyodide.globals.set("t_end", t_end_ss);
-          await pyodide.globals.set("f_start", f_start_ss);
-          await pyodide.globals.set("f_end", f_end_ss);
-          await pyodide.globals.set("f_cutoff", f_cutoff_ss);
-
-          await pyodide.runPython(`
-            from pyodide.ffi import to_js
-            from AircraftIden import FreqIdenSIMO, TransferFunctionFit
-            import math
-            import matplotlib.pyplot as plt
-            import control
-            from scipy.signal import butter,filtfilt
-
-            import sympy as sp
-            from AircraftIden.StateSpaceIden import StateSpaceIdenSIMO, StateSpaceParamModel
-            from AircraftIden.FreqIden import time_seq_preprocess
-
-            import numpy as np
-            import csv
-            import sympy as sp
-
-            M = sp.Matrix(np.eye(int(orderA)))
-
-            def butter_lowpass(cutoff, fs, order=5):
-              nyquist = 0.5 * fs
-              normal_cutoff = cutoff / nyquist
-              b, a = butter(order, normal_cutoff, btype='low', analog=False)
-              return b, a
+              if (isNaN(numOutputs) || numOutputs <= 0) {
+                alert('Please enter valid numbers for inputs and outputs.');
+                return;
+              }
+              const inputValues = getFieldValues('input', 1);
+              const outputValues = getFieldValues('output', numOutputs);
+              const symbolic_var = getParamValues(numParams);
+              const t_start_ss = parseFloat(document.getElementById('starttime').value.trim(), 10);
+              const t_end_ss = parseFloat(document.getElementById('endtime').value.trim(), 10);
+              const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
 
-            def apply_lowpass_filter(data, cutoff, fs, order=5):
-              b, a = butter_lowpass(cutoff, fs, order=order)
-              y = filtfilt(b, a, data)
-              return y
+              let outputData = [];
+              let timeData_arr = parser.get(inputValues.names[0], "TimeUS");
+              const ind1_i = nearestIndex(timeData_arr, t_start_ss*1000000);
+              const ind2_i = nearestIndex(timeData_arr, t_end_ss*1000000);
+              console.log("ind1: ",ind1_i," ind2: ",ind2_i);
 
-            time_seq_source = np.array(time_data).flatten()/1000000
+              timeData = Array.from(timeData_arr);
+              console.log("time field pre slicing size: ",timeData.length);
 
-            input_data = np.array(input_data)
+              timeData = timeData.slice(ind1_i, ind2_i);
+              console.log("time field post slicing size: ",timeData.length);
 
-            output_data = [np.array(data) for data in output_data]
+              ///TODO/// multi-input configuration
+              let inputData = Array.from(parser.get(inputValues.names[0], inputValues.fields[0]));
+              console.log("input field pre slicing size: ",inputData.length);
 
-            f_cutoff = float(f_cutoff)/(2*3.14)
-
-            dt = np.mean(np.diff(time_seq_source))
-
-            input_data = apply_lowpass_filter(input_data, f_cutoff, 1/dt)
-            output_data = [apply_lowpass_filter(data, f_cutoff, 1/dt) for data in output_data]
-
-            syms = []
-            sym_var = list(sym_var)
-            
-            def tofloat(element):
-              try:
-                float(element)
-                return True
-              except ValueError:
-                return False
-          
-            def callback(xk, state):
-              print(xk)
-              print(state)
-
-            def getMatrixJs(mjs, num_rows, num_cols, sym_var):
-              ans = []
-              for i in range(num_rows):
-                empty_row = []
-                for j in range(num_cols):
-                  if tofloat(str(mjs[i][j])):
-                    empty_row.append(float(str(mjs[i][j])))
-                  elif mjs[i][j][0] == '-':
-                    temp = sp.Symbol(mjs[i][j][1:])
-                    if temp in syms:
-                      raise TypeError("duplicate symbol")
-                    syms.append(temp)
-                    empty_row.append(-temp)
-                  else:
-                    temp = sp.Symbol(mjs[i][j])
-                    if temp in syms:
-                      raise TypeError("duplicate symbol")
-                    syms.append(temp)
-                    empty_row.append(temp)
-                ans.append(empty_row)
-              
-              return ans
-
-            F = getMatrixJs(matrixA, orderA, orderA, sym_var)
-            G = getMatrixJs(matrixB, orderA, numInputs, sym_var)
-            H0 = getMatrixJs(matrixH0, numOutputs, orderA, sym_var)
-            H1 = getMatrixJs(matrixH1, numOutputs, orderA, sym_var)
-            
-            t_start = float(t_start)
-            t_end = float(t_end)
-
-            F = sp.Matrix(F)
-            G = sp.Matrix(G)
-            H0 = sp.Matrix(H0)
-            H1 = sp.Matrix(H1)
-            bnd = tuple(bounds_array)
-            con_str = list(con_str)
-
-            f_start = float(f_start)
-            f_end = float(f_end)
-            simo_iden = FreqIdenSIMO(time_seq_source, f_start, f_end, input_data, *output_data, win_num=None)
-
-            plt.rc("figure", figsize=(15,10))
-            plt.figure("pout->udot")
-            simo_iden.plt_bode_plot(0)
-            LatdynSSPM = StateSpaceParamModel(M, F, G, H0, H1, syms)
-
-            plt.rc('figure', figsize=(10.0, 5.0))
-            freqres = simo_iden.get_freqres()
-            if len(con_str[0]) == 0:
-              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
-                                  enable_debug_plot=False,
-                                  y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1)
-
-            else:
-              ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
-                                  enable_debug_plot=False,
-                                  y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1, con_str = con_str)
+              inputData = inputData.slice(ind1_i, ind2_i);
+              console.log("input field post slicing size: ",inputData.length);
 
 
-            J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10, bounds = bnd)
-            ssm.check_stable()
-            ssm_iden.print_res()
-            #ssm_iden.draw_freq_res()
-            #plt.show()
-            freq_res_data = ssm_iden.get_freq_res_data()
+              for (let i = 0; i < numOutputs; i++) {
+                const t_data = parser.get(outputValues.names[i], "TimeUS")
+                const ind1_d = nearestIndex(t_data, t_start_ss*1000000)
+                const ind2_d = nearestIndex(t_data, t_end_ss*1000000)
+                let data = parser.get(outputValues.names[i], outputValues.fields[i]);
+                let data_arr = Array.from(data)
+                console.log("data field ",outputValues.fields[i]," pre slicing size: ",data_arr.length)
+                console.log("ind1: ",ind1_d," ind2: ",ind2_d)
+                data_arr = data_arr.slice(ind1_d, ind2_d);
+                console.log("data field ",outputValues.fields[i]," post slicing size: ",data_arr.length)
 
-            freq_js = to_js(freq_res_data["freq"])
-            Hs_amp_js = to_js(freq_res_data["Hs_amp"])
-            Hs_pha_js = to_js(freq_res_data["Hs_pha"])
-            Hest_amp_js = to_js(freq_res_data["Hest_amp"])
-            Hest_pha_js = to_js(freq_res_data["Hest_pha"])
-            coherence_js = to_js(freq_res_data["coherence"])
 
-          `);
-          const freq_js = await pyodide.globals.get('freq_js');
-          const Hs_amp_js = await pyodide.globals.get('Hs_amp_js');
-          const Hs_pha_js = await pyodide.globals.get('Hs_pha_js');
-          const Hest_amp_js = await pyodide.globals.get('Hest_amp_js');
-          const Hest_pha_js = await pyodide.globals.get('Hest_pha_js');
-          const coherence_js = await pyodide.globals.get('coherence_js');
+                if (outputValues.multipliers[i]) {
+                  const multiplier = parseFloat(outputValues.multipliers[i]);
+                  data_arr = data_arr.map(value => value * multiplier);
+                }
 
-          // Plotting using Plotly
-          const traces = [];
-
-          for (let y_index = 0; y_index < Hs_amp_js.length; y_index++) {
-              traces.push(
-                  {
-                      x: freq_js,
-                      y: Hs_amp_js[y_index],
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: `Hs Amp ${y_index}`,
-                      xaxis: 'x1',
-                      yaxis: 'y1'
-                  },
-                  {
-                      x: freq_js,
-                      y: Hest_amp_js[y_index],
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: `Hest Amp ${y_index}`,
-                      xaxis: 'x1',
-                      yaxis: 'y1'
-                  },
-                  {
-                      x: freq_js,
-                      y: Hs_pha_js[y_index],
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: `Hs Pha ${y_index}`,
-                      xaxis: 'x2',
-                      yaxis: 'y2'
-                  },
-                  {
-                      x: freq_js,
-                      y: Hest_pha_js[y_index],
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: `Hest Pha ${y_index}`,
-                      xaxis: 'x2',
-                      yaxis: 'y2'
-                  },
-                  {
-                      x: freq_js,
-                      y: coherence_js[y_index],
-                      type: 'scatter',
-                      mode: 'lines',
-                      name: `Coherence ${y_index}`,
-                      xaxis: 'x3',
-                      yaxis: 'y3'
+                if (outputValues.compensations[i]) {
+                  const ATT_t_data = parser.get("ATT", "TimeUS")
+                  
+                  const att_ind1 = nearestIndex(ATT_t_data, t_start_ss*1000000)
+                  const att_ind2 = nearestIndex(ATT_t_data, t_end_ss*1000000)
+                  let mult = 1;
+                  if (outputValues.multipliers[i]) {
+                    mult = parseFloat(outputValues.multipliers[i]);
                   }
-              );
-          };
+                  let ang_data = parser.get("ATT", outputValues.compensations[i])
+                  ang_data_arr = Array.from(ang_data)
+                  ang_data_arr.slice(att_ind1, att_ind2)
+                  console.log("data field ",outputValues.compensations[i]," pre slicing size: ",data_arr.length)
+                  if (outputValues.compensations[i] == "Roll") {
+                    for (let j = 0; j < data_arr.length; j++) {
+                      temp_data = data_arr[j]
+                      data_arr[j] = data_arr[j] + 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                    }
+                  }
+                  if (outputValues.compensations[i] == "Pitch") {
+                    for (let j = 0; j < data_arr.length; j++) {
+                      temp_data = data_arr[j]
+                      data_arr[j] = data_arr[j] - 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                    }
+                  }
 
-          const layout = {
-              title: 'State Space Frequency Response Data',
-              grid: { rows: 3, columns: 1, pattern: 'independent' },
-              xaxis1: { type: 'log', title: 'Frequency (rad/sec)' },
-              yaxis1: { title: 'Amplitude' },
-              xaxis2: { type: 'log', title: 'Frequency (rad/sec)' },
-              yaxis2: { title: 'Phase' },
-              xaxis3: { type: 'log', title: 'Frequency (rad/sec)' },
-              yaxis3: { title: 'Coherence' },
-              legend: { x: 1, xanchor: 'right', y: 1 }
-          };
+                  
+                  console.log("data field ",outputValues.fields[i]," compensation added for axis ",outputValues.compensations[i])
+                  console.log("data field ",outputValues.fields[i]," post compensation size: ",data_arr.length)
+                }
+                outputData.push(data_arr);
+              }
 
-          Plotly.newPlot('plotDiv_ss', traces, layout);
-          };
-          reader.readAsArrayBuffer(file);
-        }
+          
+              console.log("time data length: ",timeData.length)
+              console.log("input data length",inputData.length)
+              for (let i = 0; i < numOutputs; i++) {
+                console.log("output data ",i," size ",outputData[i].length)
+              }
+
+
+              outputData = outputData.map(arr => Array.from(arr));
+              const bounds_array = getBounds(numParams);
+              const matrixA = getMatrixValues('matrixA', orderA, orderA);
+              const matrixB = getMatrixValues('matrixB', orderA, 1);
+              const H0 = getMatrixValues('H0',numOutputs,orderA);
+              const H1 = getMatrixValues('H1',numOutputs,orderA);
+              const constraint_arr = [[]]
+              if (num_constraints == 0) {
+                constraints_array = [[]] 
+              } else {
+                constraints_array = getConstraintList(num_constraints);
+              }
+
+              const f_start_ss = document.getElementById('startfreq').value.trim();
+              const f_end_ss = document.getElementById('endfreq').value.trim();
+              const f_cutoff_ss = document.getElementById('cutofffreq').value.trim();
+
+              await pyodide.globals.set("input_data", inputData);
+              await pyodide.globals.set("output_data", outputData);
+              await pyodide.globals.set("time_data", timeData);
+              await pyodide.globals.set("numInputs",1);
+              await pyodide.globals.set("numOutputs",numOutputs);
+              await pyodide.globals.set("sym_var", symbolic_var);
+              await pyodide.globals.set("matrixA", matrixA);
+              await pyodide.globals.set("matrixB", matrixB);
+              await pyodide.globals.set("matrixH0", H0);
+              await pyodide.globals.set("matrixH1",H1);
+              await pyodide.globals.set("orderA", orderA);
+              await pyodide.globals.set("bounds_array", bounds_array);
+              await pyodide.globals.set("con_str", constraints_array);
+              await pyodide.globals.set("t_start", t_start_ss);
+              await pyodide.globals.set("t_end", t_end_ss);
+              await pyodide.globals.set("f_start", f_start_ss);
+              await pyodide.globals.set("f_end", f_end_ss);
+              await pyodide.globals.set("f_cutoff", f_cutoff_ss);
+
+              await pyodide.runPython(`
+                from pyodide.ffi import to_js
+                from AircraftIden import FreqIdenSIMO, TransferFunctionFit
+                import math
+                import matplotlib.pyplot as plt
+                import control
+                from scipy.signal import butter,filtfilt
+
+                import sympy as sp
+                from AircraftIden.StateSpaceIden import StateSpaceIdenSIMO, StateSpaceParamModel
+                from AircraftIden.FreqIden import time_seq_preprocess
+
+                import numpy as np
+                import csv
+                import sympy as sp
+
+                M = sp.Matrix(np.eye(int(orderA)))
+
+                def butter_lowpass(cutoff, fs, order=5):
+                  nyquist = 0.5 * fs
+                  normal_cutoff = cutoff / nyquist
+                  b, a = butter(order, normal_cutoff, btype='low', analog=False)
+                  return b, a
+
+
+                def apply_lowpass_filter(data, cutoff, fs, order=5):
+                  b, a = butter_lowpass(cutoff, fs, order=order)
+                  y = filtfilt(b, a, data)
+                  return y
+
+                time_seq_source = np.array(time_data).flatten()/1000000            
+
+                input_data = np.array(input_data)
+
+                output_data = [np.array(data) for data in output_data]
+
+                f_cutoff = float(f_cutoff)/(2*3.14)
+
+                dt = np.mean(np.diff(time_seq_source))
+
+                input_data = apply_lowpass_filter(input_data, f_cutoff, 1/dt)
+                output_data = [apply_lowpass_filter(data, f_cutoff, 1/dt) for data in output_data]
+
+                syms = []
+                sym_var = list(sym_var)
+                
+                def tofloat(element):
+                  try:
+                    float(element)
+                    return True
+                  except ValueError:
+                    return False
+              
+                def callback(xk, state):
+                  print(xk)
+                  print(state)
+
+                def getMatrixJs(mjs, num_rows, num_cols, sym_var):
+                  ans = []
+                  for i in range(num_rows):
+                    empty_row = []
+                    for j in range(num_cols):
+                      if tofloat(str(mjs[i][j])):
+                        empty_row.append(float(str(mjs[i][j])))
+                      elif mjs[i][j][0] == '-':
+                        temp = sp.Symbol(mjs[i][j][1:])
+                        if temp in syms:
+                          raise TypeError("duplicate symbol")
+                        syms.append(temp)
+                        empty_row.append(-temp)
+                      else:
+                        temp = sp.Symbol(mjs[i][j])
+                        if temp in syms:
+                          raise TypeError("duplicate symbol")
+                        syms.append(temp)
+                        empty_row.append(temp)
+                    ans.append(empty_row)
+                  
+                  return ans
+
+                F = getMatrixJs(matrixA, orderA, orderA, sym_var)
+                G = getMatrixJs(matrixB, orderA, numInputs, sym_var)
+                H0 = getMatrixJs(matrixH0, numOutputs, orderA, sym_var)
+                H1 = getMatrixJs(matrixH1, numOutputs, orderA, sym_var)
+                
+                t_start = float(t_start)
+                t_end = float(t_end)
+
+                F = sp.Matrix(F)
+                G = sp.Matrix(G)
+                H0 = sp.Matrix(H0)
+                H1 = sp.Matrix(H1)
+                bnd = tuple(bounds_array)
+                con_str = list(con_str)
+
+                f_start = float(f_start)
+                f_end = float(f_end)
+                simo_iden = FreqIdenSIMO(time_seq_source, f_start, f_end, input_data, *output_data, win_num=None)
+
+                plt.rc("figure", figsize=(15,10))
+                plt.figure("pout->udot")
+                simo_iden.plt_bode_plot(0)
+                LatdynSSPM = StateSpaceParamModel(M, F, G, H0, H1, syms)
+
+                plt.rc('figure', figsize=(10.0, 5.0))
+                freqres = simo_iden.get_freqres()
+                if len(con_str[0]) == 0:
+                  ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
+                                      enable_debug_plot=False,
+                                      y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1)
+
+                else:
+                  ssm_iden = StateSpaceIdenSIMO(freqres, accept_J=100,
+                                      enable_debug_plot=False,
+                                      y_names=["r"], reg=0.1, iter_callback=callback, max_sample_times=1, con_str = con_str)
+
+
+                J, ssm = ssm_iden.estimate(LatdynSSPM, syms, constant_defines={}, rand_init_max=10, bounds = bnd)
+                ssm.check_stable()
+                ssm_iden.print_res()
+                #ssm_iden.draw_freq_res()
+                #plt.show()
+                freq_res_data = ssm_iden.get_freq_res_data()
+
+                freq_js = to_js(freq_res_data["freq"])
+                Hs_amp_js = to_js(freq_res_data["Hs_amp"])
+                Hs_pha_js = to_js(freq_res_data["Hs_pha"])
+                Hest_amp_js = to_js(freq_res_data["Hest_amp"])
+                Hest_pha_js = to_js(freq_res_data["Hest_pha"])
+                coherence_js = to_js(freq_res_data["coherence"])
+
+              `);
+              const freq_js = await pyodide.globals.get('freq_js');
+              const Hs_amp_js = await pyodide.globals.get('Hs_amp_js');
+              const Hs_pha_js = await pyodide.globals.get('Hs_pha_js');
+              const Hest_amp_js = await pyodide.globals.get('Hest_amp_js');
+              const Hest_pha_js = await pyodide.globals.get('Hest_pha_js');
+              const coherence_js = await pyodide.globals.get('coherence_js');
+
+              // Plotting using Plotly
+              const traces = [];
+
+              for (let y_index = 0; y_index < Hs_amp_js.length; y_index++) {
+                traces.push(
+                  {
+                    x: freq_js,
+                    y: Hs_amp_js[y_index],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `Hs Amp ${y_index}`,
+                    xaxis: 'x1',
+                    yaxis: 'y1'
+                  },
+                  {
+                    x: freq_js,
+                    y: Hest_amp_js[y_index],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `Hest Amp ${y_index}`,
+                    xaxis: 'x1',
+                    yaxis: 'y1'
+                  },
+                  {
+                    x: freq_js,
+                    y: Hs_pha_js[y_index],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `Hs Pha ${y_index}`,
+                    xaxis: 'x2',
+                    yaxis: 'y2'
+                  },
+                  {
+                    x: freq_js,
+                    y: Hest_pha_js[y_index],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `Hest Pha ${y_index}`,
+                    xaxis: 'x2',
+                    yaxis: 'y2'
+                  },
+                  {
+                    x: freq_js,
+                    y: coherence_js[y_index],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `Coherence ${y_index}`,
+                    xaxis: 'x3',
+                    yaxis: 'y3'
+                  }
+                );
+              }
+
+              const layout = {
+                title: 'State Space Frequency Response Data',
+                grid: { rows: 3, columns: 1, pattern: 'independent' },
+                xaxis1: { type: 'log', title: 'Frequency (rad/sec)' },
+                yaxis1: { title: 'Amplitude' },
+                xaxis2: { type: 'log', title: 'Frequency (rad/sec)' },
+                yaxis2: { title: 'Phase' },
+                xaxis3: { type: 'log', title: 'Frequency (rad/sec)' },
+                yaxis3: { title: 'Coherence' },
+                legend: { x: 1, xanchor: 'right', y: 1 }
+              };
+
+              Plotly.newPlot('plotDiv_ss', traces, layout);
+            };
+            reader.readAsArrayBuffer(file);
+          }
         });
       }
 
