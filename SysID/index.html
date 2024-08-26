@@ -51,6 +51,8 @@
     <!-- FOR STATE SPACE MODEL -->
     <div id="ss_form" style="display:none;">
 
+    
+
       <label for="No. of Outputs">Outputs:</label>
       <input type="number" id="num_Outputs" name="Outputs">
 
@@ -74,22 +76,27 @@
       <br><br>
       <div id="boundsContainer"></div>
       <br><br>
-      <label for="A">Matrix: A:</label>
+
+      <div id="matrixAlabel"></div>
+      <br>
       <table id="matrixA"></table>
       <br><br>
 
-      <label for="B">Matrix: B:</label>
+      <div id="matrixBlabel"></div>
+      <br>
       <table id="matrixB"></table>
       <br><br>
 
       <div id="constraintsinput"></div>
       <br><br>
 
-      <label for="H0">H0</label>
+      <div id="H0label"></div>
+      <br>
       <table id="H0"></table>
       <br><br>
 
-      <label for="H1">H1</label>
+      <div id="H1label"></div>
+      <br>
       <table id="H1"></table>
       <br><br>
 
@@ -125,7 +132,15 @@
           output.value += message + "\n";
         }
 
-        function createMatrixTable(tableId, rows, cols) {
+        function createMatrixTable(tableId, rows, cols, labelname) {
+
+          const container = document.getElementById(`${tableId}label`);
+          container.innerHTML = '';
+
+          const label = document.createElement('label');
+          label.textContent = `${labelname}:`;
+          container.appendChild(label);
+
           const table = document.getElementById(tableId);
           table.innerHTML = ''; // Clear any existing cells
 
@@ -626,10 +641,10 @@
             return;
           }
 
-          createMatrixTable('matrixA', orderA, orderA);
-          createMatrixTable('matrixB', orderA, 1);
-          createMatrixTable('H0',numOutputs, orderA);
-          createMatrixTable('H1',numOutputs, orderA);
+          createMatrixTable('matrixA', orderA, orderA, 'Matrix A');
+          createMatrixTable('matrixB', orderA, 1, 'Matrix B');
+          createMatrixTable('H0',numOutputs, orderA, 'H0');
+          createMatrixTable('H1',numOutputs, orderA, 'H1');
 
           setMatrixA(1);
           setMatrixB(1);
