@@ -35,21 +35,6 @@
       <label for="Output">Output Field:</label>
       <input type="text" id="output_field" name="output_field"><br><br>
 
-      <label for="start time">Start time (s):</label>
-      <input type="number" id="starttime" name="starttime">
-
-      <label for="end time">End time (s):</label>
-      <input type="number" id="endtime" name="endtime"><br><br>
-
-      <label for="start frequency">Start frequency (rad/sec):</label>
-      <input type="number" id="startfreq" name="startfreq">
-
-      <label for="end frequency">End frequency (rad/sec):</label>
-      <input type="number" id="endfreq" name="endfreq"><br><br>
-
-      <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
-      <input type="number" id="cutofffreq" name="cutofffreq"><br><br>
-
       <label for="customNumerator">Numerator:</label>
       <input type="text" id="customNumerator" name="customNumerator"><br><br>
 
@@ -77,22 +62,6 @@
 
       <label for="number of constraints">Number of Constraints:</label>
       <input type="number" id="num_cons" name="Inputs"><br><br>
-
-      <label for="start time">Start time (s):</label>
-      <input type="number" id="starttime_ss" name="starttime_ss">
-
-      <label for="end time">End time (s):</label>
-      <input type="number" id="endtime_ss" name="endtime_ss"><br><br>
-
-      <label for="start frequency">Start frequency (rad/sec):</label>
-      <input type="number" id="startfreq_ss" name="startfreq_ss">
-
-      <label for="end frequency">End frequency (rad/sec):</label>
-      <input type="number" id="endfreq_ss" name="endfreq_ss"><br><br>
-
-      <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
-      <input type="number" id="cutofffreq_ss" name="cutofffreq_ss"><br><br>
-
 
       <button id="createFieldsButton" type="button">Submit</button>
       <br><br>
@@ -128,6 +97,21 @@
     </div>
 
     <div>
+      <label for="start time">Start time (s):</label>
+      <input type="number" id="starttime" name="starttime">
+
+      <label for="end time">End time (s):</label>
+      <input type="number" id="endtime" name="endtime"><br><br>
+
+      <label for="start frequency">Start frequency (rad/sec):</label>
+      <input type="number" id="startfreq" name="startfreq">
+
+      <label for="end frequency">End frequency (rad/sec):</label>
+      <input type="number" id="endfreq" name="endfreq"><br><br>
+
+      <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
+      <input type="number" id="cutofffreq" name="cutofffreq"><br><br>
+
       <label for="file">Log File:</label>
       <input type="file" id="fileInput" name="file">
       <button id="parseButton" type="button">Submit</button>
@@ -313,13 +297,6 @@
             container.appendChild(document.createElement('br'));
           }
         }
-        function getParamValues(numParams) {
-          const sym_vars = [];
-          for (let i=0;i<numParams;i++) {
-            sym_vars.push(document.getElementById(`${'param'}_name_${i + 1}`).value.trim());
-          }
-          return sym_vars;
-        }
 
         function setParamValues(vehicle_axis) {
 
@@ -461,6 +438,14 @@
           inputElement = document.querySelector(cellSelector);
           inputElement.value = "1";
 
+        }
+
+        function getParamValues(numParams) {
+          const sym_vars = [];
+          for (let i=0;i<numParams;i++) {
+            sym_vars.push(document.getElementById(`${'param'}_name_${i + 1}`).value.trim());
+          }
+          return sym_vars;
         }
 
         function getFieldValues(prefix, numFields) {
@@ -995,8 +980,8 @@
           const inputValues = getFieldValues('input', 1);
           const outputValues = getFieldValues('output', numOutputs);
           const symbolic_var = getParamValues(numParams);
-          const t_start_ss = parseFloat(document.getElementById('starttime_ss').value.trim(), 10);
-          const t_end_ss = parseFloat(document.getElementById('endtime_ss').value.trim(), 10);
+          const t_start_ss = parseFloat(document.getElementById('starttime').value.trim(), 10);
+          const t_end_ss = parseFloat(document.getElementById('endtime').value.trim(), 10);
           const num_constraints = parseInt(document.getElementById('num_cons').value, 10);
 
 
@@ -1094,9 +1079,9 @@
             constraints_array = getConstraintList(num_constraints);
           }
 
-          const f_start_ss = document.getElementById('startfreq_ss').value.trim();
-          const f_end_ss = document.getElementById('endfreq_ss').value.trim();
-          const f_cutoff_ss = document.getElementById('cutofffreq_ss').value.trim();
+          const f_start_ss = document.getElementById('startfreq').value.trim();
+          const f_end_ss = document.getElementById('endfreq').value.trim();
+          const f_cutoff_ss = document.getElementById('cutofffreq').value.trim();
 
 
 
