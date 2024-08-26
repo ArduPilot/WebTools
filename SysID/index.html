@@ -513,7 +513,7 @@
         addToOutput("Installing control package...");
         await micropip.install("control", keep_going=true, deps=false);
         
-        const packageUrl = "../modules/pyAircraftIden/pyAircraftIden-1.0-py3-none-any.whl";
+        const packageUrl = "../modules/build/pyAircraftIden-1.0-py3-none-any.whl";
         
         addToOutput(`Installing pyAircraftIden package from ${packageUrl}...`);
         try {
@@ -676,7 +676,6 @@
             print("no error in time_seq: ", time_seq_source_out.size)
 
             gz_source = np.array(output_data).flatten()
-            gz_source = gz_source*math.pi / 180
             gz_source = gz_source[ind1:ind2]
             dt = np.mean(np.diff(time_seq_source_in))
 
