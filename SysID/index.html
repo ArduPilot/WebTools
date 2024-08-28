@@ -157,13 +157,22 @@
           option3.text = 'Multirotor Pitch';
           populateDropdown.appendChild(option3);
 
+          const option4 = document.createElement('option');
+          option4.value = 'MR_Yaw';
+          option4.text = 'Multirotor Yaw';
+          populateDropdown.appendChild(option4);
+
+          const option5 = document.createElement('option');
+          option5.value = 'MR_Vertical';
+          option5.text = 'Multirotor Vertical';
+          populateDropdown.appendChild(option5);
+
           const populateLabel = document.createElement('label');
           populateLabel.textContent = 'Enter fields or select to pre-populate fields:';
           populateLabel.style.display = 'block'; // Hidden by default
           container.appendChild(populateLabel);
           container.appendChild(populateDropdown);
         }
-
 
         function createMatrixTable(tableId, rows, cols, labelname) {
 
@@ -352,6 +361,16 @@
             document.getElementById('num_params').value = "6"
             document.getElementById('A_order').value = "4"
             document.getElementById('num_cons').value = "1"
+          } else if (vehicle_axis == "MR_Yaw") {
+            document.getElementById('num_Outputs').value = "1"
+            document.getElementById('num_params').value = "5"
+            document.getElementById('A_order').value = "2"
+            document.getElementById('num_cons').value = "1"
+          } else if (vehicle_axis == "MR_Vertical") {
+            document.getElementById('num_Outputs').value = "1"
+            document.getElementById('num_params').value = "4"
+            document.getElementById('A_order').value = "2"
+            document.getElementById('num_cons').value = "1"
           }
         }
 
@@ -371,16 +390,30 @@
             document.getElementById(`${'param'}_name_${4}`).value = "Mlon";
             document.getElementById(`${'param'}_name_${5}`).value = "wlag";
             document.getElementById(`${'param'}_name_${6}`).value = "wlg";
+          } else if (vehicle_axis == "MR_Yaw") {
+            document.getElementById(`${'param'}_name_${1}`).value = "Nr";
+            document.getElementById(`${'param'}_name_${2}`).value = "Nped";
+            document.getElementById(`${'param'}_name_${3}`).value = "Npedp";
+            document.getElementById(`${'param'}_name_${4}`).value = "wlag";
+            document.getElementById(`${'param'}_name_${5}`).value = "wlg";
+          } else if (vehicle_axis == "MR_Vertical") {
+            document.getElementById(`${'param'}_name_${1}`).value = "Zw";
+            document.getElementById(`${'param'}_name_${2}`).value = "Zcoll";
+            document.getElementById(`${'param'}_name_${3}`).value = "wlag";
+            document.getElementById(`${'param'}_name_${4}`).value = "wlg";
           }
         }
 
         function setInputFields(vehicle_axis) {
+          document.getElementById(`${'input'}_name_${1}`).value = "RATE";
           if (vehicle_axis == "MR_Roll") {
-            document.getElementById(`${'input'}_name_${1}`).value = "RATE";
             document.getElementById(`${'input'}_field_${1}`).value = "ROut";
           } else if (vehicle_axis == "MR_Pitch") {
-            document.getElementById(`${'input'}_name_${1}`).value = "RATE";
             document.getElementById(`${'input'}_field_${1}`).value = "POut";
+          } else if (vehicle_axis == "MR_Yaw") {
+            document.getElementById(`${'input'}_field_${1}`).value = "YOut";
+          } else if (vehicle_axis == "MR_Vertical") {
+            document.getElementById(`${'input'}_field_${1}`).value = "AOut";
           }
         }
 
@@ -402,6 +435,15 @@
               document.getElementById(`${'output'}_field_${2}`).value = "Ax";
               document.getElementById(`axis_dropdown_${2}`).value = "Pitch";
             }
+          } else if (vehicle_axis == "MR_Yaw") {
+            document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
+            document.getElementById(`${'output'}_field_${1}`).value = "Gz";
+            document.getElementById(`multiplier_checkbox_${1}`).checked = true;
+            document.getElementById(`multiplier_${1}`).style.display = "block";
+            document.getElementById(`multiplier_${1}`).value ="0.01745";
+          } else if (vehicle_axis == "MR_Vertical") {
+            document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
+            document.getElementById(`${'output'}_field_${1}`).value = "Az";
           }
         }
 
@@ -409,6 +451,9 @@
           if (vehicle_axis == "MR_Roll" || vehicle_axis == "MR_Pitch") {
             document.getElementById(`${`Constraint`}_A_${1}`).value = "A_3_3"
             document.getElementById(`${`Constraint`}_B_${1}`).value = "-B_3_0"
+          } else if (vehicle_axis == "MR_Yaw" || vehicle_axis == "MR_Vertical") {
+            document.getElementById(`${`Constraint`}_A_${1}`).value = "A_1_1"
+            document.getElementById(`${`Constraint`}_B_${1}`).value = "-B_1_0"
           }
         }
 
@@ -432,6 +477,35 @@
             //wlg
             document.getElementById(`${`Bound`}_min_${6}`).value = "0";
             document.getElementById(`${`Bound`}_max_${6}`).value = "50";
+          } else if (vehicle_axis == "MR_Yaw") {
+            //Nr
+            document.getElementById(`${`Bound`}_min_${1}`).value = "-1";
+            document.getElementById(`${`Bound`}_max_${1}`).value = "0";
+            //Nped
+            document.getElementById(`${`Bound`}_min_${2}`).value = "0";
+            document.getElementById(`${`Bound`}_max_${2}`).value = "80";
+            //Npedp
+            document.getElementById(`${`Bound`}_min_${3}`).value = "-10";
+            document.getElementById(`${`Bound`}_max_${3}`).value = "10";
+            //wlag
+            document.getElementById(`${`Bound`}_min_${4}`).value = "-50";
+            document.getElementById(`${`Bound`}_max_${4}`).value = "0";
+            //wlg
+            document.getElementById(`${`Bound`}_min_${5}`).value = "0";
+            document.getElementById(`${`Bound`}_max_${5}`).value = "50";
+          } else if (vehicle_axis == "MR_Vertical") {
+            //Zw
+            document.getElementById(`${`Bound`}_min_${1}`).value = "-1";
+            document.getElementById(`${`Bound`}_max_${1}`).value = "0";
+            //Zcoll
+            document.getElementById(`${`Bound`}_min_${2}`).value = "-100";
+            document.getElementById(`${`Bound`}_max_${2}`).value = "100";
+            //wlag
+            document.getElementById(`${`Bound`}_min_${3}`).value = "-50";
+            document.getElementById(`${`Bound`}_max_${3}`).value = "0";
+            //wlg
+            document.getElementById(`${`Bound`}_min_${4}`).value = "0";
+            document.getElementById(`${`Bound`}_max_${4}`).value = "50";
           }
         }
 
@@ -498,6 +572,38 @@
               inputElement = document.querySelector(cellSelector);
               inputElement.value = "Mlon";
             }
+          } else if (vehicle_axis == "MR_Yaw" || vehicle_axis == "MR_Vertical") {
+            rows = 2;
+            cols = 2;
+            for (let i = 0; i < rows; i++) {
+              for (let j = 0; j < cols; j++) {
+                // Construct the selector for each input field
+                const cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${i}_c${j}]`;
+                const inputElement = document.querySelector(cellSelector);
+                inputElement.value = "0";
+              }
+            }
+            cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${1}_c${1}]`;
+            inputElement = document.querySelector(cellSelector);
+            inputElement.value = "wlag";
+
+            if (vehicle_axis == "MR_Yaw") {
+              cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${0}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "Nr";
+
+              cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${1}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "Nped";
+            } else if (vehicle_axis == "MR_Vertical") {
+              cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${0}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "Zw";
+
+              cellSelector = `#${'matrixA'} input[name=${'matrixA'}_r${0}_c${1}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "Zcoll";
+            }
           }
         }
 
@@ -514,6 +620,20 @@
               }
             }
             cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${3}_c${0}]`;
+            inputElement = document.querySelector(cellSelector);
+            inputElement.value = "wlg";
+          } else if (vehicle_axis == "MR_Yaw") {
+            cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${0}_c${0}]`;
+            inputElement = document.querySelector(cellSelector);
+            inputElement.value = "Npedp";
+            cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${1}_c${0}]`;
+            inputElement = document.querySelector(cellSelector);
+            inputElement.value = "wlg";
+          } else if (vehicle_axis == "MR_Vertical") {
+            cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${0}_c${0}]`;
+            inputElement = document.querySelector(cellSelector);
+            inputElement.value = "0";
+            cellSelector = `#${'matrixB'} input[name=${'matrixB'}_r${1}_c${0}]`;
             inputElement = document.querySelector(cellSelector);
             inputElement.value = "wlg";
           }
@@ -534,6 +654,22 @@
             cellSelector = `#${'H0'} input[name=${'H0'}_r${0}_c${1}]`;
             inputElement = document.querySelector(cellSelector);
             inputElement.value = "1";
+          } else if (vehicle_axis == "MR_Yaw" || vehicle_axis == "MR_Vertical") {
+            rows = 1;
+            cols = 2;
+            for (let i = 0; i < rows; i++) {
+              for (let j = 0; j < cols; j++) {
+                // Construct the selector for each input field
+                const cellSelector = `#${'H0'} input[name=${'H0'}_r${i}_c${j}]`;
+                const inputElement = document.querySelector(cellSelector);
+                inputElement.value = "0";
+              }
+            }
+            if (vehicle_axis == "MR_Yaw") {
+              cellSelector = `#${'H0'} input[name=${'H0'}_r${0}_c${0}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "1";
+            }
           }
         }
 
@@ -552,6 +688,22 @@
             cellSelector = `#${'H1'} input[name=${'H1'}_r${1}_c${0}]`;
             inputElement = document.querySelector(cellSelector);
             inputElement.value = "1";
+          } else if (vehicle_axis == "MR_Yaw" || vehicle_axis == "MR_Vertical") {
+            rows = 1;
+            cols = 2;
+            for (let i = 0; i < rows; i++) {
+              for (let j = 0; j < cols; j++) {
+                // Construct the selector for each input field
+                const cellSelector = `#${'H1'} input[name=${'H1'}_r${i}_c${j}]`;
+                const inputElement = document.querySelector(cellSelector);
+                inputElement.value = "0";
+              }
+            }
+            if (vehicle_axis == "MR_Vertical") {
+              cellSelector = `#${'H1'} input[name=${'H1'}_r${0}_c${0}]`;
+              inputElement = document.querySelector(cellSelector);
+              inputElement.value = "1";
+            }
           }
         }
 
