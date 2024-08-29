@@ -23,17 +23,12 @@
 
     <!-- FOR TRANSFER FUNCTION -->
     <div id="tf_form" style="display:none;">
-      <label for="Input">Input Msg:</label>
-      <input type="text" id="input_name" name="input_name">
 
-      <label for="Input">Input Field:</label>
-      <input type="text" id="input_field" name="input_field"><br><br>
+      <div id="tf_inputFieldsContainer"></div>
+      <br><br>
 
-      <label for="Output">Output Msg:</label>
-      <input type="text" id="output_name" name="output_name">
-
-      <label for="Output">Output Field:</label>
-      <input type="text" id="output_field" name="output_field"><br><br>
+      <div id="tf_outputFieldsContainer"></div>
+      <br><br>
 
       <label for="customNumerator">Numerator:</label>
       <input type="text" id="customNumerator" name="customNumerator"><br><br>
@@ -840,6 +835,8 @@
             document.getElementById("ss_checkbox").checked = false;
             document.getElementById("tf_form").style.display = "block";
             document.getElementById("ss_form").style.display = "none";
+            createInputFields('tf_inputFieldsContainer', 'Input', 'input', 1);
+            createInputFields('tf_outputFieldsContainer', 'Output', 'output', 1, true, true);
           } else {
             document.getElementById("tf_form").style.display = "none";
           }
@@ -963,10 +960,8 @@
           const tfCheckbox = document.getElementById('tf_checkbox').checked;
           const ssCheckbox = document.getElementById('ss_checkbox').checked;
           if(tfCheckbox) {
-            const inputname = document.getElementById('input_name').value.trim();
-            const inputField = document.getElementById('input_field').value.trim();
-            const outputname = document.getElementById('output_name').value.trim();
-            const outputField = document.getElementById('output_field').value.trim();
+            const inputValues = getFieldValues('input', 1);
+            const outputValues = getFieldValues('output', 1);
             const Numerator = document.getElementById('customNumerator').value.trim();
             const Denominator = document.getElementById('customDenominator').value.trim();
             const symbolic_var = document.getElementById('tf_params').value.trim();
@@ -983,31 +978,83 @@
               return;
             }
 
-            if (!inputField || !outputField) {
-              alert('Please enter input and output fields');
-              return;
-            }
-
             const file = fileInput.files[0];
             const reader = new FileReader();
             reader.onload = async function (event) {
               const logData = event.target.result;
-
               const parser = new DataflashParser();
               parser.processData(logData);
               addToOutput("File Submitted successfully. Please wait!!!!!!");
-              const timeData1 = parser.get(inputname,"TimeUS");            
-              const fieldData1 = parser.get(inputname,inputField);
-              const timeData2 = parser.get(outputname,"TimeUS");
-              const fieldData2 = parser.get(outputname,outputField);
-              const Mode = parser.get("MODE","Mode")
 
-              await pyodide.globals.set("input_data", fieldData1);
-              await pyodide.globals.set("output_data", fieldData2);
-              await pyodide.globals.set("time_data_in", timeData1);
-              await pyodide.globals.set("time_data_out", timeData2);
-              await pyodide.globals.set("input_field",inputField);
-              await pyodide.globals.set("output_field",outputField);
+              let timeData_arr = parser.get(inputValues.names[0], "TimeUS");
+              const ind1_i = nearestIndex(timeData_arr, t_start*1000000);
+              const ind2_i = nearestIndex(timeData_arr, t_end*1000000);
+              console.log("ind1: ",ind1_i," ind2: ",ind2_i);
+
+              timeData = Array.from(timeData_arr);
+              console.log("time field pre slicing size: ",timeData.length);
+
+              timeData = timeData.slice(ind1_i, ind2_i);
+              console.log("time field post slicing size: ",timeData.length);
+
+              ///TODO/// multi-input configuration
+              let inputData = Array.from(parser.get(inputValues.names[0], inputValues.fields[0]));
+              console.log("input field pre slicing size: ",inputData.length);
+
+              inputData = inputData.slice(ind1_i, ind2_i);
+              console.log("input field post slicing size: ",inputData.length);
+
+
+              const t_data = parser.get(outputValues.names[0], "TimeUS")
+              const ind1_d = nearestIndex(t_data, t_start*1000000)
+              const ind2_d = nearestIndex(t_data, t_end*1000000)
+              let outputData = Array.from(parser.get(outputValues.names[0], outputValues.fields[0]));
+              console.log("output field pre slicing size: ",outputData.length);
+
+              outputData = outputData.slice(ind1_d, ind2_d);
+              console.log("output field post slicing size: ",outputData.length);
+
+              if (outputValues.multipliers[0]) {
+                const multiplier = parseFloat(outputValues.multipliers[0]);
+                outputData = outputData.map(value => value * multiplier);
+              }
+
+              if (outputValues.compensations[0]) {
+                const ATT_t_data = parser.get("ATT", "TimeUS")
+                
+                const att_ind1 = nearestIndex(ATT_t_data, t_start*1000000)
+                const att_ind2 = nearestIndex(ATT_t_data, t_end*1000000)
+                let mult = 1;
+                if (outputValues.multipliers[0]) {
+                  mult = parseFloat(outputValues.multipliers[0]);
+                }
+                let ang_data = parser.get("ATT", outputValues.compensations[0])
+                ang_data_arr = Array.from(ang_data)
+                ang_data_arr.slice(att_ind1, att_ind2)
+                console.log("data field ",outputValues.compensations[0]," pre slicing size: ",outputData.length)
+                if (outputValues.compensations[0] == "Roll") {
+                  for (let j = 0; j < outputData.length; j++) {
+                    outputData[j] = outputData[j] + 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                  }
+                }
+                if (outputValues.compensations[0] == "Pitch") {
+                  for (let j = 0; j < outputData.length; j++) {
+                    outputData[j] = outputData[j] - 3.14/180*mult*9.81*ang_data_arr[att_ind1 + j];
+                  }
+                }
+
+                  
+                console.log("data field ",outputValues.fields[0]," compensation added for axis ",outputValues.compensations[0])
+                console.log("data field ",outputValues.fields[0]," post compensation size: ",outputData.length)
+              }
+          
+              console.log("time data length: ",timeData.length)
+              console.log("input data length",inputData.length)
+              console.log("output data length",outputData.length)
+
+              await pyodide.globals.set("input_data", inputData);
+              await pyodide.globals.set("output_data", outputData);
+              await pyodide.globals.set("time_data", timeData);
               await pyodide.globals.set("numerator", Numerator);
               await pyodide.globals.set("denominator", Denominator);
               await pyodide.globals.set("symbols",symbolic_var);
@@ -1048,48 +1095,14 @@
                   y = filtfilt(b, a, data)
                   return y
 
-                time_seq_source_in = np.array(time_data_in).flatten()/1000000
-                ind1 = 0
-                ind2 = time_seq_source_in.size
+                time_seq_source = np.array(time_data).flatten()/1000000
+                input_data = np.array(input_data)
+                output_data = np.array(output_data)
+                dt = np.mean(np.diff(time_seq_source))
 
-                for i in range(time_seq_source_in.size):
-                  if time_seq_source_in[i] == t_start or (time_seq_source_in[i] < t_start and time_seq_source_in[i+1] > t_start):
-                    ind1 = i
-                  
-                  if time_seq_source_in[i] == t_end or (time_seq_source_in[i] < t_end and time_seq_source_in[i+1] > t_end):
-                    ind2 = i
-                    break
-
-                print("start index: ",ind1," end index: ",ind2)
-                time_seq_source_in = time_seq_source_in[ind1:ind2]
-                print("no error in time_seq: ", time_seq_source_in.size)
-                yout_source = np.array(input_data).flatten()
-                yout_source = yout_source[ind1:ind2]
-                print("no error in yout: ", yout_source.size)
-
-                time_seq_source_out = np.array(time_data_out).flatten()/1000000
-                ind1 = 0
-                ind2 = time_seq_source_out.size
-
-                for i in range(time_seq_source_out.size):
-                  if time_seq_source_out[i] == t_start or (time_seq_source_out[i] < t_start and time_seq_source_out[i+1] > t_start):
-                    ind1 = i
-                  
-                  if time_seq_source_out[i] == t_end or (time_seq_source_out[i] < t_end and time_seq_source_out[i+1] > t_end):
-                    ind2 = i
-                    break
-
-                print("start index: ",ind1," end index: ",ind2)
-                time_seq_source_out = time_seq_source_out[ind1:ind2]
-                print("no error in time_seq: ", time_seq_source_out.size)
-
-                gz_source = np.array(output_data).flatten()
-                gz_source = gz_source[ind1:ind2]
-                dt = np.mean(np.diff(time_seq_source_in))
-
-                u = apply_lowpass_filter(yout_source, f_cutoff, 1/dt)
-                y = apply_lowpass_filter(gz_source, f_cutoff, 1/dt)            
-                simo_iden = FreqIdenSIMO(time_seq_source_in,f_start, f_end, u, y, win_num=None)
+                u = apply_lowpass_filter(input_data, f_cutoff, 1/dt)
+                y = apply_lowpass_filter(output_data, f_cutoff, 1/dt)            
+                simo_iden = FreqIdenSIMO(time_seq_source,f_start, f_end, u, y, win_num=None)
 
                 plt.rc("figure", figsize=(15,10))
                 plt.figure("pout->udot")
