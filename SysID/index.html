@@ -23,12 +23,6 @@
 
     <!-- FOR TRANSFER FUNCTION -->
     <div id="tf_form" style="display:none;">
-      <!-- <label for="No. of Poles">Poles:</label>                  
-      <input type="number" id="Poles" name="Poles">
-
-      <label for="No. of Zeros">Zeros:</label>
-      <input type="number" id="Zeros" name="Zeros"> -->
-
       <label for="Input">Input Msg:</label>
       <input type="text" id="input_name" name="input_name"><br><br>
 
@@ -75,16 +69,16 @@
       <label for="No. of Outputs">Outputs:</label>
       <input type="number" id="num_Outputs" name="Outputs">
 
-      <label for="Matrix A order">Matrix A order:</label>                  
+      <label for="Matrix A order">Matrix A order:</label>
       <input type="number" id="A_order" name="Inputs">
 
-      <label for="number of params">Number of params:</label>                  
+      <label for="number of params">Number of params:</label>
       <input type="number" id="num_params" name="Inputs">
 
-      <label for="number of constraints">Number of Constraints:</label>                  
+      <label for="number of constraints">Number of Constraints:</label>
       <input type="number" id="num_cons" name="Inputs">
-      
-      
+
+
       <label for="start time">Start time (s):</label>
       <input type="number" id="starttime_ss" name="starttime_ss"><br><br>
 
@@ -265,7 +259,7 @@
               multiplierLabel.htmlFor = `multiplier_checkbox_${i + 1}`;
               multiplierLabel.textContent = 'Multiplier';
               container.appendChild(multiplierLabel);
-      
+
               const multiplierInput = document.createElement('input');
               multiplierInput.type = 'text';
               multiplierInput.id = `multiplier_${i + 1}`;
@@ -512,9 +506,9 @@
 
         addToOutput("Installing control package...");
         await micropip.install("control", keep_going=true, deps=false);
-        
+
         const packageUrl = "../modules/build/pyAircraftIden-1.0-py3-none-any.whl";
-        
+
         addToOutput(`Installing pyAircraftIden package from ${packageUrl}...`);
         try {
           await micropip.install(packageUrl, { keep_going: true, upgrade: true });
@@ -548,7 +542,7 @@
           sys.stdout = JsOutput()
           sys.stderr = JsOutput()
         `);
-        
+
         document.getElementById('parseButton').addEventListener('click', async () => {
           const fileInput = document.getElementById('fileInput');
           const tfCheckbox = document.getElementById('tf_checkbox').checked;
@@ -990,7 +984,7 @@
               y = filtfilt(b, a, data)
               return y
 
-            time_seq_source = np.array(time_data).flatten()/1000000            
+            time_seq_source = np.array(time_data).flatten()/1000000
 
             input_data = np.array(input_data)
 
