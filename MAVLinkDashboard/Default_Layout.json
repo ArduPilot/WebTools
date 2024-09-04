@@ -1,0 +1,65 @@
+{
+  "header": {
+    "version": 1
+  },
+  "grid": {
+    "columns": 12,
+    "rows": 6,
+    "color": "rgb(255, 255, 255)"
+  },
+  "widgets": {
+    "0": {
+      "x": "11",
+      "y": "0",
+      "w": null,
+      "h": null,
+      "type": "WidgetMenu",
+      "options": {
+        "form_content": {
+          "borderColor": "#c8c8c8",
+          "backgroundColor": "#ffffff"
+        }
+      }
+    },
+    "1": {
+      "x": "0",
+      "y": "0",
+      "w": null,
+      "h": null,
+      "type": "WidgetSandBox",
+      "options": {
+        "form": {},
+        "form_content": {},
+        "sandbox": "// Initialization\ndiv.appendChild(document.createTextNode(\"Widget Example:\"))\ndiv.appendChild(document.createElement(\"br\"))\n\nmessage_report = document.createTextNode(\"No Data\")\ndiv.appendChild(message_report)\n\n// Runtime function\nhandle_msg = function (msg) {\n    message_report.nodeValue = \"Got: \" + msg._name\n}\n"
+      }
+    },
+    "2": {
+      "x": "1",
+      "y": "0",
+      "w": null,
+      "h": null,
+      "type": "WidgetSandBox",
+      "options": {
+        "form": {},
+        "form_content": {},
+        "sandbox": "// Initialization\ndiv.appendChild(document.createTextNode(\"Widget Example:\"))\ndiv.appendChild(document.createElement(\"br\"))\n\nmessage_report = document.createTextNode(\"No Data\")\ndiv.appendChild(message_report)\n\n// Runtime function\nhandle_msg = function (msg) {\n    message_report.nodeValue = \"Got: \" + msg._name\n}\n"
+      }
+    },
+    "3": {
+      "x": "2",
+      "y": "0",
+      "w": null,
+      "h": null,
+      "type": "WidgetSubGrid",
+      "options": {
+        "form_content": {
+          "rows": 2,
+          "columns": 2,
+          "borderColor": "#c8c8c8",
+          "backgroundColor": "#ffffff"
+        },
+        "widgets": {}
+      }
+    }
+  }
+}
