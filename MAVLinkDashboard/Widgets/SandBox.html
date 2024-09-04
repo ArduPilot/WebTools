@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sandbox</title>
+    <script type="text/javascript" src="../MAVLink/mavlink.js"></script>
+</head>
+<body>
+</body>
+<script>
+
+    let user_class = null
+    let user_script = null
+    let options = null
+
+    let replace_div = function() {
+        const user_div = document.createElement("div")
+        user_div.style.position = "absolute"
+        user_div.style.top = 0
+        user_div.style.left = 0
+        user_div.style.bottom = 0
+        user_div.style.right = 0
+        user_div.style.margin = "10px"
+        user_div.style.border = "5px solid"
+        user_div.style.borderRadius = "10px"
+        user_div.style.borderColor = "#c8c8c8"
+        user_div.style.backgroundColor = "#ffffff"
+
+        user_div.style.padding = "5px"
+        document.body.replaceChildren(user_div)
+        return user_div
+    }
+
+    let user_error = function(err) {
+        // Reset div
+        const user_div = replace_div()
+        user_div.style.overflow = "auto"
+
+        // Print to div
+        let error_txt = document.createTextNode("")
+        user_div.appendChild(error_txt)
+
+        const regex = /<(?:(?:anonymous)|(?:Function))>:([0-9]*):([0-9]*)/gm
+        const matches = regex.exec(err.stack)
+        let extra = ""
+        let line = null
+        if (matches) {
+            // Line is slightly wrong because of the way the function constructor works
+            line = parseInt(matches[1]) - 2
+            const char = matches[2]
+            extra = line + ":" + char + " "
+        }
+
+        // Log error
+        console.log(err)
+
+        // Update error txt
+        error_txt.nodeValue = extra + err
+
+        const script_lines = user_script.split("\n")
+        function line_OK(i) {
+            return typeof script_lines[i] !== 'undefined'
+        }
+
+        // Print snippet of user code
+        // Lines are 0 indexed here
+        line -= 1
+        if (line_OK(line)) {
+            // Have valid line
+            user_div.appendChild(document.createElement("br"))
+            const para = document.createElement("p")
+            para.style.margin = "5px"
+            para.style.border = "solid"
+            para.style.padding = "5px"
+
+            user_div.appendChild(para)
+
+            if (line_OK(line - 1)) {
+                // Add the line before
+                para.appendChild(document.createTextNode(parseInt(line) + "|" + script_lines[line - 1]))
+                para.appendChild(document.createElement("br"))
+            }
+
+            // Add the error line in red
+            const error_span = document.createElement("span")
+            error_span.style.color = "red"
+            error_span.innerHTML = parseInt(line+1) + "|" + script_lines[line]
+            para.appendChild(error_span)
+            para.appendChild(document.createElement("br"))
+
+
+            if (line_OK(line + 1)) {
+                // Add the line after
+                para.appendChild(document.createTextNode(parseInt(line + 2) + "|" + script_lines[line + 1]))
+                para.appendChild(document.createElement("br"))
+            }
+        }
+
+        // Make border red
+        user_div.style.borderColor = "red"
+
+        // Clear class
+        user_class = null
+        user_script = null
+    }
+
+    let handle_script = function(script) {
+        // Clear class and reset div
+        user_class = null
+        const user_div = replace_div()
+
+        // Clear lots ot interval IDs to try and kill any callbacks the script may be using
+        // This may not work, but were in a sandbox, so meh.
+        for(let i = 0; i < 100; i++) {
+            window.clearInterval(i)
+        }
+
+        try {
+            // Try and load new use class
+            user_script = script + "\n return this"
+            const user_fun = new Function("div", user_script)
+            user_class = user_fun(user_div)
+
+        } catch (e) {
+            user_error(e)
+        }
+
+    }
+
+    let handle_MAVLink = function(msg) {
+
+        if (user_class == null) {
+            return
+        }
+
+        try {
+            user_class.handle_msg(msg)
+        } catch (e) {
+            user_error(e)
+        }
+    }
+
+    let handle_options = function(new_options) {
+        options = new_options
+
+        if ((user_class == null) || !("handle_options" in user_class)) {
+            // handle_options method is optional
+            return
+        }
+
+        try {
+            user_class.handle_options()
+        } catch (e) {
+            user_error(e)
+        }
+
+    }
+
+
+    window.addEventListener('message', function (e) {
+        const data = e.data
+
+        // User has changed options
+        if ("options"in data) {
+            handle_options(data.options)
+        }
+
+        // User has edited script
+        if ("script" in data) {
+            handle_script(data.script)
+        }
+
+        // Incoming MAVLink message
+        if ("MAVLink" in data) {
+            handle_MAVLink(data.MAVLink)
+        }
+
+    })
+</script>
+</html>

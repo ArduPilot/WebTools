@@ -1,0 +1,351 @@
+// SubGrid widget
+// Adds sub grid
+
+class WidgetSubGrid extends WidgetBase {
+    constructor(options) {
+
+        if (options == null) {
+            options = {}
+        }
+
+        // Add a predefined form, grid size and color input for border and background
+        options.form = {
+            components:
+            [{
+                label: "Rows",
+                tooltip: "Number of rows in this subgrid.",
+                applyMaskOn: "change",
+                mask: false,
+                tableView: false,
+                delimiter: false,
+                requireDecimal: false,
+                inputFormat: "plain",
+                truncateMultipleSpaces: false,
+                validate: {
+                    min: 1,
+                    max: 12
+                },
+                validateWhenHidden: false,
+                key: "rows",
+                type: "number",
+                input: true,
+                defaultValue: 2,
+                decimalLimit: 0
+            },
+            {
+                label: "Columns",
+                tooltip: "Number of columns in this subgrid.",
+                applyMaskOn: "change",
+                mask: false,
+                tableView: false,
+                delimiter: false,
+                requireDecimal: false,
+                inputFormat: "plain",
+                truncateMultipleSpaces: false,
+                validate: {
+                    min: 1,
+                    max: 12
+                },
+                validateWhenHidden: false,
+                key: "columns",
+                type: "number",
+                input: true,
+                defaultValue: 2,
+                decimalLimit: 0
+            },
+            {
+                label: "Border color",
+                key: "borderColor",
+                type: "color",
+                input: true,
+                tableView: false,
+                widget: { type: "input" },
+                inputType: "color",
+                mask: false,
+                data: "#000000",
+                defaultValue: "#c8c8c8",
+                id: "ebao4j",
+                placeholder: "",
+                prefix: "",
+                customClass: "",
+                suffix: "",
+                multiple: false,
+                protected: false,
+                unique: false,
+                persistent: true,
+                hidden: false,
+                clearOnHide: true,
+                refreshOn: "",
+                redrawOn: "",
+                modalEdit: false,
+                dataGridLabel: false,
+                labelPosition: "top",
+                description: "",
+                errorLabel: "",
+                tooltip: "",
+                hideLabel: false,
+                tabindex: "",
+                disabled: false,
+                autofocus: false,
+                dbIndex: false,
+                customDefaultValue: "",
+                calculateValue: "",
+                calculateServer: false,
+                attributes: {},
+                validateOn: "change",
+                validate: {
+                    required: false,
+                    custom: "",
+                    customPrivate: false,
+                    strictDateValidation: false,
+                    multiple: false,
+                    unique: false
+                },
+                conditional: {
+                    show: null,
+                    when: null,
+                    eq: ""
+                },
+                overlay: {
+                    style: "",
+                    left: "",
+                    top: "",
+                    width: "",
+                    height: ""
+                },
+                allowCalculateOverride: false,
+                encrypted: false,
+                showCharCount: false,
+                showWordCount: false,
+                properties: {},
+                allowMultipleMasks: false,
+                addons: []
+            },
+            {
+                label: "Background color",
+                tooltip: "",
+                key: "backgroundColor",
+                type: "color",
+                input: true,
+                tableView: false,
+                widget: { type: "input" },
+                inputType: "color",
+                mask: false,
+                data: "#000000",
+                defaultValue: "#ffffff",
+                id: "e6byhel",
+                placeholder: "",
+                prefix: "",
+                customClass: "",
+                suffix: "",
+                multiple: false,
+                protected: false,
+                unique: false,
+                persistent: true,
+                hidden: false,
+                clearOnHide: true,
+                refreshOn: "",
+                redrawOn: "",
+                modalEdit: false,
+                dataGridLabel: false,
+                labelPosition: "top",
+                description: "",
+                errorLabel: "",
+                hideLabel: false,
+                tabindex: "",
+                disabled: false,
+                autofocus: false,
+                dbIndex: false,
+                customDefaultValue: "",
+                calculateValue: "",
+                calculateServer: false,
+                attributes: {},
+                validateOn: "change",
+                validate: {
+                    required: false,
+                    custom: "",
+                    customPrivate: false,
+                    strictDateValidation: false,
+                    multiple: false,
+                    unique: false
+                },
+                conditional: {
+                    show: null,
+                    when: null,
+                    eq: ""
+                },
+                overlay: {
+                    style: "",
+                    left: "",
+                    top: "",
+                    width: "",
+                    height: ""
+                },
+                allowCalculateOverride: false,
+                encrypted: false,
+                showCharCount: false,
+                showWordCount: false,
+                properties: {},
+                allowMultipleMasks: false,
+                addons: []
+            }]
+        }
+
+        // Add info used in palette tool tip
+        options.about = {
+            name: "Subgrid",
+            info: "Nestable sub grid widget"
+        }
+
+        super(options, true)
+
+        this.classList.add("grid-stack-item")
+        this.classList.add("grid-stack-draggable-item")
+        this.classList.add("grid-stack-sub-grid")
+
+        this.widget_div = document.createElement("div")
+        this.widget_div.style.border = "5px solid"
+        this.widget_div.style.borderRadius = "10px"
+        this.widget_div.style.borderColor = "#c8c8c8"
+        this.widget_div.style.padding = "5px"
+        this.widget_div.style.flex = 1
+        this.widget_div.style.overflow = "hidden"
+
+        this.widget_div.classList.add("grid-stack-item-content")
+        this.appendChild(this.widget_div)
+
+        this.size_div = document.createElement("div")
+        this.size_div.style.position = "absolute"
+        this.size_div.style.top = 0
+        this.size_div.style.left = 0
+        this.size_div.style.bottom = 0
+        this.size_div.style.right = 0
+        this.widget_div.appendChild(this.size_div)
+
+        this.grid_div = document.createElement("div")
+        this.grid_div.style.border = "none"
+        this.grid_div.style.width = "100%"
+        this.grid_div.style.height =  "100%"
+        this.grid_div.style.overflow = "hidden"
+
+        this.size_div.appendChild(this.grid_div)
+
+        // Don't show edit button on tool tip
+        this.tippy_div.querySelector(`svg[id="Edit"]`).style.display = "none"
+
+        // Load grid if size options given
+        this.widgets_to_load = null
+        if (("form_content" in options) && ("rows" in options.form_content) && ("columns" in options.form_content)) {
+            this.grid_rows = options.form_content.rows
+            this.grid_columns = options.form_content.columns
+            this.load_grid()
+
+            // Load provided widgets
+            if ("widgets" in options) {
+                this.widgets_to_load = options.widgets
+            }
+        }
+    }
+
+    init() {
+        super.init()
+        // Widgets are loaded after this widget has been loaded into its grid
+        // This guarantees this widget has some size which the the sub widgets can inherit
+        if (this.widgets_to_load != null) {
+            load_widgets(this.grid, this.widgets_to_load)
+            this.widgets_to_load = null
+        }
+    }
+
+
+    load_grid() {
+
+        // Stash widgets for reload after resize
+        let widgets
+        if (this.grid != null) {
+            widgets = get_widgets(this.grid)
+        }
+
+        // Clear existing grid
+        clear_grid(this.grid)
+
+        // Create new grid
+        this.grid = GridStack.init({
+            float: true,
+            disableDrag: true,
+            disableResize: true,
+            column: this.grid_columns,
+            row: this.grid_rows,
+            cellHeight: (100 / this.grid_rows) + "%",
+            disableOneColumnMode: true,
+            alwaysShowResizeHandle: true,
+            acceptWidgets: function(widget) {
+                const name = widget.constructor.name
+                if (name == "WidgetMenu") {
+                    // Don't allow the menu to be moved into sub grid
+                    return false
+                }
+                return true
+            }
+        }, this.grid_div)
+
+        // Replace widgets
+        if (widgets != null) {
+            load_widgets(this.grid, widgets)
+        }
+
+        // Re-apply edit to grid and widgets
+        this.set_edit(this.edit_enabled)
+
+        // Bind dropped callback
+        this.grid.on('dropped', widget_dropped)
+    }
+
+    // Set edit enable / disable
+    set_edit(b) {
+        super.set_edit(b)
+
+        if (this.grid == null) {
+            return
+        }
+
+        // Sub grid and its sub widgets inherit the enable of the widget
+        if (b) {
+            this.grid.enable()
+        } else {
+            this.grid.disable()
+        }
+
+        for (const widget of this.grid.getGridItems()) {
+            widget.set_edit(b)
+        }
+    }
+
+    get_options() {
+        return { 
+            form_content: this.get_form_content(),
+            widgets: get_widgets(this.grid)
+        }
+    }
+
+    // Form changed due to user input
+    form_changed() {
+        const options = this.get_form_content()
+        this.widget_div.style.borderColor = options.borderColor
+        this.widget_div.style.backgroundColor = options.backgroundColor
+
+        // Reload grid if size changed
+        if (("rows" in options) && ("columns" in options) && ((options.rows != this.grid_rows) || (options.columns != this.grid_columns))) {
+            this.grid_rows = options.rows
+            this.grid_columns = options.columns
+            this.load_grid()
+        }
+    }
+
+    destroy() {
+        clear_grid(this.grid)
+        super.destroy()
+    }
+
+}
+customElements.define('widget-subgrid', WidgetSubGrid)
