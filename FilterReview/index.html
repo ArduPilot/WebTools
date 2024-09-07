@@ -101,7 +101,7 @@ These params can then be saved and loaded into the autopilot without the need fo
                 </fieldset>
             </td>
             <td>
-                <fieldset style="width:200px;height:80px">
+                <fieldset style="width:125px;height:80px">
                     <legend>Analysis time
                         <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
                         data-tippy-content='Start and end times for averaging of FFT results show in the IMU Spectrum plot, automatically updated from the selected portion of the log shown in the Flight Data plot. The Calculate button must be clicked after any change of start/end time.'
@@ -111,6 +111,19 @@ These params can then be saved and loaded into the autopilot without the need fo
                     <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/><br><br>
                     <label for="TimeEnd">End (s)</label>
                     <input id="TimeEnd" name="TimeEnd" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/>
+                </fieldset>
+            </td>
+            <td>
+                <fieldset style="width:110px;height:80px">
+                    <legend>Filter version
+                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                        data-tippy-content='ArduPilot version 4.6 and newer have a updated strategy at frequencies lower then the configured min frequency. The version is automatically populated from the log but can be manually changed to check how the new strategy would work using a log from a older version.'
+                        data-tippy-maxWidth='750px'/>
+                    </legend>
+                    <input type="radio" id="filter_version_1" name="filter_version" onchange="loading_call(re_calc)">
+                    <label for="filter_version_1">1.0</label><br>
+                    <input type="radio" id="filter_version_2" name="filter_version" onchange="loading_call(re_calc)">
+                    <label for="filter_version_2">2.0</label><br>
                 </fieldset>
             </td>
             <td style="width: 10px;"></td>
