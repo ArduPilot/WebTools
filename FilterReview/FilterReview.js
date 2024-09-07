@@ -128,7 +128,11 @@ class ThrottleTarget extends NotchTarget {
             return config.freq
         }
         const motors_throttle = Math.max(0, AOut)
-        return config.freq * Math.max(config.min_ratio, Math.sqrt(motors_throttle / config.ref))
+        const throttle_norm = Math.sqrt(motors_throttle / config.ref)
+        if (get_filter_version() == 2) {
+            return config.freq * throttle_norm
+        }
+        return config.freq * Math.max(config.min_ratio, throttle_norm)
     }
 
     get_target_freq_index(config, index) {
@@ -176,8 +180,16 @@ class RPMTarget extends NotchTarget {
         if (config.ref == 0) {
             return config.freq
         }
-        if (rpm > 0) {
-            return Math.max(config.freq, rpm * config.ref * (1.0/60.0))
+        const rpm_valid = rpm > 0
+        const freq = rpm * config.ref * (1.0/60.0)
+        if (get_filter_version() == 2) {
+            if (rpm_valid) {
+                return freq
+            }
+            return 0.0
+        }
+        if (rpm_valid) {
+            return Math.max(config.freq, freq)
         }
         return config.freq
     }
@@ -296,11 +308,14 @@ class ESCTarget extends NotchTarget {
         return [this.get_target(config, this.data.interpolated[instance].avg_freq[index])]
     }
 
-    get_target(config, rpm) {
+    get_target(config, freq) {
         if (config.ref == 0) {
             return config.freq
         }
-        return Math.max(rpm, config.freq)
+        if (get_filter_version() == 2) {
+            return freq
+        }
+        return Math.max(freq, config.freq)
     }
 
     get_target_freq(config) {
@@ -427,11 +442,14 @@ class FFTTarget extends NotchTarget {
         return [this.get_target(config, this.data.interpolated[instance].value[index])]
     }
 
-    get_target(config, rpm) {
+    get_target(config, freq) {
         if (config.ref == 0) {
             return config.freq
         }
-        return Math.max(rpm, config.freq)
+        if (get_filter_version() == 2) {
+            return freq
+        }
+        return Math.max(freq, config.freq)
     }
 
     get_target_freq(config) {
@@ -475,7 +493,7 @@ class LoggedNotch extends NotchTarget {
 
         this.harmonics = null
 
-        // Load static notch message
+        // Load single notch message
         const static_msg = "FTNS"
         if ((static_msg in log.messageTypes) && ("instances" in log.messageTypes[static_msg])) {
             for (const inst of Object.keys(log.messageTypes[static_msg].instances)) {
@@ -483,16 +501,15 @@ class LoggedNotch extends NotchTarget {
                     // Not selected instance
                     continue
                 }
-                this.name += " static"
 
                 this.data.time = TimeUS_to_seconds(log.get_instance(static_msg, inst, "TimeUS"))
                 this.data.freq = Array.from(log.get_instance(static_msg, inst, "NF"))
-                // If we have a static instance there should not be a dynamic for this instance
+                // If we have a single instance there should not be a dynamic for this instance
                 return
             }
         }
 
-        // Load dynamic msg
+        // Load multi notch message
         const dynamic_msg = "FTN"
         if ((dynamic_msg in log.messageTypes) && ("instances" in log.messageTypes[dynamic_msg])) {
             for (const inst of Object.keys(log.messageTypes[dynamic_msg].instances)) {
@@ -576,28 +593,41 @@ function DigitalBiquadFilter(freq) {
     return this
 }
 
-function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
-    this.attenuation_dB = attenuation_dB
-    this.bandwidth_hz = bandwidth_hz
-    this.harmonic_mul = (harmonic_mul != null) ? harmonic_mul : 1
-    this.Asq = (10.0**(-this.attenuation_dB / 40.0))**2
+function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul, min_freq_fun, spread_mul) {
+    this.A = 10.0**(-attenuation_dB / 40.0)
 
     this.transfer = function(Hn, Hd, center, sample_freq, Z1, Z2) {
-        const center_freq_hz = center * this.harmonic_mul
+        let center_freq_hz = center * harmonic_mul
 
         // check center frequency is in the allowable range
-        if ((center_freq_hz <= 0.5 * this.bandwidth_hz) || (center_freq_hz >= 0.5 * sample_freq)) {
+        if ((center_freq_hz <= 0.5 * bandwidth_hz) || (center_freq_hz >= 0.5 * sample_freq)) {
             return
         }
 
-        const octaves = Math.log2(center_freq_hz / (center_freq_hz - this.bandwidth_hz / 2.0)) * 2.0
+        const min_freq = min_freq_fun(harmonic_mul)
+        let A = this.A
+        if (center_freq_hz < min_freq) {
+            const disable_freq = min_freq * 0.25
+            if (center_freq_hz < disable_freq) {
+                // Disabled
+                return
+            }
+
+            // Reduce attenuation (A of 1.0 is no attenuation)
+            const ratio = (center_freq_hz - disable_freq) / (min_freq - disable_freq)
+            A = 1.0 + (A - 1.0) * ratio
+        }
+        center_freq_hz = Math.max(center_freq_hz, min_freq) * spread_mul
+
+        const octaves = Math.log2(center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0)) * 2.0
         const Q = ((2.0**octaves)**0.5) / ((2.0**octaves) - 1.0)
+        const Asq = A**2
 
         const omega = 2.0 * Math.PI * center_freq_hz / sample_freq
         const alpha = Math.sin(omega) / (2 * Q)
-        const b0 =  1.0 + alpha*this.Asq
+        const b0 =  1.0 + alpha*Asq
         const b1 = -2.0 * Math.cos(omega)
-        const b2 =  1.0 - alpha*this.Asq
+        const b2 =  1.0 - alpha*Asq
         const a0 =  1.0 + alpha
         const a1 = b1
         const a2 =  1.0 - alpha
@@ -636,31 +666,23 @@ function NotchFilter(attenuation_dB, bandwidth_hz, harmonic_mul) {
     return this
 }
 
-function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, num) {
-    this.bandwidth = bandwidth_hz
-    this.harmonic = harmonic
+function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, min_freq_fun, num, center) {
 
-    const bw_scaled = this.bandwidth / num
+    // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
+    const notch_spread = bandwidth_hz / (32.0 * center)
+
+    const bw_scaled = (bandwidth_hz * harmonic) / num
 
     this.notches = []
-    this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
-    this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
+    this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 - notch_spread))
+    this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 + notch_spread))
     if (num == 3) {
-        this.notches.push(new NotchFilter(attenuation_dB, bw_scaled))
+        this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0))
     }
 
     this.transfer = function(Hn, Hd, center, sample_freq, Z1, Z2) {
-        center = center * this.harmonic
-
-        // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
-        const notch_spread = this.bandwidth / (32.0 * center);
-
-        const bandwidth_limit = this.bandwidth * 0.52
-        const nyquist_limit = sample_freq * 0.48
-        center = Math.min(Math.max(center, bandwidth_limit), nyquist_limit)
-
-        this.notches[0].transfer(Hn, Hd, center*(1-notch_spread), sample_freq, Z1, Z2)
-        this.notches[1].transfer(Hn, Hd, center*(1+notch_spread), sample_freq, Z1, Z2)
+        this.notches[0].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
+        this.notches[1].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
         if (this.notches.length == 3) {
             this.notches[2].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
         }
@@ -712,15 +734,28 @@ function HarmonicNotchFilter(params) {
     const double = (this.params.options & 1) != 0
     const single = !double && !triple
 
+    const filter_V1 = get_filter_version() == 1
+    const treat_low_freq_as_min = (this.params.options & 32) != 0
+
+    this.get_min_freq = function(harmonic) {
+        if (filter_V1) {
+            return 0.0
+        }
+        const min_freq = this.params.freq * this.params.min_ratio
+        if (treat_low_freq_as_min) {
+            return min_freq * harmonic
+        }
+        return min_freq
+    }
+
     this.notches = []
     for (var n=0; n<max_num_harmonics; n++) {
         if (this.params.harmonics & (1<<n)) {
             const harmonic = n + 1
-            const bandwidth = this.params.bandwidth * harmonic
             if (single) {
-                this.notches.push(new NotchFilter(this.params.attenuation, bandwidth, harmonic))
+                this.notches.push(new NotchFilter(this.params.attenuation, this.params.bandwidth * harmonic, harmonic, (h) => { return this.get_min_freq(h) }, 1.0))
             } else {
-                this.notches.push(new MultiNotch(this.params.attenuation, bandwidth, harmonic, double ? 2 : 3))
+                this.notches.push(new MultiNotch(this.params.attenuation, this.params.bandwidth, harmonic, (h) => { return this.get_min_freq(h) }, double ? 2 : 3, this.params.freq))
             }
         }
     }
@@ -848,6 +883,9 @@ function reset() {
     document.getElementById("FFTWindow_size").disabled = true
     document.getElementById("TimeStart").disabled = true
     document.getElementById("TimeEnd").disabled = true
+    document.getElementById("filter_version_1").disabled = true
+    document.getElementById("filter_version_1").checked = true
+    document.getElementById("filter_version_2").disabled = true
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
     document.getElementById("OpenFilterTool").disabled = true
@@ -1702,7 +1740,7 @@ function redraw() {
 
         const fundamental = filters.notch[i].get_target_freq()
 
-        function get_mean_and_range(time, freq) {
+        function get_mean_and_range(time, freq_array, harmonic, lower_limit) {
             // Find the start and end index
             const start_index = find_start_index(time)
             const end_index = find_end_index(time)+1
@@ -1712,12 +1750,13 @@ function redraw() {
             var min = null
             var max = null
             for (let j=start_index;j<end_index;j++) {
-                mean += freq[j]
-                if ((min == null) || (freq[j] < min)) {
-                    min = freq[j]
+                const freq = Math.max(freq_array[j] * harmonic, lower_limit)
+                mean += freq
+                if ((min == null) || (freq < min)) {
+                    min = freq
                 }
-                if ((max == null) || (freq[j] > max)) {
-                    max = freq[j]
+                if ((max == null) || (freq > max)) {
+                    max = freq
                 }
             }
             mean /= end_index - start_index
@@ -1725,32 +1764,35 @@ function redraw() {
             return { mean: mean, min:min, max:max}
         }
 
-        var mean
-        var min
-        var max
-        if (!Array.isArray(fundamental.time[0])) {
-            // Single peak
-            let mean_range = get_mean_and_range(fundamental.time, fundamental.freq)
-            mean = mean_range.mean
-            min = mean_range.min
-            max = mean_range.max
+        function get_stats(harmonic, lower_limit) {
+            var mean
+            var min
+            var max
+            if (!Array.isArray(fundamental.time[0])) {
+                // Single peak
+                let mean_range = get_mean_and_range(fundamental.time, fundamental.freq, harmonic, lower_limit)
+                mean = mean_range.mean
+                min = mean_range.min
+                max = mean_range.max
 
-        } else {
-            // Combine multiple peaks
-            mean = 0
-            min = null
-            max = null
-            for (let j=0;j<fundamental.time.length;j++) {
-                let mean_range = get_mean_and_range(fundamental.time[j], fundamental.freq[j])
-                mean += mean_range.mean
-                if ((min == null) || (mean_range.min < min)) {
-                    min = mean_range.min
+            } else {
+                // Combine multiple peaks
+                mean = 0
+                min = null
+                max = null
+                for (let j=0;j<fundamental.time.length;j++) {
+                    let mean_range = get_mean_and_range(fundamental.time[j], fundamental.freq[j], harmonic, lower_limit)
+                    mean += mean_range.mean
+                    if ((min == null) || (mean_range.min < min)) {
+                        min = mean_range.min
+                    }
+                    if ((max == null) || (mean_range.max > max)) {
+                        max = mean_range.max
+                    }
                 }
-                if ((max == null) || (mean_range.max > max)) {
-                    max = mean_range.max
-                }
+                mean /= fundamental.time.length
             }
-            mean /= fundamental.time.length
+            return { mean, min, max }
         }
 
         const show_notch = document.getElementById("Notch" + (i+1) + "Show").checked
@@ -1758,15 +1800,19 @@ function redraw() {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = frequency_scale.fun([mean * (j+1)])[0]
+
+            const harmonic = j + 1
+            const stats = get_stats(harmonic, filters.notch[i].get_min_freq(harmonic))
+
+            const harmonic_freq = frequency_scale.fun([stats.mean])[0]
 
             const line_index = (i*max_num_harmonics*2) + j*2
             fft_plot.layout.shapes[line_index].visible = show_notch
             fft_plot.layout.shapes[line_index].x0 = harmonic_freq
             fft_plot.layout.shapes[line_index].x1 = harmonic_freq
 
-            const min_freq = frequency_scale.fun([min * (j+1)])[0]
-            const max_freq = frequency_scale.fun([max * (j+1)])[0]
+            const min_freq = frequency_scale.fun([stats.min])[0]
+            const max_freq = frequency_scale.fun([stats.max])[0]
 
             const range_index = line_index + 1
             fft_plot.layout.shapes[range_index].visible = show_notch
@@ -2128,7 +2174,13 @@ function redraw_Spectrogram() {
             if ((filters.notch[i].harmonics() & (1<<j)) == 0) {
                 continue
             }
-            const harmonic_freq = array_scale(plot_data.freq, j+1)
+            const harmonic = j + 1
+            const harmonic_freq = array_scale(plot_data.freq, harmonic)
+
+            const min_freq = filters.notch[i].get_min_freq(harmonic)
+            for (let n=0;n<harmonic_freq.length;n++) {
+                harmonic_freq[n] = Math.max(harmonic_freq[n], min_freq)
+            }
 
             Spectrogram.data[plot_offset + j].visible = show_notch
             Spectrogram.data[plot_offset + j].x = plot_data.time
@@ -2344,6 +2396,9 @@ function get_HNotch_param_names() {
 }
 
 function load_filters() {
+
+    update_filter_version()
+
     filters = []
     const HNotch_params = get_HNotch_param_names()
 
@@ -2532,6 +2587,24 @@ async function load_parameters(file) {
 
     filter_param_read();
     re_calc();
+}
+
+// Get selected filter version
+let filter_version
+function get_filter_version() {
+    return filter_version
+}
+
+// Update the filter vesion from user buttons
+function update_filter_version() {
+    const versions = [1, 2]
+    for (const version of versions) {
+        const version_radio_button = document.getElementById("filter_version_" + version)
+        if (version_radio_button.checked) {
+            filter_version = version
+            return
+        }
+    }
 }
 
 // Load from batch logging messages
@@ -2915,6 +2988,18 @@ async function load(log_file) {
         load_from_raw_log(log, num_gyro, gyro_rate, get_param)
 
     }
+
+    // Populate filter version
+    if (('VER' in log.messageTypes) && log.messageTypes.VER.expressions.includes("FV")) {
+        // Version should be constant for whole log
+        const version = log.get("VER", "FV")[0]
+        const version_radio_button = document.getElementById("filter_version_" + version)
+        if (version_radio_button != null) {
+            version_radio_button.checked = true
+        }
+    }
+    document.getElementById("filter_version_1").disabled = false
+    document.getElementById("filter_version_2").disabled = false
 
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),
