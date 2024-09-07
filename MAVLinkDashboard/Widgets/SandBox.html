@@ -102,23 +102,21 @@
 
         // Clear class
         user_class = null
-        user_script = null
     }
 
-    let handle_script = function(script) {
+    let load_user_script = function() {
         // Clear class and reset div
         user_class = null
         const user_div = replace_div()
 
         // Clear lots ot interval IDs to try and kill any callbacks the script may be using
         // This may not work, but were in a sandbox, so meh.
-        for(let i = 0; i < 100; i++) {
+        for (let i = 0; i < 100; i++) {
             window.clearInterval(i)
         }
 
         try {
             // Try and load new use class
-            user_script = script + "\n return this"
             const user_fun = new Function("div", user_script)
             user_class = user_fun(user_div)
 
@@ -141,8 +139,14 @@
         }
     }
 
-    let handle_options = function(new_options) {
+    let handle_user_options = function(new_options) {
         options = new_options
+
+        if ((user_class == null) && (user_script != null)) {
+            // If the user script is not running it may be due to an incorrect option
+            // See if it will run with the new options
+            load_user_script()
+        }
 
         if ((user_class == null) || !("handle_options" in user_class)) {
             // handle_options method is optional
@@ -162,13 +166,14 @@
         const data = e.data
 
         // User has changed options
-        if ("options"in data) {
-            handle_options(data.options)
+        if ("options" in data) {
+            handle_user_options(data.options)
         }
 
         // User has edited script
         if ("script" in data) {
-            handle_script(data.script)
+            user_script = data.script + "\n return this"
+            load_user_script()
         }
 
         // Incoming MAVLink message
