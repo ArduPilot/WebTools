@@ -134,8 +134,8 @@
                 <input id="save_button" type="button" value="Save">
                 <br>
                 <label for="load">Load dashboard or widget:</label>
-                <br>
-                <input type="file" id="load" name="load" accept=".json"/>
+                <input id="load" type="button" onclick="document.getElementById('loadBase').click()" value="Load">
+                <input type="file" id="loadBase" style="display:none" accept=".json">
                 <br><br>
                 <h6>Dashboard settings</h6>
                 <label for="edit_enabled">Enable widget edit:</label>
