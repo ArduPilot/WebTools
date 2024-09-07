@@ -312,7 +312,7 @@ class WidgetMenu extends WidgetBase {
         }
 
         // Load button
-        settings_tip_div.querySelector(`input[id="load"]`).onchange = (e) => {
+        settings_tip_div.querySelector(`input[id="loadBase"]`).onchange = (e) => {
             settings_tip.hide()
             load_file(e.target)
         }
