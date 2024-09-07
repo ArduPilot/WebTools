@@ -205,6 +205,14 @@ function save_layout() {
     var blob = new Blob([JSON.stringify(get_layout(), null, 2)], { type: "text/plain;charset=utf-8" })
     saveAs(blob, "MAVLinkDashboard.json")
 
+    // Mark grid and widgets as saved
+    grid_changed = false
+
+    // Each widget on grid
+    for (const widget of grid.getGridItems()) {
+        widget.saved()
+    }
+
 }
 
 // Save single widget to json file
@@ -269,6 +277,11 @@ function init_grid(columns, rows) {
 
     // Bind dropped callback
     grid.on('dropped', widget_dropped)
+
+    // Bind changed callback
+    grid.on('change added removed', () => { 
+        grid_changed = true
+    })
 }
 
 function load_default_grid() {
@@ -364,6 +377,9 @@ function load_layout(grid_layout, widgets) {
         alert('Grid load failed\n' + error.message)
     }
 
+    // Clear changed flag after load
+    grid_changed = false
+
 }
 
 async function load_file(e) {
@@ -434,8 +450,8 @@ function init_pallet() {
         palette.batchUpdate(true)
 
         // Add pure JS widgets
-        const subgrid = add_widget(palette, { type: "WidgetSubGrid" })
-        const sandbox = add_widget(palette, { type: "WidgetSandBox" })
+        add_widget(palette, { type: "WidgetSubGrid" })
+        add_widget(palette, { type: "WidgetSandBox" })
 
         // Load in json definitions
         const sandbox_files = [
@@ -566,6 +582,43 @@ function widget_dropped(event, previousWidget, newWidget) {
     if (copy != null) {
         copy.init()
     }
+
+}
+
+function handle_unload(event) {
+
+    let all_saved = true
+
+    if (grid != null) {
+        // The grid itself
+        if (grid_changed) {
+            all_saved = false
+        }
+
+        // Each widget on grid
+        for (const widget of grid.getGridItems()) {
+            if (widget.get_changed()) {
+                all_saved = false
+            }
+        }
+    }
+
+    if (all_saved) {
+        // No need to warn
+        return
+    }
+
+    // Cancel the event as stated by the standard.
+    event.preventDefault()
+    event.returnValue = ""
+
+    // Focus the save button
+    const settings_menu = document.getElementById("MenuSettingsIcon")
+    const menu = settings_menu._tippy
+
+    menu.show()
+    const save_button = menu.props.content.querySelector(`input[id="save_button"]`)
+    save_button.focus()
 
 }
 

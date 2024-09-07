@@ -214,6 +214,7 @@ class WidgetMenu extends WidgetBase {
 
         // Tip for settings
         const settings_icon = settings_div.querySelector(`svg[name="gear"]`)
+        settings_icon.id = "MenuSettingsIcon"
         const settings_tip_div = document.createElement("div")
         settings_tip_div.id = "settings_tip_div"
         settings_tip_div.appendChild(document.importNode(document.getElementById('settings_tip_template').content, true))
@@ -270,6 +271,7 @@ class WidgetMenu extends WidgetBase {
         num_columns.value = grid.opts.column
         num_columns.onchange = () => {
             grid.column(parseInt(num_columns.value), 'list')
+            this.changed = true
         }
 
         const num_rows = settings_tip_div.querySelector(`input[id="num_rows"]`)
@@ -279,6 +281,7 @@ class WidgetMenu extends WidgetBase {
             const layout = get_layout()
             layout.grid.rows = num_rows.value
             load_layout(layout.grid, layout.widgets)
+            this.changed = true
         }
 
         // Background color input
@@ -300,6 +303,7 @@ class WidgetMenu extends WidgetBase {
         background_color.value = rgbToHex(dashboard_div.style.backgroundColor)
         background_color.onchange = () => {
             dashboard_div.style.backgroundColor = background_color.value
+            this.changed = true
         }
 
         // Save button
@@ -370,6 +374,7 @@ class WidgetMenu extends WidgetBase {
 
     // Form changed due to user input
     form_changed() {
+        super.form_changed()
         const options = this.get_form_content()
         this.widget_div.style.borderColor = options.borderColor
         this.widget_div.style.backgroundColor = options.backgroundColor
