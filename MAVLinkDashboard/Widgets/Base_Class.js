@@ -27,6 +27,9 @@ class WidgetBase extends HTMLElement {
         this.style.display = "flex"
         this.edit_enabled = false
 
+        // Bool to track changes, used to prompt user to save
+        this.changed = false
+
         // Popup to show on double click when edit is enabled
         this.tippy_div = document.createElement("div")
         this.tippy_div.appendChild(document.importNode(document.getElementById('widget_tip_template').content, true))
@@ -44,6 +47,10 @@ class WidgetBase extends HTMLElement {
 
         // Remove button
         this.tippy_div.querySelector(`svg[id="Delete"]`).onclick = () => {
+            const text = "This widget has not been downloaded!\n Click OK to delete anyway."
+            if (this.changed && (confirm(text) != true)) {
+                return
+            }
             this.destroy()
             this.gridstackNode.grid.removeWidget(this)
         }
@@ -70,6 +77,9 @@ class WidgetBase extends HTMLElement {
             save_button.onclick = () => {
                 this.edit_tip.hide()
                 save_widget(this)
+
+                // Reset change tracking
+                this.saved()
             }
         } else {
             save_button.style.display = "none"
@@ -80,14 +90,39 @@ class WidgetBase extends HTMLElement {
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
             this.form = form
-            this.form.setForm(form_definition).then(() => {
-                this.form.setSubmission( { data: form_content } )
-            })
 
-            this.form.on('change', () => {
-                if (this.form.checkValidity(this.form.submission.data)) {
+            // Load form
+            this.form.setForm(form_definition).then(() => {
+
+                // Set data
+                this.form.setSubmission( { data: form_content } ).then(() => {
+
+                    // Trigger initial callback for first load
                     this.form_changed()
-                }
+
+                    // Clear changed flag
+                    this.changed = false
+
+                    // Add change callback
+                    this.last_content = JSON.stringify(this.form.submission.data)
+                    this.form.on('change', (e) => {
+                        if (e.changed == null) {
+                            // No changes
+                            return
+                        }
+                        if (!this.form.checkValidity(this.form.submission.data)) {
+                            // Invalid value
+                            return
+                        }
+                        const JSON_data = JSON.stringify(this.form.submission.data)
+                        if (this.last_content == JSON_data) {
+                            // No change from last submission
+                            return
+                        }
+                        this.last_content = JSON_data
+                        this.form_changed()
+                    })
+                })
             })
         })
 
@@ -169,6 +204,11 @@ class WidgetBase extends HTMLElement {
 
     // Update form definition
     set_form_definition(new_def) {
+        if (JSON.stringify(this.form.form) != JSON.stringify(new_def)) {
+            // Update change tracking
+            this.changed = true
+        }
+
         this.form.setForm(new_def)
 
         // Hide form with no options
@@ -197,7 +237,10 @@ class WidgetBase extends HTMLElement {
     }
 
     // Form changed due to user input
-    form_changed() {}
+    form_changed() {
+        // Update change tracking
+        this.changed = true
+    }
 
     // Get the user submission to the form
     get_form_content() {
@@ -210,6 +253,15 @@ class WidgetBase extends HTMLElement {
 
     // Called after the widget has been added its parent main grid
     init() {}
+
+    // Changed and saved functions used to warn user about leaving the page
+    get_changed() {
+        return this.changed
+    }
+
+    saved() {
+        this.changed = false
+    }
 
 }
 customElements.define('widget-base', WidgetBase)

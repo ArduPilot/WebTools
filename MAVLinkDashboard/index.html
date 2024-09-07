@@ -190,6 +190,7 @@
 
     // Load grid
     let grid
+    let grid_changed = false
     load_default_grid()
 
     // MAVLink parsing
@@ -200,5 +201,8 @@
 
     // Setup widget pallet
     init_pallet()
+
+    // Bind unload event to allow prompt for save
+    window.addEventListener('beforeunload', handle_unload)
 
 </script>

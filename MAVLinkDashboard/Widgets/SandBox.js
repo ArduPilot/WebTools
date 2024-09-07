@@ -98,6 +98,10 @@ handle_msg = function (msg) {
 
     // Set text that has been edited by the editor
     set_edited_text(text) {
+        if (this.script_text != text) {
+            // Update change tracking
+            this.changed = true
+        }
         this.script_text = text
         this.init()
     }
@@ -111,6 +115,7 @@ handle_msg = function (msg) {
 
     // Form changed due to user input, send to iframe
     form_changed() {
+        super.form_changed()
         if (this.iframe.contentWindow == null) {
             return
         }

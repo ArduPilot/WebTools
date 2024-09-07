@@ -245,6 +245,8 @@ class WidgetSubGrid extends WidgetBase {
                 this.widgets_to_load = options.widgets
             }
         }
+
+        this.grid_changed = false
     }
 
     init() {
@@ -254,6 +256,9 @@ class WidgetSubGrid extends WidgetBase {
         if (this.widgets_to_load != null) {
             load_widgets(this.grid, this.widgets_to_load)
             this.widgets_to_load = null
+
+            // Clear changed flag
+            this.grid_changed = false
         }
     }
 
@@ -299,6 +304,14 @@ class WidgetSubGrid extends WidgetBase {
 
         // Bind dropped callback
         this.grid.on('dropped', widget_dropped)
+
+        // Bind changed callback
+        this.grid.on('change added removed', () => { 
+            this.grid_changed = true
+        })
+
+        // Clear changed flag
+        this.grid_changed = false
     }
 
     // Set edit enable / disable
@@ -330,6 +343,7 @@ class WidgetSubGrid extends WidgetBase {
 
     // Form changed due to user input
     form_changed() {
+        super.form_changed()
         const options = this.get_form_content()
         this.widget_div.style.borderColor = options.borderColor
         this.widget_div.style.backgroundColor = options.backgroundColor
@@ -345,6 +359,34 @@ class WidgetSubGrid extends WidgetBase {
     destroy() {
         clear_grid(this.grid)
         super.destroy()
+    }
+
+    // Changed function, check each sub widget
+    get_changed() {
+        if (super.get_changed() || this.grid_changed) {
+            return true
+        }
+
+        for (const widget of this.grid.getGridItems()) {
+            if (widget.get_changed()) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    // Saved function, set on each sub widget
+    saved() {
+        super.saved()
+        this.grid_changed = false
+        if (this.grid == null) {
+            return
+        }
+
+        for (const widget of this.grid.getGridItems()) {
+            widget.saved()
+        }
     }
 
 }
