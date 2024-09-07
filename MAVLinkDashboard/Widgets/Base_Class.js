@@ -35,7 +35,7 @@ class WidgetBase extends HTMLElement {
         this.tippy_div.appendChild(document.importNode(document.getElementById('widget_tip_template').content, true))
 
         // Add name
-        this.tippy_div.querySelector(`span[id="NameSpan"]`).innerHTML = this.constructor.name
+        this.tippy_div.querySelector(`span[id="NameSpan"]`).innerHTML = this.about.name
 
         // Copy button
         this.tippy_div.querySelector(`svg[id="Copy"]`).onclick = () => {
@@ -94,6 +94,9 @@ class WidgetBase extends HTMLElement {
             // Load form
             this.form.setForm(form_definition).then(() => {
 
+                // If there is no item in the form it can be hidden
+                this.#check_form_hide()
+
                 // Set data
                 this.form.setSubmission( { data: form_content } ).then(() => {
 
@@ -125,11 +128,6 @@ class WidgetBase extends HTMLElement {
                 })
             })
         })
-
-        // Hide form with no options
-        if (Object.values(form_definition).length == 0) {
-            form_div.style.display = "none"
-        }
 
         this.edit_tip = tippy(this, {
             content: this.tippy_div,
@@ -202,6 +200,22 @@ class WidgetBase extends HTMLElement {
         this.edit_tip.destroy()
     }
 
+    // Hide form with no content
+    #check_form_hide() {
+        const content = this.form.form
+
+        let have_content = true
+        if ((Object.values(content).length == 0) ||
+            !("components" in content) ||
+            (content.components.length == 0)) {
+            have_content = false
+        }
+
+        this.tippy_div.querySelector(`div[id="form"]`).style.display = have_content ? "block" : "none"
+
+    }
+
+
     // Update form definition
     set_form_definition(new_def) {
         if (JSON.stringify(this.form.form) != JSON.stringify(new_def)) {
@@ -211,15 +225,7 @@ class WidgetBase extends HTMLElement {
 
         this.form.setForm(new_def)
 
-        // Hide form with no options
-        let have_content = true
-        if ((Object.values(new_def).length == 0) ||
-            !("components" in new_def) ||
-            (new_def.components.length == 0)) {
-            have_content = false
-        }
-
-        this.tippy_div.querySelector(`div[id="form"]`).style.display = have_content ? "block" : "none"
+        this.#check_form_hide()
     }
 
     // Get current form definition
@@ -233,7 +239,7 @@ class WidgetBase extends HTMLElement {
 
     // Get options to save
     get_options() {
-        return { form: this.get_form_definition(), form_content: this.get_form_content() }
+        return { form: this.get_form_definition(), form_content: this.get_form_content(), about: this.about }
     }
 
     // Form changed due to user input
