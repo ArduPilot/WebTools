@@ -153,6 +153,15 @@ class RPMTarget extends NotchTarget {
             if (inst in Object.keys(log.messageTypes.RPM.instances)) {
                 this.data.time = TimeUS_to_seconds(log.get_instance(msg_name, inst, "TimeUS"))
                 this.data.value = log.get_instance(msg_name, inst, "RPM")
+
+                // Set RPM to -1 when unhealthy, this maintains behavior with the old logging
+                const health = log.get_instance(msg_name, inst, "H")
+                const len = health.length
+                for (let i = 0; i < len; i++) {
+                    if (health[i] == 0) {
+                        this.data.value[i] = -1
+                    }
+                }
             }
 
         } else {
