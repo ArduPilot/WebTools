@@ -25,6 +25,7 @@ function init_editor() {
         editor = monaco.editor.create(script_tab, {
             language: 'javascript',
             theme: 'vs-dark',
+            automaticLayout: true,
         })
     })
 
@@ -429,7 +430,7 @@ function load_editor(widget) {
 
     // Show editor
     let edit_overlay = document.getElementById("edit_overlay")
-    edit_overlay.style.visibility = ""
+    edit_overlay.style.display = "block"
 
     // Select script tab
     edit_overlay.querySelector(`input[name="script"]`).click()
@@ -494,7 +495,7 @@ function load_editor(widget) {
         test_grid.removeAll()
 
         // Hide overlay
-        edit_overlay.style.visibility = "hidden"
+        edit_overlay.style.display = "none"
 
         // Update original widget
         widget.set_edited_text(editor.getValue())
