@@ -311,6 +311,31 @@ function new_widget(type, options) {
     throw new Error("Unknown widget type: " + type)
 }
 
+function grid_edit_enabled(target_grid) {
+    if (target_grid == null) {
+        return false
+    }
+    return !((target_grid.opts.disableDrag === true) && (target_grid.opts.disableResize === true))
+}
+
+function grid_set_edit(target_grid, b) {
+    if (target_grid == null) {
+        return false
+    }
+
+    // Set the grid itself
+    if (b) {
+        target_grid.enable()
+    } else {
+        target_grid.disable()
+    }
+
+    // Set the widgets on the grid
+    for (const widget of target_grid.getGridItems()) {
+        widget.set_edit(b)
+    }
+}
+
 // Add a widget checking if it will fit
 function add_widget(target_grid, obj) {
 
@@ -336,8 +361,7 @@ function add_widget(target_grid, obj) {
 
     target_grid.addWidget(widget, pos_opts)
 
-    const editable = !((target_grid.opts.disableDrag === true) && (target_grid.opts.disableResize === true))
-    widget.set_edit(editable)
+    widget.set_edit(grid_edit_enabled(target_grid))
 
     return widget
 }
@@ -361,6 +385,9 @@ function load_widgets(target_grid, widgets) {
 
 function load_layout(grid_layout, widgets) {
 
+    // Stash edit state
+    const edit_enabled = grid_edit_enabled(grid)
+
     try {
         // Set background color
         const dashboard_div = document.getElementById("dashboard")
@@ -376,6 +403,9 @@ function load_layout(grid_layout, widgets) {
 
         alert('Grid load failed\n' + error.message)
     }
+
+    // Restore edit state
+    grid_set_edit(grid, edit_enabled)
 
     // Clear changed flag after load
     grid_changed = false
@@ -545,8 +575,7 @@ function init_pallet() {
             return
         }
 
-        const edit_enabled = !((grid.opts.disableDrag === true) && (grid.opts.disableResize === true))
-        if (!edit_enabled) {
+        if (!grid_edit_enabled(grid)) {
             // only trigger if editing of the base grid is enabled
             return
         }

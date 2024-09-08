@@ -327,21 +327,7 @@ class WidgetSubGrid extends WidgetBase {
     // Set edit enable / disable
     set_edit(b) {
         super.set_edit(b)
-
-        if (this.grid == null) {
-            return
-        }
-
-        // Sub grid and its sub widgets inherit the enable of the widget
-        if (b) {
-            this.grid.enable()
-        } else {
-            this.grid.disable()
-        }
-
-        for (const widget of this.grid.getGridItems()) {
-            widget.set_edit(b)
-        }
+        grid_set_edit(this.grid, b)
     }
 
     get_options() {
