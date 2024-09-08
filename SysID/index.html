@@ -1,13 +1,25 @@
 <!doctype html>
 <html>
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
+
+    <title>ArduPilot SysID</title>
+    <link rel="icon" href="../images/AP_favicon.png">
+
     <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
     <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 
+    <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+
     <script type="text/javascript" src="SysID.js"></script>
   </head>
+
+  <style>
+    div.plotly-notifier {
+      visibility: hidden;
+    }
+  </style>
 
   <table style="width:1200px">
     <tr><td>
@@ -25,6 +37,41 @@
   </table>
 
   <body>
+
+  <table>
+    <tr>
+    <td style="width: 30px;"></td>
+    <td>
+    <fieldset style="width:1100px">
+      <legend>Setup</legend>
+      <table>
+        <tr>
+          <td>
+            <fieldset style="width:200px;height:80px">
+              <legend>Analysis time</legend>
+              <label for="starttime">Start (s)</label>
+              <input id="starttime" type="number" min="0" step="1" value="0" style="width:50px"/><br><br>
+              <label for="endtime">End (s)</label>
+              <input id="endtime" type="number" min="0" step="1" value="0" style="width:50px"/>
+            </fieldset>
+          </td>
+          <td style="width: 10px;"></td>
+          <td>
+            <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
+          </td>
+        </tr>
+      </table>
+    </fieldset>
+    </td>
+    </tr>
+  </table>
+
+  <table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Flight Data</h2>
+  </td></tr></table>
+
+  <div id="FlightData" style="width:1200px;height:450px"></div>
+
     <div>
       <p>Output:</p>
       <textarea id="output" style="width: 1200px; height: 500px;" rows="10" disabled></textarea>
@@ -32,11 +79,11 @@
 
     <div>
       <form id="customForm">
-        <input type="checkbox" id="tf_checkbox" name="customCheckbox">
-        <label for="transfer function">Transfer function</label><br><br>
+        <input type="radio" id="tf_select" name="ID_type">
+        <label for="tf_select">Transfer function</label>
 
-        <input type="checkbox" id="ss_checkbox" name="customCheckbox">
-        <label for="state space">State Space</label><br><br>
+        <input type="radio" id="ss_select" name="ID_type">
+        <label for="ss_select">State Space</label><br><br>
       </form>
     </div>
 
@@ -80,7 +127,7 @@
       <label for="number of constraints">Number of Constraints:</label>
       <input type="number" id="num_cons" name="Inputs"><br><br>
 
-      <button id="createFieldsButton" type="button">Submit</button>
+      <button id="createFieldsButton" type="button">Generate fields</button>
       <br><br>
 
       <div id="inputFieldsContainer"></div>
@@ -119,12 +166,6 @@
     </div>
 
     <div>
-      <label for="start time">Start time (s):</label>
-      <input type="number" id="starttime" name="starttime">
-
-      <label for="end time">End time (s):</label>
-      <input type="number" id="endtime" name="endtime"><br><br>
-
       <label for="start frequency">Start frequency (rad/sec):</label>
       <input type="number" id="startfreq" name="startfreq">
 
@@ -134,13 +175,29 @@
       <label for="LPF cutoff frequency">LPF cutoff frequency (rad/sec):</label>
       <input type="number" id="cutofffreq" name="cutofffreq"><br><br>
 
-      <label for="file">Log File:</label>
-      <input type="file" id="fileInput" name="file">
-      <button id="parseButton" type="button">Submit</button>
+      <button id="parseButton" type="button" disabled>Submit</button>
     </div>
 
     <script type="text/javascript">
+      // Setup python environment
       init_pyodide()
+
+      // Setup flight data plot
+      setup_flight_data_plot()
+
+      // Handler for file select
+      function readFile(e) {
+        const file = e.files[0]
+        if (file == null) {
+          return
+        }
+        let reader = new FileReader()
+        reader.onload = function (e) {
+          load(reader.result)
+          document.title = "SysID: " + file.name
+        }
+        reader.readAsArrayBuffer(file)
+      }
 
       async function main() {
         const output = document.getElementById("output");
@@ -848,12 +905,11 @@
             }
             values.push(row);
           }
-          return values;          
+          return values;
         }
 
-        document.getElementById("tf_checkbox").addEventListener("change", function () {
+        document.getElementById("tf_select").addEventListener("change", function () {
           if (this.checked) {
-            document.getElementById("ss_checkbox").checked = false;
             document.getElementById("tf_form").style.display = "block";
             document.getElementById("ss_form").style.display = "none";
             createInputFields('tf_inputFieldsContainer', 'Input', 'input', 1);
@@ -863,14 +919,13 @@
           }
         });
 
-        document.getElementById("ss_checkbox").addEventListener("change", function () {
+        document.getElementById("ss_select").addEventListener("change", function () {
           if (this.checked) {
             createautopopulate('autopopulateContainer');
             // set presets
-            document.getElementById("tf_checkbox").checked = false;
             document.getElementById("ss_form").style.display = "block";
             document.getElementById("tf_form").style.display = "none";
-            
+
             document.getElementById('createFieldsButton').addEventListener('click', function () {
               const populate = document.getElementById('populate_dropdown').value
               console.log("autopopulate selection: ",populate);
@@ -934,34 +989,16 @@
             return
           }
 
-          const tfCheckbox = document.getElementById('tf_checkbox').checked
-          const ssCheckbox = document.getElementById('ss_checkbox').checked
+          const tfCheckbox = document.getElementById('tf_select').checked
+          const ssCheckbox = document.getElementById('ss_select').checked
 
-          if (!tfCheckbox && !ssCheckbox) {
-            // Neither checkboxes selected?
-            return
-          }
+          if(tfCheckbox) {
+            run_transfer_function_ID(log)
 
-          const file = fileInput.files[0]
-          const reader = new FileReader()
-          reader.onload = async function (event) {
-
-            const parser = new DataflashParser()
-            parser.processData(event.target.result)
-
-            addToOutput("File Submitted successfully. Please wait!!!!!!")
-
-            if(tfCheckbox) {
-              run_transfer_function_ID(parser)
-
-            } else if (ssCheckbox) {
-              run_SS_ID(parser)
-
-            }
+          } else if (ssCheckbox) {
+            run_SS_ID(log)
 
           }
-          reader.readAsArrayBuffer(file)
-
         })
       }
 

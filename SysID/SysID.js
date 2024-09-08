@@ -49,6 +49,159 @@ async function init_pyodide() {
     `)
 }
 
+// Plotly default color map
+function plot_default_color(i) {
+    const default_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    return default_colors[i % default_colors.length]
+}
+
+var flight_data = {}
+function setup_flight_data_plot() {
+
+    const time_scale_label = "Time (s)"
+
+    // Setup flight data plot
+    const flight_data_plot = ["Roll", "Pitch", "Throttle", "Altitude"]
+    const flight_data_unit = ["deg",  "deg",   "",         "m"]
+    flight_data.data = []
+    for (let i=0;i<flight_data_plot.length;i++) {
+        let axi = "y"
+        if (i > 0) {
+            axi += (i+1)
+        }
+        flight_data.data[i] = { mode: "lines",
+                                name: flight_data_plot[i],
+                                meta: flight_data_plot[i],
+                                yaxis: axi,
+                                hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} " + flight_data_unit[i] }
+    }
+
+    flight_data.layout = {
+        xaxis: { title: {text: time_scale_label },
+                 domain: [0.07, 0.93],
+                 type: "linear", 
+                 zeroline: false, 
+                 showline: true, 
+                 mirror: true,
+                 rangeslider: {} },
+        showlegend: false,
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+
+    // Set axis to match line colors
+    const flight_data_axis_pos = [0, 0.06, 0.94, 1]
+    for (let i=0;i<flight_data_plot.length;i++) {
+        let axi = "yaxis"
+        if (i > 0) {
+            axi += (i+1)
+        }
+        const side = i < 2 ? "left" : "right"
+        flight_data.layout[axi] = {title: { text: flight_data_plot[i] },
+                                            zeroline: false,
+                                            showline: true,
+                                            mirror: true,
+                                            side: side,
+                                            position: flight_data_axis_pos[i],
+                                            color: plot_default_color(i) }
+        if (i > 0) {
+            flight_data.layout[axi].overlaying = 'y'
+        }
+    }
+
+    var plot = document.getElementById("FlightData")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, flight_data.data, flight_data.layout, {displaylogo: false});
+
+    // Update start and end time based on range
+    document.getElementById("FlightData").on('plotly_relayout', function(data) {
+
+        function range_update(range) {
+            document.getElementById("starttime").value = Math.floor(range[0])
+            document.getElementById("endtime").value = Math.ceil(range[1])
+        }
+
+        if ((data['xaxis.range'] !== undefined)) {
+            range_update(data['xaxis.range'])
+            return
+        }
+
+        const range_keys = ['xaxis.range[0]', 'xaxis.range[1]']
+        if ((data[range_keys[0]] !== undefined) && (data[range_keys[1]] !== undefined)) {
+            range_update([data[range_keys[0]], data[range_keys[1]]])
+            return
+        }
+
+    })
+}
+
+// micro seconds to seconds helpers
+const US2S = 1 / 1000000
+function TimeUS_to_seconds(TimeUS) {
+    return array_scale(TimeUS, US2S)
+}
+
+// Load a new log
+let log
+function load(log_file) {
+
+    log = new DataflashParser()
+    log.processData(log_file, [])
+
+    let start_time
+    let end_time
+    function update_time(time_s) {
+        const first = time_s[0]
+        if ((start_time == null) || (first < start_time)) {
+            start_time = first
+        }
+
+        const last = time_s[time_s.length - 1]
+        if ((end_time == null) || (last > end_time)) {
+            end_time = last
+        }
+    }
+
+    // Plot flight data from log
+    if ("ATT" in log.messageTypes) {
+        const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
+        flight_data.data[0].x = ATT_time
+        flight_data.data[0].y = log.get("ATT", "Roll")
+
+        flight_data.data[1].x = ATT_time
+        flight_data.data[1].y = log.get("ATT", "Pitch")
+
+        update_time(ATT_time)
+    }
+
+    if ("RATE" in log.messageTypes) {
+        const RATE_time = TimeUS_to_seconds(log.get("RATE", "TimeUS"))
+        flight_data.data[2].x = RATE_time
+        flight_data.data[2].y = log.get("RATE", "AOut")
+
+        update_time(RATE_time)
+    }
+
+    if ("POS" in log.messageTypes) {
+        const POS_time = TimeUS_to_seconds(log.get("POS", "TimeUS"))
+        flight_data.data[3].x = POS_time
+        flight_data.data[3].y = log.get("POS", "RelHomeAlt")
+
+        update_time(POS_time)
+    }
+
+    Plotly.redraw("FlightData")
+
+    // Populate start and end time
+    if ((start_time != null) && (end_time != null)) {
+        document.getElementById("starttime").value = start_time
+        document.getElementById("endtime").value = end_time
+    }
+
+    // Enable submit button
+    document.getElementById("parseButton").disabled = false
+
+}
+
 // Run transfer function identification
 async function run_transfer_function_ID(parser) {
     addToOutput("File Submitted successfully. Please wait!!!!!!")
