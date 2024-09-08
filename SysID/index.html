@@ -349,16 +349,16 @@
             label.textContent = `${labelPrefix} ${i + 1}:`;
             container.appendChild(label);
 
-            const inputName = document.createElement('input');
-            inputName.type = 'text';
+            const inputName = document.createElement('select');
             inputName.name = `${inputNamePrefix}_name_${i + 1}`;
             inputName.id = `${inputNamePrefix}_name_${i + 1}`;
+            inputName.disabled = true
             container.appendChild(inputName);
 
-            const inputField = document.createElement('input');
-            inputField.type = 'text';
+            const inputField = document.createElement('select');
             inputField.name = `${inputNamePrefix}_field_${i + 1}`;
             inputField.id = `${inputNamePrefix}_field_${i + 1}`;
+            inputField.disabled = true
             container.appendChild(inputField);
 
             if (includeMultiplier) {
@@ -478,7 +478,12 @@
         }
 
         function setInputFields(vehicle_axis) {
-          document.getElementById(`${'input'}_name_${1}`).value = "RATE";
+
+          // Set message value and trigger on change event to regenerate the available fields
+          const input = document.getElementById(`${'input'}_name_${1}`)
+          input.value = "RATE"
+          input.onchange()
+
           if (vehicle_axis == "MR_Roll") {
             document.getElementById(`${'input'}_field_${1}`).value = "ROut";
           } else if (vehicle_axis == "MR_Pitch") {
@@ -491,12 +496,19 @@
         }
 
         function setOutputFields(vehicle_axis) {
+
+          function set_select(ele, val) {
+            ele.value = val
+            ele.onchange()
+          }
+
+          set_select(document.getElementById(`${'output'}_name_${1}`), "SIDD")
+
           if (vehicle_axis == "MR_Roll" || vehicle_axis == "MR_Pitch") {
-            document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
             document.getElementById(`multiplier_checkbox_${1}`).checked = true;
             document.getElementById(`multiplier_${1}`).style.display = "block";
             document.getElementById(`multiplier_${1}`).value ="0.01745";
-            document.getElementById(`${'output'}_name_${2}`).value = "SIDD";
+            set_select(document.getElementById(`${'output'}_name_${2}`), "SIDD")
             document.getElementById(`compensation_checkbox_${2}`).checked = true;
             document.getElementById(`axis_dropdown_${2}`).style.display = "block";
             if (vehicle_axis == "MR_Roll") {
@@ -509,13 +521,11 @@
               document.getElementById(`axis_dropdown_${2}`).value = "Pitch";
             }
           } else if (vehicle_axis == "MR_Yaw") {
-            document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
             document.getElementById(`${'output'}_field_${1}`).value = "Gz";
             document.getElementById(`multiplier_checkbox_${1}`).checked = true;
             document.getElementById(`multiplier_${1}`).style.display = "block";
             document.getElementById(`multiplier_${1}`).value ="0.01745";
           } else if (vehicle_axis == "MR_Vertical") {
-            document.getElementById(`${'output'}_name_${1}`).value = "SIDD";
             document.getElementById(`${'output'}_field_${1}`).value = "Az";
           }
         }
@@ -914,6 +924,10 @@
             document.getElementById("ss_form").style.display = "none";
             createInputFields('tf_inputFieldsContainer', 'Input', 'input', 1);
             createInputFields('tf_outputFieldsContainer', 'Output', 'output', 1, true, true);
+
+            // Add select options from log
+            populate_log_message_select()
+
           } else {
             document.getElementById("tf_form").style.display = "none";
           }
@@ -945,6 +959,10 @@
 
               createInputFields('inputFieldsContainer', 'Input', 'input', 1);
               createInputFields('outputFieldsContainer', 'Output', 'output', numOutputs, true, true);
+
+              // Add select options from log
+              populate_log_message_select()
+
               createsymbolicfields('symbolicparams',' Param',num_params);
               createBoundsField('boundsContainer',' Bound',num_params);
               createConstraintsField('constraintsinput', 'Constraint',num_constraints)

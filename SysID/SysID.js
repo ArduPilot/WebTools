@@ -197,10 +197,91 @@ function load(log_file) {
         document.getElementById("endtime").value = end_time
     }
 
+    // Populate drop downs with available log messages
+    populate_log_message_select()
+
     // Enable submit button
     document.getElementById("parseButton").disabled = false
 
 }
+
+function populate_log_message_select() {
+
+    // Need a valid log
+    if (log == null) {
+        return
+    }
+
+    // Get list of all available types
+    const message_types = []
+    for (const [key, value] of Object.entries(log.messageTypes)) {
+        if (!("instances" in value)) {
+            // Don't add base message types with instances
+            message_types.push(key)
+        }
+    }
+
+    // Sort alphabetically
+    message_types.sort((a, b) => a.localeCompare(b))
+
+    function populate(message, field) {
+
+        function option(value) {
+            const option = document.createElement('option');
+            option.value = value
+            option.text = value
+            return option
+        }
+
+        // Default to "None"
+        message.appendChild(option("None"))
+
+        // Add option for each message type
+        for (const type of message_types) {
+            message.appendChild(option(type))
+        }
+        message.disabled = false
+
+        // Add "None" to field
+        field.appendChild(option("None"))
+
+        // Callback to add types to field
+        message.onchange = () => {
+
+            // Remove all existing options except first
+            field.replaceChildren(field.firstElementChild)
+
+            // Look up fields
+            const msg = message.value
+            const have_msg = msg in log.messageTypes
+            if (have_msg) {
+                const fields = log.messageTypes[msg].expressions
+                for (const field_name of fields) {
+                    field.appendChild(option(field_name))
+                }
+            }
+
+            // Disable select if no valid types
+            field.disabled = !have_msg
+        }
+    }
+
+    const container_ids = ['inputFieldsContainer', 'outputFieldsContainer', 'tf_inputFieldsContainer', 'tf_outputFieldsContainer']
+    for (const container_id of container_ids) {
+        const container = document.getElementById(container_id)
+
+        for (const select of container.querySelectorAll("select")) {
+            const id = select.id
+            if (id.includes("_name_")) {
+                const field_name = id.replace("_name_", "_field_")
+                const field = container.querySelector("select[id= " + field_name + "]")
+                populate(select, field)
+            }
+        }
+    }
+
+}
+
 
 // Run transfer function identification
 async function run_transfer_function_ID(parser) {
