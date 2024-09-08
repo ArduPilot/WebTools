@@ -222,14 +222,6 @@ class WidgetSubGrid extends WidgetBase {
         this.size_div.style.right = 0
         this.widget_div.appendChild(this.size_div)
 
-        this.grid_div = document.createElement("div")
-        this.grid_div.style.border = "none"
-        this.grid_div.style.width = "100%"
-        this.grid_div.style.height =  "100%"
-        this.grid_div.style.overflow = "hidden"
-
-        this.size_div.appendChild(this.grid_div)
-
         // Don't show edit button on tool tip
         this.tippy_div.querySelector(`svg[id="Edit"]`).style.display = "none"
 
@@ -283,6 +275,19 @@ class WidgetSubGrid extends WidgetBase {
 
         // Clear existing grid
         clear_grid(this.grid)
+
+        // Remove grid div
+        if (this.grid_div != null) {
+            this.size_div.removeChild(this.grid_div)
+        }
+
+        // Replace grid div
+        this.grid_div = document.createElement("div")
+        this.grid_div.style.border = "none"
+        this.grid_div.style.width = "100%"
+        this.grid_div.style.height =  "100%"
+        this.grid_div.style.overflow = "hidden"
+        this.size_div.appendChild(this.grid_div)
 
         // Create new grid
         this.grid = GridStack.init({
