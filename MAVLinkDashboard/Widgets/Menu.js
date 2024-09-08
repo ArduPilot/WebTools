@@ -254,16 +254,7 @@ class WidgetMenu extends WidgetBase {
         const edit_checkbox = settings_tip_div.querySelector(`input[id="edit_enabled"]`)
         edit_checkbox.onclick = () => {
             const b = edit_checkbox.checked
-
-            if (b) {
-                grid.enable()
-            } else {
-                grid.disable()
-            }
-
-            for (const widget of grid.getGridItems()) {
-                widget.set_edit(b)
-            }
+            grid_set_edit(grid, b)
         }
 
         // Grid dimension inputs
