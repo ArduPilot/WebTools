@@ -56,53 +56,53 @@ function plot_default_color(i) {
 }
 
 function getFieldValues(prefix, numFields) {
-    const names = [];
-    const fields = [];
-    const multipliers = [];
-    const compensations = [];
+    const names = []
+    const fields = []
+    const multipliers = []
+    const compensations = []
 
     for (let i = 0; i < numFields; i++) {
-      names.push(document.getElementById(`${prefix}_name_${i + 1}`).value.trim());
-      fields.push(document.getElementById(`${prefix}_field_${i + 1}`).value.trim());
+        names.push(document.getElementById(`${prefix}_name_${i + 1}`).value.trim())
+        fields.push(document.getElementById(`${prefix}_field_${i + 1}`).value.trim())
 
-      const multiplierCheckbox = document.getElementById(`multiplier_checkbox_${i + 1}`);
-      if (multiplierCheckbox && multiplierCheckbox.checked) {
-        multipliers.push(document.getElementById(`multiplier_${i + 1}`).value.trim());
-      } else {
-        multipliers.push(null);
-      }
+        const multiplierCheckbox = document.getElementById(`multiplier_checkbox_${i + 1}`)
+        if (multiplierCheckbox && multiplierCheckbox.checked) {
+            multipliers.push(document.getElementById(`multiplier_${i + 1}`).value.trim())
+        } else {
+            multipliers.push(null)
+        }
 
-      const compensationCheckbox = document.getElementById(`compensation_checkbox_${i + 1}`);
-      if (compensationCheckbox && compensationCheckbox.checked) {
-        const selectedAxis = document.getElementById(`axis_dropdown_${i + 1}`).value;
-        compensations.push(selectedAxis); // Store the selected axis
-      } else {
-        compensations.push(null); // No compensation selected
-      }
+        const compensationCheckbox = document.getElementById(`compensation_checkbox_${i + 1}`)
+        if (compensationCheckbox && compensationCheckbox.checked) {
+            const selectedAxis = document.getElementById(`axis_dropdown_${i + 1}`).value
+            compensations.push(selectedAxis) // Store the selected axis
+        } else {
+            compensations.push(null) // No compensation selected
+        }
     }
 
-    return { names, fields, multipliers, compensations };
+    return { names, fields, multipliers, compensations }
 }
-  
+
 function getConstraintList(num_constraints) {
-    ans = []
-    for (let i = 0; i<num_constraints; i++) {
-      constraint_arr = [];
-      constraint_arr.push(document.getElementById(`${`Constraint`}_A_${i + 1}`).value.trim());
-      constraint_arr.push(document.getElementById(`${`Constraint`}_B_${i + 1}`).value.trim());
-      ans.push(constraint_arr);
+    const ans = []
+    for (let i = 0; i < num_constraints; i++) {
+        const constraint_arr = []
+        constraint_arr.push(document.getElementById(`${`Constraint`}_A_${i + 1}`).value.trim())
+        constraint_arr.push(document.getElementById(`${`Constraint`}_B_${i + 1}`).value.trim())
+        ans.push(constraint_arr)
     }
-    return ans;
+    return ans
 }
 
-  function getBounds(numParams) {
-    ans = []
-    bound_min = []
-    bound_max = []
+function getBounds(numParams) {
+    const ans = []
+    const bound_min = []
+    const bound_max = []
 
     for (let i = 0; i < numParams; i++ ) {
-      bound_min.push(parseFloat(document.getElementById(`${`Bound`}_min_${i + 1}`).value,10));
-      bound_max.push(parseFloat(document.getElementById(`${`Bound`}_max_${i + 1}`).value,10));
+        bound_min.push(parseFloat(document.getElementById(`${`Bound`}_min_${i + 1}`).value))
+        bound_max.push(parseFloat(document.getElementById(`${`Bound`}_max_${i + 1}`).value))
     }
 
     ans.push(bound_min)
@@ -111,76 +111,61 @@ function getConstraintList(num_constraints) {
     return ans;
 }
 
+// Find the index in the array with value closest to the target
+// If two values are the same the first will be returned
 function nearestIndex(arr, target) {
-    let low = 0;
-    let high = arr.length - 1;
 
-    if (target <= arr[low]) {
-        return low;
-    }
-    if (target >= arr[high]) {
-        return high;
-    }
-
-    while (low <= high) {
-      let mid = Math.floor(low + (high - low) / 2);
-
-      if (arr[mid] === target) {
-          return mid;
-      } else if (arr[mid] < target) {
-          low = mid + 1;
-      } else {
-          high = mid - 1;
-      }
+    const len = arr.length
+    let min_dist = null
+    let min_index = null
+    for (let i = 0; i<len; i++) {
+        const dist = Math.abs(arr[i] - target)
+        if ((min_dist == null) || (dist < min_dist)) {
+            min_dist = dist
+            min_index = i
+        }
     }
 
-    // Now low and high are neighbors around the target
-    if (low >= arr.length) {
-        return high;
-    }
-    if (high < 0) {
-        return low;
-    }
-
-    // Return the index with the closest value to the target
-    return Math.abs(arr[low] - target) < Math.abs(arr[high] - target) ? low : high;
+    return min_index
 }
 
 function getMatrixValues(matrixId, rows, cols) {
-    const values = [];
+
+    const values = []
     for (let i = 0; i < rows; i++) {
-      const row = [];
-      for (let j = 0; j < cols; j++) {
-        // Construct the selector for each input field
-        const cellSelector = `#${matrixId} input[name=${matrixId}_r${i}_c${j}]`;
-        const inputElement = document.querySelector(cellSelector);
+        const row = []
+        for (let j = 0; j < cols; j++) {
+            // Construct the selector for each input field
+            const cellSelector = `#${matrixId} input[name=${matrixId}_r${i}_c${j}]`;
+            const inputElement = document.querySelector(cellSelector);
 
-        if (inputElement) {
-          const cellValue = inputElement.value.trim();
+            if (inputElement) {
+                const cellValue = inputElement.value.trim()
 
-          // Check if the value is numeric
-          if (!isNaN(cellValue) && cellValue !== '') {
-            row.push(parseFloat(cellValue)); // Convert to number
-          } else if (cellValue !== '') {
-            row.push(cellValue); // Keep as string for symbolic/text values
-          } else {
-            row.push(null); // Handle empty inputs
-          }
-        } else {
-          row.push(null); // Handle cases where the input field might not exist
+                // Check if the value is numeric
+                if (!isNaN(cellValue) && cellValue !== '') {
+                    row.push(parseFloat(cellValue)) // Convert to number
+                } else if (cellValue !== '') {
+                    row.push(cellValue) // Keep as string for symbolic/text values
+                } else {
+                    row.push(null) // Handle empty inputs
+                }
+            } else {
+                row.push(null) // Handle cases where the input field might not exist
+            }
         }
-      }
-      values.push(row);
+        values.push(row)
     }
-    return values;
+
+    return values
 }
 
 function getParamValues(numParams) {
-    const sym_vars = [];
-    for (let i=0;i<numParams;i++) {
-      sym_vars.push(document.getElementById(`${'param'}_name_${i + 1}`).value.trim());
+    const sym_vars = []
+    for (let i=0; i < numParams; i++) {
+        sym_vars.push(document.getElementById(`${'param'}_name_${i + 1}`).value.trim())
     }
-    return sym_vars;
+    return sym_vars
 }
 
 var flight_data = {}
