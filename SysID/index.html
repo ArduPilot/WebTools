@@ -873,12 +873,6 @@
 
         document.getElementById('parseButton').addEventListener('click', async () => {
 
-          const fileInput = document.getElementById('fileItem')
-          if (fileInput.files.length === 0) {
-            alert('Please select a log file')
-            return
-          }
-
           const tfCheckbox = document.getElementById('tf_select').checked
           const ssCheckbox = document.getElementById('ss_select').checked
 
