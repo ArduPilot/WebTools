@@ -1,7 +1,6 @@
 // Import log parser
 var DataflashParser
 import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
-const fft_keys = ["in", "out"]
 
 function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     this.sample_rate = sample_rate
@@ -728,7 +727,7 @@ function nearestIndex(arr, target) {
     return min_index
 }
 // Determine the frequency response from log data
-var data_set = []
+var data_set
 function calculate_freq_resp() {
 
     const t_start = document.getElementById('starttime').value.trim()
@@ -780,7 +779,6 @@ function calculate_freq_resp() {
     // Hard code 50% overlap
     const window_overlap = 0.5
     const window_spacing = Math.round(window_size * (1 - window_overlap))
-    const num_sets = Math.trunc(timeData.length/window_spacing)
 
     // Get windowing function and correction factors for use later when plotting
     const windowing_function = hanning(window_size)
@@ -789,24 +787,20 @@ function calculate_freq_resp() {
     // FFT library
     const fft = new FFTJS(window_size);
 
-    for (let j=0; j<num_sets; j++) {
-        data_set[j][fft_keys[0]] = []
-        data_set[j][fft_keys[0]] = inputData.slice(j * window_spacing, j * window_spacing + window_spacing - 1)
-        data_set[j][fft_keys[1]] = []
-        data_set[j][fft_keys[1]] = outputData.slice(j * window_spacing, j * window_spacing + window_spacing - 1)
-        
-        var ret = run_fft(data_set[j], fft_keys, window_size, window_spacing, windowing_function, fft)
-
-        for (const key of fft_keys) {
-            data_set.FFT[key] = []
-            data_set[j].FFT[key].push(...ret[key])
-        }
+    data_set = {
+        in:   inputData,
+        out: outputData
     }
+
+    data_set.FFT = run_fft(data_set, Object.keys(data_set), window_size, window_spacing, windowing_function, fft)
+
     // Get bins and other useful stuff
-    data_set.FFT = { bins: rfft_freq(window_size, 1/sample_rate),
-                    average_sample_rate: sample_rate,
-                    window_size: window_size,
-                    correction: window_correction }
+    Object.assign(data_set.FFT, { bins: rfft_freq(window_size, 1/sample_rate),
+                  average_sample_rate: sample_rate,
+                  window_size: window_size,
+                  correction: window_correction })
+
+    console.log(data_set)
 
 }
 
