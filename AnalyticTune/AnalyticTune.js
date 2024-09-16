@@ -1,6 +1,7 @@
 // Import log parser
 var DataflashParser
 import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
+const fft_keys = ["in", "out"]
 
 function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     this.sample_rate = sample_rate
@@ -708,6 +709,109 @@ function calculate_filter() {
     const end = performance.now();
     console.log(`Calc took: ${end - start} ms`);
 }
+
+// Find the index in the array with value closest to the target
+// If two values are the same the first will be returned
+function nearestIndex(arr, target) {
+
+    const len = arr.length
+    let min_dist = null
+    let min_index = null
+    for (let i = 0; i<len; i++) {
+        const dist = Math.abs(arr[i] - target)
+        if ((min_dist == null) || (dist < min_dist)) {
+            min_dist = dist
+            min_index = i
+        }
+    }
+
+    return min_index
+}
+// Determine the frequency response from log data
+var data_set = []
+function calculate_freq_resp() {
+
+    const t_start = document.getElementById('starttime').value.trim()
+    const t_end = document.getElementById('endtime').value.trim()
+
+    let timeData_arr = log.get("RATE", "TimeUS")
+    const ind1_i = nearestIndex(timeData_arr, t_start*1000000)
+    const ind2_i = nearestIndex(timeData_arr, t_end*1000000)
+    console.log("ind1: ",ind1_i," ind2: ",ind2_i)
+
+    timeData = Array.from(timeData_arr)
+    console.log("time field pre slicing size: ", timeData.length)
+
+    timeData = timeData.slice(ind1_i, ind2_i)
+    console.log("time field post slicing size: ", timeData.length)
+
+    const Trec = (timeData[timeData.length - 1] - timeData[0]) / 1000000
+    const sample_rate = Trec / (timeData.length)
+    console.log("time Begin: ", timeData[0])
+    console.log("sample rate: ", sample_rate)
+
+    ///TODO/// multi-input configuration
+    let inputData = Array.from(log.get("RATE", "ROut"))
+    console.log("input field pre slicing size: ", inputData.length)
+
+    inputData = inputData.slice(ind1_i, ind2_i)
+    console.log("input field post slicing size: ", inputData.length)
+
+    const t_data = log.get("SIDD", "TimeUS")
+    const ind1_d = nearestIndex(t_data, t_start*1000000)
+    const ind2_d = nearestIndex(t_data, t_end*1000000)
+    let outputData = Array.from(log.get("SIDD", "Gx"))
+    console.log("output field pre slicing size: ", outputData.length)
+
+    outputData = outputData.slice(ind1_d, ind2_d)
+
+    // Convert data from degrees/second to radians/second
+    outputData = array_scale(outputData, 0.01745)
+
+    console.log("output field post slicing size: ", outputData.length)
+
+    // Window size from user
+    const window_size = parseInt(document.getElementById("FFTWindow_size").value)
+    if (!Number.isInteger(Math.log2(window_size))) {
+        alert('Window size must be a power of two')
+        throw new Error()
+    }
+
+    // Hard code 50% overlap
+    const window_overlap = 0.5
+    const window_spacing = Math.round(window_size * (1 - window_overlap))
+    const num_sets = Math.trunc(timeData.length/window_spacing)
+
+    // Get windowing function and correction factors for use later when plotting
+    const windowing_function = hanning(window_size)
+    const window_correction = window_correction_factors(windowing_function)
+
+    // FFT library
+    const fft = new FFTJS(window_size);
+
+    for (let j=0; j<num_sets; j++) {
+        data_set[j][fft_keys[0]] = []
+        data_set[j][fft_keys[0]] = inputData.slice(j * window_spacing, j * window_spacing + window_spacing - 1)
+        data_set[j][fft_keys[1]] = []
+        data_set[j][fft_keys[1]] = outputData.slice(j * window_spacing, j * window_spacing + window_spacing - 1)
+        
+        var ret = run_fft(data_set[j], fft_keys, window_size, window_spacing, windowing_function, fft)
+
+        for (const key of fft_keys) {
+            data_set.FFT[key] = []
+            data_set[j].FFT[key].push(...ret[key])
+        }
+    }
+    // Get bins and other useful stuff
+    data_set.FFT = { bins: rfft_freq(window_size, 1/sample_rate),
+                    average_sample_rate: sample_rate,
+                    window_size: window_size,
+                    correction: window_correction }
+
+}
+
+
+    
 
 // default to roll axis
 var last_axis = "CalculateRoll"
