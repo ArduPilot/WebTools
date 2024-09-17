@@ -446,7 +446,10 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
 }
 
 var flight_data = {}
-function setup_flight_data_plot() {
+var fft_plot = {}
+var fft_plot_Phase = {}
+var fft_plot_Coh = {}
+function setup_plots() {
 
     const time_scale_label = "Time (s)"
 
@@ -522,6 +525,100 @@ function setup_flight_data_plot() {
         }
 
     })
+
+
+    amplitude_scale = get_amplitude_scale()
+    frequency_scale = get_frequency_scale()
+
+    // FFT plot setup
+    fft_plot.data = []
+    fft_plot_Phase.data = []
+    fft_plot_Coh.data = []
+    fft_plot.layout = {
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    fft_plot_Phase.layout = {
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: "Phase (degrees)", zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    fft_plot_Coh.layout = {
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: "Coherence", zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+
+    plot = document.getElementById("FFTPlotMag")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
+
+    plot = document.getElementById("FFTPlotPhase")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot_Phase.data, fft_plot_Phase.layout, {displaylogo: false});
+
+    plot = document.getElementById("FFTPlotCoh")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot_Coh.data, fft_plot_Coh.layout, {displaylogo: false});
+
+    //link_plots()
+}
+
+// Get configured amplitude scale
+function get_amplitude_scale() {
+
+    const use_DB = document.getElementById("PID_ScaleLog").checked;
+
+    var ret = {}
+    if (use_DB) {
+        ret.fun = function (x) { return x }
+        ret.scale = function (x) { return array_scale(array_log10(x), 20.0) } // 20 * log10(x)
+        ret.label = "Amplitude (dB)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
+        ret.correction_scale = 1.0
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(correction) { return 1 / correction.linear }
+
+    } else {
+        ret.fun = function (x) { return x }
+        ret.scale = function (x) { return x }
+        ret.label = "Amplitude"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f}" }
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(correction) { return 1 / correction.linear }
+
+    }
+
+    return ret
+}
+
+// Get configured frequency scale object
+function get_frequency_scale() {
+
+    const use_RPM = document.getElementById("PID_freq_Scale_RPM").checked;
+
+    var ret = {}
+    if (use_RPM) {
+        ret.fun = function (x) { return array_scale(x, 60.0) }
+        ret.label = "RPM"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} RPM" }
+
+    } else {
+        ret.fun = function (x) { return x }
+        ret.label = "Frequency (Hz)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} Hz" }
+    }
+
+    ret.type = document.getElementById("PID_freq_ScaleLog").checked ? "log" : "linear"
+
+    return ret
 }
 
 // Update flight data range and enable calculate when time range inputs are updated
@@ -598,6 +695,58 @@ function load_log(log_file) {
         document.getElementById("endtime").value = end_time
     }
 
+    setup_FFT_data()
+}
+
+function setup_FFT_data() {
+
+    // Clear existing data
+    fft_plot.data = []
+    fft_plot_Phase.data = []
+    fft_plot_Coh.data = []
+
+    const plot_types = "bare airframe"
+    const meta_prefix = "Roll"
+            // For each axis
+            fft_plot.data[0] = { mode: "lines",
+                                     name: plot_types,
+                                     meta: meta_prefix + plot_types,
+                                     hovertemplate: "" }
+
+            fft_plot_Phase.data[0] = { mode: "lines",
+                                     name: plot_types,
+                                     meta: meta_prefix + plot_types,
+                                     hovertemplate: "" }
+
+            fft_plot_Coh.data[0] = { mode: "lines",
+                                     name: plot_types,
+                                     meta: meta_prefix + plot_types,
+                                     hovertemplate: "" }
+/*          
+            // Add legend groups if multiple sets
+            if (num_sets > 1) {
+                fft_plot.data[index].legendgroup = i
+                fft_plot.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
+                fft_plot_Phase.data[index].legendgroup = i
+                fft_plot_Phase.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
+                fft_plot_Coh.data[index].legendgroup = i
+                fft_plot_Coh.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
+             }
+*/
+    plot = document.getElementById("FFTPlotMag")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
+
+    plot = document.getElementById("FFTPlotPhase")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot_Phase.data, fft_plot_Phase.layout, {displaylogo: false});
+
+    plot = document.getElementById("FFTPlotCoh")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, fft_plot_Coh.data, fft_plot_Coh.layout, {displaylogo: false});
+
+//    link_plots()
+
 }
 
 function calculate_filter() {
@@ -645,7 +794,34 @@ function nearestIndex(arr, target) {
 }
 // Determine the frequency response from log data
 var data_set
+var amplitude_scale
+var frequency_scale
 function calculate_freq_resp() {
+
+    // Graph config
+    amplitude_scale = get_amplitude_scale()
+    frequency_scale = get_frequency_scale()
+
+    // Setup axes
+    fft_plot.layout.xaxis.type = frequency_scale.type
+    fft_plot.layout.xaxis.title.text = frequency_scale.label
+    fft_plot.layout.yaxis.title.text = amplitude_scale.label
+
+    fft_plot_Phase.layout.xaxis.type = frequency_scale.type
+    fft_plot_Phase.layout.xaxis.title.text = frequency_scale.label
+    fft_plot_Phase.layout.yaxis.title.text = amplitude_scale.label
+
+    fft_plot_Coh.layout.xaxis.type = frequency_scale.type
+    fft_plot_Coh.layout.xaxis.title.text = frequency_scale.label
+    fft_plot_Coh.layout.yaxis.title.text = amplitude_scale.label
+
+    const fft_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    for (let i = 0; i < fft_plot.data.length; i++) {
+        fft_plot.data[i].hovertemplate = fft_hovertemplate
+        fft_plot_Phase.data[i].hovertemplate = fft_hovertemplate
+        fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
+    }
+
 
     const t_start = document.getElementById('starttime').value.trim()
     const t_end = document.getElementById('endtime').value.trim()
@@ -662,7 +838,7 @@ function calculate_freq_resp() {
     console.log("time field post slicing size: ", timeData.length)
 
     const Trec = (timeData[timeData.length - 1] - timeData[0]) / 1000000
-    const sample_rate = Trec / (timeData.length)
+    const sample_rate = (timeData.length)/ Trec
     console.log("time Begin: ", timeData[0])
     console.log("sample rate: ", sample_rate)
 
@@ -699,7 +875,7 @@ function calculate_freq_resp() {
 
     // Get windowing function and correction factors for use later when plotting
     const windowing_function = hanning(window_size)
-    const window_correction = window_correction_factors(windowing_function)
+    const win_correction = window_correction_factors(windowing_function)
 
     // FFT library
     const fft = new FFTJS(window_size);
@@ -715,9 +891,16 @@ function calculate_freq_resp() {
     Object.assign(data_set.FFT, { bins: rfft_freq(window_size, 1/sample_rate),
                   average_sample_rate: sample_rate,
                   window_size: window_size,
-                  correction: window_correction })
+                  correction: win_correction })
 
     console.log(data_set)
+
+    // Windowing amplitude correction depends on spectrum of interest and resolution
+    const FFT_resolution = data_set.FFT.average_sample_rate/data_set.FFT.window_size
+    const window_correction = amplitude_scale.window_correction(data_set.FFT.correction, FFT_resolution)
+
+     // Set scaled x data
+    const scaled_bins = frequency_scale.fun(data_set.FFT.bins)
 
     const start_index = 0
     const end_index = data_set.FFT.center.length
@@ -759,203 +942,49 @@ function calculate_freq_resp() {
     const Hmag = complex_abs(H)
 
     const Hphase = complex_phase(H)
+    console.log(Hmag)
+    console.log(Hphase)
+    console.log(coh)
+    const show_set = true
+
+        // Apply selected scale, set to y axis
+        fft_plot.data[0].y = amplitude_scale.scale(Hmag)
+        
+        // Set bins
+        fft_plot.data[0].x = scaled_bins
+
+        // Work out if we should show this line
+        fft_plot.data[0].visible = show_set
+
+        // Apply selected scale, set to y axis
+        fft_plot_Phase.data[0].y = array_scale(Hphase, 180 / Math.PI)
+
+        // Set bins
+        fft_plot_Phase.data[0].x = scaled_bins
+
+        // Work out if we should show this line
+        fft_plot_Phase.data[0].visible = show_set
+
+        // Apply selected scale, set to y axis
+        fft_plot_Coh.data[0].y = coh
+
+        // Set bins
+        fft_plot_Coh.data[0].x = scaled_bins
+
+        // Work out if we should show this line
+        fft_plot_Coh.data[0].visible = show_set
+
+
+    Plotly.redraw("FFTPlotMag")
+
+    Plotly.redraw("FFTPlotPhase")
+
+    Plotly.redraw("FFTPlotCoh")
+
 
 }
 
-// default to roll axis
-var last_axis = "CalculateRoll"
-function calculate_pid(axis_id) {
-    const start = performance.now()
-
-    var PID_rate = get_form("SCHED_LOOP_RATE")
-    var filters = []
-    var freq_max = PID_rate * 0.5
-    var freq_step = 0.05;
-
-    if (axis_id == null) {
-        axis_id = last_axis
-    }
-
-    var axis_prefix;
-    if (axis_id ==  "CalculatePitch") {
-        axis_prefix = "ATC_RAT_PIT_";
-        document.getElementById("PID_title").innerHTML = "Pitch axis";
-    } else if (axis_id ==  "CalculateYaw") {
-        axis_prefix = "ATC_RAT_YAW_";
-        document.getElementById("PID_title").innerHTML = "Yaw axis";
-    } else {
-        axis_prefix = "ATC_RAT_RLL_";
-        document.getElementById("PID_title").innerHTML = "Roll axis";
-    }
-    last_axis = axis_id
-
-    filters.push(new PID(PID_rate,
-                        get_form(axis_prefix + "P"),
-                        get_form(axis_prefix + "I"),
-                        get_form(axis_prefix + "D"),
-                        get_form(axis_prefix + "FLTE"),
-                        get_form(axis_prefix + "FLTD")));
-
-    var use_dB = document.getElementById("PID_ScaleLog").checked;
-    setCookie("PID_Scale", use_dB ? "Log" : "Linear");
-
-    var use_RPM =  document.getElementById("PID_freq_Scale_RPM").checked;
-    setCookie("PID_feq_unit", use_RPM ? "RPM" : "Hz");
-
-    var unwrap_phase = document.getElementById("PID_ScaleUnWrap").checked;
-    setCookie("PID_PhaseScale", unwrap_phase ? "unwrap" : "wrap");
-
-    var filter_groups = [ filters ]
-    var gyro_H
-    let fast_sample_rate = get_form("GyroSampleRate");
-    let gyro_filters = get_filters(fast_sample_rate)
-
-    gyro_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
-
-    filter_groups.push(gyro_filters)
-
-    const H = evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase)
-
-    let X_scale = H.freq
-    if (use_RPM) {
-        X_scale = array_scale(X_scale, 60.0);
-    }
-
-    // Set scale type
-    var freq_log = document.getElementById("PID_freq_ScaleLog").checked;
-    setCookie("PID_feq_scale", freq_log ? "Log" : "Linear");
-
-    BodePID.layout.xaxis.type = freq_log ? "log" : "linear"
-    BodePID.layout.xaxis2.type = freq_log ? "log" : "linear"
-
-    BodePID.layout.xaxis2.title.text = use_RPM ? "Frequency (RPM)" : "Frequency (Hz)" 
-    BodePID.layout.yaxis.title.text = use_dB ? "Gain (dB)" : "Gain"
-
-    // Set to fixed range for wrapped phase
-    if (!unwrap_phase) {
-        BodePID.layout.yaxis2.range = [-180, 180]
-        BodePID.layout.yaxis2.autorange = false
-        BodePID.layout.yaxis2.fixedrange = true
-    } else {
-        BodePID.layout.yaxis2.fixedrange = false
-        BodePID.layout.yaxis2.autorange = true
-    }
-
-    const meta = ""
-    const amp_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} " + (use_dB ? "dB" : "")
-    const phase_template = "<extra></extra>" + meta + "%{x:.2f} " + (use_RPM ? "RPM" : "Hz") + "<br>%{y:.2f} deg"
-
-    const Show_Components = false
-    // Total
-    BodePID.data[0].x = X_scale
-    BodePID.data[0].y = H.attenuation
-    BodePID.data[0].hovertemplate = amp_template
-
-    BodePID.data[1].x = X_scale
-    BodePID.data[1].y = H.phase
-    BodePID.data[1].hovertemplate = phase_template
-
-    // Gyro filters
-    const show_gyro = (gyro_H != undefined) && Show_Components
-    BodePID.data[2].visible = show_gyro
-    BodePID.data[2].x = X_scale
-    BodePID.data[2].hovertemplate = amp_template
-
-    BodePID.data[3].visible = show_gyro
-    BodePID.data[3].x = X_scale
-    BodePID.data[3].hovertemplate = phase_template
-
-    if (show_gyro) {
-        BodePID.data[2].y = gyro_H.attenuation
-        BodePID.data[3].y = gyro_H.phase
-    }
-
-    // P
-    BodePID.data[4].visible = Show_Components
-    BodePID.data[4].x = X_scale
-    BodePID.data[4].y = filter_groups[0][0].P_attenuation
-    BodePID.data[4].hovertemplate = amp_template
-
-    BodePID.data[5].visible = Show_Components
-    BodePID.data[5].x = X_scale
-    BodePID.data[5].y = filter_groups[0][0].P_phase
-    BodePID.data[5].hovertemplate = phase_template
-
-    // I
-    BodePID.data[6].visible = Show_Components
-    BodePID.data[6].x = X_scale
-    BodePID.data[6].y = filter_groups[0][0].I_attenuation
-    BodePID.data[6].hovertemplate = amp_template
-
-    BodePID.data[7].visible = Show_Components
-    BodePID.data[7].x = X_scale
-    BodePID.data[7].y = filter_groups[0][0].I_phase
-    BodePID.data[7].hovertemplate = phase_template
-
-    // D
-    BodePID.data[8].visible = Show_Components
-    BodePID.data[8].x = X_scale
-    BodePID.data[8].y = filter_groups[0][0].D_attenuation
-    BodePID.data[8].hovertemplate = amp_template
-
-    BodePID.data[9].visible = Show_Components
-    BodePID.data[9].x = X_scale
-    BodePID.data[9].y = filter_groups[0][0].D_phase
-    BodePID.data[9].hovertemplate = phase_template
-
-    Plotly.redraw("BodePID")
-
-    const end = performance.now();
-    console.log(`PID calc took: ${end - start} ms`);
-}
-
-var BodePID = {}
 function load() {
-
-    // PID Bode plot setup
-    BodePID.data = []
-
-    name = "Combined"
-    BodePID.data[0] = { mode: "lines", line: { color: '#1f77b4' }, name: name, meta: name }
-    BodePID.data[1] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#1f77b4' }, name: name, meta: name }
-
-    name = "Gyro filters"
-    BodePID.data[2] = { mode: "lines", line: { color: '#ff7f0e' }, name: name, meta: name }
-    BodePID.data[3] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#ff7f0e' }, name: name, meta: name }
-
-    name = "Proportional"
-    BodePID.data[4] = { mode: "lines", line: { color: '#2ca02c' }, name: name, meta: name }
-    BodePID.data[5] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#2ca02c' }, name: name, meta: name }
-
-    name = "Integral"
-    BodePID.data[6] = { mode: "lines", line: { color: '#d62728' }, name: name, meta: name }
-    BodePID.data[7] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#d62728' }, name: name, meta: name }
-
-    name = "Derivative"
-    BodePID.data[8] = { mode: "lines", line: { color: '#9467bd' }, name: name, meta: name }
-    BodePID.data[9] = { mode: "lines", showlegend: false, xaxis: 'x2', yaxis: 'y2', line: { color: '#9467bd' }, name: name, meta: name }
-
-    BodePID.layout = {
-        xaxis: {type: "linear", zeroline: false, showline: true, mirror: true },
-        xaxis2: {title: {text: "" }, type: "linear", zeroline: false, showline: true, mirror: true },
-        yaxis: {title: {text: "" }, zeroline: false, showline: true, mirror: true, domain: [0.52, 1] },
-        yaxis2: {title: {text: "Phase (deg)"}, zeroline: false, showline: true, mirror: true, domain: [0.0, 0.48], },
-        showlegend: true,
-        legend: {itemclick: false, itemdoubleclick: false },
-        margin: { b: 50, l: 50, r: 50, t: 20 },
-        grid: {
-            rows: 2,
-            columns: 1,
-            pattern: 'independent'
-        }
-    }
-
-    plot = document.getElementById("BodePID")
-    Plotly.purge(plot)
-    Plotly.newPlot(plot, BodePID.data, BodePID.layout, {displaylogo: false});
-
-    link_plot_axis_range([["BodePID", "x", "", BodePID],
-                          ["BodePID", "x", "2", BodePID]])
 
     // Load params
     var url_string = (window.location.href).toLowerCase();

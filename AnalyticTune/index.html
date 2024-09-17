@@ -38,7 +38,7 @@
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load(); update_all_hidden(); setup_flight_data_plot(); calculate_pid();">
+<body onload="load(); update_all_hidden(); setup_plots();">
 
 <table>
         <tr>
@@ -250,9 +250,14 @@ ArduPilot 4.2 filter setup.
 </fieldset>
 </form>
 
-<h2>PIDs</h2>
+<h2>Prediction</h2>
 <h3><label id="PID_title">Title</label></h3>
-<div id="BodePID" style="width:1200px;height:900px"></div>
+
+<div id="FFTPlotMag" style="width:1200px;height:450px"></div>
+
+<div id="FFTPlotPhase" style="width:1200px;height:450px"></div>
+
+<div id="FFTPlotCoh" style="width:1200px;height:450px"></div>
 
 <form id="PID_params" action="">
         <fieldset style="max-width:1200px">
