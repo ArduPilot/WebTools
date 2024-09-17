@@ -598,89 +598,6 @@ function load_log(log_file) {
         document.getElementById("endtime").value = end_time
     }
 
-    // Populate drop downs with available log messages
-//    populate_log_message_select()
-
-    // Enable submit button
-//    document.getElementById("parseButton").disabled = false
-
-}
-
-function populate_log_message_select() {
-
-    // Need a valid log
-    if (log == null) {
-        return
-    }
-
-    // Get list of all available types
-    const message_types = []
-    for (const [key, value] of Object.entries(log.messageTypes)) {
-        if (!("instances" in value)) {
-            // Don't add base message types with instances
-            message_types.push(key)
-        }
-    }
-
-    // Sort alphabetically
-    message_types.sort((a, b) => a.localeCompare(b))
-
-    function populate(message, field) {
-
-        function option(value) {
-            const option = document.createElement('option');
-            option.value = value
-            option.text = value
-            return option
-        }
-
-        // Default to "None"
-        message.appendChild(option("None"))
-
-        // Add option for each message type
-        for (const type of message_types) {
-            message.appendChild(option(type))
-        }
-        message.disabled = false
-
-        // Add "None" to field
-        field.appendChild(option("None"))
-
-        // Callback to add types to field
-        message.onchange = () => {
-
-            // Remove all existing options except first
-            field.replaceChildren(field.firstElementChild)
-
-            // Look up fields
-            const msg = message.value
-            const have_msg = msg in log.messageTypes
-            if (have_msg) {
-                const fields = log.messageTypes[msg].expressions
-                for (const field_name of fields) {
-                    field.appendChild(option(field_name))
-                }
-            }
-
-            // Disable select if no valid types
-            field.disabled = !have_msg
-        }
-    }
-
-    const container_ids = ['inputFieldsContainer', 'outputFieldsContainer', 'tf_inputFieldsContainer', 'tf_outputFieldsContainer']
-    for (const container_id of container_ids) {
-        const container = document.getElementById(container_id)
-
-        for (const select of container.querySelectorAll("select")) {
-            const id = select.id
-            if (id.includes("_name_")) {
-                const field_name = id.replace("_name_", "_field_")
-                const field = container.querySelector("select[id= " + field_name + "]")
-                populate(select, field)
-            }
-        }
-    }
-
 }
 
 function calculate_filter() {
@@ -788,8 +705,8 @@ function calculate_freq_resp() {
     const fft = new FFTJS(window_size);
 
     data_set = {
-        in:   inputData,
-        out: outputData
+        Tar:   inputData,
+        Act: outputData
     }
 
     data_set.FFT = run_fft(data_set, Object.keys(data_set), window_size, window_spacing, windowing_function, fft)
@@ -802,10 +719,48 @@ function calculate_freq_resp() {
 
     console.log(data_set)
 
+    const start_index = 0
+    const end_index = data_set.FFT.center.length
+
+    // Number of windows averaged
+    const mean_length = end_index - start_index
+    console.log(mean_length)
+
+    var sum_in = array_mul(complex_abs(data_set.FFT.Tar[start_index]),complex_abs(data_set.FFT.Tar[start_index]))
+    var sum_out = array_mul(complex_abs(data_set.FFT.Act[start_index]),complex_abs(data_set.FFT.Act[start_index]))
+    var input_output = complex_mul(complex_conj(data_set.FFT.Tar[start_index]),data_set.FFT.Act[start_index])
+    var real_sum_inout = input_output[0]
+    var im_sum_inout = input_output[1]
+
+    for (let k=start_index+1;k<end_index;k++) {
+        // Add to sum
+        var input_sqr = array_mul(complex_abs(data_set.FFT.Tar[k]),complex_abs(data_set.FFT.Tar[k]))
+        var output_sqr = array_mul(complex_abs(data_set.FFT.Act[k]),complex_abs(data_set.FFT.Act[k]))
+        input_output = complex_mul(complex_conj(data_set.FFT.Tar[k]),data_set.FFT.Act[k])
+        sum_in = array_add(sum_in, input_sqr)  // this is now a scalar
+        sum_out = array_add(sum_out, output_sqr) // this is now a scalar
+        real_sum_inout = array_add(real_sum_inout, input_output[0])
+        im_sum_inout = array_add(im_sum_inout, input_output[1])
+    }
+
+    const Twin = (window_size - 1) * sample_rate
+    fft_scale = 2 / (0.612 * mean_length * Twin)
+    var input_sqr_avg = array_scale(sum_in, fft_scale)
+    var output_sqr_avg = array_scale(sum_out, fft_scale)
+    var input_output_avg = [array_scale(real_sum_inout, fft_scale), array_scale(im_sum_inout, fft_scale)]
+
+    var input_sqr_inv = array_inverse(input_sqr_avg)
+    const H = [array_mul(input_output_avg[0],input_sqr_inv), array_mul(input_output_avg[1],input_sqr_inv)]
+
+    const coh_num = array_mul(complex_abs(input_output_avg),complex_abs(input_output_avg))
+    const coh_den = array_mul(array_abs(input_sqr_avg), array_abs(output_sqr_avg))
+    const coh = array_div(coh_num, coh_den)
+
+    const Hmag = complex_abs(H)
+
+    const Hphase = complex_phase(H)
+
 }
-
-
-    
 
 // default to roll axis
 var last_axis = "CalculateRoll"
