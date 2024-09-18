@@ -445,6 +445,32 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
     return { attenuation: attenuation, phase: phase, freq: freq}
 }
 
+function calculate_filter() {
+    const start = performance.now()
+
+    var sample_rate = get_form("GyroSampleRate");
+    var freq_max = sample_rate * 0.5;
+    var freq_step = 0.1;
+    var filters = get_filters(sample_rate);
+
+    var use_dB = document.getElementById("ScaleLog").checked;
+    setCookie("Scale", use_dB ? "Log" : "Linear");
+    var use_RPM = document.getElementById("freq_Scale_RPM").checked;
+    setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
+    var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
+    setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
+
+    const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
+
+    let X_scale = H.freq
+    if (use_RPM) {
+        X_scale = array_scale(X_scale, 60.0);
+    }
+
+    const end = performance.now();
+    console.log(`Calc took: ${end - start} ms`);
+}
+
 var flight_data = {}
 var fft_plot = {}
 var fft_plot_Phase = {}
@@ -749,32 +775,6 @@ function setup_FFT_data() {
 
 }
 
-function calculate_filter() {
-    const start = performance.now()
-
-    var sample_rate = get_form("GyroSampleRate");
-    var freq_max = sample_rate * 0.5;
-    var freq_step = 0.1;
-    var filters = get_filters(sample_rate);
-
-    var use_dB = document.getElementById("ScaleLog").checked;
-    setCookie("Scale", use_dB ? "Log" : "Linear");
-    var use_RPM = document.getElementById("freq_Scale_RPM").checked;
-    setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
-    var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
-    setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
-
-    const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
-
-    let X_scale = H.freq
-    if (use_RPM) {
-        X_scale = array_scale(X_scale, 60.0);
-    }
-
-    const end = performance.now();
-    console.log(`Calc took: ${end - start} ms`);
-}
-
 // Find the index in the array with value closest to the target
 // If two values are the same the first will be returned
 function nearestIndex(arr, target) {
@@ -797,6 +797,18 @@ var data_set
 var amplitude_scale
 var frequency_scale
 function calculate_freq_resp() {
+
+    const t_start = document.getElementById('starttime').value.trim()
+    const t_end = document.getElementById('endtime').value.trim()
+    const eval_axis 
+    if (document.getElementById('type_Roll').checked) {
+        eval_axis = "Roll"
+    } else if (document.getElementById('type_Pitch').checked) {
+        eval_axis = "Pitch"
+    } else if (document.getElementById('type_Yaw').checked) {
+        eval_axis = "Yaw"
+    }
+    load_time_history_data(t_start, t_end)
 
     // Graph config
     amplitude_scale = get_amplitude_scale()
@@ -822,9 +834,6 @@ function calculate_freq_resp() {
         fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
     }
 
-
-    const t_start = document.getElementById('starttime').value.trim()
-    const t_end = document.getElementById('endtime').value.trim()
 
     let timeData_arr = log.get("RATE", "TimeUS")
     const ind1_i = nearestIndex(timeData_arr, t_start*1000000)
