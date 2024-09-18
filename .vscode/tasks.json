@@ -1,0 +1,55 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Host",
+            "type": "shell",
+            "command": "python -m http.server --bind 127.0.0.1",
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ""
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": " ",
+                    "endsPattern": "Serving HTTP on"
+                }
+            },
+        },
+        {
+            "label": "Terminate All Tasks",
+            "command": "echo ${input:terminate}",
+            "type": "shell",
+            "problemMatcher": []
+        },
+        {
+            "label": "StartServer",
+            "type": "process",
+            "command": "${input:startServer}"
+        },
+        {
+            "label": "StopServer",
+            "type": "process",
+            "command": "${input:stopServer}"
+        }
+    ],
+    "inputs": [
+        {
+          "id": "terminate",
+          "type": "command",
+          "command": "workbench.action.tasks.terminate",
+          "args": "terminateAll"
+        },
+        {
+            "id": "startServer",
+            "type": "command",
+            "command": "extension.liveServer.goOnline"
+        },
+        {
+            "id": "stopServer",
+            "type": "command",
+            "command": "extension.liveServer.goOffline"
+        }
+    ]
+}

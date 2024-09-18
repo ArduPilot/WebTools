@@ -1,5 +1,6 @@
 {
     "search.exclude": {
         "modules": true
-    }
+    },
+    "liveServer.settings.NoBrowser": true
 }
