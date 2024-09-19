@@ -792,23 +792,12 @@ function nearestIndex(arr, target) {
 
     return min_index
 }
+
 // Determine the frequency response from log data
 var data_set
 var amplitude_scale
 var frequency_scale
 function calculate_freq_resp() {
-
-    const t_start = document.getElementById('starttime').value.trim()
-    const t_end = document.getElementById('endtime').value.trim()
-    const eval_axis 
-    if (document.getElementById('type_Roll').checked) {
-        eval_axis = "Roll"
-    } else if (document.getElementById('type_Pitch').checked) {
-        eval_axis = "Pitch"
-    } else if (document.getElementById('type_Yaw').checked) {
-        eval_axis = "Yaw"
-    }
-    load_time_history_data(t_start, t_end)
 
     // Graph config
     amplitude_scale = get_amplitude_scale()
@@ -834,43 +823,6 @@ function calculate_freq_resp() {
         fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
     }
 
-
-    let timeData_arr = log.get("RATE", "TimeUS")
-    const ind1_i = nearestIndex(timeData_arr, t_start*1000000)
-    const ind2_i = nearestIndex(timeData_arr, t_end*1000000)
-    console.log("ind1: ",ind1_i," ind2: ",ind2_i)
-
-    timeData = Array.from(timeData_arr)
-    console.log("time field pre slicing size: ", timeData.length)
-
-    timeData = timeData.slice(ind1_i, ind2_i)
-    console.log("time field post slicing size: ", timeData.length)
-
-    const Trec = (timeData[timeData.length - 1] - timeData[0]) / 1000000
-    const sample_rate = (timeData.length)/ Trec
-    console.log("time Begin: ", timeData[0])
-    console.log("sample rate: ", sample_rate)
-
-    ///TODO/// multi-input configuration
-    let inputData = Array.from(log.get("RATE", "ROut"))
-    console.log("input field pre slicing size: ", inputData.length)
-
-    inputData = inputData.slice(ind1_i, ind2_i)
-    console.log("input field post slicing size: ", inputData.length)
-
-    const t_data = log.get("SIDD", "TimeUS")
-    const ind1_d = nearestIndex(t_data, t_start*1000000)
-    const ind2_d = nearestIndex(t_data, t_end*1000000)
-    let outputData = Array.from(log.get("SIDD", "Gx"))
-    console.log("output field pre slicing size: ", outputData.length)
-
-    outputData = outputData.slice(ind1_d, ind2_d)
-
-    // Convert data from degrees/second to radians/second
-    outputData = array_scale(outputData, 0.01745)
-
-    console.log("output field post slicing size: ", outputData.length)
-
     // Window size from user
     const window_size = parseInt(document.getElementById("FFTWindow_size").value)
     if (!Number.isInteger(Math.log2(window_size))) {
@@ -889,10 +841,19 @@ function calculate_freq_resp() {
     // FFT library
     const fft = new FFTJS(window_size);
 
-    data_set = {
-        Tar:   inputData,
-        Act: outputData
+    const t_start = document.getElementById('starttime').value.trim()
+    const t_end = document.getElementById('endtime').value.trim()
+    var eval_axis = ""
+    if (document.getElementById('type_Roll').checked) {
+        eval_axis = "Roll"
+    } else if (document.getElementById('type_Pitch').checked) {
+        eval_axis = "Pitch"
+    } else if (document.getElementById('type_Yaw').checked) {
+        eval_axis = "Yaw"
     }
+
+    var sample_rate
+    [data_set, sample_rate] = load_time_history_data(t_start, t_end, eval_axis)
 
     data_set.FFT = run_fft(data_set, Object.keys(data_set), window_size, window_spacing, windowing_function, fft)
 
@@ -918,42 +879,32 @@ function calculate_freq_resp() {
     const mean_length = end_index - start_index
     console.log(mean_length)
 
-    var sum_in = array_mul(complex_abs(data_set.FFT.Tar[start_index]),complex_abs(data_set.FFT.Tar[start_index]))
-    var sum_out = array_mul(complex_abs(data_set.FFT.Act[start_index]),complex_abs(data_set.FFT.Act[start_index]))
-    var input_output = complex_mul(complex_conj(data_set.FFT.Tar[start_index]),data_set.FFT.Act[start_index])
-    var real_sum_inout = input_output[0]
-    var im_sum_inout = input_output[1]
+    var input_fft = data_set.FFT.ActInput
+    var output_fft = data_set.FFT.GyroRaw
 
-    for (let k=start_index+1;k<end_index;k++) {
-        // Add to sum
-        var input_sqr = array_mul(complex_abs(data_set.FFT.Tar[k]),complex_abs(data_set.FFT.Tar[k]))
-        var output_sqr = array_mul(complex_abs(data_set.FFT.Act[k]),complex_abs(data_set.FFT.Act[k]))
-        input_output = complex_mul(complex_conj(data_set.FFT.Tar[k]),data_set.FFT.Act[k])
-        sum_in = array_add(sum_in, input_sqr)  // this is now a scalar
-        sum_out = array_add(sum_out, output_sqr) // this is now a scalar
-        real_sum_inout = array_add(real_sum_inout, input_output[0])
-        im_sum_inout = array_add(im_sum_inout, input_output[1])
-    }
+    var H_acft 
+    var coh_acft
+    [H_acft, coh_acft] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
 
-    const Twin = (window_size - 1) * sample_rate
-    fft_scale = 2 / (0.612 * mean_length * Twin)
-    var input_sqr_avg = array_scale(sum_in, fft_scale)
-    var output_sqr_avg = array_scale(sum_out, fft_scale)
-    var input_output_avg = [array_scale(real_sum_inout, fft_scale), array_scale(im_sum_inout, fft_scale)]
+    input_fft = data_set.FFT.RateTgt
+    output_fft = data_set.FFT.GyroRaw
+    var H_rate 
+    var coh_rate
+    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
 
-    var input_sqr_inv = array_inverse(input_sqr_avg)
-    const H = [array_mul(input_output_avg[0],input_sqr_inv), array_mul(input_output_avg[1],input_sqr_inv)]
+    input_fft = data_set.FFT.AttTgt
+    output_fft = data_set.FFT.Att
+    var H_att 
+    var coh_att
+    [H_att, coh_att] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
 
-    const coh_num = array_mul(complex_abs(input_output_avg),complex_abs(input_output_avg))
-    const coh_den = array_mul(array_abs(input_sqr_avg), array_abs(output_sqr_avg))
-    const coh = array_div(coh_num, coh_den)
+    const Hmag_acft = complex_abs(H_acft)
+    const Hphase_acft = complex_phase(H_acft)
+    const Hmag_rate = complex_abs(H_rate)
+    const Hphase_rate = complex_phase(H_rate)
+    const Hmag_att = complex_abs(H_att)
+    const Hphase_att = complex_phase(H_att)
 
-    const Hmag = complex_abs(H)
-
-    const Hphase = complex_phase(H)
-    console.log(Hmag)
-    console.log(Hphase)
-    console.log(coh)
     const show_set = true
 
         // Apply selected scale, set to y axis
@@ -975,7 +926,7 @@ function calculate_freq_resp() {
         fft_plot_Phase.data[0].visible = show_set
 
         // Apply selected scale, set to y axis
-        fft_plot_Coh.data[0].y = coh
+        fft_plot_Coh.data[0].y = coh_acft
 
         // Set bins
         fft_plot_Coh.data[0].x = scaled_bins
@@ -991,6 +942,141 @@ function calculate_freq_resp() {
     Plotly.redraw("FFTPlotCoh")
 
 
+}
+
+function load_time_history_data(t_start, t_end, axis) {
+
+
+    let timeRATE_arr = log.get("RATE", "TimeUS")
+    const ind1_i = nearestIndex(timeRATE_arr, t_start*1000000)
+    const ind2_i = nearestIndex(timeRATE_arr, t_end*1000000)
+    console.log("ind1: ",ind1_i," ind2: ",ind2_i)
+
+    let timeRATE = Array.from(timeRATE_arr)
+    console.log("time field pre slicing size: ", timeRATE.length)
+
+    timeRATE = timeRATE.slice(ind1_i, ind2_i)
+    console.log("time field post slicing size: ", timeRATE.length)
+
+    // Determine average sample rate
+    const trecord = (timeRATE[timeRATE.length - 1] - timeRATE[0]) / 1000000
+    const samplerate = (timeRATE.length)/ trecord
+    console.log("sample rate: ", samplerate)
+
+    const timeATT = log.get("ATT", "TimeUS")
+    const ind1_a = nearestIndex(timeATT, t_start*1000000)
+    const ind2_a = nearestIndex(timeATT, t_end*1000000)
+
+    const timeSIDD = log.get("SIDD", "TimeUS")
+    const ind1_s = nearestIndex(timeSIDD, t_start*1000000)
+    const ind2_s = nearestIndex(timeSIDD, t_end*1000000)
+
+    var ActInputParam = ""
+    var RateTgtParam = ""
+    var RateParam = ""
+    var AttTgtParam = ""
+    var AttParam = ""
+    var GyroRawParam = ""
+    if (axis == "Roll") {
+        ActInputParam = "ROut"
+        RateTgtParam = "RDes"
+        RateParam = "R"
+        AttTgtParam = "DesRoll"
+        AttParam = "Roll"
+        GyroRawParam = "Gx"
+    } else if (axis == "Pitch") {
+        ActInputParam = "POut"
+        RateTgtParam = "PDes"
+        RateParam = "P"
+        AttTgtParam = "DesPitch"
+        AttParam = "Pitch"
+        GyroRawParam = "Gy"
+    } else if (axis == "Yaw") {
+        ActInputParam = "YOut"
+        RateTgtParam = "YDes"
+        RateParam = "Y"
+        AttTgtParam = "DesYaw"
+        AttParam = "Yaw"
+        GyroRawParam = "Gz"
+    }
+    let ActInputData = Array.from(log.get("RATE", ActInputParam))
+    let RateTgtData = Array.from(log.get("RATE", RateTgtParam))
+    let RateData = Array.from(log.get("RATE", RateParam))
+    let AttTgtData = Array.from(log.get("ATT", AttTgtParam))
+    let AttData = Array.from(log.get("ATT", AttParam))
+    let GyroRawData = Array.from(log.get("SIDD", GyroRawParam))
+
+    // Slice ActInputData
+    ActInputData = ActInputData.slice(ind1_i, ind2_i)
+    // Slice RateTgtData and Convert data from degrees/second to radians/second
+    RateTgtData = RateTgtData.slice(ind1_i, ind2_i)
+    RateTgtData = array_scale(RateTgtData, 0.01745)
+    // Slice RateData and Convert data from degrees/second to radians/second
+    RateData = RateData.slice(ind1_i, ind2_i)
+    RateData = array_scale(RateData, 0.01745)
+
+
+    // Slice AttTgtData Convert data from degrees/second to radians/second
+    AttTgtData = AttTgtData.slice(ind1_a, ind2_a)
+    AttTgtData = array_scale(AttTgtData, 0.01745)
+    // Slice AttData and Convert data from degrees/second to radians/second
+    AttData = AttData.slice(ind1_a, ind2_a)
+    AttData = array_scale(AttData, 0.01745)
+
+
+    // Slice GyroRawData and Convert data from degrees/second to radians/second
+    GyroRawData = GyroRawData.slice(ind1_s, ind2_s)
+    GyroRawData = array_scale(GyroRawData, 0.01745)
+    // Pull and Slice PilotInputData
+    let PilotInputData = Array.from(log.get("SIDD", "Targ"))
+    PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
+
+    var data = {
+        PilotInput: PilotInputData,
+        ActInput:   ActInputData,
+        GyroRaw:    GyroRawData,
+        RateTgt:    RateTgtData,
+        Rate:       RateData,
+        AttTgt:     AttTgtData,
+        Att:        AttData
+    }
+    return [data, samplerate]
+
+}
+
+function calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate) {
+
+    var sum_in = array_mul(complex_abs(data_set.FFT.ActInput[start_index]),complex_abs(data_set.FFT.ActInput[start_index]))
+    var sum_out = array_mul(complex_abs(data_set.FFT.GyroRaw[start_index]),complex_abs(data_set.FFT.GyroRaw[start_index]))
+    var input_output = complex_mul(complex_conj(data_set.FFT.ActInput[start_index]),data_set.FFT.GyroRaw[start_index])
+    var real_sum_inout = input_output[0]
+    var im_sum_inout = input_output[1]
+
+    for (let k=start_index+1;k<end_index;k++) {
+        // Add to sum
+        var input_sqr = array_mul(complex_abs(data_set.FFT.ActInput[k]),complex_abs(data_set.FFT.ActInput[k]))
+        var output_sqr = array_mul(complex_abs(data_set.FFT.GyroRaw[k]),complex_abs(data_set.FFT.GyroRaw[k]))
+        input_output = complex_mul(complex_conj(data_set.FFT.ActInput[k]),data_set.FFT.GyroRaw[k])
+        sum_in = array_add(sum_in, input_sqr)  // this is now a scalar
+        sum_out = array_add(sum_out, output_sqr) // this is now a scalar
+        real_sum_inout = array_add(real_sum_inout, input_output[0])
+        im_sum_inout = array_add(im_sum_inout, input_output[1])
+    }
+
+    const Twin = (window_size - 1) * sample_rate
+    const fft_scale = 2 / (0.612 * mean_length * Twin)
+    var input_sqr_avg = array_scale(sum_in, fft_scale)
+    var output_sqr_avg = array_scale(sum_out, fft_scale)
+    var input_output_avg = [array_scale(real_sum_inout, fft_scale), array_scale(im_sum_inout, fft_scale)]
+
+    var input_sqr_inv = array_inverse(input_sqr_avg)
+    const H = [array_mul(input_output_avg[0],input_sqr_inv), array_mul(input_output_avg[1],input_sqr_inv)]
+
+    const coh_num = array_mul(complex_abs(input_output_avg),complex_abs(input_output_avg))
+    const coh_den = array_mul(array_abs(input_sqr_avg), array_abs(output_sqr_avg))
+    const coh = array_div(coh_num, coh_den)
+    
+    return [H, coh]
 }
 
 function load() {
