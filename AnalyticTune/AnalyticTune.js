@@ -2,6 +2,7 @@
 var DataflashParser
 import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
 
+
 function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     this.sample_rate = sample_rate
 
@@ -587,51 +588,40 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     //this will have to be the sample rate of time history data
     var freq_max = sample_rate * 0.5
     var freq_step = sample_rate / window_size;
-
-    console.log(freq_step)
-    var PID_rate = get_form("SCHED_LOOP_RATE")
-    var filters = []
     var use_dB = false
     var unwrap_phase = false
-    var axis_prefix;
-    axis_prefix = "ATC_RAT_RLL_";
-//    document.getElementById("params").innerHTML = "Attitude Controller Parameters";
 
-    filters.push(new PID(PID_rate,
+    var PID_rate = get_form("SCHED_LOOP_RATE")
+    var PID_filter = []
+    var axis_prefix = "ATC_RAT_RLL_";
+    PID_filter.push(new PID(PID_rate,
         get_form(axis_prefix + "P"),
         get_form(axis_prefix + "I"),
         get_form(axis_prefix + "D"),
         get_form(axis_prefix + "FLTE"),
         get_form(axis_prefix + "FLTD")));
 
-    var filter_groups = [ filters ]
+    const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
-    const PID_H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
-
-    const FLTT = 20
     var T_filter = []
     T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     let fast_sample_rate = get_form("GyroSampleRate");
     let gyro_filters = get_filters(fast_sample_rate)
+    const INS_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
 
-    filter_groups.push(gyro_filters)
+    const H_PID_Acft_plus_one = [new Array(PID_H.H_total[0].length).fill(0), new Array(PID_H.H_total[0].length).fill(0)]
 
-    const INS_PID_H = evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase)
-
-    const H_one = [new Array(INS_PID_H.H_total[0].length).fill(1), new Array(INS_PID_H.H_total[0].length).fill(0)]
-    const H_PID_Acft_plus_one = [new Array(INS_PID_H.H_total[0].length).fill(0), new Array(INS_PID_H.H_total[0].length).fill(0)]
-
-    const FLTT_Acft = complex_mul(H_acft, FLTT_H.H_total)
-    const INS_PID_Acft = complex_mul(H_acft, INS_PID_H.H_total)
     const PID_Acft = complex_mul(H_acft, PID_H.H_total)
+    const INS_PID_Acft = complex_mul(PID_Acft, INS_H.H_total)
+    const FLTT_PID_Acft = complex_mul(PID_Acft, FLTT_H.H_total)
 
-    for (let k=0;k<H_one[0].length+1;k++) {
-        H_PID_Acft_plus_one[0][k] = PID_Acft[0][k] + H_one[0][k]
-        H_PID_Acft_plus_one[1][k] = PID_Acft[1][k] + H_one[1][k]
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        H_PID_Acft_plus_one[0][k] = INS_PID_Acft[0][k] + 1
+        H_PID_Acft_plus_one[1][k] = INS_PID_Acft[1][k]
     }
-    const Ret = complex_div(FLTT_Acft, H_PID_Acft_plus_one)
+    const Ret = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
     return Ret
 
 }
@@ -962,7 +952,7 @@ function calculate_freq_resp() {
 
         // Apply selected scale, set to y axis
         fft_plot.data[0].y = amplitude_scale.scale(Hmag_calc)
-    
+
         // Set bins
         fft_plot.data[0].x = scaled_bins
 
@@ -987,10 +977,9 @@ function calculate_freq_resp() {
         // Work out if we should show this line
         fft_plot_Coh.data[0].visible = show_set
 
-            
         // Apply selected scale, set to y axis
         fft_plot.data[1].y = amplitude_scale.scale(Hmag_pred)
-        
+
         // Set bins
         fft_plot.data[1].x = scaled_bins
 
