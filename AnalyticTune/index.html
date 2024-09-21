@@ -56,7 +56,7 @@ ArduPilot 4.2 filter setup.
                                 <label for="FFTWindow_size">Window size</label>
                                 </td>
                                 <td>
-                                <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="512" onchange="window_size_inc(event); clear_calculation()" style="width:50px"/>
+                                <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="window_size_inc(event)" style="width:50px"/>
                                 </td>
                         </table>
                         </fieldset>
@@ -64,7 +64,7 @@ ArduPilot 4.2 filter setup.
                 <td>
                 <fieldset style="width:200px;height:80px">
                         <legend>Axis</legend>
-                        <input type="radio" id="type_Roll" name="Axis">
+                        <input type="radio" id="type_Roll" name="Axis" checked>
                         <label for="type_Roll">Roll</label><br>
                         <input type="radio" id="type_Pitch" name="Axis">
                         <label for="type_Pitch">Pitch</label><br>
@@ -123,28 +123,28 @@ ArduPilot 4.2 filter setup.
         <fieldset style="width:580px">
             <legend>First Notch Filter</legend>
             <p>
-                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0" style="width: 100px" onchange="update_hidden(this.id)"/>
+                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="1" style="width: 100px" onchange="update_hidden(this.id)"/>
             </p>
             <p>
-                <input id="INS_HNTCH_MODE" name="INS_HNTCH_MODE" type="number" step="1" value="0" style="width: 100px" onchange="update_hidden_mode()"/>
+                <input id="INS_HNTCH_MODE" name="INS_HNTCH_MODE" type="number" step="1" value="1" style="width: 100px" onchange="update_hidden_mode()"/>
             </p>
             <p>
-                <input id="INS_HNTCH_FREQ" name="INS_HNTCH_FREQ" type="number" step="0.1" value="0" style="width: 100px"/>
+                <input id="INS_HNTCH_FREQ" name="INS_HNTCH_FREQ" type="number" step="0.1" value="150" style="width: 100px"/>
             </p>
             <p>
-                <input id="INS_HNTCH_BW" name="INS_HNTCH_BW" type="number" step="0.1" value="0" style="width: 100px"/>
+                <input id="INS_HNTCH_BW" name="INS_HNTCH_BW" type="number" step="0.1" value="75" style="width: 100px"/>
             </p>
             <p>
-                <input id="INS_HNTCH_ATT" name="INS_HNTCH_ATT" type="number" step="0.1" value="0" style="width: 100px"/>
+                <input id="INS_HNTCH_ATT" name="INS_HNTCH_ATT" type="number" step="0.1" value="40" style="width: 100px"/>
             </p>
             <p>
-                <input id="INS_HNTCH_REF" name="INS_HNTCH_REF" type="number" step="0.01" value="0" style="width: 100px"/>
+                <input id="INS_HNTCH_REF" name="INS_HNTCH_REF" type="number" step="0.01" value="0.29" style="width: 100px"/>
             </p>
             <p>
                 <input id="INS_HNTCH_FM_RAT" name="INS_HNTCH_FM_RAT" type="number" step="0.01" value="0" style="width: 100px"/>
             </p>
             <p>
-                <input id="INS_HNTCH_HMNCS" name="INS_HNTCH_HMNCS" type="number" step="1" value="0" style="width: 100px"/>
+                <input id="INS_HNTCH_HMNCS" name="INS_HNTCH_HMNCS" type="number" step="1" value="3" style="width: 100px"/>
             </p>
             <p>
                 <input id="INS_HNTCH_OPTS" name="INS_HNTCH_OPTS" type="number" step="1" value="0" style="width: 100px"/>
@@ -200,16 +200,16 @@ ArduPilot 4.2 filter setup.
                                 <input id="ATC_ANG_RLL_P" name="ATC_ANG_XXX_P" type="number" step="0.1" value="4.5"/>
                         </p>
                         <p>
-                                <input id="ATC_RAT_RLL_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.135"/>
+                                <input id="ATC_RAT_RLL_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.288"/>
                         </p>
                         <p>
-                                <input id="ATC_RAT_RLL_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.135"/>
+                                <input id="ATC_RAT_RLL_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.288"/>
                         </p>
                         <p>
-                                <input id="ATC_RAT_RLL_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0036"/>
+                                <input id="ATC_RAT_RLL_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0117"/>
                         </p>
                         <p>
-                                <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="20"/>
+                                <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="1.77"/>
                         </p>
                         <p>
                                 <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_XXX_FLTE" type="number" step="0.01" value="0"/>
@@ -253,11 +253,11 @@ ArduPilot 4.2 filter setup.
 <h2>Prediction</h2>
 <h3><label id="PID_title">Title</label></h3>
 
-<div id="FFTPlotMag" style="width:1200px;height:450px"></div>
+<div id="FFTPlotMag" style="width:1200px;height:350px"></div>
 
-<div id="FFTPlotPhase" style="width:1200px;height:450px"></div>
+<div id="FFTPlotPhase" style="width:1200px;height:350px"></div>
 
-<div id="FFTPlotCoh" style="width:1200px;height:450px"></div>
+<div id="FFTPlotCoh" style="width:1200px;height:250px"></div>
 
 <form id="PID_params" action="">
         <fieldset style="max-width:1200px">
@@ -266,20 +266,31 @@ ArduPilot 4.2 filter setup.
                         <table>
                                 <tr>
                                         <td>
+                                                <fieldset style="width:200px;height:80px">
+                                                        <legend>Control Loop</legend>
+                                                        <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Bare_AC">Bare Aircraft</label><br>
+                                                        <input type="radio" id="type_Rate_Ctrlr" name="Control_Loop" value="Rate_Ctrlr"  onchange="redraw_freq_resp();" checked>
+                                                        <label for="type_Rate_Ctrlr">Rate Controller</label><br>
+                                                        <input type="radio" id="type_Att_Ctrlr" name="Control_Loop" value="Att_Ctrlr"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Ctrlr">Attitude Controller</label><br>
+                                                </fieldset>
+                                                </td>
+                                                                        <td>
                                                 <fieldset style="width:150px; height:70px">
                                                         <legend>Gain scale</legend>
-                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="calculate_pid();" checked>
+                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="redraw_freq_resp();" checked>
                                                         <label for="PID_ScaleLog">dB</label><br>
-                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear" onchange="calculate_pid();">
+                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear" onchange="redraw_freq_resp();">
                                                         <label for="PID_ScaleLinear">Linear</label><br>
                                                 </fieldset>
                                         </td>
                                         <td>
                                                 <fieldset style="width:150px; height:70px">
                                                         <legend>Phase scale</legend>
-                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" onchange="calculate_pid();" checked>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" onchange="redraw_freq_resp();">
                                                         <label for="PID_ScaleUnWrap">un-wrapped</label><br>
-                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap"onchange="calculate_pid();" >
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap"onchange="redraw_freq_resp();" checked>
                                                         <label for="PID_ScaleWrap">±180</label><br>
                                                 </fieldset>
                                         </td>
@@ -289,16 +300,16 @@ ArduPilot 4.2 filter setup.
                                                         <table>
                                                                 <tr>
                                                                         <td>
-                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" onchange="calculate_pid();" checked>
+                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" onchange="redraw_freq_resp();" checked>
                                                                                 <label for="PID_freq_ScaleLog">Log</label><br>
-                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear" onchange="calculate_pid();">
+                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear" onchange="redraw_freq_resp();">
                                                                                 <label for="PID_freq_ScaleLinear">Linear</label><br>
                                                                         </td>
                                                                         <td>
-                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" onchange="calculate_pid();" checked>
+                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" onchange="redraw_freq_resp();" checked>
                                                                                 <label for="PID_freq_Scale_Hz">Hz</label><br>
-                                                                                <input type="radio" id="PID_freq_Scale_RPM" name="PID_feq_unit" value="RPM" onchange="calculate_pid();">
-                                                                                <label for="PID_freq_Scale_RPM">RPM</label><br>
+                                                                                <input type="radio" id="PID_freq_Scale_RPS" name="PID_feq_unit" value="RPS" onchange="redraw_freq_resp();">
+                                                                                <label for="PID_freq_Scale_RPS">Rad/s</label><br>
                                                                         </td>
                                                                 </tr>
                                                         </table>
