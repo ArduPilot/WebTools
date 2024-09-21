@@ -13,8 +13,8 @@ function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     this.D_filter = new LPF_1P(sample_rate, filtD)
 
     this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
-        const E_trans = this.E_filter.transfer(Z, Z1, Z2)
-        const D_trans = complex_mul(E_trans, this.D_filter.transfer(Z, Z1, Z2))
+        const E_trans = this.E_filter.transfer(Z, Z1, Z2, false, false)
+        const D_trans = complex_mul(E_trans, this.D_filter.transfer(Z, Z1, Z2, false, false))
 
         // I term is k*z / (z - 1)
         const Z_less_one = [array_offset(Z[0], -1), Z[1].slice()]
@@ -80,6 +80,7 @@ function PID(sample_rate,kP,kI,kD,filtE,filtD) {
 }
 
 function LPF_1P(sample_rate,cutoff) {
+    this.sample_rate = sample_rate
     // Helper function to get alpha
     function calc_lowpass_alpha_dt(dt, cutoff_freq) {
         if (dt <= 0.0 || cutoff_freq <= 0.0) {
@@ -97,7 +98,7 @@ function LPF_1P(sample_rate,cutoff) {
         return this;
     }
     this.alpha = calc_lowpass_alpha_dt(1.0/sample_rate,cutoff)
-    this.transfer = function(Z, Z1, Z2) {
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
         // H(z) = a/(1-(1-a)*z^-1)
         const len = Z1[0].length
 
@@ -105,7 +106,17 @@ function LPF_1P(sample_rate,cutoff) {
         const denominator = [array_offset(array_scale(Z1[0], this.alpha-1),1), 
                                           array_scale(Z1[1], this.alpha-1)]
 
-        return complex_div(numerator, denominator)
+        const H = complex_div(numerator, denominator)
+
+        this.attenuation = complex_abs(H)
+        this.phase = array_scale(complex_phase(H), 180/Math.PI)
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+        return H
     }
     return this;
 }
@@ -442,33 +453,7 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
     }
 
     // Return attenuation and phase
-    return { attenuation: attenuation, phase: phase, freq: freq}
-}
-
-function calculate_filter() {
-    const start = performance.now()
-
-    var sample_rate = get_form("GyroSampleRate");
-    var freq_max = sample_rate * 0.5;
-    var freq_step = 0.1;
-    var filters = get_filters(sample_rate);
-
-    var use_dB = document.getElementById("ScaleLog").checked;
-    setCookie("Scale", use_dB ? "Log" : "Linear");
-    var use_RPM = document.getElementById("freq_Scale_RPM").checked;
-    setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
-    var unwrap_phase = document.getElementById("ScaleUnWrap").checked;
-    setCookie("PhaseScale", unwrap_phase ? "unwrap" : "wrap");
-
-    const H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
-
-    let X_scale = H.freq
-    if (use_RPM) {
-        X_scale = array_scale(X_scale, 60.0);
-    }
-
-    const end = performance.now();
-    console.log(`Calc took: ${end - start} ms`);
+    return { attenuation: attenuation, phase: phase, freq: freq, H_total: H_total}
 }
 
 var flight_data = {}
@@ -595,6 +580,60 @@ function setup_plots() {
     Plotly.newPlot(plot, fft_plot_Coh.data, fft_plot_Coh.layout, {displaylogo: false});
 
     //link_plots()
+}
+
+function calculate_predicted_TF(H_acft, sample_rate, window_size) {
+
+    //this will have to be the sample rate of time history data
+    var freq_max = sample_rate * 0.5
+    var freq_step = sample_rate / window_size;
+
+    console.log(freq_step)
+    var PID_rate = get_form("SCHED_LOOP_RATE")
+    var filters = []
+    var use_dB = false
+    var unwrap_phase = false
+    var axis_prefix;
+    axis_prefix = "ATC_RAT_RLL_";
+//    document.getElementById("params").innerHTML = "Attitude Controller Parameters";
+
+    filters.push(new PID(PID_rate,
+        get_form(axis_prefix + "P"),
+        get_form(axis_prefix + "I"),
+        get_form(axis_prefix + "D"),
+        get_form(axis_prefix + "FLTE"),
+        get_form(axis_prefix + "FLTD")));
+
+    var filter_groups = [ filters ]
+
+    const PID_H = evaluate_transfer_functions([filters], freq_max, freq_step, use_dB, unwrap_phase)
+
+    const FLTT = 20
+    var T_filter = []
+    T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
+    const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    let fast_sample_rate = get_form("GyroSampleRate");
+    let gyro_filters = get_filters(fast_sample_rate)
+
+    filter_groups.push(gyro_filters)
+
+    const INS_PID_H = evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase)
+
+    const H_one = [new Array(INS_PID_H.H_total[0].length).fill(1), new Array(INS_PID_H.H_total[0].length).fill(0)]
+    const H_PID_Acft_plus_one = [new Array(INS_PID_H.H_total[0].length).fill(0), new Array(INS_PID_H.H_total[0].length).fill(0)]
+
+    const FLTT_Acft = complex_mul(H_acft, FLTT_H.H_total)
+    const INS_PID_Acft = complex_mul(H_acft, INS_PID_H.H_total)
+    const PID_Acft = complex_mul(H_acft, PID_H.H_total)
+
+    for (let k=0;k<H_one[0].length+1;k++) {
+        H_PID_Acft_plus_one[0][k] = PID_Acft[0][k] + H_one[0][k]
+        H_PID_Acft_plus_one[1][k] = PID_Acft[1][k] + H_one[1][k]
+    }
+    const Ret = complex_div(FLTT_Acft, H_PID_Acft_plus_one)
+    return Ret
+
 }
 
 // Get configured amplitude scale
@@ -731,34 +770,40 @@ function setup_FFT_data() {
     fft_plot_Phase.data = []
     fft_plot_Coh.data = []
 
-    const plot_types = "bare airframe"
-    const meta_prefix = "Roll"
-            // For each axis
+    const plot_types = ["Calculated", "Predicted"]
+    const meta_prefix = "Closed Loop Rate "
+            // For Calculated Freq Resp
             fft_plot.data[0] = { mode: "lines",
-                                     name: plot_types,
-                                     meta: meta_prefix + plot_types,
+                                     name: plot_types[0],
+                                     meta: meta_prefix + plot_types[0],
                                      hovertemplate: "" }
 
             fft_plot_Phase.data[0] = { mode: "lines",
-                                     name: plot_types,
-                                     meta: meta_prefix + plot_types,
+                                     name: plot_types[0],
+                                     meta: meta_prefix + plot_types[0],
                                      hovertemplate: "" }
 
             fft_plot_Coh.data[0] = { mode: "lines",
-                                     name: plot_types,
-                                     meta: meta_prefix + plot_types,
+                                     name: plot_types[0],
+                                     meta: meta_prefix + plot_types[0],
                                      hovertemplate: "" }
-/*          
-            // Add legend groups if multiple sets
-            if (num_sets > 1) {
-                fft_plot.data[index].legendgroup = i
-                fft_plot.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
-                fft_plot_Phase.data[index].legendgroup = i
-                fft_plot_Phase.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
-                fft_plot_Coh.data[index].legendgroup = i
-                fft_plot_Coh.data[index].legendgrouptitle =  { text: "Test " + (i+1) }
-             }
-*/
+
+            // For Predicted Freq Resp
+            fft_plot.data[1] = { mode: "lines",
+                                    name: plot_types[1],
+                                    meta: meta_prefix + plot_types[1],
+                                    hovertemplate: "" }
+
+            fft_plot_Phase.data[1] = { mode: "lines",
+                                    name: plot_types[1],
+                                    meta: meta_prefix + plot_types[1],
+                                    hovertemplate: "" }
+
+            fft_plot_Coh.data[1] = { mode: "lines",
+                                    name: plot_types[1],
+                                    meta: meta_prefix + plot_types[1],
+                                    hovertemplate: "" }
+
     plot = document.getElementById("FFTPlotMag")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
@@ -798,6 +843,7 @@ var data_set
 var amplitude_scale
 var frequency_scale
 function calculate_freq_resp() {
+    const start = performance.now()
 
     // Graph config
     amplitude_scale = get_amplitude_scale()
@@ -879,37 +925,44 @@ function calculate_freq_resp() {
     const mean_length = end_index - start_index
     console.log(mean_length)
 
-    var input_fft = data_set.FFT.ActInput
-    var output_fft = data_set.FFT.GyroRaw
-
     var H_acft 
     var coh_acft
-    [H_acft, coh_acft] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
+    [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
 
-    input_fft = data_set.FFT.RateTgt
-    output_fft = data_set.FFT.GyroRaw
     var H_rate 
     var coh_rate
-    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
+    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
 
-    input_fft = data_set.FFT.AttTgt
-    output_fft = data_set.FFT.Att
     var H_att 
     var coh_att
-    [H_att, coh_att] = calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate)
+    [H_att, coh_att] = calculate_freq_resp_from_FFT(data_set.FFT.AttTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
 
-    const Hmag_acft = complex_abs(H_acft)
-    const Hphase_acft = complex_phase(H_acft)
+    var Hmag_acft = complex_abs(H_acft)
+    var Hphase_acft = complex_phase(H_acft)
     const Hmag_rate = complex_abs(H_rate)
     const Hphase_rate = complex_phase(H_rate)
     const Hmag_att = complex_abs(H_att)
     const Hphase_att = complex_phase(H_att)
 
+    const len = H_acft[0].length-1
+    H_acft_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    for (let k=1;k<len+1;k++) {
+        H_acft_tf[0][k-1] = H_acft[0][k]
+        H_acft_tf[1][k-1] = H_acft[1][k]
+    }
+
+    H_total = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    Hmag_pred = complex_abs(H_total)
+    Hphase_pred = complex_phase(H_total)
+
+    const Hmag_calc = Hmag_rate
+    const Hphase_calc = Hphase_rate
+
     const show_set = true
 
         // Apply selected scale, set to y axis
-        fft_plot.data[0].y = amplitude_scale.scale(Hmag)
-        
+        fft_plot.data[0].y = amplitude_scale.scale(Hmag_calc)
+    
         // Set bins
         fft_plot.data[0].x = scaled_bins
 
@@ -917,7 +970,7 @@ function calculate_freq_resp() {
         fft_plot.data[0].visible = show_set
 
         // Apply selected scale, set to y axis
-        fft_plot_Phase.data[0].y = array_scale(Hphase, 180 / Math.PI)
+        fft_plot_Phase.data[0].y = array_scale(Hphase_calc, 180 / Math.PI)
 
         // Set bins
         fft_plot_Phase.data[0].x = scaled_bins
@@ -934,6 +987,25 @@ function calculate_freq_resp() {
         // Work out if we should show this line
         fft_plot_Coh.data[0].visible = show_set
 
+            
+        // Apply selected scale, set to y axis
+        fft_plot.data[1].y = amplitude_scale.scale(Hmag_pred)
+        
+        // Set bins
+        fft_plot.data[1].x = scaled_bins
+
+        // Work out if we should show this line
+        fft_plot.data[1].visible = show_set
+
+        // Apply selected scale, set to y axis
+        fft_plot_Phase.data[1].y = array_scale(Hphase_pred, 180 / Math.PI)
+
+        // Set bins
+        fft_plot_Phase.data[1].x = scaled_bins
+
+        // Work out if we should show this line
+        fft_plot_Phase.data[1].visible = show_set
+
 
     Plotly.redraw("FFTPlotMag")
 
@@ -941,6 +1013,8 @@ function calculate_freq_resp() {
 
     Plotly.redraw("FFTPlotCoh")
 
+    const end = performance.now();
+    console.log(`Calc took: ${end - start} ms`);
 
 }
 
@@ -1046,17 +1120,17 @@ function load_time_history_data(t_start, t_end, axis) {
 
 function calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_index, mean_length, window_size, sample_rate) {
 
-    var sum_in = array_mul(complex_abs(data_set.FFT.ActInput[start_index]),complex_abs(data_set.FFT.ActInput[start_index]))
-    var sum_out = array_mul(complex_abs(data_set.FFT.GyroRaw[start_index]),complex_abs(data_set.FFT.GyroRaw[start_index]))
-    var input_output = complex_mul(complex_conj(data_set.FFT.ActInput[start_index]),data_set.FFT.GyroRaw[start_index])
+    var sum_in = array_mul(complex_abs(input_fft[start_index]),complex_abs(input_fft[start_index]))
+    var sum_out = array_mul(complex_abs(output_fft[start_index]),complex_abs(output_fft[start_index]))
+    var input_output = complex_mul(complex_conj(input_fft[start_index]),output_fft[start_index])
     var real_sum_inout = input_output[0]
     var im_sum_inout = input_output[1]
 
     for (let k=start_index+1;k<end_index;k++) {
         // Add to sum
-        var input_sqr = array_mul(complex_abs(data_set.FFT.ActInput[k]),complex_abs(data_set.FFT.ActInput[k]))
-        var output_sqr = array_mul(complex_abs(data_set.FFT.GyroRaw[k]),complex_abs(data_set.FFT.GyroRaw[k]))
-        input_output = complex_mul(complex_conj(data_set.FFT.ActInput[k]),data_set.FFT.GyroRaw[k])
+        var input_sqr = array_mul(complex_abs(input_fft[k]),complex_abs(input_fft[k]))
+        var output_sqr = array_mul(complex_abs(output_fft[k]),complex_abs(output_fft[k]))
+        input_output = complex_mul(complex_conj(input_fft[k]),output_fft[k])
         sum_in = array_add(sum_in, input_sqr)  // this is now a scalar
         sum_out = array_add(sum_out, output_sqr) // this is now a scalar
         real_sum_inout = array_add(real_sum_inout, input_output[0])
@@ -1249,7 +1323,6 @@ async function load_parameters(file) {
         }
     }
     update_all_hidden();
-    calculate_filter();
 }
 
 // update all hidden params, to be called at init
