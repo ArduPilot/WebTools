@@ -621,8 +621,10 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         H_PID_Acft_plus_one[0][k] = INS_PID_Acft[0][k] + 1
         H_PID_Acft_plus_one[1][k] = INS_PID_Acft[1][k]
     }
-    const Ret = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
-    return Ret
+    const Ret_rate = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
+
+    const Ret_att = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
+    return [Ret_rate, Ret_att]
 
 }
 
@@ -657,13 +659,13 @@ function get_amplitude_scale() {
 // Get configured frequency scale object
 function get_frequency_scale() {
 
-    const use_RPM = document.getElementById("PID_freq_Scale_RPM").checked;
+    const use_RPS = document.getElementById("PID_freq_Scale_RPS").checked;
 
     var ret = {}
-    if (use_RPM) {
-        ret.fun = function (x) { return array_scale(x, 60.0) }
-        ret.label = "RPM"
-        ret.hover = function (axis) { return "%{" + axis + ":.2f} RPM" }
+    if (use_RPS) {
+        ret.fun = function (x) { return array_scale(x, Math.PI * 2) }
+        ret.label = "Rad/s"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} Rad/s" }
 
     } else {
         ret.fun = function (x) { return x }
@@ -830,34 +832,10 @@ function nearestIndex(arr, target) {
 
 // Determine the frequency response from log data
 var data_set
-var amplitude_scale
-var frequency_scale
+var calc_freq_resp
+var pred_freq_resp
 function calculate_freq_resp() {
     const start = performance.now()
-
-    // Graph config
-    amplitude_scale = get_amplitude_scale()
-    frequency_scale = get_frequency_scale()
-
-    // Setup axes
-    fft_plot.layout.xaxis.type = frequency_scale.type
-    fft_plot.layout.xaxis.title.text = frequency_scale.label
-    fft_plot.layout.yaxis.title.text = amplitude_scale.label
-
-    fft_plot_Phase.layout.xaxis.type = frequency_scale.type
-    fft_plot_Phase.layout.xaxis.title.text = frequency_scale.label
-    fft_plot_Phase.layout.yaxis.title.text = amplitude_scale.label
-
-    fft_plot_Coh.layout.xaxis.type = frequency_scale.type
-    fft_plot_Coh.layout.xaxis.title.text = frequency_scale.label
-    fft_plot_Coh.layout.yaxis.title.text = amplitude_scale.label
-
-    const fft_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
-    for (let i = 0; i < fft_plot.data.length; i++) {
-        fft_plot.data[i].hovertemplate = fft_hovertemplate
-        fft_plot_Phase.data[i].hovertemplate = fft_hovertemplate
-        fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
-    }
 
     // Window size from user
     const window_size = parseInt(document.getElementById("FFTWindow_size").value)
@@ -905,8 +883,6 @@ function calculate_freq_resp() {
     const FFT_resolution = data_set.FFT.average_sample_rate/data_set.FFT.window_size
     const window_correction = amplitude_scale.window_correction(data_set.FFT.correction, FFT_resolution)
 
-     // Set scaled x data
-    const scaled_bins = frequency_scale.fun(data_set.FFT.bins)
 
     const start_index = 0
     const end_index = data_set.FFT.center.length
@@ -927,83 +903,51 @@ function calculate_freq_resp() {
     var coh_att
     [H_att, coh_att] = calculate_freq_resp_from_FFT(data_set.FFT.AttTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
 
-    var Hmag_acft = complex_abs(H_acft)
-    var Hphase_acft = complex_phase(H_acft)
-    const Hmag_rate = complex_abs(H_rate)
-    const Hphase_rate = complex_phase(H_rate)
-    const Hmag_att = complex_abs(H_att)
-    const Hphase_att = complex_phase(H_att)
-
+    // resample calculated responses to predicted response length
     const len = H_acft[0].length-1
-    H_acft_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var H_acft_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_acft_tf = [new Array(len).fill(0)]
+    var H_rate_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_rate_tf = [new Array(len).fill(0)]
+    var H_att_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_att_tf = [new Array(len).fill(0)]
+    var freq_tf = [new Array(len).fill(0)]
     for (let k=1;k<len+1;k++) {
         H_acft_tf[0][k-1] = H_acft[0][k]
         H_acft_tf[1][k-1] = H_acft[1][k]
+        coh_acft_tf[k-1] = coh_acft[k]
+        H_rate_tf[0][k-1] = H_rate[0][k]
+        H_rate_tf[1][k-1] = H_rate[1][k]
+        coh_rate_tf[k-1] = coh_rate[k]
+        H_att_tf[0][k-1] = H_att[0][k]
+        H_att_tf[1][k-1] = H_att[1][k]
+        coh_att_tf[k-1] = coh_att[k]
+        freq_tf[k-1] = data_set.FFT.bins[k]
     }
 
-    H_total = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
-    Hmag_pred = complex_abs(H_total)
-    Hphase_pred = complex_phase(H_total)
+    var H_rate_pred
+    var H_att_pred
+    [H_rate_pred, H_att_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
-    const Hmag_calc = Hmag_rate
-    const Hphase_calc = Hphase_rate
+    calc_freq_resp = {
+        attctrl_H: H_att_tf,
+        attctrl_coh: coh_att_tf,
+        ratectrl_H: H_rate_tf,
+        ratectrl_coh: coh_rate_tf,
+        bareAC_H: H_acft_tf,
+        bareAC_coh: coh_acft_tf,
+        freq: freq_tf
+    }
+    pred_freq_resp = {
+        attctrl_H: H_att_pred,
+        ratectrl_H: H_rate_pred,
+    }
 
-    const show_set = true
+    redraw_freq_resp()
 
-        // Apply selected scale, set to y axis
-        fft_plot.data[0].y = amplitude_scale.scale(Hmag_calc)
-
-        // Set bins
-        fft_plot.data[0].x = scaled_bins
-
-        // Work out if we should show this line
-        fft_plot.data[0].visible = show_set
-
-        // Apply selected scale, set to y axis
-        fft_plot_Phase.data[0].y = array_scale(Hphase_calc, 180 / Math.PI)
-
-        // Set bins
-        fft_plot_Phase.data[0].x = scaled_bins
-
-        // Work out if we should show this line
-        fft_plot_Phase.data[0].visible = show_set
-
-        // Apply selected scale, set to y axis
-        fft_plot_Coh.data[0].y = coh_acft
-
-        // Set bins
-        fft_plot_Coh.data[0].x = scaled_bins
-
-        // Work out if we should show this line
-        fft_plot_Coh.data[0].visible = show_set
-
-        // Apply selected scale, set to y axis
-        fft_plot.data[1].y = amplitude_scale.scale(Hmag_pred)
-
-        // Set bins
-        fft_plot.data[1].x = scaled_bins
-
-        // Work out if we should show this line
-        fft_plot.data[1].visible = show_set
-
-        // Apply selected scale, set to y axis
-        fft_plot_Phase.data[1].y = array_scale(Hphase_pred, 180 / Math.PI)
-
-        // Set bins
-        fft_plot_Phase.data[1].x = scaled_bins
-
-        // Work out if we should show this line
-        fft_plot_Phase.data[1].visible = show_set
-
-
-    Plotly.redraw("FFTPlotMag")
-
-    Plotly.redraw("FFTPlotPhase")
-
-    Plotly.redraw("FFTPlotCoh")
 
     const end = performance.now();
-    console.log(`Calc took: ${end - start} ms`);
+    console.log(`Calc Freq Resp took: ${end - start} ms`);
 
 }
 
@@ -1179,6 +1123,39 @@ function load() {
             }
         }
     }
+}
+
+var last_window_size
+function window_size_inc(event) {
+    if (last_window_size == null) {
+        last_window_size = parseFloat(event.target.defaultValue)
+    }
+    const new_value = parseFloat(event.target.value)
+    const change = parseFloat(event.target.value) - last_window_size
+    if (Math.abs(change) != 1) {
+        // Assume a change of one is comming from the up down buttons, ignore angthing else
+        last_window_size = new_value
+        return
+    }
+    var new_exponent = Math.log2(last_window_size)
+    if (!Number.isInteger(new_exponent)) {
+        // Move to power of two in the selected direction
+        new_exponent = Math.floor(new_exponent)
+        if (change > 0) {
+            new_exponent += 1
+        }
+
+    } else if (change > 0) {
+        // Move up one
+        new_exponent += 1
+
+    } else {
+        // Move down one
+        new_exponent -= 1
+
+    }
+    event.target.value = 2**new_exponent
+    last_window_size = event.target.value
 }
 
 // build url and query string for current view and copy to clipboard
@@ -1374,4 +1351,129 @@ function update_hidden_mode()
         }
         document.getElementById(mode_options[i][1]).hidden = hide;
     }
+}
+
+var amplitude_scale
+var frequency_scale
+// default to roll axis
+var last_axis = "CalculateRoll"
+function redraw_freq_resp() {
+    const start = performance.now()
+
+    // Graph config
+    amplitude_scale = get_amplitude_scale()
+    frequency_scale = get_frequency_scale()
+
+    // Setup axes
+    fft_plot.layout.xaxis.type = frequency_scale.type
+    fft_plot.layout.xaxis.title.text = frequency_scale.label
+    fft_plot.layout.yaxis.title.text = amplitude_scale.label
+
+    fft_plot_Phase.layout.xaxis.type = frequency_scale.type
+    fft_plot_Phase.layout.xaxis.title.text = frequency_scale.label
+    fft_plot_Phase.layout.yaxis.title.text = "Phase (deg)"
+
+    fft_plot_Coh.layout.xaxis.type = frequency_scale.type
+    fft_plot_Coh.layout.xaxis.title.text = frequency_scale.label
+    fft_plot_Coh.layout.yaxis.title.text = "Coherence"
+
+    const fft_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    for (let i = 0; i < fft_plot.data.length; i++) {
+        fft_plot.data[i].hovertemplate = fft_hovertemplate
+        fft_plot_Phase.data[i].hovertemplate = fft_hovertemplate
+        fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
+    }
+
+    var unwrap_ph = document.getElementById("PID_ScaleUnWrap").checked;
+
+    unwrap_ph = false
+     // Set scaled x data
+    const scaled_bins = frequency_scale.fun(calc_freq_resp.freq)
+    var show_set = true
+    var calc_data
+    var calc_data_coh
+    var pred_data
+    if (document.getElementById("type_Att_Ctrlr").checked) {
+        calc_data = calc_freq_resp.attctrl_H
+        calc_data_coh = calc_freq_resp.attctrl_coh
+        pred_data = pred_freq_resp.attctrl_H
+        show_set = true
+    } else if (document.getElementById("type_Rate_Ctrlr").checked) {
+        calc_data = calc_freq_resp.ratectrl_H
+        calc_data_coh = calc_freq_resp.ratectrl_coh
+        pred_data = pred_freq_resp.ratectrl_H
+        show_set = true
+    } else {
+        calc_data = calc_freq_resp.bareAC_H
+        calc_data_coh = calc_freq_resp.bareAC_coh
+        pred_data = pred_freq_resp.attctrl_H
+        show_set = false
+    }
+
+    // Apply selected scale, set to y axis
+    fft_plot.data[0].y = amplitude_scale.scale(complex_abs(calc_data))
+
+    // Set bins
+    fft_plot.data[0].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot.data[0].visible = true
+
+    var calc_plotted_phase = []
+    if (unwrap_ph) {
+        calc_plotted_phase = unwrap(array_scale(complex_phase(calc_data), 180 / Math.PI))
+    } else {
+        calc_plotted_phase = array_scale(complex_phase(calc_data), 180 / Math.PI)
+    }
+    // Apply selected scale, set to y axis
+    fft_plot_Phase.data[0].y = calc_plotted_phase
+
+    // Set bins
+    fft_plot_Phase.data[0].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot_Phase.data[0].visible = true
+
+    // Apply selected scale, set to y axis
+    fft_plot_Coh.data[0].y = calc_data_coh
+
+    // Set bins
+    fft_plot_Coh.data[0].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot_Coh.data[0].visible = true
+
+    // Apply selected scale, set to y axis
+    fft_plot.data[1].y = amplitude_scale.scale(complex_abs(pred_data))
+
+    // Set bins
+    fft_plot.data[1].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot.data[1].visible = show_set
+
+    var pred_plotted_phase = []
+    if (unwrap_ph) {
+        pred_plotted_phase = unwrap(array_scale(complex_phase(pred_data), 180 / Math.PI))
+    } else {
+        pred_plotted_phase = array_scale(complex_phase(pred_data), 180 / Math.PI)
+    }
+    // Apply selected scale, set to y axis
+    fft_plot_Phase.data[1].y = pred_plotted_phase
+
+    // Set bins
+    fft_plot_Phase.data[1].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot_Phase.data[1].visible = show_set
+
+
+    Plotly.redraw("FFTPlotMag")
+
+    Plotly.redraw("FFTPlotPhase")
+
+    Plotly.redraw("FFTPlotCoh")
+
+    const end = performance.now();
+    console.log(`freq response redraw took: ${end - start} ms`);
 }
