@@ -399,7 +399,6 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
 
 function get_form(vname) {
     var v = parseFloat(document.getElementById(vname).value);
-    setCookie(vname, v);
     return v;
 }
 
@@ -1162,8 +1161,6 @@ function load() {
     // Load params
     var url_string = (window.location.href).toLowerCase();
     if (url_string.indexOf('?') == -1) {
-        // no query params, load from cookies
-        load_cookies();
         return;
     }
 
@@ -1264,63 +1261,6 @@ function get_link() {
     // copy to clipboard
     navigator.clipboard.writeText(url.toString());
 
-}
-
-
-function setCookie(c_name, value) {
-    var exdate = new Date();
-    var exdays = 365;
-    exdate.setDate(exdate.getDate() + exdays);
-    var c_value = escape(value) + ";expires=" + exdate.toUTCString();
-    document.cookie = c_name + "=" + c_value + ";path=/";
-}
-
-function getCookie(c_name, def_value) {
-    let name = c_name + "=";
-    let decodedCookie = decodeURIComponent(document.cookie);
-    let ca = decodedCookie.split(';');
-    for(let i = 0; i <ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) == ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
-        }
-    }
-    return def_value;
-}
-
-function load_cookies() {
-    var sections = ["params", "PID_params"];
-    for (var i = 0; i < sections.length; i++) {
-        var inputs = document.forms[sections[i]].getElementsByTagName("input");
-        for (const v in inputs) {
-            var name = inputs[v].name;
-            if (inputs[v].type == "radio") {
-                // only checked buttons are included
-                if (inputs[v].value == getCookie(name)) {
-                    inputs[v].checked = true;
-                }
-                continue;
-            }
-            if (inputs[v].type == "checkbox") {
-                inputs[v].checked = getCookie(name) === 'true'
-                continue;
-            }
-            parameter_set_value(name, parseFloat(getCookie(name,inputs[v].value)))
-        }
-    }
-}
-
-function clear_cookies() {
-    var cookies = document.cookie.split(";");
-    for (var i = 0; i < cookies.length; i++) {
-        var cookie = cookies[i];
-        var eqPos = cookie.indexOf("=");
-        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    }
 }
 
 function save_parameters() {
