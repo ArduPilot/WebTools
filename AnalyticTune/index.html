@@ -305,7 +305,7 @@ ArduPilot 4.2 filter setup.
                         <table>
                                 <tr>
                                         <td>
-                                                <fieldset style="width:200px;height:80px">
+                                                <fieldset style="width:200px;height:90px">
                                                         <legend>Control Loop</legend>
                                                         <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
                                                         <label for="type_Bare_AC">Bare Aircraft</label><br>
@@ -313,9 +313,11 @@ ArduPilot 4.2 filter setup.
                                                         <label for="type_Rate_Ctrlr">Rate Controller</label><br>
                                                         <input type="radio" id="type_Att_Ctrlr" name="Control_Loop" value="Att_Ctrlr"  onchange="redraw_freq_resp();">
                                                         <label for="type_Att_Ctrlr">Attitude Controller</label><br>
+                                                        <input type="radio" id="type_Pilot_Ctrlr" name="Control_Loop" value="Pilot_Ctrlr"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Ctrlr">Input Shaping</label><br>
                                                 </fieldset>
-                                                </td>
-                                                                        <td>
+                                        </td>
+                                        <td>
                                                 <fieldset style="width:150px; height:70px">
                                                         <legend>Gain scale</legend>
                                                         <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="redraw_freq_resp();" checked>
