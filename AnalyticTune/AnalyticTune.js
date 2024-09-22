@@ -80,6 +80,54 @@ function PID(sample_rate,kP,kI,kD,filtE,filtD) {
     return this;
 }
 
+
+function Ang_P(sample_rate,kP) {
+    this.sample_rate = sample_rate
+
+    this._kP = kP;
+
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
+        // I term is k*z / (z - 1)
+        const Z_less_one = [array_offset(Z[0], -1), Z[1].slice()]
+        const I_comp = complex_div(Z,Z_less_one)
+        const kI = this._kP/this.sample_rate
+
+        const len = Z1[0].length
+        let ret = [new Array(len), new Array(len)]
+        let I = [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
+
+            // Store components
+            I[0][i] = I_comp[0][i] * kI
+            I[1][i] = I_comp[1][i] * kI
+
+            // Sum of components
+            ret[0][i] = I[0][i]
+            ret[1][i] = I[1][i]
+
+        }
+
+        this.attenuation = complex_abs(ret)
+
+        this.phase = array_scale(complex_phase(ret), 180/Math.PI)
+
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+
+        return ret
+    }
+    return this;
+}
+
+
+
+
+
+
 function LPF_1P(sample_rate,cutoff) {
     this.sample_rate = sample_rate
     // Helper function to get alpha
@@ -603,6 +651,13 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    const kFF = get_form(axis_prefix + "FF")
+    var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        FFPID_H[0][k] = PID_H.H_total[0][k] + kFF
+        FFPID_H[1][k] = PID_H.H_total[1][k] 
+    }
+
     var T_filter = []
     T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
@@ -611,19 +666,35 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     let gyro_filters = get_filters(fast_sample_rate)
     const INS_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
 
-    const H_PID_Acft_plus_one = [new Array(PID_H.H_total[0].length).fill(0), new Array(PID_H.H_total[0].length).fill(0)]
+    var H_PID_Acft_plus_one = [new Array(PID_H.H_total[0].length).fill(0), new Array(PID_H.H_total[0].length).fill(0)]
 
     const PID_Acft = complex_mul(H_acft, PID_H.H_total)
     const INS_PID_Acft = complex_mul(PID_Acft, INS_H.H_total)
-    const FLTT_PID_Acft = complex_mul(PID_Acft, FLTT_H.H_total)
+
+    const FFPID_Acft = complex_mul(H_acft, FFPID_H)
+    const FLTT_FFPID_Acft = complex_mul(FFPID_Acft, FLTT_H.H_total)
 
     for (let k=0;k<H_acft[0].length+1;k++) {
         H_PID_Acft_plus_one[0][k] = INS_PID_Acft[0][k] + 1
         H_PID_Acft_plus_one[1][k] = INS_PID_Acft[1][k]
     }
-    const Ret_rate = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
+    const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
-    const Ret_att = complex_div(FLTT_PID_Acft, H_PID_Acft_plus_one)
+    var Ang_P_filter = []
+    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_RLL_P")))
+    const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    const rate_INS_ANGP = complex_mul(Ret_rate, complex_mul(INS_H.H_total, Ang_P_H.H_total))
+    var rate_INS_ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        rate_INS_ANGP_plus_one[0][k] = rate_INS_ANGP[0][k] + 1
+        rate_INS_ANGP_plus_one[1][k] = rate_INS_ANGP[1][k]
+        ANGP_plus_one[0][k] = Ang_P_H.H_total[0][k] + 1
+        ANGP_plus_one[1][k] = Ang_P_H.H_total[1][k]
+    }
+    const Ret_att = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_INS_ANGP_plus_one)
+
     return [Ret_rate, Ret_att]
 
 }
@@ -1393,15 +1464,18 @@ function redraw_freq_resp() {
     var calc_data
     var calc_data_coh
     var pred_data
+    var pred_data_coh
     if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
         pred_data = pred_freq_resp.attctrl_H
+        pred_data_coh = calc_freq_resp.bareAC_coh
         show_set = true
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
         calc_data = calc_freq_resp.ratectrl_H
         calc_data_coh = calc_freq_resp.ratectrl_coh
         pred_data = pred_freq_resp.ratectrl_H
+        pred_data_coh = calc_freq_resp.bareAC_coh
         show_set = true
     } else {
         calc_data = calc_freq_resp.bareAC_H
@@ -1467,6 +1541,14 @@ function redraw_freq_resp() {
     // Work out if we should show this line
     fft_plot_Phase.data[1].visible = show_set
 
+    // Apply selected scale, set to y axis
+    fft_plot_Coh.data[1].y = pred_data_coh
+
+    // Set bins
+    fft_plot_Coh.data[1].x = scaled_bins
+
+    // Work out if we should show this line
+    fft_plot_Coh.data[1].visible = show_set
 
     Plotly.redraw("FFTPlotMag")
 
