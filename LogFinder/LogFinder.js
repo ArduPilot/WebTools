@@ -259,13 +259,33 @@ function setup_table(logs) {
             if (log.info.crash_dump) {
                 const para = document.createElement("p")
                 tippy_div.appendChild(para)
-                para.appendChild(document.createTextNode("Crash Dump file detected, please report to dev team."))
+                para.appendChild(document.createTextNode("Crash Dump file detected."))
+                para.appendChild(document.createElement("br"))
+                para.appendChild(document.createTextNode("For more information see ArduPilot "))
+
+                const link = document.createElement("a")
+                link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#crash-dump"
+                link.appendChild(document.createTextNode("documentation"))
+                link.style="color:red;"
+
+                para.appendChild(link)
+                para.appendChild(document.createTextNode("."))
             }
 
             if (log.info.watchdog) {
                 const para = document.createElement("p")
                 tippy_div.appendChild(para)
                 para.appendChild(document.createTextNode("Watchdog reboot detected."))
+                para.appendChild(document.createElement("br"))
+                para.appendChild(document.createTextNode("For more information see ArduPilot "))
+            
+                const link = document.createElement("a")
+                link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#independent-watchdog-and-crash-dump"
+                link.appendChild(document.createTextNode("documentation"))
+                link.style="color:red;"
+
+                para.appendChild(link)
+                para.appendChild(document.createTextNode("."))
             }
 
             if (arming_checks_disabled) {
