@@ -1,7 +1,7 @@
 // A js tool for plotting ArduPilot batch log data
 
 var DataflashParser
-const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
+const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
 
 // micro seconds to seconds helpers
 const US2S = 1 / 1000000
@@ -544,20 +544,20 @@ function DigitalBiquadFilter(freq) {
 
     if (this.target_freq <= 0) {
         this.transfer = function(Hn, Hd, sample_freq, Z1, Z2) { }
-        return this;
+        return this
     }
 
     this.transfer = function(Hn, Hd, sample_freq, Z1, Z2) {
 
-        const fr = sample_freq/this.target_freq;
-        const ohm = Math.tan(Math.PI/fr);
-        const c = 1.0+2.0*Math.cos(Math.PI/4.0)*ohm + ohm*ohm;
+        const fr = sample_freq/this.target_freq
+        const ohm = Math.tan(Math.PI/fr)
+        const c = 1.0+2.0*Math.cos(Math.PI/4.0)*ohm + ohm*ohm
 
-        const b0 = ohm*ohm/c;
-        const b1 = 2.0*b0;
-        const b2 = b0;
-        const a1 = 2.0*(ohm*ohm-1.0)/c;
-        const a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c;
+        const b0 = ohm*ohm/c
+        const b1 = 2.0*b0
+        const b2 = b0
+        const a1 = 2.0*(ohm*ohm-1.0)/c
+        const a2 = (1.0-2.0*Math.cos(Math.PI/4.0)*ohm+ohm*ohm)/c
 
         // Build transfer function and apply to H division done at final step
         const len = Z1[0].length
@@ -823,7 +823,7 @@ function run_batch_fft(data_set) {
 
     if (!Number.isInteger(Math.log2(window_size))) {
         alert('Window size must be a power of two')
-        throw new Error();
+        throw new Error()
     }
 
     const window_spacing = Math.round(window_size * (1 - window_overlap))
@@ -835,7 +835,7 @@ function run_batch_fft(data_set) {
     // Get bins
     var bins = rfft_freq(window_size, sample_time)
 
-    const fft = new FFTJS(window_size);
+    const fft = new FFTJS(window_size)
 
     var x = []
     var y = []
@@ -968,7 +968,7 @@ function reset() {
     check.checked = false
 
     // Set param defaults that are none 0
-    const defualts = [{name: "_FREQ",   value: 80},
+    const defaults = [{name: "_FREQ",   value: 80},
                       {name: "_BW",     value: 40},
                       {name: "_ATT",    value: 40},
                       {name: "_HMNCS",  value: 3},
@@ -978,9 +978,9 @@ function reset() {
     const HNotch_params = get_HNotch_param_names()
     for (let i = 0; i < HNotch_params.length; i++) {
         for (const param of Object.values(HNotch_params[i])) {
-            for (const defualt of defualts) {
-                if (param.endsWith(defualt.name)) {
-                    parameter_set_value(param, defualt.value)
+            for (const default_val of defaults) {
+                if (param.endsWith(default_val.name)) {
+                    parameter_set_value(param, default_val.value)
                 }
             }
         }
@@ -1017,9 +1017,9 @@ function setup_plots() {
     flight_data.layout = {
         xaxis: { title: {text: time_scale_label },
                  domain: [0.07, 0.93],
-                 type: "linear", 
-                 zeroline: false, 
-                 showline: true, 
+                 type: "linear",
+                 zeroline: false,
+                 showline: true,
                  mirror: true,
                  rangeslider: {} },
         showlegend: false,
@@ -1048,7 +1048,7 @@ function setup_plots() {
 
     var plot = document.getElementById("FlightData")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, flight_data.data, flight_data.layout, {displaylogo: false});
+    Plotly.newPlot(plot, flight_data.data, flight_data.layout, {displaylogo: false})
 
     // Update start and end time based on range
     document.getElementById("FlightData").on('plotly_relayout', function(data) {
@@ -1142,7 +1142,7 @@ function setup_plots() {
 
     var plot = document.getElementById("FFTPlot")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
+    Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false})
 
     // Bode plot setup
     Bode.data = []
@@ -1181,7 +1181,7 @@ function setup_plots() {
 
     plot = document.getElementById("Bode")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false})
 
     // Spectrogram setup
     // Add surface
@@ -1212,6 +1212,7 @@ function setup_plots() {
             })
         }
     }
+
     // Logged notch tacking
     for (let i=0;i<2;i++) {
         let Group_name = "Logged Notch " + (i+1)
@@ -1242,7 +1243,7 @@ function setup_plots() {
 
     plot = document.getElementById("Spectrogram")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Spectrogram.data, Spectrogram.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Spectrogram.data, Spectrogram.layout, {displaylogo: false})
 
     // Link all frequency axis
     link_plot_axis_range([["FFTPlot", "x", "", fft_plot],
@@ -1270,8 +1271,8 @@ function re_calc() {
 
     redraw()
 
-    const end = performance.now();
-    console.log(`Re-calc took: ${end - start} ms`);
+    const end = performance.now()
+    console.log(`Re-calc took: ${end - start} ms`)
 }
 
 // Force full re-calc on next run, on window size change
@@ -1457,8 +1458,8 @@ function calculate_transfer_function() {
 // Get configured amplitude scale
 function get_amplitude_scale() {
 
-    const use_DB = document.getElementById("ScaleLog").checked;
-    const use_PSD = document.getElementById("ScalePSD").checked;
+    const use_DB = document.getElementById("ScaleLog").checked
+    const use_PSD = document.getElementById("ScalePSD").checked
 
     var ret = {}
     if (use_PSD) {
@@ -1494,7 +1495,7 @@ function get_amplitude_scale() {
 // Get configured frequency scale object
 function get_frequency_scale() {
 
-    const use_RPM = document.getElementById("freq_Scale_RPM").checked;
+    const use_RPM = document.getElementById("freq_Scale_RPM").checked
 
     var ret = {}
     if (use_RPM) {
@@ -1882,7 +1883,7 @@ function redraw_post_estimate_and_bode() {
         // Get alias helper to fold down frequencies, if enabled
         let alias = get_alias_obj(Gyro_batch[i].FFT)
 
-        // Get indexs for the lines to be plotted
+        // Get indexes for the lines to be plotted
         X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
         Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
         Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
@@ -2077,7 +2078,7 @@ function redraw_Spectrogram() {
 
         if (this_dt > average_dt * 2.5) {
             // Add a gap
-            count = 0;
+            count = 0
             // start gap where next sample would have been expected
             Spectrogram.data[0].x.push(last_time + average_dt)
             skip_flag.push(true)
@@ -2292,16 +2293,16 @@ function update_hidden(source) {
 
         const post_filter = id.includes("Post")
         const post_estimate = id.includes("PostEst")
-    
+
         var pre_post_index = 0
         if (post_estimate) {
             pre_post_index = 2
         } else if (post_filter) {
             pre_post_index = 1
         }
-    
+
         const axi = id.substr(id.length - 1)
-    
+
         let axi_index
         for (let j=0;j<3;j++) {
             if (axis[j] == axi) {
@@ -2486,14 +2487,14 @@ function window_size_inc(event) {
 function open_in_filter_tool() {
 
     // Assume same base
-    let url =  new URL(window.location.href);
+    let url =  new URL(window.location.href)
     url.pathname = url.pathname.replace('FilterReview','FilterTool')
 
     // Add all params
     function add_from_tags(url, items) {
         for (let item of items) {
             if (item.id.startsWith("INS_")) {
-                url.searchParams.append(item.name, item.value);
+                url.searchParams.append(item.name, item.value)
             }
         }
     }
@@ -2515,7 +2516,7 @@ function open_in_filter_tool() {
             continue
         }
         if (Gyro_batch[i].sensor_num == gyro_instance) {
-            url.searchParams.append("GYRO_SAMPLE_RATE", Math.round(Gyro_batch[i].gyro_rate));
+            url.searchParams.append("GYRO_SAMPLE_RATE", Math.round(Gyro_batch[i].gyro_rate))
             break
         }
     }
@@ -2523,41 +2524,41 @@ function open_in_filter_tool() {
     // Get values for tracking
     const mean_throttle = tracking_methods[1].get_mean()
     if (mean_throttle != undefined) {
-        url.searchParams.append("Throttle", mean_throttle);
+        url.searchParams.append("Throttle", mean_throttle)
     }
 
     const mean_rpm1 = tracking_methods[2].get_mean()
     if (mean_rpm1 != undefined) {
-        url.searchParams.append("RPM1", mean_rpm1);
+        url.searchParams.append("RPM1", mean_rpm1)
     }
 
     const mean_esc = tracking_methods[3].get_mean()
     if (mean_esc != undefined) {
-        url.searchParams.append("ESC_RPM", mean_esc);
-        url.searchParams.append("NUM_MOTORS", tracking_methods[3].get_num_motors());
+        url.searchParams.append("ESC_RPM", mean_esc)
+        url.searchParams.append("NUM_MOTORS", tracking_methods[3].get_num_motors())
     }
 
     // Filter tool does not support FFT tracking (4)
 
     const mean_rpm2 = tracking_methods[5].get_mean()
     if (mean_rpm2 != undefined) {
-        url.searchParams.append("RPM2", mean_rpm2);
+        url.searchParams.append("RPM2", mean_rpm2)
     }
 
 
-    window.open(url.toString());
+    window.open(url.toString())
 
 }
 
 function save_parameters() {
 
     function save_from_elements(inputs) {
-        var params = "";
+        var params = ""
         for (const v in inputs) {
-            var name = "" + inputs[v].id;
+            var name = "" + inputs[v].id
             if (name.startsWith("INS_")) {
-                var value = inputs[v].value;
-                params += name + "," + param_to_string(value) + "\n";
+                var value = inputs[v].value
+                params += name + "," + param_to_string(value) + "\n"
             }
         }
         return params
@@ -2566,27 +2567,27 @@ function save_parameters() {
     var params = save_from_elements(document.getElementsByTagName("input"))
     params += save_from_elements(document.getElementsByTagName("select"))
 
-    var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
-    saveAs(blob, "filter.param");
+    var blob = new Blob([params], { type: "text/plain;charset=utf-8" })
+    saveAs(blob, "filter.param")
 }
 
 async function load_parameters(file) {
-    var text = await file.text();
-    var lines = text.split('\n');
+    var text = await file.text()
+    var lines = text.split('\n')
     for (i in lines) {
-        var line = lines[i];
-        v = line.split(/[\s,=\t]+/);
+        var line = lines[i]
+        v = line.split(/[\s,=\t]+/)
         if (v.length >= 2) {
-            var vname = v[0];
-            var value = v[1];
+            var vname = v[0]
+            var value = v[1]
             if (parameter_set_value(vname, value)) {
-                console.log("set " + vname + "=" + value);
+                console.log("set " + vname + "=" + value)
             }
         }
     }
 
-    filter_param_read();
-    re_calc();
+    filter_param_read()
+    re_calc()
 }
 
 // Get selected filter version
@@ -3151,13 +3152,13 @@ async function load(log_file) {
     Plotly.redraw("FlightData")
 
     var start_input = document.getElementById("TimeStart")
-    start_input.disabled = false;
+    start_input.disabled = false
     start_input.min = data_start_time
     start_input.value = calc_start_time
     start_input.max = data_end_time
 
     var end_input = document.getElementById("TimeEnd")
-    end_input.disabled = false;
+    end_input.disabled = false
     end_input.min = data_start_time
     end_input.value = calc_end_time
     end_input.max = data_end_time
@@ -3246,6 +3247,6 @@ async function load(log_file) {
     document.getElementById("SaveParams").disabled = false
     document.getElementById("LoadParams").disabled = false
 
-    const end = performance.now();
-    console.log(`Load took: ${end - start} ms`);
+    const end = performance.now()
+    console.log(`Load took: ${end - start} ms`)
 }
