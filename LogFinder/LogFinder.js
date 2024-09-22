@@ -545,6 +545,7 @@ function setup_table(logs) {
         const multiple_rows = board_logs.length > 1
         const size_bottom_calc = multiple_rows ? "sum" : false
         const flight_time_bottom_calc = multiple_rows ? "sum" : false
+        const flight_distance_bottom_calc = multiple_rows ? "sum" : false
         const param_diff_bottom_calc = multiple_rows ? total_param_diff_calc : false
 
         const table = new Tabulator(table_div, {
@@ -568,7 +569,7 @@ function setup_table(logs) {
                 { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format, width: 90 },
                 { title: "Firmware Version", field:"info.fw_string" },
                 { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format, width: 105 },
-                { title: "Flight distance", field:"info.distance_traveled", formatter:distance_format, bottomCalc:"sum", bottomCalcFormatter:get_dist_string, width: 125 },
+                { title: "Flight distance", field:"info.distance_traveled", formatter:distance_format, bottomCalc:flight_distance_bottom_calc, bottomCalcFormatter:get_dist_string, width: 125 },
                 { title: "Param Changes", field:"param_diff", formatter:param_diff_format, headerSort:false, width: 110, bottomCalc:param_diff_bottom_calc, bottomCalcFormatter:param_diff_format },
                 { title: "" , headerSort:false, formatter:buttons, width: 185 },
             ],
