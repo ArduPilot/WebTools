@@ -1334,39 +1334,6 @@ function time_range_changed() {
     document.getElementById('calculate').disabled = false
 }
 
-var last_window_size
-function window_size_inc(event) {
-    if (last_window_size == null) {
-        last_window_size = parseFloat(event.target.defaultValue)
-    }
-    const new_value = parseFloat(event.target.value)
-    const change = parseFloat(event.target.value) - last_window_size
-    if (Math.abs(change) != 1) {
-        // Assume a change of one is comming from the up down buttons, ignore angthing else
-        last_window_size = new_value
-        return
-    }
-    var new_exponent = Math.log2(last_window_size)
-    if (!Number.isInteger(new_exponent)) {
-        // Move to power of two in the selected direction
-        new_exponent = Math.floor(new_exponent)
-        if (change > 0) {
-            new_exponent += 1
-        }
-
-    } else if (change > 0) {
-        // Move up one
-        new_exponent += 1
-
-    } else {
-        // Move down one
-        new_exponent -= 1
-
-    }
-    event.target.value = 2**new_exponent
-    last_window_size = event.target.value
-}
-
 function get_PID_param_names(prefix) {
     return { KP:            prefix + "P",
              KI:            prefix + "I",
