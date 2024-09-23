@@ -143,3 +143,43 @@ function to_fft_format(target, source) {
         target[index+1] = source[1][i]
     }
 }
+
+// Helper function to change the value of a number input in powers of 2
+// Bind to onchange of value input
+function fft_window_size_inc(event) {
+
+    // Stash the last valid window size as a data attribute
+    const attribute_name = 'data-last'
+    if (!event.target.hasAttribute(attribute_name)) {
+        event.target.setAttribute(attribute_name, event.target.defaultValue)
+    }
+    const last_window_size = parseFloat(event.target.getAttribute(attribute_name))
+
+    const new_value = parseFloat(event.target.value)
+    const change = parseFloat(event.target.value) - last_window_size
+    if (Math.abs(change) != 1) {
+        // Assume a change of one is comming from the up down buttons, ignore angthing else
+        event.target.setAttribute(attribute_name, new_value)
+        return
+    }
+    var new_exponent = Math.log2(last_window_size)
+    if (!Number.isInteger(new_exponent)) {
+        // Move to power of two in the selected direction
+        new_exponent = Math.floor(new_exponent)
+        if (change > 0) {
+            new_exponent += 1
+        }
+
+    } else if (change > 0) {
+        // Move up one
+        new_exponent += 1
+
+    } else {
+        // Move down one
+        new_exponent -= 1
+
+    }
+    event.target.value = 2**new_exponent
+    event.target.setAttribute(attribute_name, event.target.value)
+}
+
