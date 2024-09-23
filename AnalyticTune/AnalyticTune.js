@@ -694,7 +694,14 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     }
     const Ret_att = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_INS_ANGP_plus_one)
 
-    return [Ret_rate, Ret_att]
+    var tc_filter = []
+    const tc_freq = 1 / (get_form("ATC_INPUT_TC") * 2 * Math.PI)
+    tc_filter.push(new LPF_1P(PID_rate, tc_freq))
+    const tc_H = evaluate_transfer_functions([tc_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    const Ret_pilot = complex_mul(tc_H.H_total, Ret_att)
+
+    return [Ret_rate, Ret_att, Ret_pilot]
 
 }
 
@@ -961,6 +968,13 @@ function calculate_freq_resp() {
     const mean_length = end_index - start_index
     console.log(mean_length)
 
+    var H_pilot 
+    var coh_pilot
+    if (eval_axis = "Yaw") {
+        [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
+    } else {
+        [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
+    }
     var H_acft 
     var coh_acft
     [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
@@ -975,6 +989,8 @@ function calculate_freq_resp() {
 
     // resample calculated responses to predicted response length
     const len = H_acft[0].length-1
+    var H_pilot_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_pilot_tf = [new Array(len).fill(0)]
     var H_acft_tf = [new Array(len).fill(0), new Array(len).fill(0)]
     var coh_acft_tf = [new Array(len).fill(0)]
     var H_rate_tf = [new Array(len).fill(0), new Array(len).fill(0)]
@@ -983,6 +999,9 @@ function calculate_freq_resp() {
     var coh_att_tf = [new Array(len).fill(0)]
     var freq_tf = [new Array(len).fill(0)]
     for (let k=1;k<len+1;k++) {
+        H_pilot_tf[0][k-1] = H_pilot[0][k]
+        H_pilot_tf[1][k-1] = H_pilot[1][k]
+        coh_pilot_tf[k-1] = coh_pilot[k]
         H_acft_tf[0][k-1] = H_acft[0][k]
         H_acft_tf[1][k-1] = H_acft[1][k]
         coh_acft_tf[k-1] = coh_acft[k]
@@ -997,9 +1016,12 @@ function calculate_freq_resp() {
 
     var H_rate_pred
     var H_att_pred
-    [H_rate_pred, H_att_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    var H_pilot_pred
+    [H_rate_pred, H_att_pred, H_pilot_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
     calc_freq_resp = {
+        pilotctrl_H: H_pilot_tf,
+        pilotctrl_coh: coh_pilot_tf,
         attctrl_H: H_att_tf,
         attctrl_coh: coh_att_tf,
         ratectrl_H: H_rate_tf,
@@ -1011,6 +1033,7 @@ function calculate_freq_resp() {
     pred_freq_resp = {
         attctrl_H: H_att_pred,
         ratectrl_H: H_rate_pred,
+        pilotctrl_H: H_pilot_pred
     }
 
     redraw_freq_resp()
@@ -1107,6 +1130,7 @@ function load_time_history_data(t_start, t_end, axis) {
     // Pull and Slice PilotInputData
     let PilotInputData = Array.from(log.get("SIDD", "Targ"))
     PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
+    PilotInputData = array_scale(PilotInputData, 0.01745)
 
     var data = {
         PilotInput: PilotInputData,
@@ -1405,7 +1429,13 @@ function redraw_freq_resp() {
     var calc_data_coh
     var pred_data
     var pred_data_coh
-    if (document.getElementById("type_Att_Ctrlr").checked) {
+    if (document.getElementById("type_Pilot_Ctrlr").checked) {
+        calc_data = calc_freq_resp.pilotctrl_H
+        calc_data_coh = calc_freq_resp.pilotctrl_coh
+        pred_data = pred_freq_resp.pilotctrl_H
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set = true
+    } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
         pred_data = pred_freq_resp.attctrl_H
