@@ -183,3 +183,56 @@ function fft_window_size_inc(event) {
     event.target.setAttribute(attribute_name, event.target.value)
 }
 
+// Get amplitude scale object
+function fft_amplitude_scale(use_DB, use_PSD) {
+
+    var ret = {}
+    if (use_PSD) {
+        ret.fun = function (x) { return array_mul(x,x) } // x.^2
+        ret.scale = function (x) { return array_scale(array_log10(x), 10.0) } // 10 * log10(x)
+        ret.label = "PSD (dB/Hz)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} dB/Hz" }
+        ret.window_correction = function(correction, resolution) { return ((correction.energy**2) * 0.5) / resolution }
+        ret.quantization_correction = function(window_correction) { return 1 / Math.sqrt(window_correction) }
+
+    } else if (use_DB) {
+        ret.fun = function (x) { return x }
+        ret.scale = function (x) { return array_scale(array_log10(x), 20.0) } // 20 * log10(x)
+        ret.label = "Amplitude (dB)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} dB" }
+        ret.correction_scale = 1.0
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(window_correction) { return 1 / window_correction }
+
+    } else {
+        ret.fun = function (x) { return x }
+        ret.scale = function (x) { return x }
+        ret.label = "Amplitude"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f}" }
+        ret.window_correction = function(correction, resolution) { return correction.linear }
+        ret.quantization_correction = function(window_correction) { return 1 / window_correction }
+
+    }
+
+    return ret
+}
+
+// Get frequency scale object
+function fft_frequency_scale(use_RPM, log_scale) {
+
+    var ret = {}
+    if (use_RPM) {
+        ret.fun = function (x) { return array_scale(x, 60.0) }
+        ret.label = "RPM"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} RPM" }
+
+    } else {
+        ret.fun = function (x) { return x }
+        ret.label = "Frequency (Hz)"
+        ret.hover = function (axis) { return "%{" + axis + ":.2f} Hz" }
+    }
+
+    ret.type = log_scale ? "log" : "linear"
+
+    return ret
+}
