@@ -97,7 +97,8 @@ function setup_connect(button_svg, button_color) {
             // Feed data to MAVLink parser and forward messages
             for (const char of new Uint8Array(msg.data)) {
                 const m = MAVLink.parseChar(char)
-                if (m != null) {
+                if ((m != null) && (m._id != -1)) {
+                    // Got message with known ID
                     // Sent to each Widget
                     for (const widget of grid.getGridItems()) {
                         widget.MAVLink_msg_handler(m)
