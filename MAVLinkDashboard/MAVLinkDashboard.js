@@ -467,7 +467,7 @@ function init_pallet() {
     function tippy_mount(instance) {
 
         const columns = 6
-        const rows = 4
+        const rows = 5
 
         palette = GridStack.init({
             float: true,
@@ -488,6 +488,7 @@ function init_pallet() {
         const sandbox_files = [
             "SandBoxWidgets/Attitude.json",
             "SandBoxWidgets/Graph.json",
+            "SandBoxWidgets/Map.json",
             "SandBoxWidgets/MAVLink_Inspector.json",
             "SandBoxWidgets/Messages.json",
             "SandBoxWidgets/Value.json",
