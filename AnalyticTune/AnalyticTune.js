@@ -224,6 +224,63 @@ function DigitalBiquadFilter(sample_freq, cutoff_freq) {
     return this;
 }
 
+function NotchFilterusingQ(sample_freq,center_freq_hz,notch_Q,attenuation_dB) {
+    this.sample_rate = sample_freq;
+    this.center_freq_hz = center_freq_hz;
+    this.Q = notch_Q;
+    this.attenuation_dB = attenuation_dB;
+    this.initialised = false;
+
+    if ((this.center_freq_hz > 0.0) && (this.center_freq_hz < 0.5 * this.sample_rate) && (this.Q > 0.0)) {
+        this.A = Math.pow(10.0, -this.attenuation_dB / 40.0);
+        var omega = 2.0 * Math.PI * this.center_freq_hz / this.sample_rate;
+        var alpha = Math.sin(omega) / (2 * this.Q);
+        this.b0 =  1.0 + alpha*(this.A**2);
+        this.b1 = -2.0 * Math.cos(omega);
+        this.b2 =  1.0 - alpha*(this.A**2);
+        this.a0_inv =  1.0/(1.0 + alpha);
+        this.a1 = this.b1;
+        this.a2 =  1.0 - alpha;
+        this.initialised = true;
+    } else {
+        this.initialised = false;
+    }
+
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
+        if (!this.initialised) {
+            const len = Z1[0].length
+            return [new Array(len).fill(1), new Array(len).fill(0)]
+        }
+
+        const a0 = 1 / this.a0_inv
+
+        const len = Z1[0].length
+        let numerator =  [new Array(len), new Array(len)]
+        let denominator =  [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
+            // H(z) = (b0 + b1*z^-1 + b2*z^-2)/(a0 + a1*z^-1 + a2*z^-2)
+            numerator[0][i] =   this.b0 + this.b1 * Z1[0][i] + this.b2 * Z2[0][i]
+            numerator[1][i] =             this.b1 * Z1[1][i] + this.b2 * Z2[1][i]
+
+            denominator[0][i] =      a0 + this.a1 * Z1[0][i] + this.a2 * Z2[0][i]
+            denominator[1][i] =           this.a1 * Z1[1][i] + this.a2 * Z2[1][i]
+        }
+
+        const H = complex_div(numerator, denominator)
+        this.attenuation = complex_abs(H)
+        this.phase = array_scale(complex_phase(H), 180/Math.PI)
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+        return H
+    }
+
+    return this;
+}
+
 function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     this.sample_freq = sample_freq;
     this.center_freq_hz = center_freq_hz;
@@ -650,28 +707,46 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    if (get_form("ATC_NEF_FILT_FREQ") <= 0.0) {
+        PID_H_TOT = PID_H.H_total
+    } else {
+        var E_notch_filter = []
+        E_notch_filter.push(new NotchFilterusingQ(PID_rate, get_form("ATC_NEF_FILT_FREQ"), get_form("ATC_NEF_FILT_Q"), get_form("ATC_NEF_FILT_ATT")))
+        const NEF_H = evaluate_transfer_functions([E_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
+        PID_H_TOT = complex_mul(NEF_H.H_total, PID_H.H_total)
+    }
+
     const kFF = get_form(axis_prefix + "FF")
     var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
-        FFPID_H[0][k] = PID_H.H_total[0][k] + kFF
-        FFPID_H[1][k] = PID_H.H_total[1][k] 
+        FFPID_H[0][k] = PID_H_TOT[0][k] + kFF
+        FFPID_H[1][k] = PID_H_TOT[1][k] 
     }
 
     var T_filter = []
     T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    if (get_form("ATC_NTF_FILT_FREQ") <= 0.0) {
+        TGT_FILT_H = FLTT_H.H_total
+    } else {
+        var T_notch_filter = []
+        T_notch_filter.push(new NotchFilterusingQ(PID_rate, get_form("ATC_NTF_FILT_FREQ"), get_form("ATC_NTF_FILT_Q"), get_form("ATC_NTF_FILT_ATT")))
+        const NTF_H = evaluate_transfer_functions([T_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
+        TGT_FILT_H = complex_mul(NTF_H.H_total, FLTT_H.H_total)
+    }
+
     let fast_sample_rate = get_form("GyroSampleRate");
     let gyro_filters = get_filters(fast_sample_rate)
     const INS_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
 
-    var H_PID_Acft_plus_one = [new Array(PID_H.H_total[0].length).fill(0), new Array(PID_H.H_total[0].length).fill(0)]
+    var H_PID_Acft_plus_one = [new Array(PID_H_TOT[0].length).fill(0), new Array(PID_H_TOT[0].length).fill(0)]
 
-    const PID_Acft = complex_mul(H_acft, PID_H.H_total)
+    const PID_Acft = complex_mul(H_acft, PID_H_TOT)
     const INS_PID_Acft = complex_mul(PID_Acft, INS_H.H_total)
 
     const FFPID_Acft = complex_mul(H_acft, FFPID_H)
-    const FLTT_FFPID_Acft = complex_mul(FFPID_Acft, FLTT_H.H_total)
+    const FLTT_FFPID_Acft = complex_mul(FFPID_Acft, TGT_FILT_H)
 
     for (let k=0;k<H_acft[0].length+1;k++) {
         H_PID_Acft_plus_one[0][k] = INS_PID_Acft[0][k] + 1

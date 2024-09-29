@@ -231,28 +231,22 @@ ArduPilot 4.2 filter setup.
         <fieldset style="width:580px">
                 <legend>Attitude Controller Notch Parameters</legend>
                         <p>
-                                <input id="ATC_RAT_RLL_NTF" name="ATC_RAT_RLL_NTF" type="number" step="1" value="1" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NTF_FILT_FREQ" name="ATC_NTF_FILT_FREQ" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
                         <p>
-                                <input id="NTF_FILT_FREQ" name="NTF_FILT_FREQ" type="number" step="0.1" value="150" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NTF_FILT_Q" name="ATC_NTF_FILT_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
                         <p>
-                                <input id="NTF_FILT_Q" name="NTF_FILT_Q" type="number" step="0.1" value="75" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NTF_FILT_ATT" name="ATC_NTF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
                         <p>
-                                <input id="NTF_FILT_ATT" name="NTF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NEF_FILT_FREQ" name="ATC_NEF_FILT_FREQ" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
                         <p>
-                                <input id="ATC_RAT_RLL_NEF" name="ATC_RAT_RLL_NEF" type="number" step="1" value="1" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NEF_FILT_Q" name="ATC_NEF_FILT_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
                         <p>
-                                <input id="NEF_FILT_FREQ" name="NEF_FILT_FREQ" type="number" step="0.1" value="150" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="NEF_FILT_Q" name="NEF_FILT_Q" type="number" step="0.1" value="75" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="NEF_FILT_ATT" name="NEF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                <input id="ATC_NEF_FILT_ATT" name="ATC_NEF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
                         </p>
         </fieldset>
         </td>
