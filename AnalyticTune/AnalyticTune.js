@@ -123,10 +123,47 @@ function Ang_P(sample_rate,kP) {
     return this;
 }
 
+function feedforward(sample_rate, kFF, kFF_D) {
+    this.sample_rate = sample_rate
 
+    this._kFF = kFF;
+    this._kFF_D = kFF_D;
 
+    this.transfer = function(Z, Z1, Z2, use_dB, unwrap_phase) {
+        // D term is k * (1 - Z^-1)
+        const one_less_Z1 = [array_offset(array_scale(Z1[0],-1), 1), array_scale(Z1[1],-1)]
+        const kFF_D = this._kFF_D*this.sample_rate
 
+        const len = Z1[0].length
+        let ret = [new Array(len), new Array(len)]
+        let FF_D = [new Array(len), new Array(len)]
+        for (let i = 0; i<len; i++) {
 
+            // Store components
+            FF_D[0][i] = one_less_Z1[0][i] * kFF_D
+            FF_D[1][i] = one_less_Z1[1][i] * kFF_D
+
+            // Sum of components
+            ret[0][i] = FF_D[0][i] + this._kFF
+            ret[1][i] = FF_D[1][i]
+
+        }
+
+        this.attenuation = complex_abs(ret)
+
+        this.phase = array_scale(complex_phase(ret), 180/Math.PI)
+
+        if (use_dB) {
+            this.attenuation = array_scale(array_log10(this.attenuation), 20.0)
+        }
+        if (unwrap_phase) {
+            this.phase = unwrap(this.phase)
+        }
+
+        return ret
+    }
+    return this;
+}
 
 function LPF_1P(sample_rate,cutoff) {
     this.sample_rate = sample_rate
@@ -716,11 +753,13 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         PID_H_TOT = complex_mul(NEF_H.H_total, PID_H.H_total)
     }
 
-    const kFF = get_form(axis_prefix + "FF")
+    var FF_filter = []
+    FF_filter.push(new feedforward(PID_rate, get_form("ATC_RAT_RLL_FF"),get_form("ATC_RAT_RLL_D_FF")))
+    const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
     var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
-        FFPID_H[0][k] = PID_H_TOT[0][k] + kFF
-        FFPID_H[1][k] = PID_H_TOT[1][k] 
+        FFPID_H[0][k] = PID_H_TOT[0][k] + FF_H.H_total[0][k]
+        FFPID_H[1][k] = PID_H_TOT[1][k] + FF_H.H_total[1][k]
     }
 
     var T_filter = []
