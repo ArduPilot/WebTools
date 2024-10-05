@@ -224,6 +224,18 @@
       "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
+    "ATC_RAT_PID_D_FF": {
+      "Description": "Pitch axis rate controller D feedforward gain.  ",
+      "DisplayName": "Pitch axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D FF gain\n    // @Description: Pitch axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
     "ATC_RAT_PIT_FF": {
       "Description": "Pitch axis rate controller feed forward",
       "DisplayName": "Pitch axis rate controller feed forward",
@@ -343,6 +355,18 @@
       },
       "User": "Standard",
       "__field_text": "\n    // @DisplayName: Roll axis rate controller D gain\n    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_D_FF": {
+      "Description": "Roll axis rate controller D feedforward gain.  ",
+      "DisplayName": "Roll axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller D FF gain\n    // @Description: Roll axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FF": {
@@ -476,6 +500,18 @@
       },
       "User": "Standard",
       "__field_text": "\n    // @DisplayName: Yaw axis rate controller feed forward\n    // @Description: Yaw axis rate controller feed forward\n    // @Range: 0 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_D_FF": {
+      "Description": "Yaw axis rate controller D feedforward gain.  ",
+      "DisplayName": "Yaw axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D FF gain\n    // @Description: Yaw axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTD": {
