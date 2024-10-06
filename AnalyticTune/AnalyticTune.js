@@ -759,6 +759,17 @@ function setup_plots() {
     //link_plots()
 }
 
+function get_axis_prefix() {
+    if (document.getElementById('type_Roll').checked) {
+        return "RLL_"
+    } else if (document.getElementById('type_Pitch').checked) {
+        return "PIT_"
+    } else if (document.getElementById('type_Yaw').checked) {
+        return "YAW_"
+    }
+    return ""
+}
+
 function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     //this will have to be the sample rate of time history data
@@ -769,7 +780,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     var PID_rate = get_form("SCHED_LOOP_RATE")
     var PID_filter = []
-    var axis_prefix = "ATC_RAT_RLL_";
+    var axis_prefix = "ATC_RAT_" + get_axis_prefix();
     PID_filter.push(new PID(PID_rate,
         get_form(axis_prefix + "P"),
         get_form(axis_prefix + "I"),
@@ -829,7 +840,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
     var Ang_P_filter = []
-    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_RLL_P")))
+    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_" + get_axis_prefix() + "P")))
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     const rate_INS_ANGP = complex_mul(Ret_rate, complex_mul(INS_H.H_total, Ang_P_H.H_total))
@@ -1133,6 +1144,20 @@ function nearestIndex(arr, target) {
     return min_index
 }
 
+// Change the visibility of the PID elements
+function axis_changed() {
+    document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('PitchPIDS').style.display = 'none';
+
+    if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPIDS').style.display = 'block';
+    } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('PitchPIDS').style.display = 'block';
+    } else if (document.getElementById('type_Yaw').checked) {
+        document.getElementById('YawPIDS').style.display = 'block';
+    }
+}
+
 // Determine the frequency response from log data
 var data_set
 var calc_freq_resp
@@ -1161,9 +1186,14 @@ function calculate_freq_resp() {
     const t_start = document.getElementById('starttime').value.trim()
     const t_end = document.getElementById('endtime').value.trim()
     var eval_axis = ""
+    document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('PitchPIDS').style.display = 'none';
+
     if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPIDS').style.display = 'block';
         eval_axis = "Roll"
     } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('PitchPIDS').style.display = 'block';
         eval_axis = "Pitch"
     } else if (document.getElementById('type_Yaw').checked) {
         eval_axis = "Yaw"
