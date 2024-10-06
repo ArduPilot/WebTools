@@ -1038,7 +1038,6 @@ function load_log(log_file) {
 
     const other_params = [
         "INS_GYRO_FILTER",
-        "SCHED_LOOP_RATE",
         "ATC_INPUT_TC",
         "ATC_ANG_RLL_P",
         "ATC_ANG_PIT_P",
@@ -1056,6 +1055,18 @@ function load_log(log_file) {
     const gyro_rate = get_param("INS_GYRO_RATE");
     if (gyro_rate != 0) {
         parameter_set_value("GyroSampleRate", (1 << gyro_rate) * 1000)
+    }
+
+    // approximately calculate the rate loop rate
+    const loop_rate = get_param("SCHED_LOOP_RATE");
+    const fstrate = get_param("FSTRATE_ENABLE");
+    const fstrate_div = get_param("FSTRATE_DIV");
+    if (loop_rate != 0) {
+        if (fstrate != 0 && fstrate_div != 0) {
+            parameter_set_value("SCHED_LOOP_RATE", ((1 << gyro_rate) * 1000) / fstrate_div)
+        } else {
+            parameter_set_value("SCHED_LOOP_RATE", loop_rate)
+        }
     }
 
     Plotly.redraw("FlightData")
