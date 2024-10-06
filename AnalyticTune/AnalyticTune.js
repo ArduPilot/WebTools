@@ -385,6 +385,23 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     return this;
 }
 
+function get_HNotch_param_names() {
+    let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
+    let ret = []
+    for (let i = 0; i < prefix.length; i++) {
+        ret[i] = {enable: prefix[i] + "ENABLE",
+                  mode: prefix[i] + "MODE",
+                  freq: prefix[i] + "FREQ",
+                  bandwidth: prefix[i] + "BW",
+                  attenuation: prefix[i] + "ATT",
+                  ref: prefix[i] + "REF",
+                  min_ratio: prefix[i] + "FM_RAT",
+                  harmonics: prefix[i] + "HMNCS",
+                  options: prefix[i] + "OPTS"}
+    }
+    return ret
+}
+
 function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmncs,opts) {
     this.sample_rate = sample_freq
     this.notches = []
@@ -907,6 +924,15 @@ function load_log(log_file) {
         }
     }
 
+    if (!("PARM" in log.messageTypes)) {
+        alert("No params in log")
+        return
+    }
+    const PARM = log.get("PARM")
+    function get_param(name, allow_change) {
+        return get_param_value(PARM, name, allow_change)
+    }
+
     // Plot flight data from log
     if ("ATT" in log.messageTypes) {
         const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
@@ -933,6 +959,25 @@ function load_log(log_file) {
         flight_data.data[3].y = log.get("POS", "RelHomeAlt")
 
         update_time(POS_time)
+    }
+
+    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
+    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
+
+    // Read from log into HTML box
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 0; i < HNotch_params.length; i++) {
+        for (const param of Object.values(HNotch_params[i])) {
+            // Set harmonic bitmask size
+            if (param.endsWith("HMNCS")) {
+                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
+                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
+            }
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
     }
 
     Plotly.redraw("FlightData")
