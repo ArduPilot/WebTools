@@ -129,13 +129,6 @@
       },
       "Units": "s",
       "User": "Standard",
-      "Values": {
-        "0.05": "Very Crisp",
-        "0.1": "Crisp",
-        "0.15": "Medium",
-        "0.2": "Soft",
-        "0.5": "Very Soft"
-      },
       "__field_text": "\n    // @DisplayName: Attitude control input time constant\n    // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response\n    // @Units: s\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp\n    // @User: Standard"
     },
     "ATC_PIRO_COMP": {

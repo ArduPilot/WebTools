@@ -385,6 +385,24 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     return this;
 }
 
+function get_PID_param_names() {
+    let prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+    let ret = []
+    for (let i = 0; i < prefix.length; i++) {
+        ret[i] = {p: prefix[i] + "P",
+                  i: prefix[i] + "I",
+                  d: prefix[i] + "D",
+                  ff: prefix[i] + "FF",
+                  d_ff: prefix[i] + "D_FF",
+                  fltt: prefix[i] + "FLTT",
+                  fltdd: prefix[i] + "FLTD",
+                  flte: prefix[i] + "FLTE",
+                  ntf: prefix[i] + "NTF",
+                  nte: prefix[i] + "NTE"}
+    }
+    return ret
+}
+
 function get_HNotch_param_names() {
     let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
     let ret = []
@@ -913,6 +931,10 @@ function load_log(log_file) {
     let start_time
     let end_time
     function update_time(time_s) {
+        // favour earlier settings
+        if (start_time != null && end_time != null) {
+            return
+        }
         const first = time_s[0]
         if ((start_time == null) || (first < start_time)) {
             start_time = first
@@ -931,6 +953,13 @@ function load_log(log_file) {
     const PARM = log.get("PARM")
     function get_param(name, allow_change) {
         return get_param_value(PARM, name, allow_change)
+    }
+
+    // Find SIDD data range
+    if ("SIDD" in log.messageTypes) {
+        const SIDD_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
+
+        update_time(SIDD_time)
     }
 
     // Plot flight data from log
@@ -961,6 +990,12 @@ function load_log(log_file) {
         update_time(POS_time)
     }
 
+    // If found use zoom to non-zero SIDD
+    if ((start_time != null) && (end_time != null)) {
+        flight_data.layout.xaxis.range = [start_time, end_time]
+        flight_data.layout.xaxis.autorange = false
+    }
+
     // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
     const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
 
@@ -978,6 +1013,38 @@ function load_log(log_file) {
                 parameter_set_value(param, value)
             }
         }
+    }
+
+    const pid_params = get_PID_param_names()
+    for (let i = 0; i < pid_params.length; i++) {
+        for (const param of Object.values(pid_params[i])) {
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
+    }
+
+    const other_params = [
+        "INS_GYRO_FILTER",
+        "SCHED_LOOP_RATE",
+        "ATC_INPUT_TC",
+        "ATC_ANG_RLL_P",
+        "ATC_ANG_PIT_P",
+        "ATC_ANG_YAW_P"
+    ]
+
+    for (const param of other_params) {
+        const value = get_param(param)
+        if (value != null) {
+            parameter_set_value(param, value)
+        }
+    }
+
+    // approximately calculate the gyro sample rate
+    const gyro_rate = get_param("INS_GYRO_RATE");
+    if (gyro_rate != 0) {
+        parameter_set_value("GyroSampleRate", (1 << gyro_rate) * 1000)
     }
 
     Plotly.redraw("FlightData")
