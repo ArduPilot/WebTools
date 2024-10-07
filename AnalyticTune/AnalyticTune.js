@@ -385,6 +385,41 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     return this;
 }
 
+function get_PID_param_names() {
+    let prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+    let ret = []
+    for (let i = 0; i < prefix.length; i++) {
+        ret[i] = {p: prefix[i] + "P",
+                  i: prefix[i] + "I",
+                  d: prefix[i] + "D",
+                  ff: prefix[i] + "FF",
+                  d_ff: prefix[i] + "D_FF",
+                  fltt: prefix[i] + "FLTT",
+                  fltdd: prefix[i] + "FLTD",
+                  flte: prefix[i] + "FLTE",
+                  ntf: prefix[i] + "NTF",
+                  nte: prefix[i] + "NTE"}
+    }
+    return ret
+}
+
+function get_HNotch_param_names() {
+    let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
+    let ret = []
+    for (let i = 0; i < prefix.length; i++) {
+        ret[i] = {enable: prefix[i] + "ENABLE",
+                  mode: prefix[i] + "MODE",
+                  freq: prefix[i] + "FREQ",
+                  bandwidth: prefix[i] + "BW",
+                  attenuation: prefix[i] + "ATT",
+                  ref: prefix[i] + "REF",
+                  min_ratio: prefix[i] + "FM_RAT",
+                  harmonics: prefix[i] + "HMNCS",
+                  options: prefix[i] + "OPTS"}
+    }
+    return ret
+}
+
 function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmncs,opts) {
     this.sample_rate = sample_freq
     this.notches = []
@@ -724,6 +759,17 @@ function setup_plots() {
     //link_plots()
 }
 
+function get_axis_prefix() {
+    if (document.getElementById('type_Roll').checked) {
+        return "RLL_"
+    } else if (document.getElementById('type_Pitch').checked) {
+        return "PIT_"
+    } else if (document.getElementById('type_Yaw').checked) {
+        return "YAW_"
+    }
+    return ""
+}
+
 function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     //this will have to be the sample rate of time history data
@@ -734,7 +780,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     var PID_rate = get_form("SCHED_LOOP_RATE")
     var PID_filter = []
-    var axis_prefix = "ATC_RAT_RLL_";
+    var axis_prefix = "ATC_RAT_" + get_axis_prefix();
     PID_filter.push(new PID(PID_rate,
         get_form(axis_prefix + "P"),
         get_form(axis_prefix + "I"),
@@ -794,7 +840,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
     var Ang_P_filter = []
-    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_RLL_P")))
+    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_" + get_axis_prefix() + "P")))
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     const rate_INS_ANGP = complex_mul(Ret_rate, complex_mul(INS_H.H_total, Ang_P_H.H_total))
@@ -896,6 +942,10 @@ function load_log(log_file) {
     let start_time
     let end_time
     function update_time(time_s) {
+        // favour earlier settings
+        if (start_time != null && end_time != null) {
+            return
+        }
         const first = time_s[0]
         if ((start_time == null) || (first < start_time)) {
             start_time = first
@@ -905,6 +955,22 @@ function load_log(log_file) {
         if ((end_time == null) || (last > end_time)) {
             end_time = last
         }
+    }
+
+    if (!("PARM" in log.messageTypes)) {
+        alert("No params in log")
+        return
+    }
+    const PARM = log.get("PARM")
+    function get_param(name, allow_change) {
+        return get_param_value(PARM, name, allow_change)
+    }
+
+    // Find SIDD data range
+    if ("SIDD" in log.messageTypes) {
+        const SIDD_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
+
+        update_time(SIDD_time)
     }
 
     // Plot flight data from log
@@ -933,6 +999,74 @@ function load_log(log_file) {
         flight_data.data[3].y = log.get("POS", "RelHomeAlt")
 
         update_time(POS_time)
+    }
+
+    // If found use zoom to non-zero SIDD
+    if ((start_time != null) && (end_time != null)) {
+        flight_data.layout.xaxis.range = [start_time, end_time]
+        flight_data.layout.xaxis.autorange = false
+    }
+
+    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
+    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
+
+    // Read from log into HTML box
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 0; i < HNotch_params.length; i++) {
+        for (const param of Object.values(HNotch_params[i])) {
+            // Set harmonic bitmask size
+            if (param.endsWith("HMNCS")) {
+                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
+                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
+            }
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
+    }
+
+    const pid_params = get_PID_param_names()
+    for (let i = 0; i < pid_params.length; i++) {
+        for (const param of Object.values(pid_params[i])) {
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
+    }
+
+    const other_params = [
+        "INS_GYRO_FILTER",
+        "ATC_INPUT_TC",
+        "ATC_ANG_RLL_P",
+        "ATC_ANG_PIT_P",
+        "ATC_ANG_YAW_P"
+    ]
+
+    for (const param of other_params) {
+        const value = get_param(param)
+        if (value != null) {
+            parameter_set_value(param, value)
+        }
+    }
+
+    // approximately calculate the gyro sample rate
+    const gyro_rate = get_param("INS_GYRO_RATE");
+    if (gyro_rate != 0) {
+        parameter_set_value("GyroSampleRate", (1 << gyro_rate) * 1000)
+    }
+
+    // approximately calculate the rate loop rate
+    const loop_rate = get_param("SCHED_LOOP_RATE");
+    const fstrate = get_param("FSTRATE_ENABLE");
+    const fstrate_div = get_param("FSTRATE_DIV");
+    if (loop_rate != 0) {
+        if (fstrate != 0 && fstrate_div != 0) {
+            parameter_set_value("SCHED_LOOP_RATE", ((1 << gyro_rate) * 1000) / fstrate_div)
+        } else {
+            parameter_set_value("SCHED_LOOP_RATE", loop_rate)
+        }
     }
 
     Plotly.redraw("FlightData")
@@ -1021,6 +1155,20 @@ function nearestIndex(arr, target) {
     return min_index
 }
 
+// Change the visibility of the PID elements
+function axis_changed() {
+    document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('PitchPIDS').style.display = 'none';
+
+    if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPIDS').style.display = 'block';
+    } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('PitchPIDS').style.display = 'block';
+    } else if (document.getElementById('type_Yaw').checked) {
+        document.getElementById('YawPIDS').style.display = 'block';
+    }
+}
+
 // Determine the frequency response from log data
 var data_set
 var calc_freq_resp
@@ -1049,9 +1197,14 @@ function calculate_freq_resp() {
     const t_start = document.getElementById('starttime').value.trim()
     const t_end = document.getElementById('endtime').value.trim()
     var eval_axis = ""
+    document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('PitchPIDS').style.display = 'none';
+
     if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPIDS').style.display = 'block';
         eval_axis = "Roll"
     } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('PitchPIDS').style.display = 'block';
         eval_axis = "Pitch"
     } else if (document.getElementById('type_Yaw').checked) {
         eval_axis = "Yaw"

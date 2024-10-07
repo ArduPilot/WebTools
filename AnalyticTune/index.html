@@ -8,6 +8,7 @@
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+<script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
 <script type="text/javascript" src="../Libraries/fft.js"></script>
 <script type="text/javascript" src="../Libraries/OpenIn.js"></script>
@@ -64,11 +65,11 @@ ArduPilot 4.2 filter setup.
                 <td>
                 <fieldset style="width:200px;height:80px">
                         <legend>Axis</legend>
-                        <input type="radio" id="type_Roll" name="Axis" checked>
+                        <input type="radio" id="type_Roll" name="Axis" checked onchange = "axis_changed()">
                         <label for="type_Roll">Roll</label><br>
-                        <input type="radio" id="type_Pitch" name="Axis">
+                        <input type="radio" id="type_Pitch" name="Axis" onchange = "axis_changed()">
                         <label for="type_Pitch">Pitch</label><br>
-                        <input type="radio" id="type_Yaw" name="Axis">
+                        <input type="radio" id="type_Yaw" name="Axis" onchange = "axis_changed()">
                         <label for="type_Yaw">Yaw</label><br>
                 </fieldset>
                 </td>
@@ -201,34 +202,94 @@ ArduPilot 4.2 filter setup.
                         <p>
                                 <input id="ATC_INPUT_TC" name="ATC_INPUT_TC" type="number" step="0.01" value="0.15" onchange = "calculate_freq_resp()"/>
                         </p>
-                        <p>
-                                <input id="ATC_ANG_RLL_P" name="ATC_ANG_XXX_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_FF" name="ATC_RAT_XXX_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_D_FF" name="ATC_RAT_XXX_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_XXX_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_RAT_RLL_FLTD" name="ATC_RAT_XXX_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                        </p>
-        </fieldset>
+                        <div id="RollPIDS" style="display:block">
+                                <p>
+                                        <input id="ATC_ANG_RLL_P" name="ATC_ANG_XXX_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FF" name="ATC_RAT_XXX_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_D_FF" name="ATC_RAT_XXX_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>       
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_XXX_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTD" name="ATC_RAT_XXX_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="PitchPIDS" style="display:none">
+                                <p>
+                                        <input id="ATC_ANG_PIT_P" name="ATC_ANG_XXX_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FF" name="ATC_RAT_XXX_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_D_FF" name="ATC_RAT_XXX_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>        
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTE" name="ATC_RAT_XXX_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTD" name="ATC_RAT_XXX_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="YawPIDS" style="display:none">
+                                <p>
+                                        <input id="ATC_ANG_YAW_P" name="ATC_ANG_XXX_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FF" name="ATC_RAT_XXX_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_P" name="ATC_RAT_XXX_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_I" name="ATC_RAT_XXX_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_D" name="ATC_RAT_XXX_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_D_FF" name="ATC_RAT_XXX_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>        
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTT" name="ATC_RAT_XXX_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTE" name="ATC_RAT_XXX_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTD" name="ATC_RAT_XXX_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                </fieldset>
         </td>
         <td>
         <fieldset style="width:580px">
