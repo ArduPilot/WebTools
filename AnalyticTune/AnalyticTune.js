@@ -800,7 +800,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     }
 
     var FF_filter = []
-    FF_filter.push(new feedforward(PID_rate, get_form("ATC_RAT_RLL_FF"),get_form("ATC_RAT_RLL_D_FF")))
+    FF_filter.push(new feedforward(PID_rate, get_form(axis_prefix + "FF"),get_form(axis_prefix + "D_FF")))
     const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
     var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
@@ -1061,8 +1061,11 @@ function load_log(log_file) {
     const loop_rate = get_param("SCHED_LOOP_RATE");
     const fstrate = get_param("FSTRATE_ENABLE");
     const fstrate_div = get_param("FSTRATE_DIV");
-    if (loop_rate != 0) {
-        if (fstrate != 0 && fstrate_div != 0) {
+    console.log(loop_rate)
+    console.log(fstrate)
+    console.log(fstrate_div)
+    if (loop_rate > 0) {
+        if (fstrate > 0 && fstrate_div > 0) {
             parameter_set_value("SCHED_LOOP_RATE", ((1 << gyro_rate) * 1000) / fstrate_div)
         } else {
             parameter_set_value("SCHED_LOOP_RATE", loop_rate)

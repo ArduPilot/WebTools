@@ -217,7 +217,7 @@
       "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
-    "ATC_RAT_PID_D_FF": {
+    "ATC_RAT_PIT_D_FF": {
       "Description": "Pitch axis rate controller D feedforward gain.  ",
       "DisplayName": "Pitch axis rate controller D feedforward gain",
       "Increment": "0.001",
@@ -1590,14 +1590,6 @@
       "DisplayName": "Scheduling main loop rate",
       "RebootRequired": "True",
       "User": "Advanced",
-      "Values": {
-        "100": "100Hz",
-        "200": "200Hz",
-        "250": "250Hz",
-        "300": "300Hz",
-        "400": "400Hz",
-        "50": "50Hz"
-      },
       "__field_text": "\n    // @DisplayName: Scheduling main loop rate\n    // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.\n    // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz\n    // @RebootRequired: True\n    // @User: Advanced"
     }
   },
