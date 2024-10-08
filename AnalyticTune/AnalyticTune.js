@@ -1309,11 +1309,11 @@ function calculate_freq_resp() {
     if (document.getElementById('type_Roll').checked) {
         document.getElementById('RollPIDS').style.display = 'block';
         document.getElementById('RollNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF');
+        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF');
+        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
@@ -1321,11 +1321,11 @@ function calculate_freq_resp() {
     } else if (document.getElementById('type_Pitch').checked) {
         document.getElementById('PitchPIDS').style.display = 'block';
         document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF');
+        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF');
+        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
