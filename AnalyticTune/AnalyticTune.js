@@ -398,8 +398,18 @@ function get_PID_param_names() {
                   fltdd: prefix[i] + "FLTD",
                   flte: prefix[i] + "FLTE",
                   ntf: prefix[i] + "NTF",
-                  nte: prefix[i] + "NTE"}
+                  nef: prefix[i] + "NEF"}
     }
+    return ret
+}
+
+function get_FILT_param_names(num) {
+    let prefix = ["FILT"]
+    let ret = {type: prefix + num + "_TYPE",
+            freq: prefix + num + "_NOTCH_FREQ",
+            q: prefix + num + "_NOTCH_Q",
+            att: prefix + num + "_NOTCH_ATT"}
+    
     return ret
 }
 
@@ -1036,6 +1046,16 @@ function load_log(log_file) {
         }
     }
 
+    for (let j = 1; j < 9; j++) {
+        const filt_params = get_FILT_param_names(j)
+        for (const param of Object.values(filt_params)) {
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
+    }
+
     const other_params = [
         "INS_GYRO_FILTER",
         "ATC_INPUT_TC",
@@ -1061,9 +1081,6 @@ function load_log(log_file) {
     const loop_rate = get_param("SCHED_LOOP_RATE");
     const fstrate = get_param("FSTRATE_ENABLE");
     const fstrate_div = get_param("FSTRATE_DIV");
-    console.log(loop_rate)
-    console.log(fstrate)
-    console.log(fstrate_div)
     if (loop_rate > 0) {
         if (fstrate > 0 && fstrate_div > 0) {
             parameter_set_value("SCHED_LOOP_RATE", ((1 << gyro_rate) * 1000) / fstrate_div)
@@ -1162,14 +1179,87 @@ function nearestIndex(arr, target) {
 function axis_changed() {
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
+    document.getElementById('YawPIDS').style.display = 'none';
+    document.getElementById('RollNOTCH').style.display = 'none';
+    document.getElementById('PitchNOTCH').style.display = 'none';
+    document.getElementById('YawNOTCH').style.display = 'none';
+    for (let i = 1; i<9; i++) {    
+        document.getElementById('FILT' + i).style.display = 'none';
+    }
 
     if (document.getElementById('type_Roll').checked) {
         document.getElementById('RollPIDS').style.display = 'block';
+        document.getElementById('RollNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
     } else if (document.getElementById('type_Pitch').checked) {
         document.getElementById('PitchPIDS').style.display = 'block';
+        document.getElementById('PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
     } else if (document.getElementById('type_Yaw').checked) {
         document.getElementById('YawPIDS').style.display = 'block';
+        document.getElementById('YawNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
     }
+}
+
+function update_PID_filters() {
+    if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPIDS');
+        document.getElementById('RollNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
+    } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('PitchPIDS').style.display = 'block';
+        document.getElementById('PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
+    } else if (document.getElementById('type_Yaw').checked) {
+        document.getElementById('YawPIDS').style.display = 'block';
+        document.getElementById('YawNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
+    }
+
+
 }
 
 // Determine the frequency response from log data
@@ -1202,14 +1292,49 @@ function calculate_freq_resp() {
     var eval_axis = ""
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
+    document.getElementById('YawPIDS').style.display = 'none';
+    document.getElementById('RollNOTCH').style.display = 'none';
+    document.getElementById('PitchNOTCH').style.display = 'none';
+    document.getElementById('YawNOTCH').style.display = 'none';
+    for (let i = 1; i<9; i++) {    
+        document.getElementById('FILT' + i).style.display = 'none';
+    }
 
     if (document.getElementById('type_Roll').checked) {
         document.getElementById('RollPIDS').style.display = 'block';
+        document.getElementById('RollNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF');
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF');
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
         eval_axis = "Roll"
     } else if (document.getElementById('type_Pitch').checked) {
         document.getElementById('PitchPIDS').style.display = 'block';
+        document.getElementById('PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF');
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF');
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
         eval_axis = "Pitch"
     } else if (document.getElementById('type_Yaw').checked) {
+        document.getElementById('YawPIDS').style.display = 'block';
+        document.getElementById('YawNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
         eval_axis = "Yaw"
     }
 

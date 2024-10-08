@@ -294,24 +294,142 @@ ArduPilot 4.2 filter setup.
         <td>
         <fieldset style="width:580px">
                 <legend>Attitude Controller Notch Parameters</legend>
-                        <p>
-                                <input id="ATC_NTF_FILT_FREQ" name="ATC_NTF_FILT_FREQ" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_NTF_FILT_Q" name="ATC_NTF_FILT_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_NTF_FILT_ATT" name="ATC_NTF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_NEF_FILT_FREQ" name="ATC_NEF_FILT_FREQ" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_NEF_FILT_Q" name="ATC_NEF_FILT_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
-                        <p>
-                                <input id="ATC_NEF_FILT_ATT" name="ATC_NEF_FILT_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
-                        </p>
+                        <div id="RollNOTCH" style="display:block">
+                                <p>
+                                        <input id="ATC_RAT_RLL_NTF" name="ATC_RAT_RLL_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_NEF" name="ATC_RAT_RLL_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="PitchNOTCH" style="display:none">
+                                <p>
+                                        <input id="ATC_RAT_PIT_NTF" name="ATC_RAT_PIT_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_NEF" name="ATC_RAT_PIT_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="YawNOTCH" style="display:none">
+                                <p>
+                                        <input id="ATC_RAT_YAW_NTF" name="ATC_RAT_YAW_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_NEF" name="ATC_RAT_YAW_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT1" style="display:none">
+                                <p>
+                                        <input id="FILT1_TYPE" name="FILT1_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_FREQ" name="FILT1_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_Q" name="FILT1_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_ATT" name="FILT1_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT2" style="display:none">
+                                <p>
+                                        <input id="FILT2_TYPE" name="FILT2_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_FREQ" name="FILT2_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_Q" name="FILT2_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_ATT" name="FILT2_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT3" style="display:none">
+                                <p>
+                                        <input id="FILT3_TYPE" name="FILT3_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_FREQ" name="FILT3_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_Q" name="FILT3_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_ATT" name="FILT3_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT4" style="display:none">
+                                <p>
+                                        <input id="FILT4_TYPE" name="FILT4_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_FREQ" name="FILT4_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_Q" name="FILT4_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_ATT" name="FILT4_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT5" style="display:none">
+                                <p>
+                                        <input id="FILT5_TYPE" name="FILT5_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_FREQ" name="FILT5_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_Q" name="FILT5_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_ATT" name="FILT5_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT6" style="display:none">
+                                <p>
+                                        <input id="FILT6_TYPE" name="FILT6_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_FREQ" name="FILT6_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_Q" name="FILT6_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_ATT" name="FILT6_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT7" style="display:none">
+                                <p>
+                                        <input id="FILT7_TYPE" name="FILT7_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_FREQ" name="FILT7_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_Q" name="FILT7_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_ATT" name="FILT7_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT8" style="display:none">
+                                <p>
+                                        <input id="FILT8_TYPE" name="FILT8_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_FREQ" name="FILT8_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_Q" name="FILT8_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_ATT" name="FILT8_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
         </fieldset>
         </td>
         </tr>
@@ -449,7 +567,7 @@ ArduPilot 4.2 filter setup.
   let params = ["SCHED_LOOP_RATE"]
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
-      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_")) {
+      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("FILT")) {
           params.push(param.id)
       }
   }
