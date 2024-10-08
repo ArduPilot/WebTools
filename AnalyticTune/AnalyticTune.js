@@ -800,13 +800,15 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
-    if (get_form("ATC_NEF_FILT_FREQ") <= 0.0) {
-        PID_H_TOT = PID_H.H_total
-    } else {
+    const nef_num = get_form(axis_prefix + "NEF")
+    const nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ")
+    if (nef_num > 0 && nef_freq > 0.0) {
         var E_notch_filter = []
-        E_notch_filter.push(new NotchFilterusingQ(PID_rate, get_form("ATC_NEF_FILT_FREQ"), get_form("ATC_NEF_FILT_Q"), get_form("ATC_NEF_FILT_ATT")))
+        E_notch_filter.push(new NotchFilterusingQ(PID_rate, nef_freq, get_form("FILT" + nef_num + "_NOTCH_Q"), get_form("FILT" + nef_num + "_NOTCH_ATT")))
         const NEF_H = evaluate_transfer_functions([E_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
         PID_H_TOT = complex_mul(NEF_H.H_total, PID_H.H_total)
+    } else {
+        PID_H_TOT = PID_H.H_total
     }
 
     var FF_filter = []
@@ -822,13 +824,15 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
-    if (get_form("ATC_NTF_FILT_FREQ") <= 0.0) {
-        TGT_FILT_H = FLTT_H.H_total
-    } else {
+    const ntf_num = get_form(axis_prefix + "NTF")
+    const ntf_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ")
+    if (ntf_num > 0 && ntf_freq > 0.0) {
         var T_notch_filter = []
-        T_notch_filter.push(new NotchFilterusingQ(PID_rate, get_form("ATC_NTF_FILT_FREQ"), get_form("ATC_NTF_FILT_Q"), get_form("ATC_NTF_FILT_ATT")))
+        T_notch_filter.push(new NotchFilterusingQ(PID_rate, ntf_freq, get_form("FILT" + ntf_num + "_NOTCH_Q"), get_form("FILT" + ntf_num + "_NOTCH_ATT")))
         const NTF_H = evaluate_transfer_functions([T_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
         TGT_FILT_H = complex_mul(NTF_H.H_total, FLTT_H.H_total)
+    } else {
+        TGT_FILT_H = FLTT_H.H_total
     }
 
     let fast_sample_rate = get_form("GyroSampleRate");
