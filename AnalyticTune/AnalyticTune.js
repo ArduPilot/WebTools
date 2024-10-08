@@ -801,7 +801,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     const nef_num = get_form(axis_prefix + "NEF")
-    const nef_freq = 0.0
+    var nef_freq = 0.0
     if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
     if (nef_num > 0 && nef_freq > 0.0) {
         var E_notch_filter = []
@@ -826,7 +826,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     const ntf_num = get_form(axis_prefix + "NTF")
-    const ntf_freq = 0.0
+    var ntf_freq = 0.0
     if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
     if (ntf_num > 0 && ntf_freq > 0.0) {
         var T_notch_filter = []
