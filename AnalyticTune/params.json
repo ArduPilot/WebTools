@@ -280,6 +280,30 @@
       "__field_text": "\n    // @DisplayName: Pitch axis rate controller target frequency in Hz\n    // @Description: Pitch axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
+    "ATC_RAT_PIT_NTF": {
+      "Description": "Pitch Target Notch Filter Index",
+      "DisplayName": "Pitch Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Target Notch Filter Index\n    // @Description: Pitch Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NEF": {
+      "Description": "Pitch Error Notch Filter Index",
+      "DisplayName": "Pitch Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Error Notch Filter Index\n    // @Description: Pitch Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
     "ATC_RAT_PIT_I": {
       "Description": "Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate",
       "DisplayName": "Pitch axis rate controller I gain",
@@ -411,6 +435,30 @@
       "Units": "Hz",
       "User": "Standard",
       "__field_text": "\n    // @DisplayName: Roll axis rate controller target frequency in Hz\n    // @Description: Roll axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NTF": {
+      "Description": "Roll Target Notch Filter Index",
+      "DisplayName": "Roll Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Target Notch Filter Index\n    // @Description: Roll Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NEF": {
+      "Description": "Roll Error Notch Filter Index",
+      "DisplayName": "Roll Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Error Notch Filter Index\n    // @Description: Roll Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_I": {
@@ -546,6 +594,30 @@
       "__field_text": "\n    // @DisplayName: Yaw axis rate controller target frequency in Hz\n    // @Description: Yaw axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
+    "ATC_RAT_YAW_NTF": {
+      "Description": "Yaw Target Notch Filter Index",
+      "DisplayName": "Yaw Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Target Notch Filter Index\n    // @Description: Yaw Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NEF": {
+      "Description": "Yaw Error Notch Filter Index",
+      "DisplayName": "Yaw Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Error Notch Filter Index\n    // @Description: Yaw Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
     "ATC_RAT_YAW_I": {
       "Description": "Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate",
       "DisplayName": "Yaw axis rate controller I gain",
@@ -655,72 +727,6 @@
       },
       "User": "Advanced",
       "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
-    },
-    "ATC_NTF_FILT_ATT": {
-      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
-      "DisplayName": "Harmonic Notch Filter attenuation",
-      "Range": {
-        "high": "50",
-        "low": "5"
-      },
-      "Units": "dB",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
-    },
-    "ATC_NTF_FILT_Q": {
-      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
-      "DisplayName": "Harmonic Notch Filter bandwidth",
-      "Range": {
-        "high": "250",
-        "low": "5"
-      },
-      "Units": "Hz",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
-    },
-    "ATC_NTF_FILT_FREQ": {
-      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
-      "DisplayName": "Harmonic Notch Filter base frequency",
-      "Range": {
-        "high": "495",
-        "low": "10"
-      },
-      "Units": "Hz",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
-    },
-    "ATC_NEF_FILT_ATT": {
-      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
-      "DisplayName": "Harmonic Notch Filter attenuation",
-      "Range": {
-        "high": "50",
-        "low": "5"
-      },
-      "Units": "dB",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
-    },
-    "ATC_NEF_FILT_Q": {
-      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
-      "DisplayName": "Harmonic Notch Filter bandwidth",
-      "Range": {
-        "high": "250",
-        "low": "5"
-      },
-      "Units": "Hz",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
-    },
-    "ATC_NEF_FILT_FREQ": {
-      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
-      "DisplayName": "Harmonic Notch Filter base frequency",
-      "Range": {
-        "high": "495",
-        "low": "10"
-      },
-      "Units": "Hz",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
     }
   },
   "INS": {
@@ -1591,6 +1597,344 @@
       "RebootRequired": "True",
       "User": "Advanced",
       "__field_text": "\n    // @DisplayName: Scheduling main loop rate\n    // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.\n    // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz\n    // @RebootRequired: True\n    // @User: Advanced"
+    }
+  },
+  "FILT": {
+    "FILT1_TYPE": {
+      "Description": "filter 1 type",
+      "DisplayName": "filter 1 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT1_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT1_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT1_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT2_TYPE": {
+      "Description": "filter 2 type",
+      "DisplayName": "filter 2 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT2_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT2_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT2_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT3_TYPE": {
+      "Description": "filter 3 type",
+      "DisplayName": "filter 3 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT3_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT3_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT3_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT4_TYPE": {
+      "Description": "filter 4 type",
+      "DisplayName": "filter 4 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT4_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT4_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT4_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT5_TYPE": {
+      "Description": "filter 5 type",
+      "DisplayName": "filter 5 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT5_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT5_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT5_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT6_TYPE": {
+      "Description": "filter 6 type",
+      "DisplayName": "filter 6 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT6_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT6_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT6_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT7_TYPE": {
+      "Description": "filter 7 type",
+      "DisplayName": "filter 7 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT7_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT7_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT7_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT8_TYPE": {
+      "Description": "filter 8 type",
+      "DisplayName": "filter 8 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT8_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT8_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT8_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
     }
   },
     "json": {
