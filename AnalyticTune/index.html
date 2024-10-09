@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot Analytic Tune</title>
+<link rel="icon" href="../images/AP_favicon.png">
+<script type="text/javascript" src="AnalyticTune.js"></script>
+<script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+<script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/fft.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
+
+<script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
+<script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
+<script src='../modules/plotly.js/dist/plotly.min.js'></script>
+<script src='../modules/fft.js/dist/fft.js'></script>
+</head>
+<table style="width:1200px"><tr><td>
+    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+    <br>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<style>
+        div.plotly-notifier {
+                visibility: hidden;
+        }
+</style>
+
+<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Analytic Tune Tool</a></h1>
+
+The following form will display the attenuation and phase lag for an
+ArduPilot 4.2 filter setup.
+<body onload="load(); update_all_hidden(); setup_plots();">
+
+<table>
+        <tr>
+        <td style="width: 30px;"></td>
+        <td>
+        <fieldset style="width:1100px">
+                <legend>Setup</legend>
+                <table>
+                <tr>
+                <td>
+                        <fieldset style="width:200px;height:80px">
+                        <legend>FFT Settings</legend>
+                        <table>
+                                <td style="width: 125px;">
+                                <label for="FFTWindow_size">Window size</label>
+                                </td>
+                                <td>
+                                <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="window_size_inc(event)" style="width:50px"/>
+                                </td>
+                        </table>
+                        </fieldset>
+                </td>
+                <td>
+                <fieldset style="width:200px;height:80px">
+                        <legend>Axis</legend>
+                        <input type="radio" id="type_Roll" name="Axis" checked onchange = "axis_changed()">
+                        <label for="type_Roll">Roll</label><br>
+                        <input type="radio" id="type_Pitch" name="Axis" onchange = "axis_changed()">
+                        <label for="type_Pitch">Pitch</label><br>
+                        <input type="radio" id="type_Yaw" name="Axis" onchange = "axis_changed()">
+                        <label for="type_Yaw">Yaw</label><br>
+                </fieldset>
+                </td>
+                <td>
+                <fieldset style="width:200px;height:80px">
+                        <legend>Analysis time</legend>
+                        <label for="starttime">Start (s)</label>
+                        <input id="starttime" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/><br><br>
+                        <label for="endtime">End (s)</label>
+                        <input id="endtime" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:50px"/>
+                </fieldset>
+                </td>
+                <td style="width: 10px;"></td>
+                <td>
+                <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
+                </td>
+                </tr>
+                </table>
+        </fieldset>
+        </td>
+        </tr>
+</table>
+            
+<table><tr><td style="width:1200px">
+<h2 style="text-align:center">Flight Data</h2>
+</td></tr></table>
+
+<div id="FlightData" style="width:1200px;height:450px"></div>
+            
+<p>
+  <input type="button" id="calculate" value="Calculate">
+  <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
+  <button class="styleClass" onclick="document.getElementById('param_file').click()">Load Parameters</button>
+  <input type='file' id="param_file" style="display:none" onchange="load_parameters(this.files[0]);">
+  <input type="button" id="GetLink" value="Get Link" onclick="get_link();">
+</p>
+
+  <form id="params" action="">
+
+<fieldset style="max-width:1200px">
+  <legend>INS Settings</legend>
+        <p>
+                <label for="GyroSampleRate">Gyro Sample Rate</label>
+                <input id="GyroSampleRate" name="GyroSampleRate" type="number" step="1" value="2000" onchange = "calculate_freq_resp()"/>
+	</p>
+        <p>
+                <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+	</p>
+</fieldset>
+<table>
+        <tr>
+        <td>
+        <fieldset style="width:580px">
+            <legend>First Notch Filter</legend>
+            <p>
+                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="1" style="width: 100px" onchange="update_hidden(this.id); calculate_freq_resp();"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_MODE" name="INS_HNTCH_MODE" type="number" step="1" value="1" style="width: 100px" onchange="update_hidden_mode(); calculate_freq_resp();"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_FREQ" name="INS_HNTCH_FREQ" type="number" step="0.1" value="150" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_BW" name="INS_HNTCH_BW" type="number" step="0.1" value="75" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_ATT" name="INS_HNTCH_ATT" type="number" step="0.1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_REF" name="INS_HNTCH_REF" type="number" step="0.01" value="0.29" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_FM_RAT" name="INS_HNTCH_FM_RAT" type="number" step="0.01" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_HMNCS" name="INS_HNTCH_HMNCS" type="number" step="1" value="3" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTCH_OPTS" name="INS_HNTCH_OPTS" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+        </fieldset>
+        </td>
+        <td>
+        <fieldset style="width:580px">
+            <legend>Second Notch Filter</legend>
+            <p>
+                <input id="INS_HNTC2_ENABLE" name="INS_HNTC2_ENABLE" type="number" step="1" value="0" style="width: 100px" onchange="update_hidden(this.id); calculate_freq_resp();"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_MODE" name="INS_HNTC2_MODE" type="number" step="1" value="0" style="width: 100px" onchange="update_hidden_mode(); calculate_freq_resp();"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_FREQ" name="INS_HNTC2_FREQ" type="number" step="0.1" value="0"style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_BW" name="INS_HNTC2_BW" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_ATT" name="INS_HNTC2_ATT" type="number" step="0.1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_REF" name="INS_HNTC2_REF" type="number" step="0.01" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_FM_RAT" name="INS_HNTC2_FM_RAT" type="number" step="0.01" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_HMNCS" name="INS_HNTC2_HMNCS" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+            <p>
+                <input id="INS_HNTC2_OPTS" name="INS_HNTC2_OPTS" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+            </p>
+        </fieldset>
+        </td>
+        </tr>
+</table>
+<fieldset style="max-width:1200px">
+        <legend>Loop Rate</legend>
+                <p>
+                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400" data-paramValues="false" onchange = "calculate_freq_resp()"/>
+                </p>
+</fieldset>
+
+<table>
+        <tr>
+        <td>
+        <fieldset style="width:580px">
+                <legend>Attitude Controller Parameters</legend>
+                        <p>
+                                <input id="ATC_INPUT_TC" name="ATC_INPUT_TC" type="number" step="0.01" value="0.15" onchange = "calculate_freq_resp()"/>
+                        </p>
+                        <div id="RollPIDS" style="display:block">
+                                <p>
+                                        <input id="ATC_ANG_RLL_P" name="ATC_ANG_RLL_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FF" name="ATC_RAT_RLL_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_P" name="ATC_RAT_RLL_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_I" name="ATC_RAT_RLL_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_D" name="ATC_RAT_RLL_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_D_FF" name="ATC_RAT_RLL_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>       
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_RLL_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_RLL_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_FLTD" name="ATC_RAT_RLL_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="PitchPIDS" style="display:none">
+                                <p>
+                                        <input id="ATC_ANG_PIT_P" name="ATC_ANG_PIT_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FF" name="ATC_RAT_PIT_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_P" name="ATC_RAT_PIT_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_I" name="ATC_RAT_PIT_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_D" name="ATC_RAT_PIT_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_D_FF" name="ATC_RAT_PIT_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>        
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTT" name="ATC_RAT_PIT_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTE" name="ATC_RAT_PIT_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_FLTD" name="ATC_RAT_PIT_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="YawPIDS" style="display:none">
+                                <p>
+                                        <input id="ATC_ANG_YAW_P" name="ATC_ANG_YAW_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FF" name="ATC_RAT_YAW_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_P" name="ATC_RAT_YAW_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_I" name="ATC_RAT_YAW_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_D" name="ATC_RAT_YAW_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_D_FF" name="ATC_RAT_YAW_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>        
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTT" name="ATC_RAT_YAW_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTE" name="ATC_RAT_YAW_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_FLTD" name="ATC_RAT_YAW_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                </fieldset>
+        </td>
+        <td>
+        <fieldset style="width:580px">
+                <legend>Attitude Controller Notch Parameters</legend>
+                        <div id="RollNOTCH" style="display:block">
+                                <p>
+                                        <input id="ATC_RAT_RLL_NTF" name="ATC_RAT_RLL_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_RLL_NEF" name="ATC_RAT_RLL_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="PitchNOTCH" style="display:none">
+                                <p>
+                                        <input id="ATC_RAT_PIT_NTF" name="ATC_RAT_PIT_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_PIT_NEF" name="ATC_RAT_PIT_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="YawNOTCH" style="display:none">
+                                <p>
+                                        <input id="ATC_RAT_YAW_NTF" name="ATC_RAT_YAW_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="ATC_RAT_YAW_NEF" name="ATC_RAT_YAW_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT1" style="display:none">
+                                <p>
+                                        <input id="FILT1_TYPE" name="FILT1_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_FREQ" name="FILT1_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_Q" name="FILT1_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT1_NOTCH_ATT" name="FILT1_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT2" style="display:none">
+                                <p>
+                                        <input id="FILT2_TYPE" name="FILT2_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_FREQ" name="FILT2_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_Q" name="FILT2_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT2_NOTCH_ATT" name="FILT2_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT3" style="display:none">
+                                <p>
+                                        <input id="FILT3_TYPE" name="FILT3_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_FREQ" name="FILT3_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_Q" name="FILT3_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT3_NOTCH_ATT" name="FILT3_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT4" style="display:none">
+                                <p>
+                                        <input id="FILT4_TYPE" name="FILT4_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_FREQ" name="FILT4_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_Q" name="FILT4_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT4_NOTCH_ATT" name="FILT4_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT5" style="display:none">
+                                <p>
+                                        <input id="FILT5_TYPE" name="FILT5_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_FREQ" name="FILT5_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_Q" name="FILT5_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT5_NOTCH_ATT" name="FILT5_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT6" style="display:none">
+                                <p>
+                                        <input id="FILT6_TYPE" name="FILT6_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_FREQ" name="FILT6_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_Q" name="FILT6_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT6_NOTCH_ATT" name="FILT6_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT7" style="display:none">
+                                <p>
+                                        <input id="FILT7_TYPE" name="FILT7_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_FREQ" name="FILT7_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_Q" name="FILT7_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT7_NOTCH_ATT" name="FILT7_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FILT8" style="display:none">
+                                <p>
+                                        <input id="FILT8_TYPE" name="FILT8_TYPE" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_FREQ" name="FILT8_NOTCH_FREQ" type="number" step="1" value="0" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_Q" name="FILT8_NOTCH_Q" type="number" step="0.1" value="2" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="FILT8_NOTCH_ATT" name="FILT8_NOTCH_ATT" type="number" step="1" value="40" style="width: 100px" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+        </fieldset>
+        </td>
+        </tr>
+</table>
+
+<fieldset style="max-width:1200px" id="Throttle_input">
+        <legend>Throttle Based</legend>
+              <p>
+                      <label for="Throttle">Throttle</label>
+                      <input id="Throttle" name="Throttle" type="number" step="0.01" value="0.3"/>
+              </p>
+</fieldset>
+<fieldset style="max-width:1200px" id="ESC_input">
+        <legend>ESC Telemetry</legend>
+              <p>
+                      <label for="NUM_MOTORS">Number of Motors</label>
+                      <input id="NUM_MOTORS" name="NUM_MOTORS" type="number" step="1" value="1"/>
+              </p>
+              <p>
+                      <label for="ESC_RPM">ESC RPM</label>
+                      <input id="ESC_RPM" name="ESC_RPM" type="number" step="1" value="2500"/>
+              </p>
+</fieldset>
+<fieldset style="max-width:1200px" id="RPM_input">
+        <legend>RPM/EFI Based</legend>
+              <p>
+                      <label for="RPM1">RPM1</label>
+                      <input id="RPM1" name="RPM1" type="number" step="1" value="2500"/>
+              </p>
+              <p>
+                      <label for="RPM2">RPM2</label>
+                      <input id="RPM2" name="RPM2" type="number" step="1" value="2500"/>
+              </p>
+</fieldset>
+</form>
+
+<h2>Prediction</h2>
+<h3><label id="PID_title">Title</label></h3>
+
+<div id="FFTPlotMag" style="width:1200px;height:350px"></div>
+
+<div id="FFTPlotPhase" style="width:1200px;height:350px"></div>
+
+<div id="FFTPlotCoh" style="width:1200px;height:250px"></div>
+
+<form id="PID_params" action="">
+        <fieldset style="max-width:1200px">
+          <legend>Graph Settings</legend>
+                <p>
+                        <table>
+                                <tr>
+                                        <td>
+                                                <fieldset style="width:200px;height:90px">
+                                                        <legend>Control Loop</legend>
+                                                        <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Bare_AC">Bare Aircraft</label><br>
+                                                        <input type="radio" id="type_Rate_Ctrlr" name="Control_Loop" value="Rate_Ctrlr"  onchange="redraw_freq_resp();" checked>
+                                                        <label for="type_Rate_Ctrlr">Rate Controller</label><br>
+                                                        <input type="radio" id="type_Att_Ctrlr" name="Control_Loop" value="Att_Ctrlr"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Ctrlr">Attitude Controller</label><br>
+                                                        <input type="radio" id="type_Pilot_Ctrlr" name="Control_Loop" value="Pilot_Ctrlr"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Ctrlr">Input Shaping</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px; height:70px">
+                                                        <legend>Gain scale</legend>
+                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log"  onchange="redraw_freq_resp();" checked>
+                                                        <label for="PID_ScaleLog">dB</label><br>
+                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear" onchange="redraw_freq_resp();">
+                                                        <label for="PID_ScaleLinear">Linear</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px; height:70px">
+                                                        <legend>Phase scale</legend>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" onchange="redraw_freq_resp();">
+                                                        <label for="PID_ScaleUnWrap">un-wrapped</label><br>
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap"onchange="redraw_freq_resp();" checked>
+                                                        <label for="PID_ScaleWrap">±180</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px; height:70px">
+                                                        <legend>Frequency scale</legend>
+                                                        <table>
+                                                                <tr>
+                                                                        <td>
+                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" onchange="redraw_freq_resp();" checked>
+                                                                                <label for="PID_freq_ScaleLog">Log</label><br>
+                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear" onchange="redraw_freq_resp();">
+                                                                                <label for="PID_freq_ScaleLinear">Linear</label><br>
+                                                                        </td>
+                                                                        <td>
+                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" onchange="redraw_freq_resp();" checked>
+                                                                                <label for="PID_freq_Scale_Hz">Hz</label><br>
+                                                                                <input type="radio" id="PID_freq_Scale_RPS" name="PID_feq_unit" value="RPS" onchange="redraw_freq_resp();">
+                                                                                <label for="PID_freq_Scale_RPS">Rad/s</label><br>
+                                                                        </td>
+                                                                </tr>
+                                                        </table>
+                                                </fieldset>
+                                        </td>
+                                </tr>
+                        </table> 
+                </p>
+        </fieldset>
+</form>
+
+<script>
+
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+             msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+  window.addEventListener('unhandledrejection', function (e) {
+        throw new Error(e.reason.stack)
+  })
+
+  var calc_btn = document.getElementById('calculate');
+  calc_btn.onclick = function() {
+      calculate_freq_resp();
+  }
+  //var clear_btn = document.getElementById('clear_cookies');
+  //clear_btn.onclick = function() {
+  //    clear_cookies();
+  //}
+
+  let params = ["SCHED_LOOP_RATE"]
+  var inputs = document.getElementsByTagName("input");
+  for (param of inputs) {
+      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("FILT")) {
+          params.push(param.id)
+      }
+  }
+
+  load_param_inputs("params.json", params)
+
+// Handler for file select
+function readFile(e) {
+        const file = e.files[0]
+        if (file == null) {
+                return
+        }
+        let reader = new FileReader()
+        reader.onload = function (e) {
+                load_log(reader.result)
+                document.title = "SysID: " + file.name
+        }
+        reader.readAsArrayBuffer(file)
+}
+
+
+</script>
+
+</body>
+</html>

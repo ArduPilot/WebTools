@@ -1,0 +1,1943 @@
+{
+  "ATC_": {
+    "ATC_ACCEL_P_MAX": {
+      "Description": "Maximum acceleration in pitch axis",
+      "DisplayName": "Acceleration Max for Pitch",
+      "Increment": "1000",
+      "Range": {
+        "high": "180000",
+        "low": "0"
+      },
+      "Units": "cdeg/s/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "108000": "Medium",
+        "162000": "Fast",
+        "30000": "VerySlow",
+        "72000": "Slow"
+      },
+      "__field_text": "\n    // @DisplayName: Acceleration Max for Pitch\n    // @Description: Maximum acceleration in pitch axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+    },
+    "ATC_ACCEL_R_MAX": {
+      "Description": "Maximum acceleration in roll axis",
+      "DisplayName": "Acceleration Max for Roll",
+      "Increment": "1000",
+      "Range": {
+        "high": "180000",
+        "low": "0"
+      },
+      "Units": "cdeg/s/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "108000": "Medium",
+        "162000": "Fast",
+        "30000": "VerySlow",
+        "72000": "Slow"
+      },
+      "__field_text": "\n    // @DisplayName: Acceleration Max for Roll\n    // @Description: Maximum acceleration in roll axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+    },
+    "ATC_ACCEL_Y_MAX": {
+      "Description": "Maximum acceleration in yaw axis",
+      "DisplayName": "Acceleration Max for Yaw",
+      "Increment": "1000",
+      "Range": {
+        "high": "72000",
+        "low": "0"
+      },
+      "Units": "cdeg/s/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "18000": "Slow",
+        "36000": "Medium",
+        "54000": "Fast",
+        "9000": "VerySlow"
+      },
+      "__field_text": "\n    // @DisplayName: Acceleration Max for Yaw\n    // @Description: Maximum acceleration in yaw axis\n    // @Units: cdeg/s/s\n    // @Range: 0 72000\n    // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast\n    // @Increment: 1000\n    // @User: Advanced"
+    },
+    "ATC_ANGLE_BOOST": {
+      "Description": "Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude",
+      "DisplayName": "Angle Boost",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Angle Boost\n    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+    },
+    "ATC_ANG_LIM_TC": {
+      "Description": "Angle Limit (to maintain altitude) Time Constant",
+      "DisplayName": "Angle Limit (to maintain altitude) Time Constant",
+      "Range": {
+        "high": "10.0",
+        "low": "0.5"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Angle Limit (to maintain altitude) Time Constant\n    // @Description: Angle Limit (to maintain altitude) Time Constant\n    // @Range: 0.5 10.0\n    // @User: Advanced"
+    },
+    "ATC_ANG_PIT_P": {
+      "Description": "Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate",
+      "DisplayName": "Pitch axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis angle controller P gain\n    // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+    },
+    "ATC_ANG_RLL_P": {
+      "Description": "Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate",
+      "DisplayName": "Roll axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis angle controller P gain\n    // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+    },
+    "ATC_ANG_YAW_P": {
+      "Description": "Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate",
+      "DisplayName": "Yaw axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis angle controller P gain\n    // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 6.000\n    // @User: Standard"
+    },
+    "ATC_HOVR_ROL_TRM": {
+      "Description": "Trim the hover roll angle to counter tail rotor thrust in a hover",
+      "DisplayName": "Hover Roll Trim",
+      "Increment": "10",
+      "Range": {
+        "high": "1000",
+        "low": "0"
+      },
+      "Units": "cdeg",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Hover Roll Trim\n    // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover\n    // @Units: cdeg\n    // @Increment: 10\n    // @Range: 0 1000\n    // @User: Advanced"
+    },
+    "ATC_INPUT_TC": {
+      "Description": "Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response",
+      "DisplayName": "Attitude control input time constant",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "Units": "s",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Attitude control input time constant\n    // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response\n    // @Units: s\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp\n    // @User: Standard"
+    },
+    "ATC_PIRO_COMP": {
+      "Description": "Pirouette compensation enabled",
+      "DisplayName": "Piro Comp Enable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Piro Comp Enable\n    // @Description: Pirouette compensation enabled\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "ATC_RATE_FF_ENAB": {
+      "Description": "Controls whether body-frame rate feedfoward is enabled or disabled",
+      "DisplayName": "Rate Feedforward Enable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Rate Feedforward Enable\n    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+    },
+    "ATC_RATE_P_MAX": {
+      "Description": "Maximum angular velocity in pitch axis",
+      "DisplayName": "Angular Velocity Max for Pitch",
+      "Increment": "1",
+      "Range": {
+        "high": "1080",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "180": "Medium",
+        "360": "Fast",
+        "60": "Slow"
+      },
+      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Pitch\n    // @Description: Maximum angular velocity in pitch axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+    },
+    "ATC_RATE_R_MAX": {
+      "Description": "Maximum angular velocity in roll axis",
+      "DisplayName": "Angular Velocity Max for Roll",
+      "Increment": "1",
+      "Range": {
+        "high": "1080",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "180": "Medium",
+        "360": "Fast",
+        "60": "Slow"
+      },
+      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Roll\n    // @Description: Maximum angular velocity in roll axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+    },
+    "ATC_RATE_Y_MAX": {
+      "Description": "Maximum angular velocity in yaw axis",
+      "DisplayName": "Angular Velocity Max for Yaw",
+      "Increment": "1",
+      "Range": {
+        "high": "1080",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "180": "Medium",
+        "360": "Fast",
+        "60": "Slow"
+      },
+      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Yaw\n    // @Description: Maximum angular velocity in yaw axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+    },
+    "ATC_RAT_PIT_D": {
+      "Description": "Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_D_FF": {
+      "Description": "Pitch axis rate controller D feedforward gain.  ",
+      "DisplayName": "Pitch axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D FF gain\n    // @Description: Pitch axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_FF": {
+      "Description": "Pitch axis rate controller feed forward",
+      "DisplayName": "Pitch axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0.05"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller feed forward\n    // @Description: Pitch axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_FLTD": {
+      "Description": "Pitch axis rate controller derivative frequency in Hz",
+      "DisplayName": "Pitch axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller derivative frequency in Hz\n    // @Description: Pitch axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_FLTE": {
+      "Description": "Pitch axis rate controller error frequency in Hz",
+      "DisplayName": "Pitch axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller error frequency in Hz\n    // @Description: Pitch axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_FLTT": {
+      "Description": "Pitch axis rate controller target frequency in Hz",
+      "DisplayName": "Pitch axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller target frequency in Hz\n    // @Description: Pitch axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NTF": {
+      "Description": "Pitch Target Notch Filter Index",
+      "DisplayName": "Pitch Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Target Notch Filter Index\n    // @Description: Pitch Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NEF": {
+      "Description": "Pitch Error Notch Filter Index",
+      "DisplayName": "Pitch Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Error Notch Filter Index\n    // @Description: Pitch Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_I": {
+      "Description": "Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain\n    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_ILMI": {
+      "Description": "Point below which I-term will not leak down",
+      "DisplayName": "Pitch axis rate controller I-term leak minimum",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+    },
+    "ATC_RAT_PIT_IMAX": {
+      "Description": "Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Pitch axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain maximum\n    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_P": {
+      "Description": "Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller P gain\n    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Pitch slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_D": {
+      "Description": "Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller D gain\n    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_D_FF": {
+      "Description": "Roll axis rate controller D feedforward gain.  ",
+      "DisplayName": "Roll axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller D FF gain\n    // @Description: Roll axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_FF": {
+      "Description": "Roll axis rate controller feed forward",
+      "DisplayName": "Roll axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0.05"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller feed forward\n    // @Description: Roll axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_FLTD": {
+      "Description": "Roll axis rate controller derivative frequency in Hz",
+      "DisplayName": "Roll axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller derivative frequency in Hz\n    // @Description: Roll axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_FLTE": {
+      "Description": "Roll axis rate controller error frequency in Hz",
+      "DisplayName": "Roll axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller error frequency in Hz\n    // @Description: Roll axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_FLTT": {
+      "Description": "Roll axis rate controller target frequency in Hz",
+      "DisplayName": "Roll axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller target frequency in Hz\n    // @Description: Roll axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NTF": {
+      "Description": "Roll Target Notch Filter Index",
+      "DisplayName": "Roll Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Target Notch Filter Index\n    // @Description: Roll Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NEF": {
+      "Description": "Roll Error Notch Filter Index",
+      "DisplayName": "Roll Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Error Notch Filter Index\n    // @Description: Roll Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_I": {
+      "Description": "Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain\n    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_ILMI": {
+      "Description": "Point below which I-term will not leak down",
+      "DisplayName": "Roll axis rate controller I-term leak minimum",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+    },
+    "ATC_RAT_RLL_IMAX": {
+      "Description": "Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Roll axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain maximum\n    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_P": {
+      "Description": "Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller P gain\n    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Roll slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_D": {
+      "Description": "Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.02",
+        "low": "0.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D gain\n    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate\n    // @Range: 0.000 0.02\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_FF": {
+      "Description": "Yaw axis rate controller feed forward",
+      "DisplayName": "Yaw axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller feed forward\n    // @Description: Yaw axis rate controller feed forward\n    // @Range: 0 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_D_FF": {
+      "Description": "Yaw axis rate controller D feedforward gain.  ",
+      "DisplayName": "Yaw axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D FF gain\n    // @Description: Yaw axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_FLTD": {
+      "Description": "Yaw axis rate controller derivative frequency in Hz",
+      "DisplayName": "Yaw axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller derivative frequency in Hz\n    // @Description: Yaw axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_FLTE": {
+      "Description": "Yaw axis rate controller error frequency in Hz",
+      "DisplayName": "Yaw axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller error frequency in Hz\n    // @Description: Yaw axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_FLTT": {
+      "Description": "Yaw axis rate controller target frequency in Hz",
+      "DisplayName": "Yaw axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller target frequency in Hz\n    // @Description: Yaw axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NTF": {
+      "Description": "Yaw Target Notch Filter Index",
+      "DisplayName": "Yaw Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Target Notch Filter Index\n    // @Description: Yaw Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NEF": {
+      "Description": "Yaw Error Notch Filter Index",
+      "DisplayName": "Yaw Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Error Notch Filter Index\n    // @Description: Yaw Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_I": {
+      "Description": "Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.2",
+        "low": "0.01"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain\n    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate\n    // @Range: 0.01 0.2\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_ILMI": {
+      "Description": "Point below which I-term will not leak down",
+      "DisplayName": "Yaw axis rate controller I-term leak minimum",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+    },
+    "ATC_RAT_YAW_IMAX": {
+      "Description": "Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Yaw axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain maximum\n    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_P": {
+      "Description": "Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.60",
+        "low": "0.180"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller P gain\n    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate\n    // @Range: 0.180 0.60\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Yaw slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_SLEW_YAW": {
+      "Description": "Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes",
+      "DisplayName": "Yaw target slew rate",
+      "Increment": "100",
+      "Range": {
+        "high": "18000",
+        "low": "500"
+      },
+      "Units": "cdeg/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw target slew rate\n    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes\n    // @Units: cdeg/s\n    // @Range: 500 18000\n    // @Increment: 100\n    // @User: Advanced"
+    },
+    "ATC_THR_G_BOOST": {
+      "Description": "Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.",
+      "DisplayName": "Throttle-gain boost",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle-gain boost\n    // @Description: Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.\n    // @Range: 0 1\n    // @User: Advanced"
+    },
+    "ATC_THR_MIX_MAN": {
+      "Description": "Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)",
+      "DisplayName": "Throttle Mix Manual",
+      "Range": {
+        "high": "0.9",
+        "low": "0.1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle Mix Manual\n    // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.9\n    // @User: Advanced"
+    },
+    "ATC_THR_MIX_MAX": {
+      "Description": "Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)",
+      "DisplayName": "Throttle Mix Maximum",
+      "Range": {
+        "high": "0.9",
+        "low": "0.5"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle Mix Maximum\n    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.5 0.9\n    // @User: Advanced"
+    },
+    "ATC_THR_MIX_MIN": {
+      "Description": "Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)",
+      "DisplayName": "Throttle Mix Minimum",
+      "Range": {
+        "high": "0.25",
+        "low": "0.1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
+    }
+  },
+  "INS": {
+    "INS_ACC1_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 1st accelerometer was calibrated at",
+      "DisplayName": "Calibration temperature for 1st accelerometer",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 1st accelerometer\n    // @Description: Temperature that the 1st accelerometer was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_ACC2OFFS_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer2 offsets of X axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 offsets of X axis\n    // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2OFFS_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer2 offsets of Y axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 offsets of Y axis\n    // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2OFFS_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer2 offsets of Z axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 offsets of Z axis\n    // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2SCAL_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer2 scaling of X axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 scaling of X axis\n    // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2SCAL_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 scaling of Y axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer2 scaling of Y axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 scaling of Y axis\n    // @Description: Accelerometer2 scaling of Y axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2SCAL_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer2 scaling of Z axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer2 scaling of Z axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 scaling of Z axis\n    // @Description: Accelerometer2 scaling of Z axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC2_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 2nd accelerometer was calibrated at",
+      "DisplayName": "Calibration temperature for 2nd accelerometer",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 2nd accelerometer\n    // @Description: Temperature that the 2nd accelerometer was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_ACC2_ID": {
+      "Description": "Accelerometer2 sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Accelerometer2 ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer2 ID\n    // @Description: Accelerometer2 sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_ACC3OFFS_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer3 offsets of X axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 offsets of X axis\n    // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3OFFS_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer3 offsets of Y axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 offsets of Y axis\n    // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3OFFS_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer3 offsets of Z axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 offsets of Z axis\n    // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3SCAL_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer3 scaling of X axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 scaling of X axis\n    // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3SCAL_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 scaling of Y axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer3 scaling of Y axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 scaling of Y axis\n    // @Description: Accelerometer3 scaling of Y axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3SCAL_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer3 scaling of Z axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer3 scaling of Z axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 scaling of Z axis\n    // @Description: Accelerometer3 scaling of Z axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC3_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 3rd accelerometer was calibrated at",
+      "DisplayName": "Calibration temperature for 3rd accelerometer",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 3rd accelerometer\n    // @Description: Temperature that the 3rd accelerometer was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_ACC3_ID": {
+      "Description": "Accelerometer3 sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Accelerometer3 ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer3 ID\n    // @Description: Accelerometer3 sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_ACCEL_FILTER": {
+      "Description": "Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)",
+      "DisplayName": "Accel filter cutoff frequency",
+      "Range": {
+        "high": "256",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accel filter cutoff frequency\n    // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)\n    // @Units: Hz\n    // @Range: 0 256\n    // @User: Advanced"
+    },
+    "INS_ACCOFFS_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer offsets of X axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer offsets of X axis\n    // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACCOFFS_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer offsets of Y axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer offsets of Y axis\n    // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACCOFFS_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations",
+      "DisplayName": "Accelerometer offsets of Z axis",
+      "Range": {
+        "high": "3.5",
+        "low": "-3.5"
+      },
+      "Units": "m/s/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer offsets of Z axis\n    // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations\n    // @Units: m/s/s\n    // @Range: -3.5 3.5\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACCSCAL_X": {
+      "Calibration": "1",
+      "Description": "Accelerometer scaling of X axis.  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer scaling of X axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer scaling of X axis\n    // @Description: Accelerometer scaling of X axis.  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACCSCAL_Y": {
+      "Calibration": "1",
+      "Description": "Accelerometer scaling of Y axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer scaling of Y axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer scaling of Y axis\n    // @Description: Accelerometer scaling of Y axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACCSCAL_Z": {
+      "Calibration": "1",
+      "Description": "Accelerometer scaling of Z axis  Calculated during acceleration calibration routine",
+      "DisplayName": "Accelerometer scaling of Z axis",
+      "Range": {
+        "high": "1.2",
+        "low": "0.8"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer scaling of Z axis\n    // @Description: Accelerometer scaling of Z axis  Calculated during acceleration calibration routine\n    // @Range: 0.8 1.2\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_ACC_BODYFIX": {
+      "Description": "The body-fixed accelerometer to be used for trim calculation",
+      "DisplayName": "Body-fixed accelerometer",
+      "User": "Advanced",
+      "Values": {
+        "1": "IMU 1",
+        "2": "IMU 2",
+        "3": "IMU 3"
+      },
+      "__field_text": "\n    // @DisplayName: Body-fixed accelerometer\n    // @Description: The body-fixed accelerometer to be used for trim calculation\n    // @User: Advanced\n    // @Values: 1:IMU 1,2:IMU 2,3:IMU 3"
+    },
+    "INS_ACC_ID": {
+      "Description": "Accelerometer sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Accelerometer ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Accelerometer ID\n    // @Description: Accelerometer sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_ENABLE_MASK": {
+      "Bitmask": {
+        "0": "FirstIMU",
+        "1": "SecondIMU",
+        "2": "ThirdIMU",
+        "3": "FourthIMU",
+        "4": "FifthIMU",
+        "5": "SixthIMU",
+        "6": "SeventhIMU"
+      },
+      "Description": "Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs",
+      "DisplayName": "IMU enable mask",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU enable mask\n    // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs\n    // @User: Advanced\n    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU,6:SeventhIMU"
+    },
+    "INS_FAST_SAMPLE": {
+      "Bitmask": {
+        "0": "FirstIMU",
+        "1": "SecondIMU",
+        "2": "ThirdIMU"
+      },
+      "Description": "Mask of IMUs to enable fast sampling on, if available",
+      "DisplayName": "Fast sampling mask",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Fast sampling mask\n    // @Description: Mask of IMUs to enable fast sampling on, if available\n    // @User: Advanced\n    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU"
+    },
+    "INS_GYR1_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 1st gyroscope was calibrated at",
+      "DisplayName": "Calibration temperature for 1st gyroscope",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 1st gyroscope\n    // @Description: Temperature that the 1st gyroscope was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_GYR2OFFS_X": {
+      "Calibration": "1",
+      "Description": "Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro2 offsets of X axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro2 offsets of X axis\n    // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR2OFFS_Y": {
+      "Calibration": "1",
+      "Description": "Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro2 offsets of Y axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro2 offsets of Y axis\n    // @Description: Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR2OFFS_Z": {
+      "Calibration": "1",
+      "Description": "Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro2 offsets of Z axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro2 offsets of Z axis\n    // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR2_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 2nd gyroscope was calibrated at",
+      "DisplayName": "Calibration temperature for 2nd gyroscope",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 2nd gyroscope\n    // @Description: Temperature that the 2nd gyroscope was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_GYR2_ID": {
+      "Description": "Gyro2 sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Gyro2 ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro2 ID\n    // @Description: Gyro2 sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_GYR3OFFS_X": {
+      "Calibration": "1",
+      "Description": "Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro3 offsets of X axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro3 offsets of X axis\n    // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR3OFFS_Y": {
+      "Calibration": "1",
+      "Description": "Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro3 offsets of Y axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro3 offsets of Y axis\n    // @Description: Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR3OFFS_Z": {
+      "Calibration": "1",
+      "Description": "Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro3 offsets of Z axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro3 offsets of Z axis\n    // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYR3_CALTEMP": {
+      "Calibration": "1",
+      "Description": "Temperature that the 3rd gyroscope was calibrated at",
+      "DisplayName": "Calibration temperature for 3rd gyroscope",
+      "Units": "degC",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Calibration temperature for 3rd gyroscope\n    // @Description: Temperature that the 3rd gyroscope was calibrated at\n    // @User: Advanced\n    // @Units: degC\n    // @Calibration: 1"
+    },
+    "INS_GYR3_ID": {
+      "Description": "Gyro3 sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Gyro3 ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro3 ID\n    // @Description: Gyro3 sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_GYROFFS_X": {
+      "Calibration": "1",
+      "Description": "Gyro sensor offsets of X axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro offsets of X axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro offsets of X axis\n    // @Description: Gyro sensor offsets of X axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYROFFS_Y": {
+      "Calibration": "1",
+      "Description": "Gyro sensor offsets of Y axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro offsets of Y axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro offsets of Y axis\n    // @Description: Gyro sensor offsets of Y axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYROFFS_Z": {
+      "Calibration": "1",
+      "Description": "Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations",
+      "DisplayName": "Gyro offsets of Z axis",
+      "Units": "rad/s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro offsets of Z axis\n    // @Description: Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations\n    // @Units: rad/s\n    // @User: Advanced\n    // @Calibration: 1"
+    },
+    "INS_GYRO_FILTER": {
+      "Description": "Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)",
+      "DisplayName": "Gyro filter cutoff frequency",
+      "Range": {
+        "high": "256",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro filter cutoff frequency\n    // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)\n    // @Units: Hz\n    // @Range: 0 256\n    // @User: Advanced"
+    },
+    "INS_GYRO_RATE": {
+      "Description": "Gyro rate for IMUs with fast sampling enabled. The gyro rate is the sample rate at which the IMU filters operate and needs to be at least double the maximum filter frequency. If the sensor does not support the selected rate the next highest supported rate will be used. For IMUs which do not support fast sampling this setting is ignored and the default gyro rate of 1Khz is used.",
+      "DisplayName": "Gyro rate for IMUs with Fast Sampling enabled",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "Values": {
+        "0": "1kHz",
+        "1": "2kHz",
+        "2": "4kHz",
+        "3": "8kHz"
+      },
+      "__field_text": "\n    // @DisplayName: Gyro rate for IMUs with Fast Sampling enabled\n    // @Description: Gyro rate for IMUs with fast sampling enabled. The gyro rate is the sample rate at which the IMU filters operate and needs to be at least double the maximum filter frequency. If the sensor does not support the selected rate the next highest supported rate will be used. For IMUs which do not support fast sampling this setting is ignored and the default gyro rate of 1Khz is used.\n    // @User: Advanced\n    // @Values: 0:1kHz,1:2kHz,2:4kHz,3:8kHz\n    // @RebootRequired: True"
+    },
+    "INS_GYR_CAL": {
+      "Description": "Conrols when automatic gyro calibration is performed",
+      "DisplayName": "Gyro Calibration scheme",
+      "User": "Advanced",
+      "Values": {
+        "0": "Never",
+        "1": "Start-up only"
+      },
+      "__field_text": "\n    // @DisplayName: Gyro Calibration scheme\n    // @Description: Conrols when automatic gyro calibration is performed\n    // @Values: 0:Never, 1:Start-up only\n    // @User: Advanced"
+    },
+    "INS_GYR_ID": {
+      "Description": "Gyro sensor ID, taking into account its type, bus and instance",
+      "DisplayName": "Gyro ID",
+      "ReadOnly": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Gyro ID\n    // @Description: Gyro sensor ID, taking into account its type, bus and instance\n    // @ReadOnly: True\n    // @User: Advanced"
+    },
+    "INS_POS1_X": {
+      "Description": "X position of the first IMU Accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer X position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer X position\n    // @Description: X position of the first IMU Accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS1_Y": {
+      "Description": "Y position of the first IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Y position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Y position\n    // @Description: Y position of the first IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS1_Z": {
+      "Description": "Z position of the first IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Z position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Z position\n    // @Description: Z position of the first IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS2_X": {
+      "Description": "X position of the second IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer X position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer X position\n    // @Description: X position of the second IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS2_Y": {
+      "Description": "Y position of the second IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Y position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Y position\n    // @Description: Y position of the second IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS2_Z": {
+      "Description": "Z position of the second IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Z position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Z position\n    // @Description: Z position of the second IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS3_X": {
+      "Description": "X position of the third IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer X position",
+      "Range": {
+        "high": "10",
+        "low": "-10"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer X position\n    // @Description: X position of the third IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -10 10\n    // @User: Advanced"
+    },
+    "INS_POS3_Y": {
+      "Description": "Y position of the third IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Y position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Y position\n    // @Description: Y position of the third IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_POS3_Z": {
+      "Description": "Z position of the third IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.",
+      "DisplayName": "IMU accelerometer Z position",
+      "Increment": "0.01",
+      "Range": {
+        "high": "5",
+        "low": "-5"
+      },
+      "Units": "m",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: IMU accelerometer Z position\n    // @Description: Z position of the third IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.\n    // @Units: m\n    // @Range: -5 5\n    // @Increment: 0.01\n    // @User: Advanced"
+    },
+    "INS_STILL_THRESH": {
+      "Description": "Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5",
+      "DisplayName": "Stillness threshold for detecting if we are moving",
+      "Range": {
+        "high": "50",
+        "low": "0.05"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Stillness threshold for detecting if we are moving\n    // @Description: Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5\n    // @Range: 0.05 50\n    // @User: Advanced"
+    },
+    "INS_TCAL_OPTIONS": {
+      "Bitmask": {
+        "0": "PersistParams"
+      },
+      "Description": "This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.",
+      "DisplayName": "Options for temperature calibration",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Options for temperature calibration\n    // @Description: This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.\n    // @Bitmask: 0:PersistParams\n    // @User: Advanced"
+    },
+    "INS_TRIM_OPTION": {
+      "Description": "Specifies how the accel cal routine determines the trims",
+      "DisplayName": "Accel cal trim option",
+      "User": "Advanced",
+      "Values": {
+        "0": "Don't adjust the trims",
+        "1": "Assume first orientation was level",
+        "2": "Assume ACC_BODYFIX is perfectly aligned to the vehicle"
+      },
+      "__field_text": "\n    // @DisplayName: Accel cal trim option\n    // @Description: Specifies how the accel cal routine determines the trims\n    // @User: Advanced\n    // @Values: 0:Don't adjust the trims,1:Assume first orientation was level,2:Assume ACC_BODYFIX is perfectly aligned to the vehicle"
+    },
+    "INS_USE": {
+      "Description": "Use first IMU for attitude, velocity and position estimates",
+      "DisplayName": "Use first IMU for attitude, velocity and position estimates",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Use first IMU for attitude, velocity and position estimates\n    // @Description: Use first IMU for attitude, velocity and position estimates\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "INS_USE2": {
+      "Description": "Use second IMU for attitude, velocity and position estimates",
+      "DisplayName": "Use second IMU for attitude, velocity and position estimates",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Use second IMU for attitude, velocity and position estimates\n    // @Description: Use second IMU for attitude, velocity and position estimates\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "INS_USE3": {
+      "Description": "Use third IMU for attitude, velocity and position estimates",
+      "DisplayName": "Use third IMU for attitude, velocity and position estimates",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Use third IMU for attitude, velocity and position estimates\n    // @Description: Use third IMU for attitude, velocity and position estimates\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    }
+  },
+  "INS_HNTC2_": {
+    "INS_HNTC2_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "INS_HNTC2_BW": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "250",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "INS_HNTC2_ENABLE": {
+      "Description": "Harmonic Notch Filter enable",
+      "DisplayName": "Harmonic Notch Filter enable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter enable\n    // @Description: Harmonic Notch Filter enable\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "INS_HNTC2_FM_RAT": {
+      "Description": "The minimum ratio below the configured frequency to take throttle based notch filters when flying at a throttle level below the reference throttle. Note that lower frequency notch filters will have more phase lag. If you want throttle based notch filtering to be effective at a throttle up to 30% below the configured notch frequency then set this parameter to 0.7. The default of 1.0 means the notch will not go below the frequency in the FREQ parameter.",
+      "DisplayName": "Throttle notch min freqency ratio",
+      "Range": {
+        "high": "1.0",
+        "low": "0.1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle notch min freqency ratio\n    // @Description: The minimum ratio below the configured frequency to take throttle based notch filters when flying at a throttle level below the reference throttle. Note that lower frequency notch filters will have more phase lag. If you want throttle based notch filtering to be effective at a throttle up to 30% below the configured notch frequency then set this parameter to 0.7. The default of 1.0 means the notch will not go below the frequency in the FREQ parameter.\n    // @Range: 0.1 1.0\n    // @User: Advanced"
+    },
+    "INS_HNTC2_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "INS_HNTC2_HMNCS": {
+      "Bitmask": {
+        "0": "1st harmonic",
+        "1": "2nd harmonic",
+        "2": "3rd harmonic",
+        "3": "4th hamronic",
+        "4": "5th harmonic",
+        "5": "6th harmonic",
+        "6": "7th harmonic",
+        "7": "8th harmonic"
+      },
+      "Description": "Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A value of 0 disables this filter. The first harmonic refers to the base frequency.",
+      "DisplayName": "Harmonic Notch Filter harmonics",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter harmonics\n    // @Description: Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A value of 0 disables this filter. The first harmonic refers to the base frequency.\n    // @Bitmask: 0:1st harmonic,1:2nd harmonic,2:3rd harmonic,3:4th hamronic,4:5th harmonic,5:6th harmonic,6:7th harmonic,7:8th harmonic\n    // @User: Advanced\n    // @RebootRequired: True"
+    },
+    "INS_HNTC2_MODE": {
+      "Description": "Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.",
+      "DisplayName": "Harmonic Notch Filter dynamic frequency tracking mode",
+      "Range": {
+        "high": "5",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "Values": {
+        "0": "Fixed",
+        "1": "Throttle",
+        "2": "RPM Sensor",
+        "3": "ESC Telemetry",
+        "4": "Dynamic FFT",
+        "5": "Second RPM Sensor"
+      },
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode\n    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.\n    // @Range: 0 5\n    // @Values: 0:Fixed,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor\n    // @User: Advanced"
+    },
+    "INS_HNTC2_OPTS": {
+      "Bitmask": {
+        "0": "Double notch",
+        "1": "Multi-Source",
+        "2": "Update at loop rate",
+        "3": "EnableOnAllIMUs",
+        "4": "Triple notch"
+      },
+      "Description": "Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Multi-Source attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.",
+      "DisplayName": "Harmonic Notch Filter options",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter options\n    // @Description: Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Multi-Source attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.\n    // @Bitmask: 0:Double notch,1:Multi-Source,2:Update at loop rate,3:EnableOnAllIMUs,4:Triple notch\n    // @User: Advanced\n    // @RebootRequired: True"
+    },
+    "INS_HNTC2_REF": {
+      "Description": "A reference value of zero disables dynamic updates on the Harmonic Notch Filter and a positive value enables dynamic updates on the Harmonic Notch Filter.  For throttle-based scaling, this parameter is the reference value associated with the specified frequency to facilitate frequency scaling of the Harmonic Notch Filter. For RPM and ESC telemetry based tracking, this parameter is set to 1 to enable the Harmonic Notch Filter using the RPM sensor or ESC telemetry set to measure rotor speed.  The sensor data is converted to Hz automatically for use in the Harmonic Notch Filter.  This reference value may also be used to scale the sensor data, if required.  For example, rpm sensor data is required to measure heli motor RPM. Therefore the reference value can be used to scale the RPM sensor to the rotor RPM.",
+      "DisplayName": "Harmonic Notch Filter reference value",
+      "Range": {
+        "high": "1.0",
+        "low": "0.0"
+      },
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter reference value\n    // @Description: A reference value of zero disables dynamic updates on the Harmonic Notch Filter and a positive value enables dynamic updates on the Harmonic Notch Filter.  For throttle-based scaling, this parameter is the reference value associated with the specified frequency to facilitate frequency scaling of the Harmonic Notch Filter. For RPM and ESC telemetry based tracking, this parameter is set to 1 to enable the Harmonic Notch Filter using the RPM sensor or ESC telemetry set to measure rotor speed.  The sensor data is converted to Hz automatically for use in the Harmonic Notch Filter.  This reference value may also be used to scale the sensor data, if required.  For example, rpm sensor data is required to measure heli motor RPM. Therefore the reference value can be used to scale the RPM sensor to the rotor RPM.\n    // @User: Advanced\n    // @Range: 0.0 1.0\n    // @RebootRequired: True"
+    }
+  },
+  "INS_HNTCH_": {
+    "INS_HNTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "INS_HNTCH_BW": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "250",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "INS_HNTCH_ENABLE": {
+      "Description": "Harmonic Notch Filter enable",
+      "DisplayName": "Harmonic Notch Filter enable",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter enable\n    // @Description: Harmonic Notch Filter enable\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+    },
+    "INS_HNTCH_FM_RAT": {
+      "Description": "The minimum ratio below the configured frequency to take throttle based notch filters when flying at a throttle level below the reference throttle. Note that lower frequency notch filters will have more phase lag. If you want throttle based notch filtering to be effective at a throttle up to 30% below the configured notch frequency then set this parameter to 0.7. The default of 1.0 means the notch will not go below the frequency in the FREQ parameter.",
+      "DisplayName": "Throttle notch min freqency ratio",
+      "Range": {
+        "high": "1.0",
+        "low": "0.1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Throttle notch min freqency ratio\n    // @Description: The minimum ratio below the configured frequency to take throttle based notch filters when flying at a throttle level below the reference throttle. Note that lower frequency notch filters will have more phase lag. If you want throttle based notch filtering to be effective at a throttle up to 30% below the configured notch frequency then set this parameter to 0.7. The default of 1.0 means the notch will not go below the frequency in the FREQ parameter.\n    // @Range: 0.1 1.0\n    // @User: Advanced"
+    },
+    "INS_HNTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "INS_HNTCH_HMNCS": {
+      "Bitmask": {
+        "0": "1st harmonic",
+        "1": "2nd harmonic",
+        "2": "3rd harmonic",
+        "3": "4th hamronic",
+        "4": "5th harmonic",
+        "5": "6th harmonic",
+        "6": "7th harmonic",
+        "7": "8th harmonic"
+      },
+      "Description": "Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A value of 0 disables this filter. The first harmonic refers to the base frequency.",
+      "DisplayName": "Harmonic Notch Filter harmonics",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter harmonics\n    // @Description: Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A value of 0 disables this filter. The first harmonic refers to the base frequency.\n    // @Bitmask: 0:1st harmonic,1:2nd harmonic,2:3rd harmonic,3:4th hamronic,4:5th harmonic,5:6th harmonic,6:7th harmonic,7:8th harmonic\n    // @User: Advanced\n    // @RebootRequired: True"
+    },
+    "INS_HNTCH_MODE": {
+      "Description": "Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.",
+      "DisplayName": "Harmonic Notch Filter dynamic frequency tracking mode",
+      "Range": {
+        "high": "5",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "Values": {
+        "0": "Fixed",
+        "1": "Throttle",
+        "2": "RPM Sensor",
+        "3": "ESC Telemetry",
+        "4": "Dynamic FFT",
+        "5": "Second RPM Sensor"
+      },
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode\n    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.\n    // @Range: 0 5\n    // @Values: 0:Fixed,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor\n    // @User: Advanced"
+    },
+    "INS_HNTCH_OPTS": {
+      "Bitmask": {
+        "0": "Double notch",
+        "1": "Multi-Source",
+        "2": "Update at loop rate",
+        "3": "EnableOnAllIMUs",
+        "4": "Triple notch"
+      },
+      "Description": "Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Multi-Source attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.",
+      "DisplayName": "Harmonic Notch Filter options",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter options\n    // @Description: Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Multi-Source attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.\n    // @Bitmask: 0:Double notch,1:Multi-Source,2:Update at loop rate,3:EnableOnAllIMUs,4:Triple notch\n    // @User: Advanced\n    // @RebootRequired: True"
+    },
+    "INS_HNTCH_REF": {
+      "Description": "A reference value of zero disables dynamic updates on the Harmonic Notch Filter and a positive value enables dynamic updates on the Harmonic Notch Filter.  For throttle-based scaling, this parameter is the reference value associated with the specified frequency to facilitate frequency scaling of the Harmonic Notch Filter. For RPM and ESC telemetry based tracking, this parameter is set to 1 to enable the Harmonic Notch Filter using the RPM sensor or ESC telemetry set to measure rotor speed.  The sensor data is converted to Hz automatically for use in the Harmonic Notch Filter.  This reference value may also be used to scale the sensor data, if required.  For example, rpm sensor data is required to measure heli motor RPM. Therefore the reference value can be used to scale the RPM sensor to the rotor RPM.",
+      "DisplayName": "Harmonic Notch Filter reference value",
+      "Range": {
+        "high": "1.0",
+        "low": "0.0"
+      },
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter reference value\n    // @Description: A reference value of zero disables dynamic updates on the Harmonic Notch Filter and a positive value enables dynamic updates on the Harmonic Notch Filter.  For throttle-based scaling, this parameter is the reference value associated with the specified frequency to facilitate frequency scaling of the Harmonic Notch Filter. For RPM and ESC telemetry based tracking, this parameter is set to 1 to enable the Harmonic Notch Filter using the RPM sensor or ESC telemetry set to measure rotor speed.  The sensor data is converted to Hz automatically for use in the Harmonic Notch Filter.  This reference value may also be used to scale the sensor data, if required.  For example, rpm sensor data is required to measure heli motor RPM. Therefore the reference value can be used to scale the RPM sensor to the rotor RPM.\n    // @User: Advanced\n    // @Range: 0.0 1.0\n    // @RebootRequired: True"
+    }
+  },
+  "SCHED_": {
+    "SCHED_DEBUG": {
+      "Description": "Set to non-zero to enable scheduler debug messages. When set to show \"Slips\" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.",
+      "DisplayName": "Scheduler debug level",
+      "User": "Advanced",
+      "Values": {
+        "0": "Disabled",
+        "2": "ShowSlips",
+        "3": "ShowOverruns"
+      },
+      "__field_text": "\n    // @DisplayName: Scheduler debug level\n    // @Description: Set to non-zero to enable scheduler debug messages. When set to show \"Slips\" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.\n    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns\n    // @User: Advanced"
+    },
+    "SCHED_LOOP_RATE": {
+      "Description": "This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.",
+      "DisplayName": "Scheduling main loop rate",
+      "RebootRequired": "True",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Scheduling main loop rate\n    // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.\n    // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz\n    // @RebootRequired: True\n    // @User: Advanced"
+    }
+  },
+  "FILT": {
+    "FILT1_TYPE": {
+      "Description": "filter 1 type",
+      "DisplayName": "filter 1 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT1_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT1_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT1_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT2_TYPE": {
+      "Description": "filter 2 type",
+      "DisplayName": "filter 2 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT2_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT2_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT2_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT3_TYPE": {
+      "Description": "filter 3 type",
+      "DisplayName": "filter 3 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT3_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT3_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT3_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT4_TYPE": {
+      "Description": "filter 4 type",
+      "DisplayName": "filter 4 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT4_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT4_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT4_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT5_TYPE": {
+      "Description": "filter 5 type",
+      "DisplayName": "filter 5 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT5_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT5_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT5_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT6_TYPE": {
+      "Description": "filter 6 type",
+      "DisplayName": "filter 6 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT6_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT6_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT6_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT7_TYPE": {
+      "Description": "filter 7 type",
+      "DisplayName": "filter 7 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 1 type\n    // @Description: filter 1 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT7_NOTCH_ATT": {
+    "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+    "DisplayName": "Harmonic Notch Filter attenuation",
+    "Range": {
+      "high": "50",
+      "low": "5"
+    },
+    "Units": "dB",
+    "User": "Advanced",
+    "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT7_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT7_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT8_TYPE": {
+      "Description": "filter 8 type",
+      "DisplayName": "filter 8 type",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: filter 2 type\n    // @Description: filter 2 type\n    // @Range: 0 1\n   // @User: Advanced"
+    },
+    "FILT8_NOTCH_ATT": {
+      "Description": "Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.",
+      "DisplayName": "Harmonic Notch Filter attenuation",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "dB",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter attenuation\n    // @Description: Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.\n    // @Range: 5 50\n    // @Units: dB\n    // @User: Advanced"
+    },
+    "FILT8_NOTCH_Q": {
+      "Description": "Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.",
+      "DisplayName": "Harmonic Notch Filter bandwidth",
+      "Range": {
+        "high": "5",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter bandwidth\n    // @Description: Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.\n    // @Range: 5 250\n    // @Units: Hz\n    // @User: Advanced"
+    },
+    "FILT8_NOTCH_FREQ": {
+      "Description": "Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). ",
+      "DisplayName": "Harmonic Notch Filter base frequency",
+      "Range": {
+        "high": "495",
+        "low": "10"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Harmonic Notch Filter base frequency\n    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). \n    // @Range: 10 495\n    // @Units: Hz\n    // @User: Advanced"
+    }
+  },
+    "json": {
+    "version": 0
+  }
+}
