@@ -652,8 +652,8 @@ function setup_plots() {
     const time_scale_label = "Time (s)"
 
     // Setup flight data plot
-    const flight_data_plot = ["Roll", "Pitch", "Throttle", "Altitude"]
-    const flight_data_unit = ["deg",  "deg",   "",         "m"]
+    const flight_data_plot = ["Targ", "Roll", "Pitch", "Yaw"]
+    const flight_data_unit = ["deg",  "deg/s","deg/s", "deg/s"]
     flight_data.data = []
     for (let i=0;i<flight_data_plot.length;i++) {
         let axi = "y"
@@ -986,35 +986,21 @@ function load_log(log_file) {
     if ("SIDD" in log.messageTypes) {
         const SIDD_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
 
+        flight_data.data[0].x = SIDD_time
+        flight_data.data[0].y = log.get("SIDD", "Targ")
+
         update_time(SIDD_time)
-    }
-
-    // Plot flight data from log
-    if ("ATT" in log.messageTypes) {
-        const ATT_time = TimeUS_to_seconds(log.get("ATT", "TimeUS"))
-        flight_data.data[0].x = ATT_time
-        flight_data.data[0].y = log.get("ATT", "Roll")
-
-        flight_data.data[1].x = ATT_time
-        flight_data.data[1].y = log.get("ATT", "Pitch")
-
-        update_time(ATT_time)
     }
 
     if ("RATE" in log.messageTypes) {
         const RATE_time = TimeUS_to_seconds(log.get("RATE", "TimeUS"))
+        flight_data.data[1].x = RATE_time
+        flight_data.data[1].y = log.get("RATE", "R")
         flight_data.data[2].x = RATE_time
-        flight_data.data[2].y = log.get("RATE", "AOut")
-
+        flight_data.data[2].y = log.get("RATE", "P")
+        flight_data.data[3].x = RATE_time
+        flight_data.data[3].y = log.get("RATE", "Y")
         update_time(RATE_time)
-    }
-
-    if ("POS" in log.messageTypes) {
-        const POS_time = TimeUS_to_seconds(log.get("POS", "TimeUS"))
-        flight_data.data[3].x = POS_time
-        flight_data.data[3].y = log.get("POS", "RelHomeAlt")
-
-        update_time(POS_time)
     }
 
     // If found use zoom to non-zero SIDD
@@ -1183,6 +1169,10 @@ function nearestIndex(arr, target) {
 
 // Change the visibility of the PID elements
 function axis_changed() {
+    update_PID_filters()
+}
+
+function update_PID_filters() {
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
@@ -1192,46 +1182,8 @@ function axis_changed() {
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
     }
-
     if (document.getElementById('type_Roll').checked) {
-        document.getElementById('RollPIDS').style.display = 'block';
-        document.getElementById('RollNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
-    } else if (document.getElementById('type_Pitch').checked) {
-        document.getElementById('PitchPIDS').style.display = 'block';
-        document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
-    } else if (document.getElementById('type_Yaw').checked) {
-        document.getElementById('YawPIDS').style.display = 'block';
-        document.getElementById('YawNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
-    }
-}
-
-function update_PID_filters() {
-    if (document.getElementById('type_Roll').checked) {
-        document.getElementById('RollPIDS');
+        document.getElementById('RollPIDS').style.display = 'block';;
         document.getElementById('RollNOTCH').style.display = 'block';
         const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
         if (NTF_num > 0) {
@@ -1295,52 +1247,13 @@ function calculate_freq_resp() {
 
     const t_start = document.getElementById('starttime').value.trim()
     const t_end = document.getElementById('endtime').value.trim()
+    update_PID_filters()
     var eval_axis = ""
-    document.getElementById('RollPIDS').style.display = 'none';
-    document.getElementById('PitchPIDS').style.display = 'none';
-    document.getElementById('YawPIDS').style.display = 'none';
-    document.getElementById('RollNOTCH').style.display = 'none';
-    document.getElementById('PitchNOTCH').style.display = 'none';
-    document.getElementById('YawNOTCH').style.display = 'none';
-    for (let i = 1; i<9; i++) {    
-        document.getElementById('FILT' + i).style.display = 'none';
-    }
-
     if (document.getElementById('type_Roll').checked) {
-        document.getElementById('RollPIDS').style.display = 'block';
-        document.getElementById('RollNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
         eval_axis = "Roll"
     } else if (document.getElementById('type_Pitch').checked) {
-        document.getElementById('PitchPIDS').style.display = 'block';
-        document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
         eval_axis = "Pitch"
     } else if (document.getElementById('type_Yaw').checked) {
-        document.getElementById('YawPIDS').style.display = 'block';
-        document.getElementById('YawNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
-        }
         eval_axis = "Yaw"
     }
 
