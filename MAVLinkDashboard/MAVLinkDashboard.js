@@ -481,17 +481,17 @@ function init_pallet() {
         palette.batchUpdate(true)
 
         // Add pure JS widgets
-        add_widget(palette, { type: "WidgetSubGrid" })
-        add_widget(palette, { type: "WidgetSandBox" })
+        add_widget(palette, { type: "WidgetSubGrid", x: 0, y: 0, w: 1, h: 1 })
+        add_widget(palette, { type: "WidgetSandBox", x: 0, y: 1, w: 1, h: 1 })
 
         // Load in json definitions
         const sandbox_files = [
-            "SandBoxWidgets/Attitude.json",
-            "SandBoxWidgets/Graph.json",
-            "SandBoxWidgets/Map.json",
-            "SandBoxWidgets/MAVLink_Inspector.json",
-            "SandBoxWidgets/Messages.json",
-            "SandBoxWidgets/Value.json",
+            { path: "SandBoxWidgets/Attitude.json", pos: { x: 1, y: 0, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
+            { path: "SandBoxWidgets/Map.json", pos: { x: 0, y: 2, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },
         ]
 
         let import_done = []
@@ -500,9 +500,10 @@ function init_pallet() {
         for (const file of sandbox_files) {
             import_done.push(
                 new Promise((resolve, reject) => {
-                    fetch(file).then((res) => {
+                    fetch(file.path).then((res) => {
                         return res.json()
                     }).then((obj) => {
+                        Object.assign(obj.widget, file.pos)
                         add_widget(palette, obj.widget)
                         resolve()
                     })
