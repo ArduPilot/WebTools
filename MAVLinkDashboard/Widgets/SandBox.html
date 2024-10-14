@@ -8,7 +8,7 @@
 </head>
 <body>
 </body>
-<script>
+<script type="module">
 
     let user_class = null
     let user_script = null
@@ -117,8 +117,8 @@
 
         try {
             // Try and load new use class
-            const user_fun = new Function("div", user_script)
-            user_class = user_fun(user_div)
+            const user_fun = new Function("div", "options", user_script)
+            user_class = user_fun(user_div, options)
 
         } catch (e) {
             user_error(e)
@@ -154,7 +154,7 @@
         }
 
         try {
-            user_class.handle_options()
+            user_class.handle_options(options)
         } catch (e) {
             user_error(e)
         }
