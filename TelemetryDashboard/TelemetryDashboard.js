@@ -204,7 +204,7 @@ function get_layout() {
 function save_layout() {
 
     var blob = new Blob([JSON.stringify(get_layout(), null, 2)], { type: "text/plain;charset=utf-8" })
-    saveAs(blob, "MAVLinkDashboard.json")
+    saveAs(blob, "TelemetryDashboard.json")
 
     // Mark grid and widgets as saved
     grid_changed = false
@@ -227,7 +227,7 @@ function save_widget(widget) {
     }
 
     var blob = new Blob([JSON.stringify(grid_layout, null, 2)], { type: "text/plain;charset=utf-8" })
-    saveAs(blob, "MAVLinkDashboard_Widget.json")
+    saveAs(blob, "TelemetryDashboard_Widget.json")
 }
 
 // Clear all widgets and destroy grid
