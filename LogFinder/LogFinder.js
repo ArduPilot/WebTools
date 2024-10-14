@@ -486,6 +486,12 @@ function setup_table(logs) {
 
             // Add map tool tip
             function tippy_show(instance) {
+
+                if (instance.props.content !== "") {
+                    // Content already loaded
+                    return
+                }
+
                 let tippy_div = document.createElement("div")
                 instance.setContent(tippy_div)
 
