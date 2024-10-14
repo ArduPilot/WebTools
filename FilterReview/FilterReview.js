@@ -2328,7 +2328,7 @@ async function load(log_file) {
         if ((ID != null) && (ID > 0)) {
             const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
 
-            if (("IMU" in log.messageTypes) && (i in log.messageTypes.IMU.instances)) {
+            if (("IMU" in log.messageTypes) && ("instances" in log.messageTypes.IMU) && (i in log.messageTypes.IMU.instances)) {
                 // Assume constant rate, this is not actually true, but variable rate breaks FFT averaging.
                 gyro_rate[i] = array_mean(log.get_instance("IMU", i, "GHz"))
             }
