@@ -1,0 +1,164 @@
+{
+  "header": {
+    "version": 1
+  },
+  "widget": {
+    "x": "0",
+    "y": "0",
+    "w": "2",
+    "h": "2",
+    "type": "WidgetSandBox",
+    "options": {
+      "form": {
+        "components": [
+          {
+            "label": "Trail length (m)",
+            "tooltip": "Length of the trail left by the vehicle in meters.",
+            "key": "trailLengthM",
+            "type": "number",
+            "input": true,
+            "tableView": false,
+            "defaultValue": 500,
+            "id": "emvxmp2",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": {
+              "type": "input"
+            },
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "min": "",
+              "max": "",
+              "step": "any",
+              "integer": ""
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": []
+          },
+          {
+            "label": "Auto pan",
+            "tooltip": "Set to keep vehicle in view.",
+            "defaultValue": false,
+            "key": "autoPan",
+            "type": "checkbox",
+            "input": true,
+            "tableView": false,
+            "id": "efdr3md",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": true,
+            "labelPosition": "right",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": null,
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": [],
+            "inputType": "checkbox",
+            "value": "",
+            "name": ""
+          }
+        ]
+      },
+      "form_content": {
+      },
+      "about": {
+        "name": "Map",
+        "info": "Map example built using the Sandbox widget. Show the vehicle location in real time."
+      },
+      "sandbox": "// Import leaflet\nconst script = document.createElement(\"script\")\nscript.src = \"https://unpkg.com/leaflet@1.9.4/dist/leaflet.js\"\ndocument.body.appendChild(script)\n\n// Add ccs\nconst ccs = document.createElement('link')\nccs.rel = \"stylesheet\"\nccs.href = \"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\"\ndocument.body.appendChild(ccs)\n\n// Can't init immediately because script will not be loaded\nlet map\nfunction init() {\n\n    // Make sure Leaflet is loaded\n    if (window.L == undefined) {\n        // try again in while\n        setTimeout(init, 100)\n        return\n    }\n\n    map = L.map(div)\n\n    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {\n        attribution: '&copy; <a href=\"http://osm.org/copyright\">OpenStreetMap</a> contributors'\n    }).addTo(map)\n\n    // Default to 0,0 and sensible zoom level for when vehicle is found\n    map.setView([0.0, 0.0], 14)\n\n    // Add scale bar\n    L.control.scale().addTo(map)\n\n    // Add marker rotation helper\n    const rotation_helper = document.createElement(\"script\")\n    rotation_helper.src = \"https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js\"\n    document.body.appendChild(rotation_helper)\n}\n\n// Try init in 0.1 seconds, this give time for the added scripts to load\nsetTimeout(init, 100)\n\n// Add new vehicle to map\nlet vehicle = []\nfunction vehicle_init(id, location) {\n\n    const vehicle_icon = L.divIcon({\n        html: `<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 576 512\"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d=\"M482.3 192c34.2 0 93.7 29 93.7 64c0 36-59.5 64-93.7 64l-116.6 0L265.2 495.9c-5.7 10-16.3 16.1-27.8 16.1l-56.2 0c-10.6 0-18.3-10.2-15.4-20.4l49-171.6L112 320 68.8 377.6c-3 4-7.8 6.4-12.8 6.4l-42 0c-7.8 0-14-6.3-14-14c0-1.3 .2-2.6 .5-3.9L32 256 .5 145.9c-.4-1.3-.5-2.6-.5-3.9c0-7.8 6.3-14 14-14l42 0c5 0 9.8 2.4 12.8 6.4L112 192l102.9 0-49-171.6C162.9 10.2 170.6 0 181.2 0l56.2 0c11.5 0 22.1 6.2 27.8 16.1L365.7 192l116.6 0z\"/></svg>`,\n        className: \"\",\n        iconSize: [50, 44],\n    })\n\n    // Add icon to map\n    const marker = new L.marker(location, {\n        icon: vehicle_icon,\n        rotationOrigin: \"center\",\n        zIndexOffset: 10, // Vehicles should be on top\n        interactive: false\n    }).addTo(map)\n\n    const trail = new L.polyline([location], { \n        color: \"yellow\",\n        interactive: false\n    }).addTo(map) \n\n    vehicle[id] = { marker, trail }\n\n    // Center the map on the new vehicle\n    map.panTo(location)\n}\n\n// Update the position of a vehicle\nfunction update_pos(msg) {\n\n    const id = msg._header.srcSystem\n    const location = new L.LatLng(msg.lat * (10**-7), msg.lon * (10**-7))\n    const heading = msg.hdg * 0.01\n\n    // Make sure vehicle has been setup\n    if (vehicle[id] == null) {\n        vehicle_init(id, location)\n    }\n\n    // Update marker\n    if (\"setRotationAngle\" in vehicle[id].marker) {\n        // Make sure rotation helper has loaded\n        vehicle[id].marker.setRotationAngle(heading - 90.0)\n    }\n    vehicle[id].marker.setLatLng(location)\n\n    // If enabled makes sure vehicle is still in view\n    if (options.autoPan == true) {\n        map.panInside(location, { padding: [50, 50] })\n    }\n\n    // Add new point to start of trail\n    const trail = vehicle[id].trail.getLatLngs()\n    trail.unshift(location)\n\n    // Remove points after the the given trail length\n    let length = 0\n    const len = trail.length\n    for (let i = 1; i<len; i++) {\n        length += trail[i-1].distanceTo(trail[i])\n        if (length > options.trailLengthM) {\n            trail.splice(i)\n            break\n        }\n    }\n\n    vehicle[id].trail.setLatLngs(trail)\n\n    // Update the vehicle position in nav target line\n    if (vehicle[id].nav_target != null) {\n        // Vehicle is first location\n        let nav_target = vehicle[id].nav_target.line.getLatLngs()\n        if (nav_target.length == 2) {\n            nav_target[0] = location\n            vehicle[id].nav_target.line.setLatLngs(nav_target)\n        }\n    }\n\n    // Update the vehicle position in pos target line\n    if (vehicle[id].pos_target != null) {\n        // Vehicle is first location\n        let pos_target = vehicle[id].pos_target.line.getLatLngs()\n        if (pos_target.length == 2) {\n            pos_target[0] = location\n            vehicle[id].pos_target.line.setLatLngs(pos_target)\n        }\n    }\n}\n\n// Add home to the map\nlet home = []\nfunction home_init(id, location) {\n\n    const icon_div = document.createElement(\"div\")\n    icon_div.innerHTML = `<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 576 512\"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d=\"M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z\"/></svg>`\n    icon_div.firstChild.style.fill = \"white\"\n\n    const home_icon = L.divIcon({\n        html: icon_div,\n        className: \"\",\n        iconSize: [40, 36],\n    })\n\n    home[id] = new L.marker(location, {\n        icon: home_icon,\n        interactive: false\n    }).addTo(map)\n}\n\n// Update the position of home\nfunction update_home(msg) {\n\n    const id = msg._header.srcSystem\n\n    const location = new L.LatLng(msg.latitude * (10**-7), msg.longitude * (10**-7))\n\n    if (home[id] == null) {\n        home_init(id, location)\n    }\n\n    home[id].setLatLng(location)\n}\n\n// Nav target line\nfunction update_nav_target(msg) {\n\n    const id = msg._header.srcSystem\n    if (vehicle[id] == null) {\n        // Vehicle is not shown yet\n        return\n    }\n\n    if (vehicle[id].nav_target == null) {\n        vehicle[id].nav_target = { \n            line: new L.polyline([], { color: \"red\", interactive: false }),\n            timeoutID: null\n        }\n    }\n\n    // Clear any existing timeout\n    if (vehicle[id].nav_target.timeoutID != null) {\n        clearTimeout(vehicle[id].nav_target.timeoutID)\n    }\n\n    function remove_nav_target(id) {\n        // Clear any existing timeout\n        if (vehicle[id].nav_target.timeoutID != null) {\n            clearTimeout(vehicle[id].nav_target.timeoutID)\n        }\n\n        // Remove line\n        if (map.hasLayer(vehicle[id].nav_target.line)) {\n            map.removeLayer(vehicle[id].nav_target.line)\n        }\n    }\n\n    const distance = msg.wp_dist\n    if (distance == 0) {\n        // Remove existing line\n        remove_nav_target(id)\n        return\n    }\n\n    // Get the current vehicle location and project the target\n    let bearing = msg.target_bearing\n    const vehicle_location = vehicle[id].marker.getLatLng()\n\n    // https://makinacorpus.github.io/Leaflet.GeometryUtil/leaflet.geometryutil.js.html#line713\n    bearing = (bearing + 360.0) % 360.0\n    const rad = Math.PI / 180.0\n    const radInv = 180.0 / Math.PI\n    const R = 6378137 // approximation of Earth's radius\n    const lon1 = vehicle_location.lng * rad\n    const lat1 = vehicle_location.lat * rad\n    const rheading = bearing * rad\n    const sinLat1 = Math.sin(lat1)\n    const cosLat1 = Math.cos(lat1)\n    const cosDistR = Math.cos(distance / R)\n    const sinDistR = Math.sin(distance / R)\n    let lat2 = Math.asin(sinLat1 * cosDistR + cosLat1 * sinDistR * Math.cos(rheading))\n    let lon2 = lon1 + Math.atan2(Math.sin(rheading) * sinDistR *  cosLat1, cosDistR - sinLat1 * Math.sin(lat2))\n    lon2 = lon2 * radInv\n    lon2 = lon2 > 180 ? lon2 - 360 : lon2 < -180 ? lon2 + 360 : lon2;\n\n\n    const target_location = new L.LatLng(lat2 * radInv, lon2)\n\n    // Set line location\n    vehicle[id].nav_target.line.setLatLngs([vehicle_location, target_location])\n\n    // Add to map if not already\n    if (!map.hasLayer(vehicle[id].nav_target.line)) {\n        map.addLayer(vehicle[id].nav_target.line)\n    }\n\n    // Register callback to remove line if no updates for 2 seconds\n    vehicle[id].nav_target.timeoutID = setTimeout(remove_nav_target, 2000, id)\n\n}\n\n// Position target line\nfunction update_position_target(msg) {\n\n    const id = msg._header.srcSystem\n    if (vehicle[id] == null) {\n        // Vehicle is not shown yet\n        return\n    }\n\n    const type_mask = msg.type_mask\n    const TYPEMASK_X_IGNORE = 1\n    const TYPEMASK_Y_IGNORE = 2\n    if ((type_mask & (TYPEMASK_X_IGNORE | TYPEMASK_Y_IGNORE)) != 0) {\n        // Location should be ignored\n        return\n    }\n\n    if (vehicle[id].pos_target == null) {\n        vehicle[id].pos_target = { \n            line: new L.polyline([], { color: \"green\", interactive: false }),\n            timeoutID: null\n        }\n    }\n\n    // Clear any existing timeout\n    if (vehicle[id].pos_target.timeoutID != null) {\n        clearTimeout(vehicle[id].pos_target.timeoutID)\n    }\n\n    function remove_pos_target(id) {\n        // Clear any existing timeout\n        if (vehicle[id].pos_target.timeoutID != null) {\n            clearTimeout(vehicle[id].pos_target.timeoutID)\n        }\n\n        // Remove line\n        if (map.hasLayer(vehicle[id].pos_target.line)) {\n            map.removeLayer(vehicle[id].pos_target.line)\n        }\n    }\n\n    // Set line location\n    const vehicle_location = vehicle[id].marker.getLatLng()\n    const target_location = new L.LatLng(msg.lat_int * (10**-7), msg.lon_int * (10**-7))\n    vehicle[id].pos_target.line.setLatLngs([vehicle_location, target_location])\n\n    // Add to map if not already\n    if (!map.hasLayer(vehicle[id].pos_target.line)) {\n        map.addLayer(vehicle[id].pos_target.line)\n    }\n\n    // Register callback to remove line if no updates for 2 seconds\n    vehicle[id].pos_target.timeoutID = setTimeout(remove_pos_target, 2000, id)\n}\n\n\n// Runtime function\nhandle_msg = function (msg) {\n\n    // Make sure map is loaded\n    if (map == null) {\n        return\n    }\n\n    if (msg._header.srcComponent != 1) {\n        // Only interested in messages from MAV_COMP_ID_AUTOPILOT1\n        return\n    }\n\n    if (msg._id == 33) {\n        // GLOBAL_POSITION_INT\n        update_pos(msg)\n\n    } else if (msg._id == 242) {\n        // HOME_POSITION\n        update_home(msg)\n\n    } else if (msg._id == 62) {\n        // NAV_CONTROLLER_OUTPUT\n        update_nav_target(msg)\n\n    } else if (msg._id == 87) {\n        // POSITION_TARGET_GLOBAL_INT\n        update_position_target(msg)\n    }\n\n}\n\n// Options changed\nhandle_options = function(new_options) {\n    options = new_options\n}\n"
+    }
+  }
+}

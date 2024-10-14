@@ -1,0 +1,23 @@
+{
+  "header": {
+    "version": 1
+  },
+  "widget": {
+    "x": "0",
+    "y": "0",
+    "w": "3",
+    "h": "2",
+    "type": "WidgetSandBox",
+    "options": {
+      "form": {
+        "components": []
+      },
+      "form_content": {},
+      "sandbox": "// Build component ID lookup\nlet comp_id = {}\nfor (const [key, value] of Object.entries(mavlink20)) {\n    if (key.startsWith(\"MAV_COMP_ID\")) {\n        comp_id[value] = key\n    }\n}\n\n// Add a heading\nconst heading = document.createElement(\"h3\")\nheading.appendChild(document.createTextNode(\"MAVLink Inspector\"))\nheading.style.margin = 0\ndiv.appendChild(heading)\n\n// Use flex to allow the tree to take up the remaining space\ndiv.style.display = \"flex\"\ndiv.style.flexDirection = \"column\"\n\n// Add a div to hold the tree\nconst tree_div = document.createElement(\"div\")\ntree_div.style.height = \"100%\"\ndiv.appendChild(tree_div)\n\n// Allow scrolling if needed\ntree_div.style.overflow = \"auto\"\n\n// List for any system IDs\nlet ids = {}\n\n// Create a new details elememnt with summary\nfunction create_details(summary_text, indent = false, open = true) {\n    // Create new details item\n    const details = document.createElement(\"details\")\n\n    // Add text\n    const summary = document.createElement(\"summary\")\n    summary.appendChild(document.createTextNode(summary_text))\n    details.appendChild(summary)\n\n    if (indent) {\n        details.style.marginLeft = \"1em\"\n    }\n    details.open = open\n\n    return details\n}\n\n// Add a new item to a tree\nfunction add_to_tree(tree, id, parent, item) {\n\n    // Find any existing id that should come before this one\n    let prior_item = null\n    for (const existing_id of Object.keys(tree)) {\n        if (parseInt(existing_id) < id) {\n            prior_item = tree[existing_id]\n        }\n    }\n\n    if (prior_item == null) {\n        // No prior element, add to start of tree\n        parent.append(item)\n    } else {\n        // Add affter the prior element\n        prior_item.ele.after(item)\n    }\n\n    tree[id] = { ele: item, content: {} }\n}\n\n// Runtime function\nhandle_msg = function (msg) {\n\n    const id = msg._header.srcSystem\n    const comp = msg._header.srcComponent\n    const msg_id = msg._id\n\n    // Add new ID to tree if not already there\n    if (!(id in ids)) {\n        add_to_tree(ids, id, tree_div, create_details(\"System ID: \" + id))\n    }\n\n    const id_branch = ids[id]\n\n    // Add new component to tree if not already there\n    if (!(comp in id_branch.content)) {\n        let comp_str = \"Component ID:\" + comp\n        if (comp in comp_id) {\n            comp_str += \" \" + comp_id[comp]\n        }\n\n        add_to_tree(id_branch.content, comp, id_branch.ele, create_details(comp_str, true))\n    }\n\n    const component_branch = id_branch.content[comp]\n\n    // Add new message to tree if not already there\n    if (!(msg_id in component_branch.content)) {\n        let msg_str\n        let type = null\n        if (msg_id in mavlink20.map) {\n            type = new mavlink20.map[msg_id].type\n            msg_str = type._name + \" (\" + msg_id + \")\"\n        } else {\n            msg_str = \"\" + msg_id\n        }\n\n        add_to_tree(component_branch.content, msg_id, component_branch.ele, create_details(msg_str, true, false))\n\n        const msg_item = component_branch.content[msg_id]\n        msg_item.type = type\n\n        if (type != null) {\n            // Add line for each field\n            for (const field of type.fieldnames) {\n                const line = document.createElement(\"li\")\n                line.style.marginLeft = \"1em\"\n                line.appendChild(document.createTextNode(field + \": \"))\n                msg_item.ele.appendChild(line)\n\n                const value = document.createTextNode(\"?\")\n                line.appendChild(value)\n                msg_item.content[field] = value\n            }\n        }\n    }\n\n    // Update the field values\n    const msg_item = component_branch.content[msg_id]\n    if (msg_item.type != null) {\n        for (const [field, text] of Object.entries(msg_item.content)) {\n            text.nodeValue = msg[field]\n        }\n    }\n\n}\n",
+      "about" : {
+        "name": "MAVLink inspector",
+        "info": "MAVLink inspector example built using the Sandbox widget. Useful for checking the messages are available for use in other widgets."
+      }
+    }
+  }
+}

@@ -1,0 +1,1873 @@
+{
+  "header": {
+    "version": 1
+  },
+  "widget": {
+    "x": "0",
+    "y": "0",
+    "w": null,
+    "h": null,
+    "type": "WidgetSandBox",
+    "options": {
+      "form": {
+        "components": [
+          {
+            "label": "Label",
+            "tooltip": "The label to show for the selected value",
+            "key": "label",
+            "type": "textfield",
+            "input": true,
+            "tableView": true,
+            "defaultValue": "Ground speed (m/s)",
+            "id": "erwzyro",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": {
+              "type": "input"
+            },
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "minLength": "",
+              "maxLength": "",
+              "pattern": ""
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": [],
+            "mask": false,
+            "inputType": "text",
+            "inputFormat": "plain",
+            "inputMask": "",
+            "displayMask": "",
+            "spellcheck": true,
+            "truncateMultipleSpaces": false
+          },
+          {
+            "label": "Decimal places",
+            "tooltip": "Decimal places to show",
+            "key": "decimalPlaces",
+            "type": "number",
+            "input": true,
+            "tableView": false,
+            "defaultValue": 2,
+            "id": "embvsql",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": {
+              "type": "input"
+            },
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "min": "",
+              "max": "",
+              "step": "any",
+              "integer": ""
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": []
+          },
+          {
+            "label": "color",
+            "tooltip": "Text color",
+            "key": "color",
+            "type": "color",
+            "input": true,
+            "tableView": false,
+            "widget": {
+              "type": "input"
+            },
+            "inputType": "color",
+            "mask": false,
+            "data": "#000000",
+            "id": "etzibvc",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "defaultValue": null,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": []
+          },
+          {
+            "label": "Message",
+            "tooltip": "Message to look for",
+            "key": "message",
+            "type": "mavlinkmsg",
+            "input": true,
+            "tableView": true,
+            "data": {
+              "values": [
+                {
+                  "label": "ACTUATOR_CONTROL_TARGET (140)",
+                  "value": "140"
+                },
+                {
+                  "value": "375",
+                  "label": "ACTUATOR_OUTPUT_STATUS (375)"
+                },
+                {
+                  "value": "11010",
+                  "label": "ADAP_TUNING (11010)"
+                },
+                {
+                  "value": "246",
+                  "label": "ADSB_VEHICLE (246)"
+                },
+                {
+                  "value": "163",
+                  "label": "AHRS (163)"
+                },
+                {
+                  "value": "178",
+                  "label": "AHRS2 (178)"
+                },
+                {
+                  "value": "182",
+                  "label": "AHRS3 (182)"
+                },
+                {
+                  "value": "52000",
+                  "label": "AIRLINK_AUTH (52000)"
+                },
+                {
+                  "value": "52001",
+                  "label": "AIRLINK_AUTH_RESPONSE (52001)"
+                },
+                {
+                  "value": "295",
+                  "label": "AIRSPEED (295)"
+                },
+                {
+                  "value": "174",
+                  "label": "AIRSPEED_AUTOCAL (174)"
+                },
+                {
+                  "value": "301",
+                  "label": "AIS_VESSEL (301)"
+                },
+                {
+                  "value": "141",
+                  "label": "ALTITUDE (141)"
+                },
+                {
+                  "value": "11020",
+                  "label": "AOA_SSA (11020)"
+                },
+                {
+                  "value": "153",
+                  "label": "AP_ADC (153)"
+                },
+                {
+                  "value": "17150",
+                  "label": "ARRAY_TEST_0 (17150)"
+                },
+                {
+                  "value": "17151",
+                  "label": "ARRAY_TEST_1 (17151)"
+                },
+                {
+                  "value": "17153",
+                  "label": "ARRAY_TEST_3 (17153)"
+                },
+                {
+                  "value": "17154",
+                  "label": "ARRAY_TEST_4 (17154)"
+                },
+                {
+                  "value": "17155",
+                  "label": "ARRAY_TEST_5 (17155)"
+                },
+                {
+                  "value": "17156",
+                  "label": "ARRAY_TEST_6 (17156)"
+                },
+                {
+                  "value": "17157",
+                  "label": "ARRAY_TEST_7 (17157)"
+                },
+                {
+                  "value": "17158",
+                  "label": "ARRAY_TEST_8 (17158)"
+                },
+                {
+                  "value": "8008",
+                  "label": "ASL_OBCTRL (8008)"
+                },
+                {
+                  "value": "8004",
+                  "label": "ASLCTRL_DATA (8004)"
+                },
+                {
+                  "value": "8005",
+                  "label": "ASLCTRL_DEBUG (8005)"
+                },
+                {
+                  "value": "8006",
+                  "label": "ASLUAV_STATUS (8006)"
+                },
+                {
+                  "value": "138",
+                  "label": "ATT_POS_MOCAP (138)"
+                },
+                {
+                  "value": "30",
+                  "label": "ATTITUDE (30)"
+                },
+                {
+                  "value": "31",
+                  "label": "ATTITUDE_QUATERNION (31)"
+                },
+                {
+                  "value": "61",
+                  "label": "ATTITUDE_QUATERNION_COV (61)"
+                },
+                {
+                  "value": "83",
+                  "label": "ATTITUDE_TARGET (83)"
+                },
+                {
+                  "value": "7",
+                  "label": "AUTH_KEY (7)"
+                },
+                {
+                  "value": "286",
+                  "label": "AUTOPILOT_STATE_FOR_GIMBAL_DEVICE (286)"
+                },
+                {
+                  "value": "148",
+                  "label": "AUTOPILOT_VERSION (148)"
+                },
+                {
+                  "value": "183",
+                  "label": "AUTOPILOT_VERSION_REQUEST (183)"
+                },
+                {
+                  "value": "60052",
+                  "label": "AVSS_DRONE_IMU (60052)"
+                },
+                {
+                  "value": "60053",
+                  "label": "AVSS_DRONE_OPERATION_MODE (60053)"
+                },
+                {
+                  "value": "60051",
+                  "label": "AVSS_DRONE_POSITION (60051)"
+                },
+                {
+                  "value": "60050",
+                  "label": "AVSS_PRS_SYS_STATUS (60050)"
+                },
+                {
+                  "value": "147",
+                  "label": "BATTERY_STATUS (147)"
+                },
+                {
+                  "value": "181",
+                  "label": "BATTERY2 (181)"
+                },
+                {
+                  "value": "257",
+                  "label": "BUTTON_CHANGE (257)"
+                },
+                {
+                  "value": "262",
+                  "label": "CAMERA_CAPTURE_STATUS (262)"
+                },
+                {
+                  "value": "180",
+                  "label": "CAMERA_FEEDBACK (180)"
+                },
+                {
+                  "value": "271",
+                  "label": "CAMERA_FOV_STATUS (271)"
+                },
+                {
+                  "value": "263",
+                  "label": "CAMERA_IMAGE_CAPTURED (263)"
+                },
+                {
+                  "value": "259",
+                  "label": "CAMERA_INFORMATION (259)"
+                },
+                {
+                  "value": "260",
+                  "label": "CAMERA_SETTINGS (260)"
+                },
+                {
+                  "value": "179",
+                  "label": "CAMERA_STATUS (179)"
+                },
+                {
+                  "value": "276",
+                  "label": "CAMERA_TRACKING_GEO_STATUS (276)"
+                },
+                {
+                  "value": "275",
+                  "label": "CAMERA_TRACKING_IMAGE_STATUS (275)"
+                },
+                {
+                  "value": "112",
+                  "label": "CAMERA_TRIGGER (112)"
+                },
+                {
+                  "value": "388",
+                  "label": "CAN_FILTER_MODIFY (388)"
+                },
+                {
+                  "value": "386",
+                  "label": "CAN_FRAME (386)"
+                },
+                {
+                  "value": "387",
+                  "label": "CANFD_FRAME (387)"
+                },
+                {
+                  "value": "5",
+                  "label": "CHANGE_OPERATOR_CONTROL (5)"
+                },
+                {
+                  "value": "6",
+                  "label": "CHANGE_OPERATOR_CONTROL_ACK (6)"
+                },
+                {
+                  "value": "247",
+                  "label": "COLLISION (247)"
+                },
+                {
+                  "value": "77",
+                  "label": "COMMAND_ACK (77)"
+                },
+                {
+                  "value": "75",
+                  "label": "COMMAND_INT (75)"
+                },
+                {
+                  "value": "223",
+                  "label": "COMMAND_INT_STAMPED (223)"
+                },
+                {
+                  "value": "76",
+                  "label": "COMMAND_LONG (76)"
+                },
+                {
+                  "value": "224",
+                  "label": "COMMAND_LONG_STAMPED (224)"
+                },
+                {
+                  "value": "177",
+                  "label": "COMPASSMOT_STATUS (177)"
+                },
+                {
+                  "value": "60025",
+                  "label": "COMPONENT_PREARM_STATUS (60025)"
+                },
+                {
+                  "value": "146",
+                  "label": "CONTROL_SYSTEM_STATE (146)"
+                },
+                {
+                  "value": "50005",
+                  "label": "CUBEPILOT_FIRMWARE_UPDATE_RESP (50005)"
+                },
+                {
+                  "value": "50004",
+                  "label": "CUBEPILOT_FIRMWARE_UPDATE_START (50004)"
+                },
+                {
+                  "value": "50001",
+                  "label": "CUBEPILOT_RAW_RC (50001)"
+                },
+                {
+                  "value": "67",
+                  "label": "DATA_STREAM (67)"
+                },
+                {
+                  "value": "130",
+                  "label": "DATA_TRANSMISSION_HANDSHAKE (130)"
+                },
+                {
+                  "value": "169",
+                  "label": "DATA16 (169)"
+                },
+                {
+                  "value": "170",
+                  "label": "DATA32 (170)"
+                },
+                {
+                  "value": "171",
+                  "label": "DATA64 (171)"
+                },
+                {
+                  "value": "172",
+                  "label": "DATA96 (172)"
+                },
+                {
+                  "value": "254",
+                  "label": "DEBUG (254)"
+                },
+                {
+                  "value": "350",
+                  "label": "DEBUG_FLOAT_ARRAY (350)"
+                },
+                {
+                  "value": "250",
+                  "label": "DEBUG_VECT (250)"
+                },
+                {
+                  "value": "195",
+                  "label": "DEEPSTALL (195)"
+                },
+                {
+                  "value": "11000",
+                  "label": "DEVICE_OP_READ (11000)"
+                },
+                {
+                  "value": "11001",
+                  "label": "DEVICE_OP_READ_REPLY (11001)"
+                },
+                {
+                  "value": "11002",
+                  "label": "DEVICE_OP_WRITE (11002)"
+                },
+                {
+                  "value": "11003",
+                  "label": "DEVICE_OP_WRITE_REPLY (11003)"
+                },
+                {
+                  "value": "154",
+                  "label": "DIGICAM_CONFIGURE (154)"
+                },
+                {
+                  "value": "155",
+                  "label": "DIGICAM_CONTROL (155)"
+                },
+                {
+                  "value": "132",
+                  "label": "DISTANCE_SENSOR (132)"
+                },
+                {
+                  "value": "225",
+                  "label": "EFI_STATUS (225)"
+                },
+                {
+                  "value": "8007",
+                  "label": "EKF_EXT (8007)"
+                },
+                {
+                  "value": "193",
+                  "label": "EKF_STATUS_REPORT (193)"
+                },
+                {
+                  "value": "131",
+                  "label": "ENCAPSULATED_DATA (131)"
+                },
+                {
+                  "value": "11030",
+                  "label": "ESC_TELEMETRY_1_TO_4 (11030)"
+                },
+                {
+                  "value": "11040",
+                  "label": "ESC_TELEMETRY_13_TO_16 (11040)"
+                },
+                {
+                  "value": "11041",
+                  "label": "ESC_TELEMETRY_17_TO_20 (11041)"
+                },
+                {
+                  "value": "11042",
+                  "label": "ESC_TELEMETRY_21_TO_24 (11042)"
+                },
+                {
+                  "value": "11043",
+                  "label": "ESC_TELEMETRY_25_TO_28 (11043)"
+                },
+                {
+                  "value": "11044",
+                  "label": "ESC_TELEMETRY_29_TO_32 (11044)"
+                },
+                {
+                  "value": "11031",
+                  "label": "ESC_TELEMETRY_5_TO_8 (11031)"
+                },
+                {
+                  "value": "11032",
+                  "label": "ESC_TELEMETRY_9_TO_12 (11032)"
+                },
+                {
+                  "value": "230",
+                  "label": "ESTIMATOR_STATUS (230)"
+                },
+                {
+                  "value": "245",
+                  "label": "EXTENDED_SYS_STATE (245)"
+                },
+                {
+                  "value": "161",
+                  "label": "FENCE_FETCH_POINT (161)"
+                },
+                {
+                  "value": "160",
+                  "label": "FENCE_POINT (160)"
+                },
+                {
+                  "value": "162",
+                  "label": "FENCE_STATUS (162)"
+                },
+                {
+                  "value": "110",
+                  "label": "FILE_TRANSFER_PROTOCOL (110)"
+                },
+                {
+                  "value": "264",
+                  "label": "FLIGHT_INFORMATION (264)"
+                },
+                {
+                  "value": "144",
+                  "label": "FOLLOW_TARGET (144)"
+                },
+                {
+                  "value": "8011",
+                  "label": "FW_SOARING_DATA (8011)"
+                },
+                {
+                  "value": "373",
+                  "label": "GENERATOR_STATUS (373)"
+                },
+                {
+                  "value": "201",
+                  "label": "GIMBAL_CONTROL (201)"
+                },
+                {
+                  "value": "285",
+                  "label": "GIMBAL_DEVICE_ATTITUDE_STATUS (285)"
+                },
+                {
+                  "value": "283",
+                  "label": "GIMBAL_DEVICE_INFORMATION (283)"
+                },
+                {
+                  "value": "284",
+                  "label": "GIMBAL_DEVICE_SET_ATTITUDE (284)"
+                },
+                {
+                  "value": "280",
+                  "label": "GIMBAL_MANAGER_INFORMATION (280)"
+                },
+                {
+                  "value": "282",
+                  "label": "GIMBAL_MANAGER_SET_ATTITUDE (282)"
+                },
+                {
+                  "value": "288",
+                  "label": "GIMBAL_MANAGER_SET_MANUAL_CONTROL (288)"
+                },
+                {
+                  "value": "287",
+                  "label": "GIMBAL_MANAGER_SET_PITCHYAW (287)"
+                },
+                {
+                  "value": "281",
+                  "label": "GIMBAL_MANAGER_STATUS (281)"
+                },
+                {
+                  "value": "200",
+                  "label": "GIMBAL_REPORT (200)"
+                },
+                {
+                  "value": "214",
+                  "label": "GIMBAL_TORQUE_CMD_REPORT (214)"
+                },
+                {
+                  "value": "33",
+                  "label": "GLOBAL_POSITION_INT (33)"
+                },
+                {
+                  "value": "63",
+                  "label": "GLOBAL_POSITION_INT_COV (63)"
+                },
+                {
+                  "value": "101",
+                  "label": "GLOBAL_VISION_POSITION_ESTIMATE (101)"
+                },
+                {
+                  "value": "216",
+                  "label": "GOPRO_GET_REQUEST (216)"
+                },
+                {
+                  "value": "217",
+                  "label": "GOPRO_GET_RESPONSE (217)"
+                },
+                {
+                  "value": "215",
+                  "label": "GOPRO_HEARTBEAT (215)"
+                },
+                {
+                  "value": "218",
+                  "label": "GOPRO_SET_REQUEST (218)"
+                },
+                {
+                  "value": "219",
+                  "label": "GOPRO_SET_RESPONSE (219)"
+                },
+                {
+                  "value": "49",
+                  "label": "GPS_GLOBAL_ORIGIN (49)"
+                },
+                {
+                  "value": "123",
+                  "label": "GPS_INJECT_DATA (123)"
+                },
+                {
+                  "value": "232",
+                  "label": "GPS_INPUT (232)"
+                },
+                {
+                  "value": "24",
+                  "label": "GPS_RAW_INT (24)"
+                },
+                {
+                  "value": "233",
+                  "label": "GPS_RTCM_DATA (233)"
+                },
+                {
+                  "value": "127",
+                  "label": "GPS_RTK (127)"
+                },
+                {
+                  "value": "25",
+                  "label": "GPS_STATUS (25)"
+                },
+                {
+                  "value": "124",
+                  "label": "GPS2_RAW (124)"
+                },
+                {
+                  "value": "128",
+                  "label": "GPS2_RTK (128)"
+                },
+                {
+                  "value": "8014",
+                  "label": "GSM_LINK_STATUS (8014)"
+                },
+                {
+                  "value": "0",
+                  "label": "HEARTBEAT (0)"
+                },
+                {
+                  "value": "50003",
+                  "label": "HERELINK_TELEM (50003)"
+                },
+                {
+                  "value": "50002",
+                  "label": "HERELINK_VIDEO_STREAM_INFORMATION (50002)"
+                },
+                {
+                  "value": "234",
+                  "label": "HIGH_LATENCY (234)"
+                },
+                {
+                  "value": "235",
+                  "label": "HIGH_LATENCY2 (235)"
+                },
+                {
+                  "value": "105",
+                  "label": "HIGHRES_IMU (105)"
+                },
+                {
+                  "value": "93",
+                  "label": "HIL_ACTUATOR_CONTROLS (93)"
+                },
+                {
+                  "value": "91",
+                  "label": "HIL_CONTROLS (91)"
+                },
+                {
+                  "value": "113",
+                  "label": "HIL_GPS (113)"
+                },
+                {
+                  "value": "114",
+                  "label": "HIL_OPTICAL_FLOW (114)"
+                },
+                {
+                  "value": "92",
+                  "label": "HIL_RC_INPUTS_RAW (92)"
+                },
+                {
+                  "value": "107",
+                  "label": "HIL_SENSOR (107)"
+                },
+                {
+                  "value": "90",
+                  "label": "HIL_STATE (90)"
+                },
+                {
+                  "value": "115",
+                  "label": "HIL_STATE_QUATERNION (115)"
+                },
+                {
+                  "value": "242",
+                  "label": "HOME_POSITION (242)"
+                },
+                {
+                  "value": "165",
+                  "label": "HWSTATUS (165)"
+                },
+                {
+                  "value": "12920",
+                  "label": "HYGROMETER_SENSOR (12920)"
+                },
+                {
+                  "value": "42000",
+                  "label": "ICAROUS_HEARTBEAT (42000)"
+                },
+                {
+                  "value": "42001",
+                  "label": "ICAROUS_KINEMATIC_BANDS (42001)"
+                },
+                {
+                  "value": "335",
+                  "label": "ISBD_LINK_STATUS (335)"
+                },
+                {
+                  "value": "149",
+                  "label": "LANDING_TARGET (149)"
+                },
+                {
+                  "value": "186",
+                  "label": "LED_CONTROL (186)"
+                },
+                {
+                  "value": "167",
+                  "label": "LIMITS_STATUS (167)"
+                },
+                {
+                  "value": "32",
+                  "label": "LOCAL_POSITION_NED (32)"
+                },
+                {
+                  "value": "64",
+                  "label": "LOCAL_POSITION_NED_COV (64)"
+                },
+                {
+                  "value": "89",
+                  "label": "LOCAL_POSITION_NED_SYSTEM_GLOBAL_OFFSET (89)"
+                },
+                {
+                  "value": "120",
+                  "label": "LOG_DATA (120)"
+                },
+                {
+                  "value": "118",
+                  "label": "LOG_ENTRY (118)"
+                },
+                {
+                  "value": "121",
+                  "label": "LOG_ERASE (121)"
+                },
+                {
+                  "value": "119",
+                  "label": "LOG_REQUEST_DATA (119)"
+                },
+                {
+                  "value": "122",
+                  "label": "LOG_REQUEST_END (122)"
+                },
+                {
+                  "value": "117",
+                  "label": "LOG_REQUEST_LIST (117)"
+                },
+                {
+                  "value": "268",
+                  "label": "LOGGING_ACK (268)"
+                },
+                {
+                  "value": "266",
+                  "label": "LOGGING_DATA (266)"
+                },
+                {
+                  "value": "267",
+                  "label": "LOGGING_DATA_ACKED (267)"
+                },
+                {
+                  "value": "10151",
+                  "label": "LOWEHEISER_GOV_EFI (10151)"
+                },
+                {
+                  "value": "191",
+                  "label": "MAG_CAL_PROGRESS (191)"
+                },
+                {
+                  "value": "192",
+                  "label": "MAG_CAL_REPORT (192)"
+                },
+                {
+                  "value": "69",
+                  "label": "MANUAL_CONTROL (69)"
+                },
+                {
+                  "value": "81",
+                  "label": "MANUAL_SETPOINT (81)"
+                },
+                {
+                  "value": "11039",
+                  "label": "MCU_STATUS (11039)"
+                },
+                {
+                  "value": "152",
+                  "label": "MEMINFO (152)"
+                },
+                {
+                  "value": "249",
+                  "label": "MEMORY_VECT (249)"
+                },
+                {
+                  "value": "244",
+                  "label": "MESSAGE_INTERVAL (244)"
+                },
+                {
+                  "value": "47",
+                  "label": "MISSION_ACK (47)"
+                },
+                {
+                  "value": "53",
+                  "label": "MISSION_CHECKSUM (53)"
+                },
+                {
+                  "value": "45",
+                  "label": "MISSION_CLEAR_ALL (45)"
+                },
+                {
+                  "value": "44",
+                  "label": "MISSION_COUNT (44)"
+                },
+                {
+                  "value": "42",
+                  "label": "MISSION_CURRENT (42)"
+                },
+                {
+                  "value": "39",
+                  "label": "MISSION_ITEM (39)"
+                },
+                {
+                  "value": "73",
+                  "label": "MISSION_ITEM_INT (73)"
+                },
+                {
+                  "value": "46",
+                  "label": "MISSION_ITEM_REACHED (46)"
+                },
+                {
+                  "value": "40",
+                  "label": "MISSION_REQUEST (40)"
+                },
+                {
+                  "value": "51",
+                  "label": "MISSION_REQUEST_INT (51)"
+                },
+                {
+                  "value": "43",
+                  "label": "MISSION_REQUEST_LIST (43)"
+                },
+                {
+                  "value": "37",
+                  "label": "MISSION_REQUEST_PARTIAL_LIST (37)"
+                },
+                {
+                  "value": "41",
+                  "label": "MISSION_SET_CURRENT (41)"
+                },
+                {
+                  "value": "38",
+                  "label": "MISSION_WRITE_PARTIAL_LIST (38)"
+                },
+                {
+                  "value": "156",
+                  "label": "MOUNT_CONFIGURE (156)"
+                },
+                {
+                  "value": "157",
+                  "label": "MOUNT_CONTROL (157)"
+                },
+                {
+                  "value": "265",
+                  "label": "MOUNT_ORIENTATION (265)"
+                },
+                {
+                  "value": "158",
+                  "label": "MOUNT_STATUS (158)"
+                },
+                {
+                  "value": "251",
+                  "label": "NAMED_VALUE_FLOAT (251)"
+                },
+                {
+                  "value": "252",
+                  "label": "NAMED_VALUE_INT (252)"
+                },
+                {
+                  "value": "62",
+                  "label": "NAV_CONTROLLER_OUTPUT (62)"
+                },
+                {
+                  "value": "220",
+                  "label": "NAV_FILTER_BIAS (220)"
+                },
+                {
+                  "value": "330",
+                  "label": "OBSTACLE_DISTANCE (330)"
+                },
+                {
+                  "value": "11037",
+                  "label": "OBSTACLE_DISTANCE_3D (11037)"
+                },
+                {
+                  "value": "331",
+                  "label": "ODOMETRY (331)"
+                },
+                {
+                  "value": "12918",
+                  "label": "OPEN_DRONE_ID_ARM_STATUS (12918)"
+                },
+                {
+                  "value": "12902",
+                  "label": "OPEN_DRONE_ID_AUTHENTICATION (12902)"
+                },
+                {
+                  "value": "12900",
+                  "label": "OPEN_DRONE_ID_BASIC_ID (12900)"
+                },
+                {
+                  "value": "12901",
+                  "label": "OPEN_DRONE_ID_LOCATION (12901)"
+                },
+                {
+                  "value": "12915",
+                  "label": "OPEN_DRONE_ID_MESSAGE_PACK (12915)"
+                },
+                {
+                  "value": "12905",
+                  "label": "OPEN_DRONE_ID_OPERATOR_ID (12905)"
+                },
+                {
+                  "value": "12903",
+                  "label": "OPEN_DRONE_ID_SELF_ID (12903)"
+                },
+                {
+                  "value": "12904",
+                  "label": "OPEN_DRONE_ID_SYSTEM (12904)"
+                },
+                {
+                  "value": "12919",
+                  "label": "OPEN_DRONE_ID_SYSTEM_UPDATE (12919)"
+                },
+                {
+                  "value": "100",
+                  "label": "OPTICAL_FLOW (100)"
+                },
+                {
+                  "value": "106",
+                  "label": "OPTICAL_FLOW_RAD (106)"
+                },
+                {
+                  "value": "11033",
+                  "label": "OSD_PARAM_CONFIG (11033)"
+                },
+                {
+                  "value": "11034",
+                  "label": "OSD_PARAM_CONFIG_REPLY (11034)"
+                },
+                {
+                  "value": "11035",
+                  "label": "OSD_PARAM_SHOW_CONFIG (11035)"
+                },
+                {
+                  "value": "11036",
+                  "label": "OSD_PARAM_SHOW_CONFIG_REPLY (11036)"
+                },
+                {
+                  "value": "324",
+                  "label": "PARAM_EXT_ACK (324)"
+                },
+                {
+                  "value": "321",
+                  "label": "PARAM_EXT_REQUEST_LIST (321)"
+                },
+                {
+                  "value": "320",
+                  "label": "PARAM_EXT_REQUEST_READ (320)"
+                },
+                {
+                  "value": "323",
+                  "label": "PARAM_EXT_SET (323)"
+                },
+                {
+                  "value": "322",
+                  "label": "PARAM_EXT_VALUE (322)"
+                },
+                {
+                  "value": "50",
+                  "label": "PARAM_MAP_RC (50)"
+                },
+                {
+                  "value": "21",
+                  "label": "PARAM_REQUEST_LIST (21)"
+                },
+                {
+                  "value": "20",
+                  "label": "PARAM_REQUEST_READ (20)"
+                },
+                {
+                  "value": "23",
+                  "label": "PARAM_SET (23)"
+                },
+                {
+                  "value": "22",
+                  "label": "PARAM_VALUE (22)"
+                },
+                {
+                  "value": "194",
+                  "label": "PID_TUNING (194)"
+                },
+                {
+                  "value": "4",
+                  "label": "PING (4)"
+                },
+                {
+                  "value": "258",
+                  "label": "PLAY_TUNE (258)"
+                },
+                {
+                  "value": "87",
+                  "label": "POSITION_TARGET_GLOBAL_INT (87)"
+                },
+                {
+                  "value": "85",
+                  "label": "POSITION_TARGET_LOCAL_NED (85)"
+                },
+                {
+                  "value": "125",
+                  "label": "POWER_STATUS (125)"
+                },
+                {
+                  "value": "60020",
+                  "label": "QSHOT_STATUS (60020)"
+                },
+                {
+                  "value": "166",
+                  "label": "RADIO (166)"
+                },
+                {
+                  "value": "221",
+                  "label": "RADIO_CALIBRATION (221)"
+                },
+                {
+                  "value": "420",
+                  "label": "RADIO_RC_CHANNELS (420)"
+                },
+                {
+                  "value": "109",
+                  "label": "RADIO_STATUS (109)"
+                },
+                {
+                  "value": "176",
+                  "label": "RALLY_FETCH_POINT (176)"
+                },
+                {
+                  "value": "175",
+                  "label": "RALLY_POINT (175)"
+                },
+                {
+                  "value": "173",
+                  "label": "RANGEFINDER (173)"
+                },
+                {
+                  "value": "27",
+                  "label": "RAW_IMU (27)"
+                },
+                {
+                  "value": "28",
+                  "label": "RAW_PRESSURE (28)"
+                },
+                {
+                  "value": "339",
+                  "label": "RAW_RPM (339)"
+                },
+                {
+                  "value": "65",
+                  "label": "RC_CHANNELS (65)"
+                },
+                {
+                  "value": "70",
+                  "label": "RC_CHANNELS_OVERRIDE (70)"
+                },
+                {
+                  "value": "35",
+                  "label": "RC_CHANNELS_RAW (35)"
+                },
+                {
+                  "value": "34",
+                  "label": "RC_CHANNELS_SCALED (34)"
+                },
+                {
+                  "value": "376",
+                  "label": "RELAY_STATUS (376)"
+                },
+                {
+                  "value": "185",
+                  "label": "REMOTE_LOG_BLOCK_STATUS (185)"
+                },
+                {
+                  "value": "184",
+                  "label": "REMOTE_LOG_DATA_BLOCK (184)"
+                },
+                {
+                  "value": "66",
+                  "label": "REQUEST_DATA_STREAM (66)"
+                },
+                {
+                  "value": "142",
+                  "label": "RESOURCE_REQUEST (142)"
+                },
+                {
+                  "value": "226",
+                  "label": "RPM (226)"
+                },
+                {
+                  "value": "55",
+                  "label": "SAFETY_ALLOWED_AREA (55)"
+                },
+                {
+                  "value": "54",
+                  "label": "SAFETY_SET_ALLOWED_AREA (54)"
+                },
+                {
+                  "value": "8015",
+                  "label": "SATCOM_LINK_STATUS (8015)"
+                },
+                {
+                  "value": "26",
+                  "label": "SCALED_IMU (26)"
+                },
+                {
+                  "value": "116",
+                  "label": "SCALED_IMU2 (116)"
+                },
+                {
+                  "value": "129",
+                  "label": "SCALED_IMU3 (129)"
+                },
+                {
+                  "value": "29",
+                  "label": "SCALED_PRESSURE (29)"
+                },
+                {
+                  "value": "137",
+                  "label": "SCALED_PRESSURE2 (137)"
+                },
+                {
+                  "value": "143",
+                  "label": "SCALED_PRESSURE3 (143)"
+                },
+                {
+                  "value": "11004",
+                  "label": "SECURE_COMMAND (11004)"
+                },
+                {
+                  "value": "11005",
+                  "label": "SECURE_COMMAND_REPLY (11005)"
+                },
+                {
+                  "value": "8009",
+                  "label": "SENS_ATMOS (8009)"
+                },
+                {
+                  "value": "8010",
+                  "label": "SENS_BATMON (8010)"
+                },
+                {
+                  "value": "8003",
+                  "label": "SENS_MPPT (8003)"
+                },
+                {
+                  "value": "8002",
+                  "label": "SENS_POWER (8002)"
+                },
+                {
+                  "value": "8013",
+                  "label": "SENS_POWER_BOARD (8013)"
+                },
+                {
+                  "value": "8016",
+                  "label": "SENSOR_AIRFLOW_ANGLES (8016)"
+                },
+                {
+                  "value": "150",
+                  "label": "SENSOR_OFFSETS (150)"
+                },
+                {
+                  "value": "8012",
+                  "label": "SENSORPOD_STATUS (8012)"
+                },
+                {
+                  "value": "126",
+                  "label": "SERIAL_CONTROL (126)"
+                },
+                {
+                  "value": "36",
+                  "label": "SERVO_OUTPUT_RAW (36)"
+                },
+                {
+                  "value": "139",
+                  "label": "SET_ACTUATOR_CONTROL_TARGET (139)"
+                },
+                {
+                  "value": "82",
+                  "label": "SET_ATTITUDE_TARGET (82)"
+                },
+                {
+                  "value": "48",
+                  "label": "SET_GPS_GLOBAL_ORIGIN (48)"
+                },
+                {
+                  "value": "243",
+                  "label": "SET_HOME_POSITION (243)"
+                },
+                {
+                  "value": "151",
+                  "label": "SET_MAG_OFFSETS (151)"
+                },
+                {
+                  "value": "11",
+                  "label": "SET_MODE (11)"
+                },
+                {
+                  "value": "86",
+                  "label": "SET_POSITION_TARGET_GLOBAL_INT (86)"
+                },
+                {
+                  "value": "84",
+                  "label": "SET_POSITION_TARGET_LOCAL_NED (84)"
+                },
+                {
+                  "value": "256",
+                  "label": "SETUP_SIGNING (256)"
+                },
+                {
+                  "value": "108",
+                  "label": "SIM_STATE (108)"
+                },
+                {
+                  "value": "164",
+                  "label": "SIMSTATE (164)"
+                },
+                {
+                  "value": "370",
+                  "label": "SMART_BATTERY_INFO (370)"
+                },
+                {
+                  "value": "253",
+                  "label": "STATUSTEXT (253)"
+                },
+                {
+                  "value": "261",
+                  "label": "STORAGE_INFORMATION (261)"
+                },
+                {
+                  "value": "60002",
+                  "label": "STORM32_GIMBAL_DEVICE_CONTROL (60002)"
+                },
+                {
+                  "value": "60001",
+                  "label": "STORM32_GIMBAL_DEVICE_STATUS (60001)"
+                },
+                {
+                  "value": "60012",
+                  "label": "STORM32_GIMBAL_MANAGER_CONTROL (60012)"
+                },
+                {
+                  "value": "60013",
+                  "label": "STORM32_GIMBAL_MANAGER_CONTROL_PITCHYAW (60013)"
+                },
+                {
+                  "value": "60014",
+                  "label": "STORM32_GIMBAL_MANAGER_CORRECT_ROLL (60014)"
+                },
+                {
+                  "value": "60010",
+                  "label": "STORM32_GIMBAL_MANAGER_INFORMATION (60010)"
+                },
+                {
+                  "value": "60015",
+                  "label": "STORM32_GIMBAL_MANAGER_PROFILE (60015)"
+                },
+                {
+                  "value": "60011",
+                  "label": "STORM32_GIMBAL_MANAGER_STATUS (60011)"
+                },
+                {
+                  "value": "1",
+                  "label": "SYS_STATUS (1)"
+                },
+                {
+                  "value": "2",
+                  "label": "SYSTEM_TIME (2)"
+                },
+                {
+                  "value": "135",
+                  "label": "TERRAIN_CHECK (135)"
+                },
+                {
+                  "value": "134",
+                  "label": "TERRAIN_DATA (134)"
+                },
+                {
+                  "value": "136",
+                  "label": "TERRAIN_REPORT (136)"
+                },
+                {
+                  "value": "133",
+                  "label": "TERRAIN_REQUEST (133)"
+                },
+                {
+                  "value": "17000",
+                  "label": "TEST_TYPES (17000)"
+                },
+                {
+                  "value": "111",
+                  "label": "TIMESYNC (111)"
+                },
+                {
+                  "value": "385",
+                  "label": "TUNNEL (385)"
+                },
+                {
+                  "value": "222",
+                  "label": "UALBERTA_SYS_STATUS (222)"
+                },
+                {
+                  "value": "311",
+                  "label": "UAVCAN_NODE_INFO (311)"
+                },
+                {
+                  "value": "310",
+                  "label": "UAVCAN_NODE_STATUS (310)"
+                },
+                {
+                  "value": "10006",
+                  "label": "UAVIONIX_ADSB_GET (10006)"
+                },
+                {
+                  "value": "10001",
+                  "label": "UAVIONIX_ADSB_OUT_CFG (10001)"
+                },
+                {
+                  "value": "10005",
+                  "label": "UAVIONIX_ADSB_OUT_CFG_FLIGHTID (10005)"
+                },
+                {
+                  "value": "10004",
+                  "label": "UAVIONIX_ADSB_OUT_CFG_REGISTRATION (10004)"
+                },
+                {
+                  "value": "10007",
+                  "label": "UAVIONIX_ADSB_OUT_CONTROL (10007)"
+                },
+                {
+                  "value": "10002",
+                  "label": "UAVIONIX_ADSB_OUT_DYNAMIC (10002)"
+                },
+                {
+                  "value": "10008",
+                  "label": "UAVIONIX_ADSB_OUT_STATUS (10008)"
+                },
+                {
+                  "value": "10003",
+                  "label": "UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT (10003)"
+                },
+                {
+                  "value": "340",
+                  "label": "UTM_GLOBAL_POSITION (340)"
+                },
+                {
+                  "value": "248",
+                  "label": "V2_EXTENSION (248)"
+                },
+                {
+                  "value": "74",
+                  "label": "VFR_HUD (74)"
+                },
+                {
+                  "value": "241",
+                  "label": "VIBRATION (241)"
+                },
+                {
+                  "value": "104",
+                  "label": "VICON_POSITION_ESTIMATE (104)"
+                },
+                {
+                  "value": "269",
+                  "label": "VIDEO_STREAM_INFORMATION (269)"
+                },
+                {
+                  "value": "270",
+                  "label": "VIDEO_STREAM_STATUS (270)"
+                },
+                {
+                  "value": "11011",
+                  "label": "VISION_POSITION_DELTA (11011)"
+                },
+                {
+                  "value": "102",
+                  "label": "VISION_POSITION_ESTIMATE (102)"
+                },
+                {
+                  "value": "103",
+                  "label": "VISION_SPEED_ESTIMATE (103)"
+                },
+                {
+                  "value": "11038",
+                  "label": "WATER_DEPTH (11038)"
+                },
+                {
+                  "value": "9000",
+                  "label": "WHEEL_DISTANCE (9000)"
+                },
+                {
+                  "value": "299",
+                  "label": "WIFI_CONFIG_AP (299)"
+                },
+                {
+                  "value": "9005",
+                  "label": "WINCH_STATUS (9005)"
+                },
+                {
+                  "value": "168",
+                  "label": "WIND (168)"
+                },
+                {
+                  "value": "231",
+                  "label": "WIND_COV (231)"
+                }
+              ],
+              "json": "",
+              "url": "",
+              "resource": "",
+              "custom": ""
+            },
+            "defaultValue": 74,
+            "id": "exf5ug",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": null,
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "onlyAvailableItems": false
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": [],
+            "dataSrc": "values",
+            "authenticate": false,
+            "ignoreCache": false,
+            "template": "<span>{{ item.label }}</span>",
+            "idPath": "id",
+            "clearOnRefresh": false,
+            "limit": 100,
+            "valueProperty": "",
+            "lazyLoad": true,
+            "filter": "",
+            "searchEnabled": true,
+            "searchDebounce": 0.3,
+            "searchField": "",
+            "minSearch": 0,
+            "readOnlyValue": false,
+            "selectFields": "",
+            "selectThreshold": 0.3,
+            "uniqueOptions": false,
+            "fuseOptions": {
+              "include": "score",
+              "threshold": 0.3
+            },
+            "indexeddb": {
+              "filter": {}
+            },
+            "customOptions": {},
+            "useExactSearch": false
+          },
+          {
+            "label": "Field",
+            "tooltip": "Mesage feild to display",
+            "MAVLinkMsgSelect": "message",
+            "defaultValue": "groundspeed",
+            "key": "field",
+            "type": "mavlinkfield",
+            "input": true,
+            "tableView": true,
+            "dataSrc": "custom",
+            "data": {
+              "custom": "\n// Get the target key\nif (component.MAVLinkMsgSelect == undefined) {\n    return [ \"Invalid MAVLink message item key\" ]\n}\nconst key = component.MAVLinkMsgSelect\n\n// Get the value of form item with that key\nconst id = submission.data[component.MAVLinkMsgSelect]\n\n// Function to get fields for given message id\nfunction get_fields(id) {\n    for (const msg_map of Object.values(mavlink20.map)) {\n        const msg = new msg_map.type\n        if (String(msg._id) == id) {\n            return msg.fieldnames\n        }\n    }\n    return [ \"Unknown message\" ]\n}\n\n// Get the fields for the give message id\nvalues = get_fields(id)\n",
+              "values": [
+                {
+                  "label": "",
+                  "value": ""
+                }
+              ],
+              "json": "",
+              "url": "",
+              "resource": ""
+            },
+            "id": "e89jpto",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": null,
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "onlyAvailableItems": false
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": [],
+            "authenticate": false,
+            "ignoreCache": false,
+            "template": "<span>{{ item.label }}</span>",
+            "idPath": "id",
+            "clearOnRefresh": false,
+            "limit": 100,
+            "valueProperty": "",
+            "lazyLoad": true,
+            "filter": "",
+            "searchEnabled": true,
+            "searchDebounce": 0.3,
+            "searchField": "",
+            "minSearch": 0,
+            "readOnlyValue": false,
+            "selectFields": "",
+            "selectThreshold": 0.3,
+            "uniqueOptions": false,
+            "fuseOptions": {
+              "include": "score",
+              "threshold": 0.3
+            },
+            "indexeddb": {
+              "filter": {}
+            },
+            "customOptions": {},
+            "useExactSearch": false
+          },
+          {
+            "label": "Scale factor",
+            "tooltip": "Scale factor applyed to value, for example to change units",
+            "key": "scaleFactor",
+            "type": "number",
+            "input": true,
+            "tableView": false,
+            "defaultValue": 1,
+            "id": "ecvia63",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": {
+              "type": "input"
+            },
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "min": "",
+              "max": "",
+              "step": "any",
+              "integer": ""
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": []
+          }
+        ]
+      },
+      "form_content": {
+      },
+      "sandbox": "// Add label\nconst label = document.createElement(\"span\")\nlabel.appendChild(document.createTextNode(options.label))\ndiv.appendChild(label)\ndiv.style.textAlign = \"center\"\n\n// Div for main value\nconst value_div = document.createElement(\"div\")\nvalue_div.style.position = \"absolute\"\nvalue_div.style.top = 0\nvalue_div.style.bottom = 0\nvalue_div.style.left = 0\nvalue_div.style.right = 0\ndiv.appendChild(value_div)\n\n// Svg for value\nconst svg = document.createElementNS(\"http://www.w3.org/2000/svg\", \"svg\")\nsvg.style.height = \"100%\"\nsvg.style.width = \"100%\"\nsvg.style.fill = options.color\nvalue_div.appendChild(svg)\n\nconst text = document.createElementNS(\"http://www.w3.org/2000/svg\", \"text\")\ntext.innerHTML = \"-\"\nsvg.appendChild(text)\n\nfunction resize() {\n    const bbox = text.getBBox()\n    svg.setAttribute('viewBox', [bbox.x, bbox.y, bbox.width, bbox.height].join(' '));\n\n    value_div.style.top = label.getBoundingClientRect().height + \"px\"\n}\n\nresize()\n\n// Runtime function\nhandle_msg = function (msg) {\n\n    // Check message ID\n    if (msg._id != options.message) {\n        return\n    }\n\n    // Check for field\n    if (!(options.field in msg)) {\n        throw new Error(\"No field \" + options.field + \" in \" + msg._name)\n    }\n\n    let value = msg[options.field]\n    value *= options.scaleFactor\n\n    text.innerHTML = value.toFixed(Math.round(options.decimalPlaces))\n\n    resize()\n\n}\n\n// Optional function to allow run-time update of options\nhandle_options = function (new_opitons) {\n    options = new_opitons\n\n    // update color and text\n    svg.style.fill = options.color\n    label.innerText = options.label\n}\n",
+      "about" : {
+        "name": "Value",
+        "info": "Value example built using the Sandbox widget. User customizable options."
+      }
+    }
+  }
+}
