@@ -1256,7 +1256,6 @@ function calculate_freq_resp() {
     } else if (document.getElementById('type_Yaw').checked) {
         eval_axis = "Yaw"
     }
-
     var sample_rate
     [data_set, sample_rate] = load_time_history_data(t_start, t_end, eval_axis)
 
@@ -1282,22 +1281,22 @@ function calculate_freq_resp() {
     const mean_length = end_index - start_index
     console.log(mean_length)
 
-    var H_pilot 
+    var H_pilot
     var coh_pilot
-    if (eval_axis = "Yaw") {
+    if (document.getElementById('type_Yaw').checked) {        
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
     } else {
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
     }
-    var H_acft 
+    var H_acft
     var coh_acft
     [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
 
-    var H_rate 
+    var H_rate
     var coh_rate
     [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
 
-    var H_att 
+    var H_att
     var coh_att
     [H_att, coh_att] = calculate_freq_resp_from_FFT(data_set.FFT.AttTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
 
