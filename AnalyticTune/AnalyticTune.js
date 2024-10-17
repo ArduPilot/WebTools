@@ -1725,11 +1725,13 @@ function redraw_freq_resp() {
     fft_plot_Coh.layout.xaxis.title.text = frequency_scale.label
     fft_plot_Coh.layout.yaxis.title.text = "Coherence"
 
-    const fft_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    const fftmag_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+    const fftphase_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>%{y:.2f} deg"
+    const fftcoh_hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>%{y:.2f}"
     for (let i = 0; i < fft_plot.data.length; i++) {
-        fft_plot.data[i].hovertemplate = fft_hovertemplate
-        fft_plot_Phase.data[i].hovertemplate = fft_hovertemplate
-        fft_plot_Coh.data[i].hovertemplate = fft_hovertemplate
+        fft_plot.data[i].hovertemplate = fftmag_hovertemplate
+        fft_plot_Phase.data[i].hovertemplate = fftphase_hovertemplate
+        fft_plot_Coh.data[i].hovertemplate = fftcoh_hovertemplate
     }
 
     var unwrap_ph = document.getElementById("PID_ScaleUnWrap").checked;
