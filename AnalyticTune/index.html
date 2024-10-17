@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>ArduPilot Analytic Tune</title>
+<title>ArduCopter Analytic Tune Tool</title>
 <link rel="icon" href="../images/AP_favicon.png">
 <script type="text/javascript" src="AnalyticTune.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
@@ -35,10 +35,8 @@
         }
 </style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Analytic Tune Tool</a></h1>
+<h1><a href="" style="color: #000000; text-decoration:none;">ArduCopter Analytic Tune Tool</a></h1>
 
-The following form will display the attenuation and phase lag for an
-ArduPilot 4.2 filter setup.
 <body onload="load(); update_all_hidden(); setup_plots();">
 
 <table>
@@ -466,8 +464,7 @@ ArduPilot 4.2 filter setup.
 </fieldset>
 </form>
 
-<h2>Prediction</h2>
-<h3><label id="PID_title">Title</label></h3>
+<h2><label id="PID_title">Calculated vs. Predicted Comparison</label></h2>
 
 <div id="FFTPlotMag" style="width:1200px;height:350px"></div>
 
