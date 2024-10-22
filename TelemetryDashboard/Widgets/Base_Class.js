@@ -255,7 +255,7 @@ class WidgetBase extends HTMLElement {
     // Get the user submission to the form
     get_form_content() {
         if (this.form == null) {
-            return
+            return {}
         }
 
         return this.form.submission.data
