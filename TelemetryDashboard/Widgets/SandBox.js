@@ -91,6 +91,11 @@ handle_msg = function (msg) {
         return options
     }
 
+    // Get edit text type
+    get_edit_language() {
+        return "javascript"
+    }
+
     // Get text value to be edited in the editor
     get_edit_text() {
         return this.script_text

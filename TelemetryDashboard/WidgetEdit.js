@@ -1,11 +1,12 @@
 
 let editor = null
+let model = null
 let form_builder = null
 let test_grid = null
 
 function init_editor() {
 
-    const script_tab = document.getElementById('JSEditor')
+    const script_tab = document.getElementById('TextEditor')
     const form_tab = document.getElementById('FormEditor')
 
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' }});
@@ -22,7 +23,9 @@ function init_editor() {
     }
 
     require(["vs/editor/editor.main"], function () {
+        model = monaco.editor.createModel("", "javascript");
         editor = monaco.editor.create(script_tab, {
+            model: model,
             language: 'javascript',
             theme: 'vs-dark',
             automaticLayout: true,
@@ -461,6 +464,9 @@ function load_editor(widget) {
     test_widget.disable_buttons_for_edit()
 
     test_grid.addWidget(test_widget, pos_opts)
+
+    // Set editor for correct language
+    monaco.editor.setModelLanguage(monaco.editor.getModel(model.uri), test_widget.get_edit_language());
 
     // Load edit text into editor
     editor.setValue(test_widget.get_edit_text())

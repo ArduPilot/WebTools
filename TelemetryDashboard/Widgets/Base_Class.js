@@ -181,6 +181,10 @@ class WidgetBase extends HTMLElement {
         return this.about
     }
 
+    
+    // Get edit text type
+    get_edit_language() { }
+
     // Get text value to be edited in the editor
     get_edit_text() {}
 
