@@ -307,6 +307,9 @@ function new_widget(type, options) {
 
         case "WidgetSubGrid":
             return new WidgetSubGrid(options)
+
+        case "WidgetCustomHTML":
+            return new WidgetCustomHTML(options)
     }
 
     throw new Error("Unknown widget type: " + type)
@@ -483,6 +486,7 @@ function init_pallet() {
         // Add pure JS widgets
         add_widget(palette, { type: "WidgetSubGrid", x: 0, y: 0, w: 1, h: 1 })
         add_widget(palette, { type: "WidgetSandBox", x: 0, y: 1, w: 1, h: 1 })
+        add_widget(palette, { type: "WidgetCustomHTML", x: 1, y: 5, w: 1, h: 1 })
 
         // Load in json definitions
         const sandbox_files = [
