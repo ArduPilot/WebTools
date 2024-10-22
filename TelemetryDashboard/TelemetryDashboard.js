@@ -30,6 +30,12 @@ function setup_connect(button_svg, button_color) {
     })
     button_svg.onclick = () => { tip.show() }
 
+    // Connection tool tip
+    tippy(tip_div.querySelector('img[id="TT"]'), {
+        appendTo: () => document.body,
+        theme: 'light-border', // differentiate from the interactive tip were in already
+    })
+
     // Close button
     tip_div.querySelector(`svg[id="Close"]`).onclick = () => {
         tip.hide()
