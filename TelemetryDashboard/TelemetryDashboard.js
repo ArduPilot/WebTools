@@ -442,6 +442,8 @@ async function load_file(e) {
     }
     reader.readAsText(file)
 
+    // Clear file input so the same file can be loaded a second time
+    e.value = null
 }
 
 // Pallet for user to add widgets
