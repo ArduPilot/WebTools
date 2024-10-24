@@ -49,6 +49,7 @@ function setup_connect(button_svg, button_color) {
     // Websocket object
     let ws = null
     let expecting_close = false
+    let been_connected = false
 
     function set_inputs(connected) {
         // Disable connect button and url input, enable disconnect button
@@ -60,7 +61,7 @@ function setup_connect(button_svg, button_color) {
     set_inputs(false)
 
     // Connect to WebSocket server
-    function connect(target) {
+    function connect(target, auto_connect) {
         // Make sure we are not connected to something else
         disconnect()
 
@@ -69,6 +70,9 @@ function setup_connect(button_svg, button_color) {
 
         // Set orange for connecting
         button_color("orange")
+
+        // True if we have ever been connected
+        been_connected = false
 
         ws = new WebSocket(target)
         ws.binaryType = "arraybuffer"
@@ -83,10 +87,21 @@ function setup_connect(button_svg, button_color) {
 
             // Allow disconnect
             disconnect_button.disabled = false
+
+            // Set input to current value
+            url_input.value = target
+
+            // Have been connected
+            been_connected = true
         }
 
         ws.onclose = () => {
-            if (!expecting_close) {
+            if ((auto_connect === true) && !been_connected) {
+                // Don't show a failed connection if this is a auto connection attempt which failed
+                button_color("black")
+
+            } else if (!expecting_close) {
+                // Don't show red if the user manually disconnected
                 button_color("red")
             }
 
@@ -162,6 +177,9 @@ function setup_connect(button_svg, button_color) {
 
         disconnect()
     }
+
+    // Try auto connecting to MissionPlanner
+    connect("ws://127.0.0.1:56781", true)
 
 }
 
