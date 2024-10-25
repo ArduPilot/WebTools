@@ -8,9 +8,8 @@ These steps allow hosting of the tools locally for development purposes or for u
 
 Clone this repository (or your fork) and update the submodules:
 
-```
-git clone https://github.com/ArduPilot/WebTools.git
-git submodule update --init
+```console
+git clone --recurse-submodules https://github.com/ArduPilot/WebTools.git
 ```
 
 Host locally using python by running the following command in the root of the repo:
@@ -20,6 +19,11 @@ python -m http.server --bind 127.0.0.1
 ```
 
 The landing page can then be found at http://127.0.0.1:8000/
+
+You need to keep your submodules update. When you rebase, or switch branches, update them like so:
+```console
+git submodule update --init --recursive
+```
 
 ## VSCode
 
