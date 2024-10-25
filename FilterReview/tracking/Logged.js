@@ -30,7 +30,12 @@ class LoggedNotch extends NotchTarget {
                     continue
                 }
 
-                const num_notches = Math.max(...log.get_instance(dynamic_msg, inst, "NDn"))
+                const notch_number = log.get_instance(dynamic_msg, inst, "NDn")
+                let num_notches = 0
+                const len = notch_number.length
+                for (let i = 0; i<len; i++) {
+                    num_notches = Math.max(num_notches, notch_number[i])
+                }
 
                 this.data.time = TimeUS_to_seconds(log.get_instance(dynamic_msg, inst, "TimeUS"))
 
