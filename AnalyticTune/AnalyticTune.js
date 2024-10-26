@@ -1604,9 +1604,61 @@ function save_parameters() {
 
     function save_from_elements(inputs) {
         var params = "";
+        var NEF_num
+        var NTF_num
         for (const v in inputs) {
             var name = "" + inputs[v].id;
+            if (document.getElementById('type_Roll').checked) {
+                if (name.startsWith("ATC_RAT_RLL")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                if (name.startsWith("ATC_ANG_RLL")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value
+                NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value
+            } else if (document.getElementById('type_Pitch').checked) {
+                if (name.startsWith("ATC_RAT_PIT")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                if (name.startsWith("ATC_ANG_PIT")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value
+                NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value
+            } else if (document.getElementById('type_Yaw').checked) {
+                if (name.startsWith("ATC_RAT_YAW")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                if (name.startsWith("ATC_ANG_YAW")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value
+                NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value
+            }
+            if (NEF_num > 0) {
+                if (name.startsWith("FILT" + NEF_num + "_")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+            }
+            if (NTF_num > 0 && NEF_num != NTF_num) {
+                if (name.startsWith("FILT" + NTF_num + "_")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+            }
             if (name.startsWith("INS_")) {
+                var value = inputs[v].value;
+                params += name + "," + param_to_string(value) + "\n";
+            }
+            if (name.startsWith("SCHED_")) {
                 var value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
