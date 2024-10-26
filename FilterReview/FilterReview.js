@@ -2188,7 +2188,7 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
 
     // Work out if logging is pre/post from param value
     const INS_RAW_LOG_OPT = get_param("INS_RAW_LOG_OPT", false)
-    const post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 2)) != 0)
+    let post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 2)) != 0)
     const pre_post_filter = (INS_RAW_LOG_OPT != null) && ((INS_RAW_LOG_OPT & (1 << 3)) != 0)
     if (post_filter && pre_post_filter) {
         alert("Both post and pre+post logging option selected")
