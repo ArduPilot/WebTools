@@ -1294,7 +1294,7 @@ function calculate_freq_resp() {
 
     var H_rate
     var coh_rate
-    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
+    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
 
     var H_att
     var coh_att
