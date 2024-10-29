@@ -4,7 +4,7 @@
         {
             "label": "Host",
             "type": "shell",
-            "command": "python -m http.server --bind 127.0.0.1",
+            "command": "python3 -m http.server --bind 127.0.0.1",
             "isBackground": true,
             "problemMatcher": {
                 "pattern": {

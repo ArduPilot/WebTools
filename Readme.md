@@ -16,7 +16,7 @@ git submodule update --init
 Host locally using python by running the following command in the root of the repo:
 
 ```
-python -m http.server --bind 127.0.0.1
+python3 -m http.server --bind 127.0.0.1
 ```
 
 The landing page can then be found at http://127.0.0.1:8000/
