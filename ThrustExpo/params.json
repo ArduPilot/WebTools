@@ -1,0 +1,69 @@
+{
+    "MOT_": {
+        "MOT_PWM_MIN": {
+            "DisplayName": "PWM output minimum",
+            "Description": "This sets the min PWM output value in microseconds that will ever be output to the motors",
+            "Units": "µs",
+            "Range": {
+                "high": "2000",
+                "low": "0"
+            },
+            "User": "Advanced"
+        },
+        "MOT_PWM_MAX": {
+            "DisplayName": "PWM output maximum",
+            "Description": "This sets the max PWM value in microseconds that will ever be output to the motors",
+            "Units": "µs",
+            "Range": {
+                "high": "2000",
+                "low": "0"
+            },
+            "User": "Advanced"
+        },
+        "MOT_SPIN_ARM": {
+            "DisplayName": "Motor Spin armed",
+            "Description": "Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.",
+            "Range": {
+                "high": "1",
+                "low": "0"
+            },
+            "User": "Advanced"
+        },
+        "MOT_SPIN_MIN": {
+            "DisplayName": "Motor Spin minimum",
+            "Description": "Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.",
+            "Range": {
+                "high": "1",
+                "low": "0"
+            },
+            "User": "Advanced"
+        },
+        "MOT_SPIN_MAX": {
+            "DisplayName": "Motor Spin maximum",
+            "Description": "Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range",
+            "Range": {
+                "high": "1",
+                "low": "0"
+            },
+            "User": "Advanced"
+        },
+        "MOT_THST_EXPO": {
+            "DisplayName": "Thrust Curve Expo",
+            "Description": "Motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)",
+            "Range": {
+                "high": "1",
+                "low": "-1"
+            },
+            "User": "Advanced"
+        },
+        "MOT_THST_HOVER": {
+            "DisplayName": "Thrust Hover Value",
+            "Description": "Motor thrust needed to hover expressed as a number from 0 to 1",
+            "Range": {
+                "high": "0.6875",
+                "low": "0.125"
+            },
+            "User": "Advanced"
+        }
+    }
+}
