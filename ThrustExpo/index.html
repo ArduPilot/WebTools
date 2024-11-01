@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="ArduPilot Thrust Expo Calculator" />
+        <title>ArduPilot Thrust Expo</title>
+        <link rel="icon" href="../images/AP_favicon.png" />
+        <link rel="stylesheet" href="ThrustExpo.css" />
+        <link
+            rel="stylesheet"
+            href="../modules/tabulator/dist/css/tabulator.min.css"
+        />
+        <script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
+        <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
+        <script src="../modules/plotly.js/dist/plotly.min.js"></script>
+        <script src="../modules/tabulator/dist/js/tabulator.min.js"></script>
+        <script src="../Libraries/ParameterMetadata.js"></script>
+        <script src="../Libraries/FileSaver.js"></script>
+        <script src="ThrustExpo.js"></script>
+    </head>
+
+    <body>
+        <header class="header">
+            <div class="logo-row">
+                <div>
+                    <a href="https://ardupilot.org">
+                        <img
+                            src="../images/ArduPilot.png"
+                            alt="ArduPilot Logo"
+                        />
+                    </a>
+                </div>
+                <div class="github-logo-cell">
+                    <a href="https://github.com/ArduPilot/WebTools">
+                        <img
+                            src="../images/github-mark.png"
+                            alt="GitHub Mark"
+                        />
+                    </a>
+                    <br />
+                    <a href="https://github.com/ArduPilot/WebTools">
+                        <img
+                            src="../images/GitHub_Logo.png"
+                            alt="GitHub Logo"
+                        />
+                    </a>
+                </div>
+            </div>
+
+            <h1>
+                <a href="">
+                    ArduPilot Thrust Expo
+                </a>
+            </h1>
+            <div id="app-description">
+                This tool estimates thrust linearization using thrust test stand
+                data. Load a parameter file or enter parameters manually. Copy
+                and paste test stand data from a spreadsheet or enter it
+                manually (press enter to edit a single cell). Current data is
+                optional (for reference only - not used in calculation). Once
+                the plot is generated, adjust MOT_THST_EXPO to improve the
+                linear fit. If the curve is poorly matched at the extremes, do
+                not chase a perfect 100% fitness value. Rather, focus on
+                midrange throttle linearity.
+            </div>
+        </header>
+
+        <div class="content">
+            <fieldset>
+                <legend>
+                    Parameters
+                    <img
+                        class="tooltip-trigger"
+                        src="../images/question-circle.svg"
+                        data-tippy-content="Load a parameter file or enter parameters manually to calculate thrust linearization."
+                        data-tippy-maxWidth="750px"
+                    />
+                </legend>
+                <div class="param-controls">
+                    <input
+                        id="paramFile"
+                        type="file"
+                        accept=".param,.parm,.txt"
+                    />
+                    <div class="param-controls-right">
+                        <button id="reset">Reset</button>
+                        <button id="save-params">Save Parameters</button>
+                    </div>
+                </div>
+                <div class="param-grid">
+                    <div class="param-column">
+                        <div class="param-row">
+                            <input
+                                id="MOT_SPIN_ARM"
+                                name="MOT_SPIN_ARM"
+                                class="constrain"
+                                type="number"
+                                step="0.01"
+                            />
+                        </div>
+                        <div class="param-row">
+                            <input
+                                id="MOT_SPIN_MIN"
+                                name="MOT_SPIN_MIN"
+                                class="constrain"
+                                type="number"
+                                step="0.01"
+                            />
+                        </div>
+                        <div class="param-row">
+                            <input
+                                id="MOT_SPIN_MAX"
+                                name="MOT_SPIN_MAX"
+                                class="constrain"
+                                type="number"
+                                step="0.01"
+                            />
+                        </div>
+                    </div>
+                    <div class="param-column">
+                        <div class="param-row">
+                            <input
+                                id="MOT_PWM_MIN"
+                                name="MOT_PWM_MIN"
+                                type="number"
+                                step="1"
+                            />
+                        </div>
+                        <div class="param-row">
+                            <input
+                                id="MOT_PWM_MAX"
+                                name="MOT_PWM_MAX"
+                                type="number"
+                                step="1"
+                            />
+                        </div>
+                        <div class="param-row">
+                            <input
+                                id="MOT_THST_EXPO"
+                                name="MOT_THST_EXPO"
+                                class="constrain"
+                                type="number"
+                                step="0.001"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>
+                    Hover Thrust Estimate
+                    <img
+                        class="tooltip-trigger"
+                        src="../images/question-circle.svg"
+                        data-tippy-content="Optional: Enter number of motors and total mass to estimate hover thrust. Use MOT_HOVER_LEARN rather than setting the estimated value explicitly. The learned value may be useful to help validate the generated thrust curve."
+                        data-tippy-maxWidth="750px"
+                    />
+                </legend>
+                <div class="param-grid" style="padding-top: 0px">
+                    <div class="param-column">
+                        <div
+                            class="param-row"
+                            title="Number of thrust producing motors."
+                        >
+                            <label>Number of motors</label>
+                            <input
+                                id="MOTOR_COUNT"
+                                name="MOTOR_COUNT"
+                                type="number"
+                                value="4"
+                                min="1"
+                                max="12"
+                            />
+                        </div>
+                        <div
+                            id="hover-thrust-estimate"
+                            class="param-row"
+                        >
+                            <input
+                                id="MOT_THST_HOVER"
+                                name="MOT_THST_HOVER"
+                                type="number"
+                                disabled
+                            />
+                        </div>
+                    </div>
+                    <div class="param-column">
+                        <div
+                            class="param-row"
+                            title="Total mass in kg. 0 to disable hover thrust estimate."
+                        >
+                            <label>Mass (with battery)</label>
+                            <input
+                                id="COPTER_MASS"
+                                name="COPTER_MASS"
+                                type="number"
+                                min="0"
+                            />
+                            kg
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="plots-container">
+                <div class="thrust-plot-container">
+                    <div id="thrust-expo-plot" class="thrust-plot"></div>
+                </div>
+
+                <div class="thrust-plot-container">
+                    <div id="thrust-error-plot" class="thrust-plot"></div>
+                </div>
+
+                <div class="thrust-plot-container">
+                    <div id="thrust-pwm-plot" class="thrust-plot"></div>
+                </div>
+            </div>
+
+            <div id="thrust-table"></div>
+        </div>
+    </body>
+</html>

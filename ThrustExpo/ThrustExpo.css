@@ -1,0 +1,139 @@
+h1 {
+    margin-bottom: 0px;
+}
+
+h1 a {
+    color: #000000;
+    text-decoration: none;
+}
+
+fieldset {
+    width: 100%;
+    width: 550px;
+    font-family: sans-serif;
+    font-size: 0.8rem;
+    padding-top: 10px;
+    margin-bottom: 10px;
+}
+
+div.plotly-notifier {
+    visibility: hidden;
+}
+
+img.tooltip-trigger {
+    width: 1em;
+    vertical-align: bottom;
+}
+
+.tippy-box {
+    font-size: 1rem;
+    font-family: sans-serif;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    width: 100%;
+}
+
+.logo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.github-logo-cell img {
+    width: 60px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    width: 100%;
+}
+
+.param-controls {
+    display: flex;
+    justify-content: space-between;
+}
+
+.param-controls-right {
+    display: flex;
+    gap: 1em;
+}
+
+.param-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    padding-top: 10px;
+}
+
+.param-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.param-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.param-row label {
+    font-size: 1rem;
+    font-family: serif;
+    width: 165px;
+    margin: 5px 0px;
+}
+
+.param-row input {
+    width: 50px;
+    margin-right: 5px;
+}
+
+.plots-container {
+    display: flex;
+    flex-direction: row;
+    gap: 0px;
+    flex-wrap: wrap;
+    justify-content: left;
+    margin-bottom: 20px;
+}
+
+.modebar-container {
+    right: 165px !important;
+}
+
+.thrust-plot-container {
+    position: relative;
+    margin-bottom: 10px;
+    max-width: 100%;
+}
+
+.thrust-plot {
+    width: 744px;
+    height: 450px;
+    display: none;
+}
+
+#app-description {
+    width: 100%;
+    max-width: 600px;
+    text-align: justify;
+    padding: 20px 0px;
+}
+
+#thrust-table {
+    font-family: sans-serif;
+    font-size: 0.8rem;
+    width: 100%;
+    max-width: 480px;
+}
+
+#hover-thrust-estimate {
+    display: none;
+}
