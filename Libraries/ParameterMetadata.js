@@ -101,12 +101,12 @@ function set_bitmask_size(name, size) {
 async function load_param_inputs(param_doc, param_names) {
 
     function layout_for_param(name, metadata) {
-        // Grab pram object
+        // Grab param object
         let param = document.getElementById(name)
         if (param == null) {
             return
         }
-        let paragaph = param.parentElement
+        let paragraph = param.parentElement
 
         // label with name linking to input
         let label = document.createElement("label")
@@ -117,25 +117,36 @@ async function load_param_inputs(param_doc, param_names) {
         label.setAttribute('for', param.id)
         label.innerHTML = name
 
-        // Add discription in hover over to both input and label
+        // Add description in hover over to both input and label
         if ("Description" in metadata) {
             label.setAttribute('title', metadata.Description)
             param.setAttribute('title', metadata.Description)
         }
 
         // Label comes before parameter
-        paragaph.insertBefore(label, param)
+        paragraph.insertBefore(label, param)
 
         let allow_values = "Values" in metadata
         if (allow_values && ("paramvalues" in param.dataset) && (param.dataset.paramvalues === 'false')) {
             allow_values = false
         }
 
-        // Add uints
+        // Add units
         if (("Units" in metadata) && !allow_values) {
-            paragaph.appendChild(document.createTextNode(metadata.Units))
+            paragraph.appendChild(document.createTextNode(metadata.Units))
         }
 
+         // use class="constrain" to constrain input to range
+        if (
+            param.type === "number" &&
+            param.classList.contains("constrain") &&
+            "Range" in metadata &&
+            metadata.Range.low !== undefined &&
+            metadata.Range.high !== undefined
+        ) {
+            param.setAttribute("min", metadata.Range.low);
+            param.setAttribute("max", metadata.Range.high);
+        }
 
         if ("Bitmask" in metadata) {
             // Add checkboxes for each bit
@@ -145,10 +156,10 @@ async function load_param_inputs(param_doc, param_names) {
             param.setAttribute('data-type', 32)
 
             let read_bits = function(event) {
-                let paragaph = event.currentTarget.parentElement
+                let paragraph = event.currentTarget.parentElement
 
                 // read bits in bitmask
-                let items = paragaph.querySelectorAll("input[type=checkbox]")
+                let items = paragraph.querySelectorAll("input[type=checkbox]")
                 let value = 0
                 for (let item of items) {
                     if (item.checked) {
@@ -177,12 +188,12 @@ async function load_param_inputs(param_doc, param_names) {
                 }
             }
 
-            paragaph.appendChild(document.createElement('br'))
+            paragraph.appendChild(document.createElement('br'))
             let bit_count = 0
             for (const [bit, desc] of Object.entries(metadata.Bitmask)) {
                 if (bit_count > 2) {
                     // New line after 3 items
-                    paragaph.appendChild(document.createElement('br'))
+                    paragraph.appendChild(document.createElement('br'))
                     bit_count = 0
                 }
                 bit_count++
@@ -200,8 +211,8 @@ async function load_param_inputs(param_doc, param_names) {
                 label.setAttribute('for', bit_name)
                 label.innerHTML = desc + '&nbsp'
 
-                paragaph.appendChild(check)
-                paragaph.appendChild(label)
+                paragraph.appendChild(check)
+                paragraph.appendChild(label)
             }
 
             let set_bits = function(event) {
@@ -230,8 +241,8 @@ async function load_param_inputs(param_doc, param_names) {
             value_list.disabled = param.disabled
             value_list.onchange = param.onchange
 
-            paragaph.appendChild(value_list)
-            paragaph.removeChild(param)
+            paragraph.appendChild(value_list)
+            paragraph.removeChild(param)
         }
 
     }
