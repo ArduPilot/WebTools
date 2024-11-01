@@ -1579,8 +1579,8 @@ function redraw_Spectrogram() {
                 freq = []
 
                 for (let j=0;j<fundamental.freq.length;j++) {
-                    time.push(...(time_array ? fundamental.time[j] : fundamental.time))
-                    freq.push(...fundamental.freq[j])
+                    time = time.concat(time_array ? fundamental.time[j] : fundamental.time)
+                    freq = freq.concat(fundamental.freq[j])
 
                     // Add NAN to remove line from end back to the start
                     time.push(NaN)
