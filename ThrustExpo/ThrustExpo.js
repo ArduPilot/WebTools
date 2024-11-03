@@ -195,174 +195,173 @@ function updateThrustExpoPlot(thrustExpo = null) {
         return;
     }
 
-    // calculate fitness for a given expo value
-    function calculateFitness(expoValue) {
-        const linearizedData = [];
-        const errorData = [];
-        const minThrottle = params.MOT_SPIN_MIN.value * 100;
-        const maxThrottle = params.MOT_SPIN_MAX.value * 100;
-
-        // calculate full range for plotting
-        for (let desired = 0; desired <= 100; desired += 1) {
-            // calculate expo curve value
-            const expoThrottle =
-                ((expoValue -
-                    1 +
-                    Math.sqrt(
-                        (1 - expoValue) * (1 - expoValue) +
-                            4 * expoValue * (desired / 100)
-                    )) /
-                    (2 * expoValue)) *
-                100;
-
-            // interpolate thrust value from measured data
-            const measuredPoint =
-                measuredThrustData.find((p) => p.x >= expoThrottle) ||
-                measuredThrustData[measuredThrustData.length - 1];
-            const prevPoint =
-                measuredThrustData[
-                    Math.max(0, measuredThrustData.indexOf(measuredPoint) - 1)
-                ];
-
-            let interpolatedThrust;
-            if (prevPoint && measuredPoint.x !== prevPoint.x) {
-                const t =
-                    (expoThrottle - prevPoint.x) /
-                    (measuredPoint.x - prevPoint.x);
-                interpolatedThrust =
-                    prevPoint.y + t * (measuredPoint.y - prevPoint.y);
-            } else {
-                interpolatedThrust = measuredPoint.y;
-            }
-
-            linearizedData.push({ x: desired, y: interpolatedThrust });
-        }
-
-        // calculate R-squared only for points within the operating range
-        const operatingPoints = linearizedData.filter(
-            p => p.x >= minThrottle && p.x <= maxThrottle
-        );
-
-        const n = operatingPoints.length;
-        const sumX = operatingPoints.reduce((sum, p) => sum + p.x, 0);
-        const sumY = operatingPoints.reduce((sum, p) => sum + p.y, 0);
-        const sumXY = operatingPoints.reduce((sum, p) => sum + p.x * p.y, 0);
-        const sumXX = operatingPoints.reduce((sum, p) => sum + p.x * p.x, 0);
-
-        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-        const intercept = (sumY - slope * sumX) / n;
-
-        const yMean = sumY / n;
-        const ssTotal = operatingPoints.reduce(
-            (sum, p) => sum + Math.pow(p.y - yMean, 2),
-            0
-        );
-
-        // calculate error data for the full range but only use operating range for optimization
-        const ssResidual = linearizedData.reduce((sum, p) => {
-            const yPredicted = slope * p.x + intercept;
-            const error = ((p.y - yPredicted) / yPredicted) * 100;
-            errorData.push({ x: p.x, y: error });
-            
-            // only include points within operating range for fitness calculation
-            if (p.x >= minThrottle && p.x <= maxThrottle) {
-                return sum + Math.pow(p.y - yPredicted, 2);
-            }
-            return sum;
-        }, 0);
-
-        return {
-            rSquared: 1 - ssResidual / ssTotal,
-            linearizedData,
-            errorData,
-            slope,
-            intercept,
-        };
+    // Sort into arrays
+    const data_length = thrustData.length
+    const data = {
+        pwm: new Array(data_length),
+        thrust: new Array(data_length),
+        voltage: new Array(data_length),
+        current: new Array(data_length)
+    }
+    for (let i = 0; i < data_length; i++) {
+        data.pwm[i] = thrustData[i].pwm
+        data.thrust[i] = thrustData[i].thrust
+        data.voltage[i] = thrustData[i].voltage
+        data.current[i] = thrustData[i].current
     }
 
-    const pwmMin =
-        params.MOT_PWM_MIN.value +
-        params.MOT_SPIN_MIN.value *
-            (params.MOT_PWM_MAX.value - params.MOT_PWM_MIN.value);
-    const pwmMax =
-        params.MOT_PWM_MIN.value +
-        params.MOT_SPIN_MAX.value *
-            (params.MOT_PWM_MAX.value - params.MOT_PWM_MIN.value);
-    const maxVoltage =
-        Math.max(...thrustData.map((row) => Number(row.voltage))) || 1;
+    // Test at actuator values from 0 to 1
+    const actuator_test_values = array_from_range(0.0, 1.0, 0.001)
 
-    const measuredThrustData = thrustData.reduceRight((acc, row) => {
-        // normalize throttle across voltage and pwm range
-        const voltage = row.voltage || 1;
-        const x =
-            ((100 * voltage) / maxVoltage) *
-            Math.max(0, (row.pwm - pwmMin) / (pwmMax - pwmMin));
-        // only include data points where throttle is between 0 and 100
-        if (x > 0 && x <= 100) {
-            acc.unshift({ x, y: row.thrust });
+    const MOT_PWM_MIN = parseFloat(params.MOT_PWM_MIN.value)
+    const MOT_PWM_MAX = parseFloat(params.MOT_PWM_MAX.value)
+
+    const MOT_SPIN_MIN = parseFloat(params.MOT_SPIN_MIN.value)
+    const MOT_SPIN_MAX = parseFloat(params.MOT_SPIN_MAX.value)
+
+    function get_corrected_thrust(curve_expo) {
+
+        // Helper function allows direct copy of AP linearisation code
+        function constrain_float(amt, low, high) {
+            if (amt < low) {
+                return low
+            }
+
+            if (amt > high) {
+                return high
+            }
+
+            return amt
         }
-        return acc;
-    }, []);
 
-    let fitness = 0;
-    let linearizedResult = null;
+        // Helper function allows direct copy of AP linearisation code
+        function is_zero(val) {
+            return val == 0.0
+        }
 
+        // Helper function allows direct copy of AP linearisation code
+        function safe_sqrt(val) {
+            return Math.sqrt(val)
+        }
+
+        // https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp#L116
+        // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
+        function apply_thrust_curve_and_volt_scaling(thrust)
+        {
+            const battery_scale = 1.0;
+            const lift_max = 1.0;
+
+            /*
+                AP uses estimated resting voltage for correction, we can assume constant resting voltage for the duration of the test
+                if (is_positive(batt_voltage_filt.get())) {
+                    battery_scale = 1.0 / batt_voltage_filt.get();
+                }
+            */
+
+            // apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
+            const thrust_curve_expo = constrain_float(curve_expo, -1.0, 1.0);
+            if (is_zero(thrust_curve_expo)) {
+                // zero expo means linear, avoid floating point exception for small values
+                return lift_max * thrust * battery_scale;
+            }
+            const throttle_ratio = ((thrust_curve_expo - 1.0) + safe_sqrt((1.0 - thrust_curve_expo) * (1.0 - thrust_curve_expo) + 4.0 * thrust_curve_expo * lift_max * thrust)) / (2.0 * thrust_curve_expo);
+            return constrain_float(throttle_ratio * battery_scale, 0.0, 1.0);
+        }
+
+
+        // https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp#L101
+        // converts desired thrust to linearized actuator output in a range of 0~1
+        function thrust_to_actuator(thrust_in) {
+            thrust_in = constrain_float(thrust_in, 0.0, 1.0)
+            return MOT_SPIN_MIN + (MOT_SPIN_MAX - MOT_SPIN_MIN) * apply_thrust_curve_and_volt_scaling(thrust_in)
+        }
+
+        // https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Motors/AP_MotorsMulticopter.cpp#L405-L406
+        // convert actuator output (0~1) range to pwm range
+        function output_to_pwm(actuator) {
+            return MOT_PWM_MIN + (MOT_PWM_MAX - MOT_PWM_MIN) * actuator
+        }
+
+        // Run the actuator demand through the AP equations to get a PWM output
+        const len = actuator_test_values.length
+        let pwm = new Array(len)
+        for (let i = 0; i < len; i++) {
+            const actuator = thrust_to_actuator(actuator_test_values[i])
+            pwm[i] = output_to_pwm(actuator)
+        }
+
+        // Interpolate the thrust for the given PWM
+        const corrected_thrust = linear_interp(data.thrust, data.pwm, pwm)
+
+        // Differentiate, good linearisation has constant gradient
+        let gradient = new Array(len-1)
+        for (let i = 0; i < (len-1); i++) {
+            gradient[i] = (corrected_thrust[i+1] - corrected_thrust[i]) / (actuator_test_values[i+1] - actuator_test_values[i])
+        }
+
+        // Standard deviation
+        const mean = array_mean(gradient)
+        let std_deviation_sum = 0.0
+        for (let i = 0; i < len; i++) {
+            std_deviation_sum += (gradient[i] - mean)  ** 2
+        }
+        const std_deviation = Math.sqrt(std_deviation_sum / gradient.length)
+
+        return {
+            corrected_thrust,
+            gradient,
+            std_deviation,
+            expo: curve_expo
+        }
+    }
+
+    let result;
     if (thrustExpo) {
         // don't optimize if user has provided a value
-        const result = calculateFitness(thrustExpo);
-        fitness = result.rSquared;
-        linearizedResult = result;
+        result = get_corrected_thrust(thrustExpo);
     } else {
         // find optimal expo value
         // test expo values from -1 to 1 in steps of 0.005
         for (let expo = -1; expo <= 1; expo += 0.005) {
-            const result = calculateFitness(expo);
-            if (result.rSquared > fitness) {
-                fitness = result.rSquared;
-                thrustExpo = expo;
-                linearizedResult = result;
+            const test_result = get_corrected_thrust(expo);
+            if ((result == null) || (test_result.error_val < result.error_val)) {
+                result = test_result
             }
         }
     }
 
+    // Calculate uncorrected thrust by converting PWM to actuator value
+    let uncorrected = { actuator: [], thrust: []}
+    for (let i = 0; i < data_length; i++) {
+        const throttle = (data.pwm[i] - MOT_PWM_MIN) / (MOT_PWM_MAX - MOT_PWM_MIN)
+        if ((throttle < MOT_SPIN_MIN) || (throttle > MOT_SPIN_MAX)) {
+            // Only plot value in the valid range
+            continue
+        }
+        uncorrected.actuator.push(((throttle - MOT_SPIN_MIN) / (MOT_SPIN_MAX - MOT_SPIN_MIN)) * 100.0)
+        uncorrected.thrust.push(data.thrust[i])
+    }
+
     // update the parameter with the optimal value
-    params.MOT_THST_EXPO.value = thrustExpo;
-    document.getElementById("MOT_THST_EXPO").value = thrustExpo.toFixed(3);
+    params.MOT_THST_EXPO.value = result.expo;
+    document.getElementById("MOT_THST_EXPO").value = thrustExpo.toFixed(result.expo);
 
-    const linearizedThrustData = linearizedResult.linearizedData;
+    const linearizedThrustData = result.corrected_thrust;
 
-    // generate linear regression line
-    const linearFitnessData = [
-        { x: 0, y: linearizedResult.intercept },
-        {
-            x: 100,
-            y: linearizedResult.slope * 100 + linearizedResult.intercept,
-        },
-    ];
+    const actuator_pct = array_scale(actuator_test_values, 100.0)
 
     thrustExpoPlot.data = [
         {
-            x: measuredThrustData.map((point) => point.x),
-            y: measuredThrustData.map((point) => point.y),
+            x: uncorrected.actuator,
+            y: uncorrected.thrust,
             name: "Measured Thrust",
             mode: "lines",
         },
         {
-            x: linearizedThrustData.map((point) => point.x),
-            y: linearizedThrustData.map((point) => point.y),
+            x: actuator_pct,
+            y: result.corrected_thrust,
             name: "Linearized Thrust",
             mode: "lines",
-        },
-        {
-            x: linearFitnessData.map((point) => point.x),
-            y: linearFitnessData.map((point) => point.y),
-            name: `Fitness: ${(linearizedResult.rSquared * 100).toFixed(3)}%`,
-            mode: "lines",
-            line: {
-                dash: "4px,3px",
-                width: 1,
-                color: "gray",
-            },
         },
     ];
 
