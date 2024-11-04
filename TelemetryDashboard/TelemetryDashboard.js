@@ -1,4 +1,160 @@
 // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
+
+function remapJson(json) {
+    json.message._header = {
+      srcSystem: json.system_id,
+      srcComponent: json.component_id,
+    }
+    json.message._name = json.message.type
+    json.message._id = message_ids[json.message.type]
+    if (json.message.type === 'STATUSTEXT') {
+      json.message.text = json.message.text.join('')
+    }
+
+    return json.message
+}
+
+const message_ids = {
+  BAD_DATA :-1,
+  HEARTBEAT: 0,
+  SYS_STATUS: 1,
+  SYSTEM_TIME: 2,
+  PING: 4,
+  CHANGE_OPERATOR_CONTROL: 5,
+  CHANGE_OPERATOR_CONTROL_ACK: 6,
+  AUTH_KEY: 7,
+  SET_MODE: 11,
+  PARAM_REQUEST_READ: 20,
+  PARAM_REQUEST_LIST: 21,
+  PARAM_VALUE: 22,
+  PARAM_SET: 23,
+  GPS_RAW_INT: 24,
+  GPS_STATUS: 25,
+  SCALED_IMU: 26,
+  RAW_IMU: 27,
+  RAW_PRESSURE: 28,
+  SCALED_PRESSURE: 29,
+  ATTITUDE: 30,
+  ATTITUDE_QUATERNION: 31,
+  LOCAL_POSITION_NED: 32,
+  GLOBAL_POSITION_INT: 33,
+  RC_CHANNELS_SCALED: 34,
+  RC_CHANNELS_RAW: 35,
+  SERVO_OUTPUT_RAW: 36,
+  MISSION_REQUEST_PARTIAL_LIST: 37,
+  MISSION_WRITE_PARTIAL_LIST: 38,
+  MISSION_ITEM: 39,
+  MISSION_REQUEST: 40,
+  MISSION_SET_CURRENT: 41,
+  MISSION_CURRENT: 42,
+  MISSION_REQUEST_LIST: 43,
+  MISSION_COUNT: 44,
+  MISSION_CLEAR_ALL: 45,
+  MISSION_ITEM_REACHED: 46,
+  MISSION_ACK: 47,
+  SET_GPS_GLOBAL_ORIGIN: 48,
+  GPS_GLOBAL_ORIGIN: 49,
+  PARAM_MAP_RC: 50,
+  MISSION_REQUEST_INT: 51,
+  SAFETY_SET_ALLOWED_AREA: 54,
+  SAFETY_ALLOWED_AREA: 55,
+  ATTITUDE_QUATERNION_COV: 61,
+  NAV_CONTROLLER_OUTPUT: 62,
+  GLOBAL_POSITION_INT_COV: 63,
+  LOCAL_POSITION_NED_COV: 64,
+  RC_CHANNELS: 65,
+  REQUEST_DATA_STREAM: 66,
+  DATA_STREAM: 67,
+  MANUAL_CONTROL: 69,
+  RC_CHANNELS_OVERRIDE: 70,
+  MISSION_ITEM_INT: 73,
+  VFR_HUD: 74,
+  COMMAND_INT: 75,
+  COMMAND_LONG: 76,
+  COMMAND_ACK: 77,
+  MANUAL_SETPOINT: 81,
+  SET_ATTITUDE_TARGET: 82,
+  ATTITUDE_TARGET: 83,
+  SET_POSITION_TARGET_LOCAL_NED: 84,
+  POSITION_TARGET_LOCAL_NED: 85,
+  SET_POSITION_TARGET_GLOBAL_INT: 86,
+  POSITION_TARGET_GLOBAL_INT: 87,
+  LOCAL_POSITION_NED_SYSTEM_GLOBAL_OFFSET: 89,
+  HIL_STATE: 90,
+  HIL_CONTROLS: 91,
+  HIL_RC_INPUTS_RAW: 92,
+  HIL_ACTUATOR_CONTROLS: 93,
+  OPTICAL_FLOW: 100,
+  GLOBAL_VISION_POSITION_ESTIMATE: 101,
+  VISION_POSITION_ESTIMATE: 102,
+  VISION_SPEED_ESTIMATE: 103,
+  VICON_POSITION_ESTIMATE: 104,
+  HIGHRES_IMU: 105,
+  OPTICAL_FLOW_RAD: 106,
+  HIL_SENSOR: 107,
+  SIM_STATE: 108,
+  RADIO_STATUS: 109,
+  FILE_TRANSFER_PROTOCOL: 110,
+  TIMESYNC: 111,
+  CAMERA_TRIGGER: 112,
+  HIL_GPS: 113,
+  HIL_OPTICAL_FLOW: 114,
+  HIL_STATE_QUATERNION: 115,
+  SCALED_IMU2: 116,
+  LOG_REQUEST_LIST: 117,
+  LOG_ENTRY: 118,
+  LOG_REQUEST_DATA: 119,
+  LOG_DATA: 120,
+  LOG_ERASE: 121,
+  LOG_REQUEST_END: 122,
+  GPS_INJECT_DATA: 123,
+  GPS2_RAW: 124,
+  POWER_STATUS: 125,
+  SERIAL_CONTROL: 126,
+  GPS_RTK: 127,
+  GPS2_RTK: 128,
+  SCALED_IMU3: 129,
+  DATA_TRANSMISSION_HANDSHAKE: 130,
+  ENCAPSULATED_DATA: 131,
+  DISTANCE_SENSOR: 132,
+  TERRAIN_REQUEST: 133,
+  TERRAIN_DATA: 134,
+  TERRAIN_CHECK: 135,
+  TERRAIN_REPORT: 136,
+  SCALED_PRESSURE2: 137,
+  ATT_POS_MOCAP: 138,
+  SET_ACTUATOR_CONTROL_TARGET: 139,
+  ACTUATOR_CONTROL_TARGET: 140,
+  ALTITUDE: 141,
+  RESOURCE_REQUEST: 142,
+  SCALED_PRESSURE3: 143,
+  FOLLOW_TARGET: 144,
+  CONTROL_SYSTEM_STATE: 146,
+  BATTERY_STATUS: 147,
+  AUTOPILOT_VERSION: 148,
+  LANDING_TARGET: 149,
+  ESTIMATOR_STATUS: 230,
+  WIND_COV: 231,
+  GPS_INPUT: 232,
+  GPS_RTCM_DATA: 233,
+  HIGH_LATENCY: 234,
+  HIGH_LATENCY2: 235,
+  VIBRATION: 241,
+  HOME_POSITION: 242,
+  SET_HOME_POSITION: 243,
+  MESSAGE_INTERVAL: 244,
+  EXTENDED_SYS_STATE: 245,
+  ADSB_VEHICLE: 246,
+  COLLISION: 247,
+  V2_EXTENSION: 248,
+  MEMORY_VECT: 249,
+  DEBUG_VECT: 250,
+  NAMED_VALUE_FLOAT: 251,
+  NAMED_VALUE_INT: 252,
+  STATUSTEXT: 253,
+  DEBUG: 254,
+}
+
 function setup_connect(button_svg, button_color) {
 
     const tip_div = document.createElement("div")
@@ -115,6 +271,17 @@ function setup_connect(button_svg, button_color) {
         }
 
         ws.onmessage = (msg) => {
+            if (msg.data[0] == "{") {
+              // this is a full json message
+              const m = remapJson(JSON.parse(msg.data))
+              for (const widget of grid.getGridItems()) {
+                  widget.MAVLink_msg_handler(m)
+              }
+              for (const widget of test_grid.getGridItems()) {
+                  widget.MAVLink_msg_handler(m)
+              }
+              return
+            }
             // Feed data to MAVLink parser and forward messages
             for (const char of new Uint8Array(msg.data)) {
                 const m = MAVLink.parseChar(char)
