@@ -211,7 +211,8 @@ function updateThrustExpoPlot(thrustExpo = null) {
     }
 
     // Test at actuator values from 0 to 1
-    const actuator_test_values = array_from_range(0.0, 1.0, 0.001)
+    const actuator_test_step = 0.001
+    const actuator_test_values = array_from_range(0.0, 1.0, actuator_test_step)
 
     const MOT_PWM_MIN = parseFloat(params.MOT_PWM_MIN.value)
     const MOT_PWM_MAX = parseFloat(params.MOT_PWM_MAX.value)
@@ -296,13 +297,13 @@ function updateThrustExpoPlot(thrustExpo = null) {
         // Differentiate, good linearisation has constant gradient
         let gradient = new Array(len-1)
         for (let i = 0; i < (len-1); i++) {
-            gradient[i] = (corrected_thrust[i+1] - corrected_thrust[i]) / (actuator_test_values[i+1] - actuator_test_values[i])
+            gradient[i] = (corrected_thrust[i+1] - corrected_thrust[i]) / actuator_test_step
         }
 
         // Standard deviation
         const mean = array_mean(gradient)
         let std_deviation_sum = 0.0
-        for (let i = 0; i < len; i++) {
+        for (let i = 0; i < (len-1); i++) {
             std_deviation_sum += (gradient[i] - mean)  ** 2
         }
         const std_deviation = Math.sqrt(std_deviation_sum / gradient.length)
@@ -310,6 +311,7 @@ function updateThrustExpoPlot(thrustExpo = null) {
         return {
             corrected_thrust,
             gradient,
+            mean,
             std_deviation,
             expo: curve_expo
         }
@@ -324,27 +326,23 @@ function updateThrustExpoPlot(thrustExpo = null) {
         // test expo values from -1 to 1 in steps of 0.005
         for (let expo = -1; expo <= 1; expo += 0.005) {
             const test_result = get_corrected_thrust(expo);
-            if ((result == null) || (test_result.error_val < result.error_val)) {
+            if ((result == null) || (test_result.std_deviation < result.std_deviation)) {
                 result = test_result
             }
         }
     }
 
     // Calculate uncorrected thrust by converting PWM to actuator value
-    let uncorrected = { actuator: [], thrust: []}
+    const uncorrected_actuator = new Array(data_length)
     for (let i = 0; i < data_length; i++) {
         const throttle = (data.pwm[i] - MOT_PWM_MIN) / (MOT_PWM_MAX - MOT_PWM_MIN)
-        if ((throttle < MOT_SPIN_MIN) || (throttle > MOT_SPIN_MAX)) {
-            // Only plot value in the valid range
-            continue
-        }
-        uncorrected.actuator.push(((throttle - MOT_SPIN_MIN) / (MOT_SPIN_MAX - MOT_SPIN_MIN)) * 100.0)
-        uncorrected.thrust.push(data.thrust[i])
+        uncorrected_actuator[i] = (throttle - MOT_SPIN_MIN) / (MOT_SPIN_MAX - MOT_SPIN_MIN)
     }
+    const uncorrected_thrust = linear_interp(data.thrust, uncorrected_actuator, actuator_test_values)
 
     // update the parameter with the optimal value
     params.MOT_THST_EXPO.value = result.expo;
-    document.getElementById("MOT_THST_EXPO").value = thrustExpo.toFixed(result.expo);
+    document.getElementById("MOT_THST_EXPO").value = result.expo.toFixed(3);
 
     const linearizedThrustData = result.corrected_thrust;
 
@@ -352,8 +350,8 @@ function updateThrustExpoPlot(thrustExpo = null) {
 
     thrustExpoPlot.data = [
         {
-            x: uncorrected.actuator,
-            y: uncorrected.thrust,
+            x: actuator_pct,
+            y: uncorrected_thrust,
             name: "Measured Thrust",
             mode: "lines",
         },
@@ -370,58 +368,35 @@ function updateThrustExpoPlot(thrustExpo = null) {
         const requiredThrust =
             params.COPTER_MASS.value / params.MOTOR_COUNT.value;
 
-        // find two points that bound required thrust
-        let lowerPoint = null;
-        let upperPoint = null;
+        const hoverThrottle = linear_interp(actuator_pct, result.corrected_thrust, [requiredThrust])[0]
 
-        for (let i = 0; i < linearizedThrustData.length; i++) {
-            if (linearizedThrustData[i].y > requiredThrust) {
-                upperPoint = linearizedThrustData[i];
-                lowerPoint = linearizedThrustData[i - 1];
-                break;
+        if (hoverThrottle >= 0 && hoverThrottle <= 100) {
+            // update MOT_THST_HOVER estimate (to 4 decimal places)
+            params.MOT_THST_HOVER.value = Math.round(hoverThrottle / 100 * 10000) / 10000;
+            params.MOT_THST_HOVER.save = true;
+            const hoverContainer = document.getElementById(
+                "hover-thrust-estimate"
+            );
+            const hoverInput = document.getElementById("MOT_THST_HOVER");
+            if (hoverContainer && hoverInput) {
+                hoverInput.value = params.MOT_THST_HOVER.value.toFixed(3);
+                hoverContainer.style.display = "block";
             }
-        }
 
-        if (lowerPoint && upperPoint) {
-            // interpolate between the bounding points
-            const ratio =
-                (requiredThrust - lowerPoint.y) / (upperPoint.y - lowerPoint.y);
-            const hoverThrottle =
-                lowerPoint.x + ratio * (upperPoint.x - lowerPoint.x);
-
-            if (hoverThrottle >= 0 && hoverThrottle <= 100) {
-                // update MOT_THST_HOVER estimate (to 4 decimal places)
-                params.MOT_THST_HOVER.value = Math.round(hoverThrottle / 100 * 10000) / 10000;
-                params.MOT_THST_HOVER.save = true;
-                const hoverContainer = document.getElementById(
-                    "hover-thrust-estimate"
-                );
-                const hoverInput = document.getElementById("MOT_THST_HOVER");
-                if (hoverContainer && hoverInput) {
-                    hoverInput.value = params.MOT_THST_HOVER.value.toFixed(3);
-                    hoverContainer.style.display = "block";
-                }
-
-                // add hover point to plot
-                thrustExpoPlot.data.push({
-                    x: [hoverThrottle],
-                    y: [requiredThrust],
-                    name: "THST_HOVER",
-                    mode: "markers",
-                    marker: {
-                        size: 6,
-                        symbol: "circle",
-                        color: "green",
-                    },
-                });
-            }
+            // add hover point to plot
+            thrustExpoPlot.data.push({
+                x: [hoverThrottle],
+                y: [requiredThrust],
+                name: "THST_HOVER",
+                mode: "markers",
+                marker: {
+                    size: 6,
+                    symbol: "circle",
+                    color: "green",
+                },
+            });
         }
     }
-
-    // update layout with vertical markers
-    const { shapes, annotations } = createSpinMarkers();
-    thrustExpoPlot.layout.shapes = shapes;
-    thrustExpoPlot.layout.annotations = annotations;
 
     Plotly.react(
         thrustExpoPlot.plot,
@@ -429,56 +404,21 @@ function updateThrustExpoPlot(thrustExpo = null) {
         thrustExpoPlot.layout
     );
     thrustExpoPlot.plot.style.display = "block";
-    return linearizedResult.errorData;
-}
 
-function updateThrustErrorPlot(errorData) {
-    if (!errorData) {
-        thrustErrorPlot.data = [];
-        Plotly.react(
-            thrustErrorPlot.plot,
-            thrustErrorPlot.data,
-            thrustErrorPlot.layout
-        );
-        return;
-    }
-
+    // Gradient plot
     thrustErrorPlot.data = [
         {
-            x: errorData.map((point) => point.x),
-            y: errorData.map((point) => point.y),
-            name: "Linearization<br>Error (%)",
+            x: array_scale(array_offset(actuator_test_values.slice(0, -1), actuator_test_step * 0.5), 100.0),
+            y: result.gradient,
+            name: "Linearized Thrust<br>Std dev: " + result.std_deviation.toFixed(3),
             mode: "lines",
             line: {
                 color: "indianred",
             },
         },
     ];
-
-    // get vertical markers
-    const { shapes: verticalMarkers, annotations } = createSpinMarkers();
-
-    // add a zero reference line at y=0
-    const allShapes = [
-        {
-            type: "line",
-            x0: 0,
-            x1: 100,
-            y0: 0,
-            y1: 0,
-            line: {
-                dash: "4px,3px",
-                width: 1,
-                color: "gray",
-            },
-        },
-        ...verticalMarkers
-    ];
-
-    thrustErrorPlot.layout.shapes = allShapes;
-    thrustErrorPlot.layout.annotations = annotations;
-
-    // update the plot
+    thrustErrorPlot.layout.shapes[0].y0 = result.mean
+    thrustErrorPlot.layout.shapes[0].y1 = result.mean
     Plotly.react(
         thrustErrorPlot.plot,
         thrustErrorPlot.data,
@@ -539,7 +479,7 @@ function initThrustExpoPlot() {
             range: [0, 100],
         },
         yaxis: {
-            title: { text: "Thrust (kgf)" },
+            title: { text: "Thrust" },
             zeroline: false,
             showline: true,
             mirror: true,
@@ -577,7 +517,7 @@ function initThrustErrorPlot() {
             range: [0, 100],
         },
         yaxis: {
-            title: { text: "Error (%)" },
+            title: { text: "Thrust gradient (delta thrust / delta throttle)" },
             zeroline: false,
             showline: true,
             mirror: true,
@@ -628,7 +568,7 @@ function initThrustPwmPlot() {
             range: [params.MOT_PWM_MIN.value, params.MOT_PWM_MAX.value],
         },
         yaxis: {
-            title: { text: "Thrust (kgf)" },
+            title: { text: "Thrust" },
             zeroline: false,
             showline: true,
             mirror: true,
@@ -739,7 +679,7 @@ function initThrustTable() {
                 validator: "numeric",
             },
             {
-                title: "Thrust (kgf)",
+                title: "Thrust",
                 field: "thrust",
                 hozAlign: "right",
                 validator: "numeric",
@@ -818,8 +758,7 @@ function initThrustTable() {
 }
 
 function updatePlotData(thrustExpo = null) {
-    const thrustErrorData = updateThrustExpoPlot(thrustExpo);
-    updateThrustErrorPlot(thrustErrorData);
+    updateThrustExpoPlot(thrustExpo);
     updateThrustPwmPlot();
 }
 
