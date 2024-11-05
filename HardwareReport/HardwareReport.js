@@ -1714,7 +1714,7 @@ function load_can(log) {
                 version: CAND.Major[i] + "." + CAND.Minor[i],
                 UID1: CAND.UID1[i],
                 UID2: CAND.UID2[i],
-                hash: CAND.Version[i].toString(16)
+                hash: CAND.Version[i].toString(16).padStart(8, '0')
             }
 
             // Check for duplicates
