@@ -1,0 +1,103 @@
+{
+  "header": {
+    "version": 1
+  },
+  "widget": {
+    "x": "3",
+    "y": "3",
+    "w": "5",
+    "h": "9",
+    "type": "WidgetCustomHTML",
+    "options": {
+      "form": {
+        "components": [
+          {
+            "label": "OpenAI API key",
+            "key": "key",
+            "type": "textfield",
+            "input": true,
+            "tableView": true,
+            "id": "epyhzxa",
+            "placeholder": "",
+            "prefix": "",
+            "customClass": "",
+            "suffix": "",
+            "multiple": false,
+            "defaultValue": null,
+            "protected": false,
+            "unique": false,
+            "persistent": true,
+            "hidden": false,
+            "clearOnHide": true,
+            "refreshOn": "",
+            "redrawOn": "",
+            "modalEdit": false,
+            "dataGridLabel": false,
+            "labelPosition": "top",
+            "description": "",
+            "errorLabel": "",
+            "tooltip": "",
+            "hideLabel": false,
+            "tabindex": "",
+            "disabled": false,
+            "autofocus": false,
+            "dbIndex": false,
+            "customDefaultValue": "",
+            "calculateValue": "",
+            "calculateServer": false,
+            "widget": {
+              "type": "input"
+            },
+            "attributes": {},
+            "validateOn": "change",
+            "validate": {
+              "required": false,
+              "custom": "",
+              "customPrivate": false,
+              "strictDateValidation": false,
+              "multiple": false,
+              "unique": false,
+              "minLength": "",
+              "maxLength": "",
+              "pattern": ""
+            },
+            "conditional": {
+              "show": null,
+              "when": null,
+              "eq": ""
+            },
+            "overlay": {
+              "style": "",
+              "left": "",
+              "top": "",
+              "width": "",
+              "height": ""
+            },
+            "allowCalculateOverride": false,
+            "encrypted": false,
+            "showCharCount": false,
+            "showWordCount": false,
+            "properties": {},
+            "allowMultipleMasks": false,
+            "addons": [],
+            "mask": false,
+            "inputType": "text",
+            "inputFormat": "plain",
+            "inputMask": "",
+            "displayMask": "",
+            "spellcheck": true,
+            "truncateMultipleSpaces": false
+          }
+        ]
+      },
+      "form_content": {
+        "key": ""
+      },
+      "about": {
+        "name": "Chat assistant",
+        "info": "Chat assistant using open AI api based on the custom HTML widget."
+      },
+      "custom_HTML": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\"/>\n    <title>Custom HTML Example</title>\n\n    <script src=\"https://code.jquery.com/jquery-3.3.1.min.js\"></script>\n    <script src=\"https://unpkg.com/jquery.terminal@2.x.x/js/jquery.terminal.min.js\"></script>\n    <link rel=\"stylesheet\" href=\"https://unpkg.com/jquery.terminal@2.x.x/css/jquery.terminal.min.css\"/>\n<body>\n    <div id=\"terminal\" style=\"position:absolute; top:0; bottom:0; left:0; right:0; margin:10px; border:5px solid; border-radius:10px; border-color:#c8c8c8; background-color:#000000; padding;5px;\"></div>\n    <div id=\"loading\" style=\"position:absolute; top:0; bottom:0; left:0; right:0; margin:10px; border:5px solid; border-radius:10px; border-color:#c8c8c8; background-color:#ffffff; padding;5px;\">\n        Loading\n    </div>\n</body>\n<script type=\"module\">\n\n    // User functions which the assistant can call\n    function function_call(name, args) {\n        switch (name) {\n            case \"get_vehicle_type\":\n                return JSON.stringify({ vehicle_type: \"copter\" })\n\n            case \"get_mode_mapping\":\n                return JSON.stringify([\n                    { name: \"STABILIZE\",    number: 0 },\n                    { name: \"ACRO\",         number: 1 },\n                    { name: \"ALT_HOLD\",     number: 2 },\n                    { name: \"AUTO\",         number: 3 },\n                    { name: \"GUIDED\",       number: 4 },\n                    { name: \"LOITER\",       number: 5 },\n                    { name: \"RTL\",          number: 6 },\n                    { name: \"CIRCLE\",       number: 7 },\n                    { name: \"LAND\",         number: 9 },\n                    { name: \"DRIFT\",        number: 11 },\n                    { name: \"SPORT\",        number: 13 },\n                    { name: \"FLIP\",         number: 14 },\n                    { name: \"AUTOTUNE\",     number: 15 },\n                    { name: \"POSHOLD\",      number: 16 },\n                    { name: \"BRAKE\",        number: 17 },\n                    { name: \"THROW\",        number: 18 },\n                    { name: \"AVOID_ADSB\",   number: 19 },\n                    { name: \"GUIDED_NOGPS\", number: 20 },\n                    { name: \"SMART_RTL\",    number: 21 },\n                    { name: \"FLOWHOLD\",     number: 22 },\n                    { name: \"FOLLOW\",       number: 23 },\n                    { name: \"ZIGZAG\",       number: 24 },\n                    { name: \"SYSTEMID\",     number: 25 },\n                    { name: \"AUTOROTATE\",   number: 26 },\n                    { name: \"AUTO_RTL\",     number: 27 },\n                    { name: \"TURTLE\",       number: 28 },\n                ])\n        }\n\n        console.log(\"Unkown function: \" + name + \" with args: \" + args )\n        return \"\"\n    }\n \n    // Incomming messages\n    let messages = {}\n\n    // Init terminal\n    const term = $('#terminal').terminal(user_input, { \n        greetings: null,\n        history: false\n    })\n\n    import EventEmitter from 'https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/+esm'\n\n    class EventHandler extends EventEmitter {\n        constructor(client) {\n            super()\n            this.client = client;\n        }\n\n        async onEvent(event) {\n            try {\n                // Retrieve events that are denoted with 'requires_action'\n                // since these will have our tool_calls\n                if (event.event === \"thread.run.requires_action\") {\n                    await this.handleRequiresAction(\n                        event.data,\n                        event.data.id,\n                        event.data.thread_id,\n                    )\n\n                } else if (event.event == \"thread.message.completed\") {\n                    const id = event.data.id\n                    if (id in messages) {\n                        term.update(messages[id].index, messages[id].content + \"\\n]\")\n                        delete messages[id]\n                    }\n\n                } else if (event.event == \"thread.run.created\") {\n                    // Disable termnial\n                    term.freeze(true)\n\n                } else if (event.event == \"thread.run.completed\") {\n                    // Re-enable terminal\n                    term.freeze(false)\n\n                } else if (event.event == \"thread.message.delta\") {\n                    const id = event.data.id\n                    if (!(id in messages)) {\n                        term.echo(\"\")\n                        messages[id] = { index: term.last_index(), content: \"[[g;green;]\" }\n                    }\n\n                    // Add escape charicter to square brackets so as not to mess up formatting\n                    let delta = event.data.delta.content[0].text.value\n                    delta = delta.replace(\"[\", \"\\[\")\n                    delta = delta.replace(\"]\", \"\\]\")\n\n                    messages[id].content += delta\n                    term.update(messages[id].index, messages[id].content + \"]\")\n\n                } else {\n                    console.log(event)\n                }\n\n            } catch (error) {\n                console.error(\"Error handling event:\", error)\n            }\n        }\n\n        async handleRequiresAction(data, runId, threadId) {\n            try {\n                const toolOutputs = data.required_action.submit_tool_outputs.tool_calls.map((toolCall) => {\n                    return {\n                        tool_call_id: toolCall.id,\n                        output: function_call(toolCall.function.name, toolCall.function.arguments),\n                    }\n                })\n\n                // Submit all the tool outputs at the same time\n                await this.submitToolOutputs(toolOutputs, runId, threadId)\n            } catch (error) {\n                console.error(\"Error processing required action:\", error)\n            }\n        }\n\n        async submitToolOutputs(toolOutputs, runId, threadId) {\n            try {\n                // Use the submitToolOutputsStream helper\n                const stream = this.client.beta.threads.runs.submitToolOutputsStream(\n                    threadId,\n                    runId,\n                    { tool_outputs: toolOutputs },\n                )\n                for await (const event of stream) {\n                    this.emit(\"event\", event)\n                }\n            } catch (error) {\n                console.error(\"Error submitting tool outputs:\", error)\n            }\n        }\n    }\n\n    let client = null\n    let thread = null\n    let assistant_id = null\n    let stream = null\n    let eventHandler = null\n\n    // Function to handle user input\n    async function user_input(command) {\n        if ((client == null) || (thread == null) || (command == \"\")) {\n            return\n        }\n\n        // Pass command on to thread\n        const message = await client.beta.threads.messages.create(\n            thread.id,\n            {\n                role: \"user\",\n                content: command\n            }\n        )\n\n        run() \n    }\n\n    import OpenAI from \"https://cdn.jsdelivr.net/npm/openai@4.71.0/+esm\"\n\n    function on_messageDelta(delta, snapshot) {\n        console.log(snapshot)\n        const id = snapshot.id\n        if (!(id in messages)) {\n            term.echo(\"\")\n            messages[id] = term.last_index()\n        }\n\n        term.update(messages[id], snapshot.content[0].text.value)\n    }\n\n    function on_textDelta(delta, snapshot) {\n        console.log(delta)\n        console.log(snapshot)\n        const id = delta.id\n        if (!(id in messages)) {\n            term.echo(\"\")\n            messages[id] = term.last_index()\n        }\n\n        term.update(messages[id], snapshot.value)\n    }\n\n    async function run() {\n        const run = client.beta.threads.runs.stream(thread.id, {\n            assistant_id: assistant_id,\n        })\n        .on('event', (event) => eventHandler.emit(\"event\", event))\n    }\n\n\n    let options = null\n    async function init() {\n        if (options == null) {\n            // Wait for options to load\n            setTimeout(init, 100)\n            return\n        }\n\n        const loading_div = document.getElementById(\"loading\")\n        if (!(\"key\" in options) || (options.key == \"\")) {\n            // Need API key\n            // try again in while\n            loading_div.innerHTML = \"Please set API key\"\n            setTimeout(init, 100)\n            return\n        }\n\n        client = new OpenAI({ \n            apiKey: options.key,\n            dangerouslyAllowBrowser: true\n        })\n\n        // Find the AP assistant\n        // This assumes the user has previously created the assistant with python\n        const assistants = await client.beta.assistants.list()\n        for (const assistant of assistants.data) {\n            if (assistant.name == \"ArduPilot Vehicle Control via MAVLink\") {\n                assistant_id = assistant.id\n            }\n        }\n\n        if (assistant_id == null) {\n            loading_div.innerHTML = \"Could not find assistant\"\n            return\n        }\n\n        // New thread to run in.\n        thread = await client.beta.threads.create()\n\n        // Show console\n        loading_div.style.display = \"none\"\n\n        eventHandler = new EventHandler(client)\n        eventHandler.on(\"event\", eventHandler.onEvent.bind(eventHandler))\n\n        stream = await client.beta.threads.runs.stream(\n            thread.id,\n            { assistant_id: assistant_id },\n            eventHandler,\n        )\n\n        // Run assistant\n        run()\n    }\n\n    // Try init in 0.1 seconds, this give time for the added scripts to load\n    setTimeout(init, 100)\n\n    // Runtime function\n    let handle_msg = function (msg) {\n\n    }\n\n    window.addEventListener('message', function (e) {\n        const data = e.data\n\n        // User has changed options\n        if (\"options\" in data) {\n            // Call init once we have some options\n            options = data.options\n        }\n\n        // Incoming MAVLink message\n        if (\"MAVLink\" in data) {\n            handle_msg(data.MAVLink)\n        }\n\n    })\n</script>\n</html>\n"
+    }
+  }
+}
