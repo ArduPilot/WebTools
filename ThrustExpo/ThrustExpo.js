@@ -1,6 +1,5 @@
 const TABLE_ROW_HEIGHT = 22;
-const TABLE_MAX_HEIGHT = 800;
-const PLOT_LEGEND_X = 1.3;
+const TABLE_MAX_HEIGHT = 242;
 const PLOT_MARGIN = { b: 50, l: 50, r: 150, t: 20 };
 
 const params = {
@@ -36,7 +35,7 @@ const params = {
         default: 4,
         save: false,
     },
-    COPTER_MASS: {
+    COPTER_AUW: {
         default: 0,
         save: false,
     },
@@ -386,9 +385,9 @@ function updateThrustExpoPlot(thrustExpo = null) {
     ];
 
     // estimate hover thrust if mass is provided
-    if (params.COPTER_MASS.value > 0 && params.MOTOR_COUNT.value > 0) {
+    if (params.COPTER_AUW.value > 0 && params.MOTOR_COUNT.value > 0) {
         const requiredThrust =
-            params.COPTER_MASS.value / params.MOTOR_COUNT.value;
+            params.COPTER_AUW.value / params.MOTOR_COUNT.value;
 
         const hoverThrottle = linear_interp(
             actuator_pct,
@@ -430,7 +429,6 @@ function updateThrustExpoPlot(thrustExpo = null) {
         thrustExpoPlot.data,
         thrustExpoPlot.layout
     );
-    thrustExpoPlot.plot.style.display = "block";
 
     // Gradient plot
     thrustErrorPlot.data = [
@@ -459,7 +457,6 @@ function updateThrustExpoPlot(thrustExpo = null) {
         thrustErrorPlot.data,
         thrustErrorPlot.layout
     );
-    thrustErrorPlot.plot.style.display = "block";
 }
 
 function updateThrustPwmPlot() {
@@ -500,11 +497,11 @@ function updateThrustPwmPlot() {
 
     // update the plot
     Plotly.react(thrustPwmPlot.plot, thrustPwmPlot.data, thrustPwmPlot.layout);
-    thrustPwmPlot.plot.style.display = "block";
 }
 
 function initThrustExpoPlot() {
     thrustExpoPlot.layout = {
+        autosize: true,
         xaxis: {
             title: { text: "Throttle (%)" },
             type: "linear",
@@ -523,8 +520,6 @@ function initThrustExpoPlot() {
         legend: {
             itemclick: false,
             itemdoubleclick: false,
-            xanchor: "right",
-            x: PLOT_LEGEND_X,
         },
         margin: PLOT_MARGIN,
         shapes: [],
@@ -543,6 +538,7 @@ function initThrustExpoPlot() {
 
 function initThrustErrorPlot() {
     thrustErrorPlot.layout = {
+        autosize: true,
         xaxis: {
             title: { text: "Throttle (%)" },
             type: "linear",
@@ -561,8 +557,6 @@ function initThrustErrorPlot() {
         legend: {
             itemclick: false,
             itemdoubleclick: false,
-            xanchor: "right",
-            x: PLOT_LEGEND_X,
         },
         margin: PLOT_MARGIN,
         shapes: [
@@ -594,6 +588,7 @@ function initThrustErrorPlot() {
 
 function initThrustPwmPlot() {
     thrustPwmPlot.layout = {
+        autosize: true,
         xaxis: {
             title: { text: "PWM (µs)" },
             type: "linear",
@@ -612,8 +607,6 @@ function initThrustPwmPlot() {
         legend: {
             itemclick: false,
             itemdoubleclick: false,
-            xanchor: "right",
-            x: PLOT_LEGEND_X,
         },
         margin: PLOT_MARGIN,
         shapes: [],
@@ -691,7 +684,7 @@ function initThrustTable() {
         rowHeader: {
             resizable: false,
             frozen: true,
-            width: 40,
+            width: 42,
             hozAlign: "center",
             formatter: "rownum",
             cssClass: "range-header-col",
@@ -703,7 +696,7 @@ function initThrustTable() {
             headerHozAlign: "center",
             editor: "input",
             resizable: "header",
-            width: 110,
+            width: 132,
         },
 
         columns: [
@@ -754,7 +747,7 @@ function initThrustTable() {
     let updateTimeout = null;
 
     const onDataChanged = function () {
-        // update table height as necessary
+        //update table height as necessary
         const rowCount = thrustTable.getRows().length;
         const headerHeight =
             thrustTable.element.querySelector(".tabulator-header").offsetHeight;
@@ -800,9 +793,6 @@ function updatePlotData(thrustExpo = null) {
 function reset() {
     const hoverContainer = document.getElementById("hover-thrust-estimate");
     hoverContainer.style.display = "none";
-    thrustExpoPlot.plot.style.display = "none";
-    thrustErrorPlot.plot.style.display = "none";
-    thrustPwmPlot.plot.style.display = "none";
     document.getElementById("paramFile").value = "";
     params.MOT_THST_HOVER.save = false;
     document.querySelectorAll(".param-row input").forEach((input) => {
@@ -822,6 +812,7 @@ function reset() {
 
 function loadExample() {
     thrustTable.setData([
+        // https://docs.google.com/spreadsheets/d/1_75aZqiT_K1CdduhUe4-DjRgx3Alun4p8V2pt6vM5P8/edit?gid=0#gid=0
         { pwm: 1000, thrust: 0.196, voltage: 21.72, current: 0.042 },
         { pwm: 1001, thrust: 0.196, voltage: 21.72, current: 0.042 },
         { pwm: 1012, thrust: 0.196, voltage: 21.72, current: 0.041 },
@@ -899,6 +890,9 @@ function loadExample() {
         { pwm: 1989, thrust: 2.233, voltage: 21.52, current: 13.511 },
         { pwm: 2000, thrust: 2.254, voltage: 21.52, current: 13.854 },
     ]);
+    const copterAuwElement = document.getElementById("COPTER_AUW");
+    copterAuwElement.value = 2.5;
+    copterAuwElement.dispatchEvent(new Event("change"));
 }
 
 // add cleanup function to prevent memory leaks

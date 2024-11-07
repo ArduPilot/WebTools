@@ -60,8 +60,8 @@
                 optional (for reference only - not used in calculation). Once
                 the plot is generated, adjust MOT_THST_EXPO to improve the
                 linear fit. If the curve is poorly matched at the extremes, do
-                not chase a perfect 100% fitness value. Rather, focus on
-                midrange throttle linearity.
+                not chase a perfect fit. Rather, focus on midrange throttle
+                linearity.
             </div>
         </header>
 
@@ -200,36 +200,28 @@
                     <div class="param-column">
                         <div
                             class="param-row"
-                            title="Total mass in kg. 0 to disable hover thrust estimate."
+                            title="All-up weight (AUW) including battery and payload. Must be same units as measured thrust."
                         >
-                            <label>Mass (with battery)</label>
+                            <label>All-up weight (AUW)</label>
                             <input
-                                id="COPTER_MASS"
-                                name="COPTER_MASS"
+                                id="COPTER_AUW"
+                                name="COPTER_AUW"
                                 type="number"
                                 min="0"
+                                step="0.1"
                             />
-                            kg
                         </div>
                     </div>
                 </div>
             </fieldset>
 
-            <div class="plots-container">
-                <div class="thrust-plot-container">
-                    <div id="thrust-expo-plot" class="thrust-plot"></div>
-                </div>
-
-                <div class="thrust-plot-container">
-                    <div id="thrust-error-plot" class="thrust-plot"></div>
-                </div>
-
-                <div class="thrust-plot-container">
-                    <div id="thrust-pwm-plot" class="thrust-plot"></div>
-                </div>
-            </div>
-
             <div id="thrust-table"></div>
+
+            <div id="thrust-pwm-plot" class="thrust-plot"></div>
+
+            <div id="thrust-expo-plot" class="thrust-plot"></div>
+
+            <div id="thrust-error-plot" class="thrust-plot"></div>
         </div>
     </body>
 </html>
