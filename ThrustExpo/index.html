@@ -50,9 +50,7 @@
             </div>
 
             <h1>
-                <a href="">
-                    ArduPilot Thrust Expo
-                </a>
+                <a href=""> ArduPilot Thrust Expo </a>
             </h1>
             <div id="app-description">
                 This tool estimates thrust linearization using thrust test stand
@@ -85,7 +83,22 @@
                         accept=".param,.parm,.txt"
                     />
                     <div class="param-controls-right">
-                        <button id="reset">Reset</button>
+                        <button
+                            id="reset"
+                            class="tooltip-trigger"
+                            data-tippy-content="Clear data and reset the web tool."
+                            data-tippy-maxWidth="750px"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            id="load-example"
+                            class="tooltip-trigger"
+                            data-tippy-content="Show example (will overwrite existing table data)."
+                            data-tippy-maxWidth="750px"
+                        >
+                            Example
+                        </button>
                         <button id="save-params">Save Parameters</button>
                     </div>
                 </div>
@@ -175,10 +188,7 @@
                                 max="12"
                             />
                         </div>
-                        <div
-                            id="hover-thrust-estimate"
-                            class="param-row"
-                        >
+                        <div id="hover-thrust-estimate" class="param-row">
                             <input
                                 id="MOT_THST_HOVER"
                                 name="MOT_THST_HOVER"
