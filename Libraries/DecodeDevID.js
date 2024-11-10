@@ -82,6 +82,7 @@ imu_types = {
     0x3A : "ICM42670",
     0x3B : "ICM45686",
     0x3C : "SCHA63T",
+    0x3D : "IIM42653",
 }
 
 baro_types = {
