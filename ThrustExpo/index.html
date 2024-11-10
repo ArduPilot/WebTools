@@ -18,6 +18,7 @@
         <script src="../Libraries/ParameterMetadata.js"></script>
         <script src="../Libraries/FileSaver.js"></script>
         <script src="../Libraries/Array_Math.js"></script>
+        <script src="../Libraries/Param_Helpers.js"></script>
         <script src="ThrustExpo.js"></script>
     </head>
 
@@ -66,7 +67,8 @@
         </header>
 
         <div class="content">
-            <fieldset>
+            <table><tr><td>
+            <fieldset style="height:130px">
                 <legend>
                     Parameters
                     <img
@@ -161,8 +163,8 @@
                     </div>
                 </div>
             </fieldset>
-
-            <fieldset>
+            </td><td>
+            <fieldset style="height:130px">
                 <legend>
                     Hover Thrust Estimate
                     <img
@@ -188,11 +190,12 @@
                                 max="12"
                             />
                         </div>
-                        <div id="hover-thrust-estimate" class="param-row">
+                        <div class="param-row">
                             <input
                                 id="MOT_THST_HOVER"
                                 name="MOT_THST_HOVER"
                                 type="number"
+                                placeholder="?"
                                 disabled
                             />
                         </div>
@@ -214,6 +217,8 @@
                     </div>
                 </div>
             </fieldset>
+            </td></tr>
+            </table>
 
             <div id="thrust-table"></div>
 
@@ -224,4 +229,21 @@
             <div id="thrust-error-plot" class="thrust-plot"></div>
         </div>
     </body>
+    <script>
+
+        window.onerror = function(msg, url, linenumber) {
+            alert('Sorry, something went wrong.\n\n' + 
+                  'Please try a hard reload of this page to clear its cache.\n\n' +
+                  'If the error persists open an issue on the GitHub repo.\n' +
+                  'Include a copy of the log and the following error message:\n\n' +
+                   msg + '\n' +
+                  'URL: '+ url +'\n' +
+                  'Line Number: '+ linenumber)
+            return false
+        }
+        window.addEventListener('unhandledrejection', function (e) {
+          throw new Error(e.reason.stack)
+        })
+
+    </script>
 </html>
