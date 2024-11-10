@@ -754,7 +754,16 @@ function initThrustTable() {
     let updateTimeout = null;
 
     const onDataChanged = function () {
-        //update table height as necessary
+        // update chart after changes stop
+        // (paste actions call this repeatedly, so debounce a little)
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            updatePlotData();
+        }, 100);
+    };
+
+    const onRenderComplete = function() {
+        // update table height as necessary
         const rowCount = thrustTable.getRows().length;
         const headerHeight =
             thrustTable.element.querySelector(".tabulator-header").offsetHeight;
@@ -766,17 +775,10 @@ function initThrustTable() {
             currentHeight = newHeight;
             thrustTable.setHeight(`${newHeight}px`);
         }
-
-        // update chart after changes stop
-        // (paste actions call this repeatedly, so debounce a little)
-        clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(() => {
-            updatePlotData();
-        }, 100);
-    };
+    }
 
     thrustTable.on("dataChanged", onDataChanged);
-    thrustTable.on("renderComplete", onDataChanged);
+    thrustTable.on("renderComplete", onRenderComplete);
 
     // if the last row is edited, add a new row
     thrustTable.on("cellEdited", function (cell) {
