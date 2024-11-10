@@ -188,6 +188,14 @@ class WidgetSubGrid extends WidgetBase {
                 properties: {},
                 allowMultipleMasks: false,
                 addons: []
+            },
+            {
+                label: "Background image",
+                tooltip: "The sub grid will take on the aspect ratio of the image so sub grid widgets hold position relative to the image as the dashboard is re-sized.",
+                storage: "base64",
+                key: "backgroundImage",
+                type: "file",
+                input: true
             }]
         }
 
@@ -342,12 +350,54 @@ class WidgetSubGrid extends WidgetBase {
         }
     }
 
+    // Resize subgrid to match image, this means the widgets hold position relative to the image as it is resized
+    resize() {
+        if (this.image == null) {
+            return
+        }
+
+        const bb = this.image.getBoundingClientRect()
+
+        // Work out the scale factor for the image to fit while maintaining the original aspect ratio
+        const width_scale = bb.width / this.image.naturalWidth
+        const height_scale = bb.height / this.image.naturalHeight
+        const scale = Math.min(width_scale, height_scale)
+
+        // True width and height of the image can be found
+        const true_width = this.image.naturalWidth * scale
+        const true_height = this.image.naturalHeight * scale
+
+        // The difference is applied evenly to each side
+        const width_diff = ((bb.width - true_width) * 0.5) + "px"
+        const height_diff = ((bb.height - true_height) * 0.5) + "px"
+
+        this.size_div.style.top = height_diff
+        this.size_div.style.bottom = height_diff
+        this.size_div.style.left = width_diff
+        this.size_div.style.right = width_diff
+    }
+
     // Form changed due to user input
     form_changed() {
         super.form_changed()
         const options = this.get_form_content()
         this.widget_div.style.borderColor = options.borderColor
         this.widget_div.style.backgroundColor = options.backgroundColor
+
+        if (("backgroundImage" in options) && (options.backgroundImage != null) && (options.backgroundImage.length > 0) ) {
+            if (this.image == null) {
+                this.image = document.createElement("img")
+                this.image.setAttribute("width", "100%")
+                this.image.setAttribute("height", "100%")
+                this.image.style.objectFit = "contain"
+                this.widget_div.appendChild(this.image)
+            }
+            this.image.src = options.backgroundImage[0].url
+
+            // Fit sub grid to image and watch for size changes
+            this.resize()
+            new ResizeObserver(() => { this.resize() }).observe(this.image)
+        }
 
         // Reload grid if size changed
         if (("rows" in options) && ("columns" in options) && ((options.rows != this.grid_rows) || (options.columns != this.grid_columns))) {
