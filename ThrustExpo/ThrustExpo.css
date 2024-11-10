@@ -109,7 +109,7 @@ img.tooltip-trigger {
 
 #app-description {
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px;
     text-align: justify;
     padding: 20px 0px;
 }
@@ -118,10 +118,6 @@ img.tooltip-trigger {
     font-family: sans-serif;
     font-size: 0.8rem;
     width: 100%;
-    max-width: 570px;
+    max-width: 1200px;
     margin-left: 3px;
-}
-
-#hover-thrust-estimate {
-    display: none;
 }
