@@ -195,6 +195,7 @@ function updateThrustExpoPlot(thrustExpo = null) {
             thrustExpoPlot.layout
         );
         thrustErrorPlot.data = [];
+        thrustErrorPlot.layout.shapes[0].visible = false
         Plotly.react(
             thrustErrorPlot.plot,
             thrustErrorPlot.data,
@@ -212,10 +213,10 @@ function updateThrustExpoPlot(thrustExpo = null) {
         current: new Array(data_length),
     };
     for (let i = 0; i < data_length; i++) {
-        data.pwm[i] = thrustData[i].pwm;
-        data.thrust[i] = thrustData[i].thrust;
-        data.voltage[i] = thrustData[i].voltage;
-        data.current[i] = thrustData[i].current;
+        data.pwm[i] = parseFloat(thrustData[i].pwm);
+        data.thrust[i] = parseFloat(thrustData[i].thrust);
+        data.voltage[i] = parseFloat(thrustData[i].voltage);
+        data.current[i] = parseFloat(thrustData[i].current);
     }
 
     // Test at actuator values from 0 to 1
@@ -453,6 +454,7 @@ function updateThrustExpoPlot(thrustExpo = null) {
     ];
     thrustErrorPlot.layout.shapes[0].y0 = result.mean;
     thrustErrorPlot.layout.shapes[0].y1 = result.mean;
+    thrustErrorPlot.layout.shapes[0].visible = true
     Plotly.react(
         thrustErrorPlot.plot,
         thrustErrorPlot.data,
@@ -574,6 +576,7 @@ function initThrustErrorPlot() {
                     width: 1,
                     color: "gray",
                 },
+                visible: false
             },
         ],
     };
@@ -815,6 +818,7 @@ function reset() {
             current: "",
         }))
     );
+    updatePlotData();
 }
 
 function loadExample() {
@@ -897,6 +901,7 @@ function loadExample() {
         { pwm: 1989, thrust: 2.233, voltage: 21.52, current: 13.511 },
         { pwm: 2000, thrust: 2.254, voltage: 21.52, current: 13.854 },
     ]);
+    updatePlotData();
     const copterAuwElement = document.getElementById("COPTER_AUW");
     copterAuwElement.value = 2.5;
     copterAuwElement.dispatchEvent(new Event("change"));
