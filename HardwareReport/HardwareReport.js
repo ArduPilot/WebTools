@@ -2632,12 +2632,32 @@ async function load_log(log_file) {
             return ret
         }
 
+        // Deal with log field name hange
+        let AccFlags_name
+        if (log.messageTypes.POWR.expressions.includes("AccFlags")) {
+            AccFlags_name = "AccFlags"
+        } else {
+            AccFlags_name = "AccFlg"
+        }
+
+        let flag_name
+        if (log.messageTypes.POWR.expressions.includes("Flags")) {
+            flag_name = "Flags"
+        } else {
+            flag_name = "Flg"
+        }
+
         // Only plot if there is some change
-        if (!array_all_equal(array_bit_set(log.get("POWR", "AccFlags"), MAV_POWER_STATUS.CHANGED), 0)) {
+        let show_flags = log.messageTypes.POWR.expressions.includes(flag_name)
+        if (show_flags && log.messageTypes.POWR.expressions.includes(AccFlags_name) && array_all_equal(array_bit_set(log.get("POWR", AccFlags_name), MAV_POWER_STATUS.CHANGED), 0)) {
+            show_flags = false
+        }
+
+        if (show_flags) {
             let plot = document.getElementById("power_flags")
             plot_visibility(plot, false)
 
-            const flags = log.get("POWR", "Flags")
+            const flags = log.get("POWR", flag_name)
             const time = TimeUS_to_seconds(log.get("POWR", "TimeUS"))
 
             power_flags.data[0].x = time
