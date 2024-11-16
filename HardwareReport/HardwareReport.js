@@ -2828,6 +2828,11 @@ async function load_log(log_file) {
                     continue
                 }
 
+                if ((weeks[i] <= 1000) || (ms[i] == 0)) {
+                    // Invalid timestamp
+                    continue
+                }
+
                 // Calculate GPS time in milli seconds
                 const ms_per_week = 7 * 24 * 60 * 60 * 1000
                 const GPS_ms = (weeks[i] * ms_per_week) + ms[i]
