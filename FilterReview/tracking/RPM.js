@@ -12,7 +12,7 @@ class RPMTarget extends NotchTarget {
         if ("instances" in log.messageTypes.RPM) {
             // New instance RPM message
             const inst = instance - 1
-            if (inst in Object.keys(log.messageTypes.RPM.instances)) {
+            if (inst in log.messageTypes.RPM.instances) {
                 this.data.time = TimeUS_to_seconds(log.get_instance(msg_name, inst, "TimeUS"))
                 this.data.value = log.get_instance(msg_name, inst, "RPM")
 
