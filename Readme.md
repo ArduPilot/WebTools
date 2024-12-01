@@ -9,8 +9,7 @@ These steps allow hosting of the tools locally for development purposes or for u
 Clone this repository (or your fork) and update the submodules:
 
 ```
-git clone https://github.com/ArduPilot/WebTools.git
-git submodule update --init
+git clone --recurse-submodules https://github.com/ArduPilot/WebTools.git
 ```
 
 Host locally using python by running the following command in the root of the repo:
