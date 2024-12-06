@@ -148,21 +148,33 @@ class ThrottleTarget extends NotchTarget {
 
             const use_raw_voltage = (mot_params.OPTIONS & 1) != 0
             batt_time = log.get_instance("BAT", mot_params.BAT_IDX, "TimeUS")
-            const voltage = log.get_instance("BAT", mot_params.BAT_IDX, use_raw_voltage ? "Volt" : "VoltR")
+            const raw_voltage = log.get_instance("BAT", mot_params.BAT_IDX, "Volt")
+            const resting_voltage = log.get_instance("BAT", mot_params.BAT_IDX, "VoltR")
 
             // Calculate lift max and normalized battery voltage
-            const len = voltage.length
+            const len = raw_voltage.length
             batt_voltage = new Array(len)
             lift_max = new Array(len)
             const min_volt_threshold = 0.25 * mot_params.BAT_VOLT_MIN
             for (let i = 0; i<len; i++) {
-                if (voltage[i] < min_volt_threshold) {
+
+                let voltage
+                if (use_raw_voltage) {
+                    voltage = raw_voltage[i]
+                } else {
+                    // Resting voltage is constrained to be larger than raw voltage in:
+                    // AP_BattMonitor_Backend::voltage_resting_estimate()
+                    voltage = Math.max(raw_voltage[i], resting_voltage[i])
+                }
+
+                if (voltage < min_volt_threshold) {
                     batt_voltage[i] = 1.0
                     lift_max[i] = 1.0
+                    continue
                 }
 
                 // Constrain to range and normalize
-                let constrained = Math.min(Math.max(voltage[i], mot_params.BAT_VOLT_MIN), mot_params.BAT_VOLT_MAX)
+                let constrained = Math.min(Math.max(voltage, mot_params.BAT_VOLT_MIN), mot_params.BAT_VOLT_MAX)
                 batt_voltage[i] = constrained / mot_params.BAT_VOLT_MAX
 
                 // Calculate lift max
