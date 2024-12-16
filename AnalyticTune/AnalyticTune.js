@@ -990,6 +990,19 @@ function load_log(log_file) {
         flight_data.data[0].y = log.get("SIDD", "Targ")
 
         update_time(SIDD_time)
+
+        const MSG = log.get("MSG")
+        const len = MSG.Message.length
+        for (let i = 0; i < len; i++) {
+            const msg = MSG.Message[i]
+
+            // narrow the SID time window
+            if (msg === 'SystemID Finished') {
+                end_time = MSG.TimeUS[i]/1000000
+            }
+        }
+
+        console.log(`SID time: ${start_time} - ${end_time} s`);
     }
 
     if ("RATE" in log.messageTypes) {
@@ -1000,13 +1013,39 @@ function load_log(log_file) {
         flight_data.data[2].y = log.get("RATE", "P")
         flight_data.data[3].x = RATE_time
         flight_data.data[3].y = log.get("RATE", "Y")
-        update_time(RATE_time)
+        if (start_time == null || end_time == null) {
+            update_time(RATE_time)
+        }
     }
 
     // If found use zoom to non-zero SIDD
     if ((start_time != null) && (end_time != null)) {
         flight_data.layout.xaxis.range = [start_time, end_time]
         flight_data.layout.xaxis.autorange = false
+    }
+
+    const start_hz = get_param("SID_F_START_HZ")
+    const stop_hz = get_param("SID_F_STOP_HZ")
+    const sid_axis = get_param("SID_AXIS")
+    switch (sid_axis) {
+        case 1:
+        case 4:
+        case 7:
+        case 10:
+            document.getElementById('type_Roll').checked = true
+            break;
+        case 2:
+        case 5:
+        case 8:
+        case 11:
+            document.getElementById('type_Pitch').checked = true
+            break;
+        case 3:
+        case 6:
+        case 9:
+        case 12:
+            document.getElementById('type_Yaw').checked = true
+            break;
     }
 
     // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
