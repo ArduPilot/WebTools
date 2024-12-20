@@ -896,7 +896,9 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     var minus_one = [new Array(H_acft[0].length).fill(-1), new Array(H_acft[0].length).fill(0)]
     const Ret_DRB = complex_div(minus_one, rate_INS_ANGP_plus_one)
    
-    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff]
+    const Ret_att_bl = rate_INS_ANGP
+
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl]
 
 }
 
@@ -1360,7 +1362,8 @@ function calculate_freq_resp() {
     var H_att_ff_pred
     var H_pilot_pred
     var H_DRB_pred
-    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    var H_att_bl
+    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
     calc_freq_resp = {
         pilotctrl_H: H_pilot_tf,
@@ -1380,7 +1383,8 @@ function calculate_freq_resp() {
         ratectrl_H: H_rate_pred,
         pilotctrl_H: H_pilot_pred,
         attctrl_nff_H: H_att_nff_pred,
-        DRB_H: H_DRB_pred
+        DRB_H: H_DRB_pred,
+        attbl_H: H_att_bl
     }
 
     redraw_freq_resp()
@@ -1847,10 +1851,14 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        pred_data = pred_freq_resp.attctrl_nff_H
-//        calc_data = calc_freq_resp.DRB_H
-//        calc_data_coh = calc_freq_resp.DRB_coh
-//        pred_data = pred_freq_resp.DRB_H
+        pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
+//        pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
+
+//        calc_data = calc_freq_resp.DRB_H  // calculated disturbance rejection
+//        calc_data_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
+//        pred_data = pred_freq_resp.DRB_H  // predicted disturbance rejection
+
+//        pred_data = pred_freq_resp.attbl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set = true
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
