@@ -789,6 +789,8 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     var unwrap_phase = false
 
     var PID_rate = get_form("SCHED_LOOP_RATE")
+
+    // Calculate transfer function for Rate PID
     var PID_filter = []
     var axis_prefix = "ATC_RAT_" + get_axis_prefix();
     PID_filter.push(new PID(PID_rate,
@@ -800,6 +802,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    // calculate transfer funciton for the PID Error Notch filter
     const nef_num = get_form(axis_prefix + "NEF")
     var nef_freq = 0.0
     if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
@@ -812,6 +815,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         PID_H_TOT = PID_H.H_total
     }
 
+    // calculate transfer function for FF and DFF
     var FF_filter = []
     FF_filter.push(new feedforward(PID_rate, get_form(axis_prefix + "FF"),get_form(axis_prefix + "D_FF")))
     const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
@@ -821,10 +825,13 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         FFPID_H[1][k] = PID_H_TOT[1][k] + FF_H.H_total[1][k]
     }
 
+    // calculate transfer function for target LPF
     var T_filter = []
     T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    // calculate transfer function for target PID notch and the target LPF combined, if the notch is defined.  Otherwise just 
+    // provide the target LPF as the combined transfer function.
     const ntf_num = get_form(axis_prefix + "NTF")
     var ntf_freq = 0.0
     if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
@@ -837,10 +844,12 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         TGT_FILT_H = FLTT_H.H_total
     }
 
+    // calculate the transfer function of the INS filters which includes notches and LPF
     let fast_sample_rate = get_form("GyroSampleRate");
     let gyro_filters = get_filters(fast_sample_rate)
     const INS_H = evaluate_transfer_functions([gyro_filters], freq_max, freq_step, use_dB, unwrap_phase)
 
+    // calculation of transfer function for the rate controller (includes serveral intermediate steps)
     var H_PID_Acft_plus_one = [new Array(PID_H_TOT[0].length).fill(0), new Array(PID_H_TOT[0].length).fill(0)]
 
     const PID_Acft = complex_mul(H_acft, PID_H_TOT)
@@ -855,10 +864,12 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     }
     const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
+    // calculate transfer function for the angle P in prep for attitude controller calculation
     var Ang_P_filter = []
     Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_" + get_axis_prefix() + "P")))
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
+    // calculate transfer function for attitude controller with feedforward enabled (includes intermediate steps)
     const rate_INS_ANGP = complex_mul(Ret_rate, complex_mul(INS_H.H_total, Ang_P_H.H_total))
     var rate_INS_ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
@@ -868,16 +879,24 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
         ANGP_plus_one[0][k] = Ang_P_H.H_total[0][k] + 1
         ANGP_plus_one[1][k] = Ang_P_H.H_total[1][k]
     }
-    const Ret_att = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_INS_ANGP_plus_one)
+    const Ret_att_ff = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_INS_ANGP_plus_one)
 
+    // transfer function of attitude controller without feedforward
+    const Ret_att_nff = complex_div(complex_mul(Ang_P_H.H_total, Ret_rate), rate_INS_ANGP_plus_one)
+
+    // calculate transfer function for pilot feel LPF
     var tc_filter = []
     const tc_freq = 1 / (get_form("ATC_INPUT_TC") * 2 * Math.PI)
     tc_filter.push(new LPF_1P(PID_rate, tc_freq))
     const tc_H = evaluate_transfer_functions([tc_filter], freq_max, freq_step, use_dB, unwrap_phase)
+    // calculate transfer function for pilot input to the aircraft response
+    const Ret_pilot = complex_mul(tc_H.H_total, Ret_att_ff)
 
-    const Ret_pilot = complex_mul(tc_H.H_total, Ret_att)
-
-    return [Ret_rate, Ret_att, Ret_pilot]
+    // calculate transfer function for attitude Distrubance Rejection
+    var minus_one = [new Array(H_acft[0].length).fill(-1), new Array(H_acft[0].length).fill(0)]
+    const Ret_DRB = complex_div(minus_one, rate_INS_ANGP_plus_one)
+   
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff]
 
 }
 
@@ -1300,6 +1319,11 @@ function calculate_freq_resp() {
     var coh_att
     [H_att, coh_att] = calculate_freq_resp_from_FFT(data_set.FFT.AttTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
 
+    var H_drb
+    var coh_drb
+    [H_drb, coh_drb] = calculate_freq_resp_from_FFT(data_set.FFT.DRBin, data_set.FFT.DRBresp, start_index, end_index, mean_length, window_size, sample_rate)
+
+
     // resample calculated responses to predicted response length
     const len = H_acft[0].length-1
     var H_pilot_tf = [new Array(len).fill(0), new Array(len).fill(0)]
@@ -1310,6 +1334,8 @@ function calculate_freq_resp() {
     var coh_rate_tf = [new Array(len).fill(0)]
     var H_att_tf = [new Array(len).fill(0), new Array(len).fill(0)]
     var coh_att_tf = [new Array(len).fill(0)]
+    var H_drb_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_drb_tf = [new Array(len).fill(0)]
     var freq_tf = [new Array(len).fill(0)]
     for (let k=1;k<len+1;k++) {
         H_pilot_tf[0][k-1] = H_pilot[0][k]
@@ -1324,13 +1350,17 @@ function calculate_freq_resp() {
         H_att_tf[0][k-1] = H_att[0][k]
         H_att_tf[1][k-1] = H_att[1][k]
         coh_att_tf[k-1] = coh_att[k]
+        H_drb_tf[0][k-1] = H_drb[0][k]
+        H_drb_tf[1][k-1] = H_drb[1][k]
+        coh_drb_tf[k-1] = coh_drb[k]
         freq_tf[k-1] = data_set.FFT.bins[k]
     }
 
     var H_rate_pred
-    var H_att_pred
+    var H_att_ff_pred
     var H_pilot_pred
-    [H_rate_pred, H_att_pred, H_pilot_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    var H_DRB_pred
+    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
     calc_freq_resp = {
         pilotctrl_H: H_pilot_tf,
@@ -1341,12 +1371,16 @@ function calculate_freq_resp() {
         ratectrl_coh: coh_rate_tf,
         bareAC_H: H_acft_tf,
         bareAC_coh: coh_acft_tf,
+        DRB_H: H_drb_tf,
+        DRB_coh: coh_drb_tf,
         freq: freq_tf
     }
     pred_freq_resp = {
-        attctrl_H: H_att_pred,
+        attctrl_ff_H: H_att_ff_pred,
         ratectrl_H: H_rate_pred,
-        pilotctrl_H: H_pilot_pred
+        pilotctrl_H: H_pilot_pred,
+        attctrl_nff_H: H_att_nff_pred,
+        DRB_H: H_DRB_pred
     }
 
     redraw_freq_resp()
@@ -1445,6 +1479,12 @@ function load_time_history_data(t_start, t_end, axis) {
     PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
     PilotInputData = array_scale(PilotInputData, 0.01745)
 
+    // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
+    DRBInputData = PilotInputData
+    DRBRespData = array_sub(AttData, DRBInputData)
+
+    
+
     var data = {
         PilotInput: PilotInputData,
         ActInput:   ActInputData,
@@ -1452,7 +1492,9 @@ function load_time_history_data(t_start, t_end, axis) {
         RateTgt:    RateTgtData,
         Rate:       RateData,
         AttTgt:     AttTgtData,
-        Att:        AttData
+        Att:        AttData,
+        DRBin:      DRBInputData,
+        DRBresp:    DRBRespData
     }
     return [data, samplerate]
 
@@ -1805,7 +1847,10 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        pred_data = pred_freq_resp.attctrl_H
+        pred_data = pred_freq_resp.attctrl_nff_H
+//        calc_data = calc_freq_resp.DRB_H
+//        calc_data_coh = calc_freq_resp.DRB_coh
+//        pred_data = pred_freq_resp.DRB_H
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set = true
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
@@ -1817,7 +1862,7 @@ function redraw_freq_resp() {
     } else {
         calc_data = calc_freq_resp.bareAC_H
         calc_data_coh = calc_freq_resp.bareAC_coh
-        pred_data = pred_freq_resp.attctrl_H
+        pred_data = pred_freq_resp.ratectrl_H
         show_set = false
     }
 
