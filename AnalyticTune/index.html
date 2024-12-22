@@ -479,14 +479,20 @@
                         <table>
                                 <tr>
                                         <td>
-                                                <fieldset style="width:200px;height:90px">
+                                                <fieldset style="width:300px;height:150px">
                                                         <legend>Control Loop</legend>
                                                         <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
                                                         <label for="type_Bare_AC">Bare Aircraft</label><br>
                                                         <input type="radio" id="type_Rate_Ctrlr" name="Control_Loop" value="Rate_Ctrlr"  onchange="redraw_freq_resp();" checked>
                                                         <label for="type_Rate_Ctrlr">Rate Controller</label><br>
                                                         <input type="radio" id="type_Att_Ctrlr" name="Control_Loop" value="Att_Ctrlr"  onchange="redraw_freq_resp();">
-                                                        <label for="type_Att_Ctrlr">Attitude Controller</label><br>
+                                                        <label for="type_Att_Ctrlr">Attitude Controller with Feedforward</label><br>
+                                                        <input type="radio" id="type_Att_Ctrlr_nff" name="Control_Loop" value="Att_Ctrlr_nff"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Ctrlr_nff">Attitude Controller without feedforward</label><br>
+                                                        <input type="radio" id="type_Att_DRB" name="Control_Loop" value="Att_DRB"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_DRB">Attitude Disturbance Rejection</label><br>
+                                                        <input type="radio" id="type_Att_Stab" name="Control_Loop" value="Att_Stab"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Att_Stab">Attitude Stability</label><br>
                                                         <input type="radio" id="type_Pilot_Ctrlr" name="Control_Loop" value="Pilot_Ctrlr"  onchange="redraw_freq_resp();">
                                                         <label for="type_Att_Ctrlr">Input Shaping</label><br>
                                                 </fieldset>
