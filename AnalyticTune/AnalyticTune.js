@@ -971,6 +971,7 @@ function TimeUS_to_seconds(TimeUS) {
 
 // Load a new log
 let log
+var sid_axis
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1089,6 +1090,9 @@ function load_log(log_file) {
     if (gyro_rate != 0) {
         parameter_set_value("GyroSampleRate", (1 << gyro_rate) * 1000)
     }
+
+    // set the sid_axis variable
+    sid_axis = get_param("SID_AXIS");
 
     // approximately calculate the rate loop rate
     const loop_rate = get_param("SCHED_LOOP_RATE");
@@ -1834,10 +1838,12 @@ function redraw_freq_resp() {
 
     var unwrap_ph = document.getElementById("PID_ScaleUnWrap").checked;
 
+    console.log(sid_axis)
     unwrap_ph = false
      // Set scaled x data
     const scaled_bins = frequency_scale.fun(calc_freq_resp.freq)
-    var show_set = true
+    var show_set_calc = true
+    var show_set_pred = true
     var calc_data
     var calc_data_coh
     var pred_data
@@ -1845,33 +1851,59 @@ function redraw_freq_resp() {
     if (document.getElementById("type_Pilot_Ctrlr").checked) {
         calc_data = calc_freq_resp.pilotctrl_H
         calc_data_coh = calc_freq_resp.pilotctrl_coh
+        if (sid_axis > 2 && sid_axis < 7) {
+            show_set_calc = false
+        }
         pred_data = pred_freq_resp.pilotctrl_H
         pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set = true
+        show_set_pred = true
+    } else if (document.getElementById("type_Att_Stab").checked) {
+        calc_data = calc_freq_resp.attctrl_H
+        calc_data_coh = calc_freq_resp.attctrl_coh
+        show_set_calc = false
+        pred_data = pred_freq_resp.attbl_H  // attitude stability
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
+    } else if (document.getElementById("type_Att_DRB").checked) {
+        calc_data = calc_freq_resp.DRB_H  // calculated disturbance rejection
+        calc_data_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
+        if (sid_axis < 3 || sid_axis > 6) {
+            show_set_calc = false
+        }
+        pred_data = pred_freq_resp.DRB_H  // predicted disturbance rejection
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
+    } else if (document.getElementById("type_Att_Ctrlr_nff").checked) {
+        calc_data = calc_freq_resp.attctrl_H
+        calc_data_coh = calc_freq_resp.attctrl_coh
+        if (sid_axis < 3 || sid_axis > 6) {
+            show_set_calc = false
+        }
+        pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
+        if (sid_axis > 2 && sid_axis < 7) {
+            show_set_calc = false
+        }
         pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
-//        pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
-
-//        calc_data = calc_freq_resp.DRB_H  // calculated disturbance rejection
-//        calc_data_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
-//        pred_data = pred_freq_resp.DRB_H  // predicted disturbance rejection
-
-//        pred_data = pred_freq_resp.attbl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set = true
+        show_set_pred = true
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
         calc_data = calc_freq_resp.ratectrl_H
         calc_data_coh = calc_freq_resp.ratectrl_coh
+        show_set_calc = true
         pred_data = pred_freq_resp.ratectrl_H
         pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set = true
+        show_set_pred = true
     } else {
         calc_data = calc_freq_resp.bareAC_H
         calc_data_coh = calc_freq_resp.bareAC_coh
+        show_set_calc = true
         pred_data = pred_freq_resp.ratectrl_H
-        show_set = false
+        show_set_pred = false
     }
 
     // Apply selected scale, set to y axis
@@ -1881,7 +1913,7 @@ function redraw_freq_resp() {
     fft_plot.data[0].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot.data[0].visible = true
+    fft_plot.data[0].visible = show_set_calc
 
     var calc_plotted_phase = []
     if (unwrap_ph) {
@@ -1896,7 +1928,7 @@ function redraw_freq_resp() {
     fft_plot_Phase.data[0].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot_Phase.data[0].visible = true
+    fft_plot_Phase.data[0].visible = show_set_calc
 
     // Apply selected scale, set to y axis
     fft_plot_Coh.data[0].y = calc_data_coh
@@ -1905,7 +1937,7 @@ function redraw_freq_resp() {
     fft_plot_Coh.data[0].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot_Coh.data[0].visible = true
+    fft_plot_Coh.data[0].visible = show_set_calc
 
     // Apply selected scale, set to y axis
     fft_plot.data[1].y = amplitude_scale.scale(complex_abs(pred_data))
@@ -1914,7 +1946,7 @@ function redraw_freq_resp() {
     fft_plot.data[1].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot.data[1].visible = show_set
+    fft_plot.data[1].visible = show_set_pred
 
     var pred_plotted_phase = []
     if (unwrap_ph) {
@@ -1929,7 +1961,7 @@ function redraw_freq_resp() {
     fft_plot_Phase.data[1].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot_Phase.data[1].visible = show_set
+    fft_plot_Phase.data[1].visible = show_set_pred
 
     // Apply selected scale, set to y axis
     fft_plot_Coh.data[1].y = pred_data_coh
@@ -1938,7 +1970,7 @@ function redraw_freq_resp() {
     fft_plot_Coh.data[1].x = scaled_bins
 
     // Work out if we should show this line
-    fft_plot_Coh.data[1].visible = show_set
+    fft_plot_Coh.data[1].visible = show_set_pred
 
     Plotly.redraw("FFTPlotMag")
 
