@@ -898,7 +898,9 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
    
     const Ret_att_bl = rate_INS_ANGP
 
-    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl]
+    const Ret_rate_bl = INS_PID_Acft
+
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl]
 
 }
 
@@ -1367,7 +1369,8 @@ function calculate_freq_resp() {
     var H_pilot_pred
     var H_DRB_pred
     var H_att_bl
-    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    var H_rate_bl
+    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl, H_rate_bl] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
     calc_freq_resp = {
         pilotctrl_H: H_pilot_tf,
@@ -1388,7 +1391,8 @@ function calculate_freq_resp() {
         pilotctrl_H: H_pilot_pred,
         attctrl_nff_H: H_att_nff_pred,
         DRB_H: H_DRB_pred,
-        attbl_H: H_att_bl
+        attbl_H: H_att_bl,
+        ratebl_H: H_rate_bl
     }
 
     redraw_freq_resp()
@@ -1862,6 +1866,13 @@ function redraw_freq_resp() {
         calc_data_coh = calc_freq_resp.attctrl_coh
         show_set_calc = false
         pred_data = pred_freq_resp.attbl_H  // attitude stability
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
+    } else if (document.getElementById("type_Rate_Stab").checked) {
+        calc_data = calc_freq_resp.attctrl_H
+        calc_data_coh = calc_freq_resp.attctrl_coh
+        show_set_calc = false
+        pred_data = pred_freq_resp.ratebl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
     } else if (document.getElementById("type_Att_DRB").checked) {

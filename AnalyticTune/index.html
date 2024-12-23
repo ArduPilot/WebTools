@@ -479,7 +479,7 @@
                         <table>
                                 <tr>
                                         <td>
-                                                <fieldset style="width:300px;height:150px">
+                                                <fieldset style="width:300px;height:170px">
                                                         <legend>Control Loop</legend>
                                                         <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
                                                         <label for="type_Bare_AC">Bare Aircraft</label><br>
@@ -491,6 +491,8 @@
                                                         <label for="type_Att_Ctrlr_nff">Attitude Controller without feedforward</label><br>
                                                         <input type="radio" id="type_Att_DRB" name="Control_Loop" value="Att_DRB"  onchange="redraw_freq_resp();">
                                                         <label for="type_Att_DRB">Attitude Disturbance Rejection</label><br>
+                                                        <input type="radio" id="type_Rate_Stab" name="Control_Loop" value="Rate_Stab"  onchange="redraw_freq_resp();">
+                                                        <label for="type_Rate_Stab">Rate Stability</label><br>
                                                         <input type="radio" id="type_Att_Stab" name="Control_Loop" value="Att_Stab"  onchange="redraw_freq_resp();">
                                                         <label for="type_Att_Stab">Attitude Stability</label><br>
                                                         <input type="radio" id="type_Pilot_Ctrlr" name="Control_Loop" value="Pilot_Ctrlr"  onchange="redraw_freq_resp();">
