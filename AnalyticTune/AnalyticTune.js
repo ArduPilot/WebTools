@@ -900,7 +900,16 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     const Ret_rate_bl = INS_PID_Acft
 
-    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl]
+    // calculate broken loop stability for entire control system
+    var bl_temp = complex_mul(Ang_P_H.H_total, FLTT_FFPID_Acft)
+    var bl_temp2 = bl_temp
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        bl_temp[0][k] = PID_Acft[0][k] + bl_temp2[0][k]
+        bl_temp[1][k] = PID_Acft[1][k] + bl_temp2[1][k]
+    }
+    const Ret_entire_bl = complex_mul(bl_temp,INS_H.H_total)
+
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_entire_bl]
 
 }
 
@@ -1331,6 +1340,9 @@ function calculate_freq_resp() {
     var coh_drb
     [H_drb, coh_drb] = calculate_freq_resp_from_FFT(data_set.FFT.DRBin, data_set.FFT.DRBresp, start_index, end_index, mean_length, window_size, sample_rate)
 
+    var H_att_bl
+    var coh_att_bl
+    [H_att_bl, coh_att_bl] = calculate_freq_resp_from_FFT(data_set.FFT.AttBLInput, data_set.FFT.AttBLOutput, start_index, end_index, mean_length, window_size, sample_rate)
 
     // resample calculated responses to predicted response length
     const len = H_acft[0].length-1
@@ -1344,6 +1356,8 @@ function calculate_freq_resp() {
     var coh_att_tf = [new Array(len).fill(0)]
     var H_drb_tf = [new Array(len).fill(0), new Array(len).fill(0)]
     var coh_drb_tf = [new Array(len).fill(0)]
+    var H_att_bl_tf = [new Array(len).fill(0), new Array(len).fill(0)]
+    var coh_att_bl_tf = [new Array(len).fill(0)]
     var freq_tf = [new Array(len).fill(0)]
     for (let k=1;k<len+1;k++) {
         H_pilot_tf[0][k-1] = H_pilot[0][k]
@@ -1361,6 +1375,9 @@ function calculate_freq_resp() {
         H_drb_tf[0][k-1] = H_drb[0][k]
         H_drb_tf[1][k-1] = H_drb[1][k]
         coh_drb_tf[k-1] = coh_drb[k]
+        H_att_bl_tf[0][k-1] = H_att_bl[0][k]
+        H_att_bl_tf[1][k-1] = H_att_bl[1][k]
+        coh_att_bl_tf[k-1] = coh_att_bl[k]
         freq_tf[k-1] = data_set.FFT.bins[k]
     }
 
@@ -1368,9 +1385,9 @@ function calculate_freq_resp() {
     var H_att_ff_pred
     var H_pilot_pred
     var H_DRB_pred
-    var H_att_bl
-    var H_rate_bl
-    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl, H_rate_bl] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    var H_att_bl_pred
+    var H_rate_bl_pred
+    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_all_bl_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
 
     calc_freq_resp = {
         pilotctrl_H: H_pilot_tf,
@@ -1383,6 +1400,8 @@ function calculate_freq_resp() {
         bareAC_coh: coh_acft_tf,
         DRB_H: H_drb_tf,
         DRB_coh: coh_drb_tf,
+        attbl_H: H_att_bl_tf,
+        attbl_coh: coh_att_bl_tf,
         freq: freq_tf
     }
     pred_freq_resp = {
@@ -1391,8 +1410,9 @@ function calculate_freq_resp() {
         pilotctrl_H: H_pilot_pred,
         attctrl_nff_H: H_att_nff_pred,
         DRB_H: H_DRB_pred,
-        attbl_H: H_att_bl,
-        ratebl_H: H_rate_bl
+        attbl_H: H_att_bl_pred,
+        ratebl_H: H_rate_bl_pred,
+        allbl_H: H_all_bl_pred
     }
 
     redraw_freq_resp()
@@ -1495,7 +1515,10 @@ function load_time_history_data(t_start, t_end, axis) {
     DRBInputData = PilotInputData
     DRBRespData = array_sub(AttData, DRBInputData)
 
-    
+    const ang_p_value = get_form("ATC_ANG_" + get_axis_prefix() + "P");
+    AttBLOutputData = array_scale(AttData, ang_p_value)
+    AttBLInputData = array_sub(AttTgtData, AttBLOutputData)
+
 
     var data = {
         PilotInput: PilotInputData,
@@ -1506,7 +1529,9 @@ function load_time_history_data(t_start, t_end, axis) {
         AttTgt:     AttTgtData,
         Att:        AttData,
         DRBin:      DRBInputData,
-        DRBresp:    DRBRespData
+        DRBresp:    DRBRespData,
+        AttBLInput: AttBLInputData,
+        AttBLOutput: AttBLOutputData
     }
     return [data, samplerate]
 
@@ -1862,16 +1887,19 @@ function redraw_freq_resp() {
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
     } else if (document.getElementById("type_Att_Stab").checked) {
-        calc_data = calc_freq_resp.attctrl_H
-        calc_data_coh = calc_freq_resp.attctrl_coh
-        show_set_calc = false
+        calc_data = pred_freq_resp.allbl_H  // entire control system stability
+        calc_data_coh = calc_freq_resp.bareAC_coh
+        show_set_calc = true
+//        if (sid_axis < 3 || sid_axis > 6) {
+//            show_set_calc = false
+//        }
         pred_data = pred_freq_resp.attbl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
     } else if (document.getElementById("type_Rate_Stab").checked) {
-        calc_data = calc_freq_resp.attctrl_H
-        calc_data_coh = calc_freq_resp.attctrl_coh
-        show_set_calc = false
+        calc_data = pred_freq_resp.allbl_H  // entire control system stability
+        calc_data_coh = calc_freq_resp.bareAC_coh
+        show_set_calc = true
         pred_data = pred_freq_resp.ratebl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
