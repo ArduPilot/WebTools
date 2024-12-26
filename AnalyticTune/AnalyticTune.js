@@ -983,6 +983,7 @@ function TimeUS_to_seconds(TimeUS) {
 // Load a new log
 let log
 var sid_axis
+var sid_sets = {}
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1015,6 +1016,14 @@ function load_log(log_file) {
         return get_param_value(PARM, name, allow_change)
     }
 
+    if ("SIDS" in log.messageTypes) {
+        sid_sets.axis = []
+        sid_sets.tlen = []
+        const SIDS_time = TimeUS_to_seconds(log.get("SIDS", "TimeUS"))
+        sid_sets.axis = log.get("SIDS", "Ax")
+        sid_sets.tlen = log.get("SIDS", "TR")
+    }
+
     // Find SIDD data range
     if ("SIDD" in log.messageTypes) {
         const SIDD_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
@@ -1022,7 +1031,28 @@ function load_log(log_file) {
         flight_data.data[0].x = SIDD_time
         flight_data.data[0].y = log.get("SIDD", "Targ")
 
-        update_time(SIDD_time)
+        sid_sets.tstart = []
+        sid_sets.tend = []
+        j = 0
+        sid_sets.tstart[j] = SIDD_time[0]
+        for (let k=1;k<SIDD_time.length;k++) {
+            if (SIDD_time[k]-SIDD_time[k-1] > 0.5) {
+                sid_sets.tend[j] = SIDD_time[k-1]
+                if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j]) {
+                    sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j]
+                }
+                j++
+                sid_sets.tstart[j] = SIDD_time[k]
+            }
+        }
+        sid_sets.tend[j] = SIDD_time[SIDD_time.length-1]
+        if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j]) {
+            sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j]
+        }
+        start_time = sid_sets.tstart[0]
+        end_time = sid_sets.tend[0]
+        set_sid_axis(sid_sets.axis[0])
+        add_sid_sets()
     }
 
     if ("RATE" in log.messageTypes) {
@@ -1101,9 +1131,6 @@ function load_log(log_file) {
     if (gyro_rate != 0) {
         parameter_set_value("GyroSampleRate", (1 << gyro_rate) * 1000)
     }
-
-    // set the sid_axis variable
-    sid_axis = get_param("SID_AXIS");
 
     // approximately calculate the rate loop rate
     const loop_rate = get_param("SCHED_LOOP_RATE");
@@ -2019,4 +2046,124 @@ function redraw_freq_resp() {
 
     const end = performance.now();
     console.log(`freq response redraw took: ${end - start} ms`);
+}
+
+function add_sid_sets() {
+    let fieldset = document.getElementById("sid_sets")
+
+    // Remove all children
+    fieldset.replaceChildren(fieldset.children[0])
+
+    // Add table
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
+
+    fieldset.appendChild(table)
+
+    // Add headers
+    let header = document.createElement("tr")
+    table.appendChild(header)
+
+    function set_cell_style(cell, color) {
+        cell.style.border = "1px solid #000"
+        cell.style.padding = "8px"
+        if (color != null) {
+            // add alpha, 40%
+            cell.style.backgroundColor = color + '66'
+        }
+    }
+
+    let index = document.createElement("th")
+    header.appendChild(index)
+    index.appendChild(document.createTextNode("Num"))
+    set_cell_style(index)
+
+    let item = document.createElement("th")
+    header.appendChild(item)
+    item.appendChild(document.createTextNode("Use"))
+    set_cell_style(item)
+
+    item = document.createElement("th")
+    header.appendChild(item)
+    item.appendChild(document.createTextNode("SID Axis"))
+    set_cell_style(item)
+
+    item = document.createElement("th")
+    header.appendChild(item)
+    item.appendChild(document.createTextNode("Start Time"))
+    set_cell_style(item)
+
+    item = document.createElement("th")
+    header.appendChild(item)
+    item.appendChild(document.createTextNode("End Time"))
+    set_cell_style(item)
+
+    var num_sets = sid_sets.axis.length
+    // Add line
+    let radio = document.createElement("input")
+    for (let i = 0; i < num_sets; i++) {
+        const color = num_sets > 1 ? plot_default_color(i) : null
+
+        let row = document.createElement("tr")
+        table.appendChild(row)
+
+        let index = document.createElement("td")
+        row.appendChild(index)
+        set_cell_style(index, color)
+        index.appendChild(document.createTextNode(i + 1))
+
+        let item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item, color)
+
+        radio = document.createElement("input")
+        radio.setAttribute('type', "radio")
+        radio.setAttribute('id', "set_selection_" + i)
+        radio.setAttribute('name', "sid_sets")
+        radio.setAttribute('value', "set_set_" + i)
+        radio.setAttribute('onchange', "update_time_range(this); time_range_changed(this)")
+        if (i == 0) {radio.checked = true}
+        item.appendChild(radio)
+
+        item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item, color)
+        item.appendChild(document.createTextNode(sid_sets.axis[i]))
+
+        item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item, color)
+        item.appendChild(document.createTextNode(sid_sets.tstart[i]))
+
+        item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item, color)
+        item.appendChild(document.createTextNode(sid_sets.tend[i]))
+
+    }
+}
+
+function update_time_range() {
+
+    for (j=0; j<sid_sets.axis.length;j++){
+        var id_name = "set_selection_" + j
+        if (document.getElementById(id_name).checked) {
+            document.getElementById("starttime").value = sid_sets.tstart[j]
+            document.getElementById("endtime").value = sid_sets.tend[j]
+            set_sid_axis(sid_sets.axis[j])
+        }
+    }
+
+}
+
+function set_sid_axis(axis) {
+
+    if (axis == 1 || axis == 4 || axis == 7 || axis == 10) {
+        document.getElementById("type_Roll").checked = true
+    } else if (axis == 2 || axis == 5 || axis == 8 || axis == 11) {
+        document.getElementById("type_Pitch").checked = true
+    } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12) {
+        document.getElementById("type_Pitch").checked = true
+    }
+    sid_axis = axis
 }
