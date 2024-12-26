@@ -2163,7 +2163,8 @@ function set_sid_axis(axis) {
     } else if (axis == 2 || axis == 5 || axis == 8 || axis == 11) {
         document.getElementById("type_Pitch").checked = true
     } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12) {
-        document.getElementById("type_Pitch").checked = true
+        document.getElementById("type_Yaw").checked = true
     }
     sid_axis = axis
+    axis_changed()
 }
