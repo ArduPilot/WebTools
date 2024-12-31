@@ -870,19 +870,19 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     // calculate transfer function for attitude controller with feedforward enabled (includes intermediate steps)
-    const rate_INS_ANGP = complex_mul(Ret_rate, complex_mul(INS_H.H_total, Ang_P_H.H_total))
-    var rate_INS_ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    const rate_ANGP = complex_mul(Ret_rate, Ang_P_H.H_total)
+    var rate_ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
-        rate_INS_ANGP_plus_one[0][k] = rate_INS_ANGP[0][k] + 1
-        rate_INS_ANGP_plus_one[1][k] = rate_INS_ANGP[1][k]
+        rate_ANGP_plus_one[0][k] = rate_ANGP[0][k] + 1
+        rate_ANGP_plus_one[1][k] = rate_ANGP[1][k]
         ANGP_plus_one[0][k] = Ang_P_H.H_total[0][k] + 1
         ANGP_plus_one[1][k] = Ang_P_H.H_total[1][k]
     }
-    const Ret_att_ff = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_INS_ANGP_plus_one)
+    const Ret_att_ff = complex_div(complex_mul(ANGP_plus_one, Ret_rate), rate_ANGP_plus_one)
 
     // transfer function of attitude controller without feedforward
-    const Ret_att_nff = complex_div(complex_mul(Ang_P_H.H_total, Ret_rate), rate_INS_ANGP_plus_one)
+    const Ret_att_nff = complex_div(complex_mul(Ang_P_H.H_total, Ret_rate), rate_ANGP_plus_one)
 
     // calculate transfer function for pilot feel LPF
     var tc_filter = []
@@ -894,20 +894,21 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for attitude Distrubance Rejection
     var minus_one = [new Array(H_acft[0].length).fill(-1), new Array(H_acft[0].length).fill(0)]
-    const Ret_DRB = complex_div(minus_one, rate_INS_ANGP_plus_one)
+    const Ret_DRB = complex_div(minus_one, rate_ANGP_plus_one)
    
-    const Ret_att_bl = rate_INS_ANGP
+    const Ret_att_bl = rate_ANGP
 
     const Ret_rate_bl = INS_PID_Acft
 
-    // calculate broken loop stability for entire control system
-    var bl_temp = complex_mul(Ang_P_H.H_total, FLTT_FFPID_Acft)
-    var bl_temp2 = bl_temp
+    var bl_temp = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var bl_temp1 = complex_mul(Ang_P_H.H_total, FLTT_FFPID_Acft)
+    var bl_temp2 = complex_mul(INS_H.H_total, PID_Acft)
     for (let k=0;k<H_acft[0].length+1;k++) {
-        bl_temp[0][k] = PID_Acft[0][k] + bl_temp2[0][k]
-        bl_temp[1][k] = PID_Acft[1][k] + bl_temp2[1][k]
+        bl_temp[0][k] = bl_temp1[0][k] + bl_temp2[0][k]
+        bl_temp[1][k] = bl_temp1[1][k] + bl_temp2[1][k]
     }
-    const Ret_sys_bl = complex_mul(bl_temp,INS_H.H_total)
+    const Ret_sys_bl = bl_temp
+
 
     return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
 
@@ -1928,7 +1929,7 @@ function redraw_freq_resp() {
         if (sid_axis < 10 || sid_axis > 12) {
             show_set_calc = false
         }
-        pred_data = pred_freq_resp.ratebl_H  // attitude stability
+        pred_data = pred_freq_resp.sysbl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
     } else if (document.getElementById("type_Att_DRB").checked) {
