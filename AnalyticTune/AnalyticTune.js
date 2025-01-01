@@ -886,7 +886,12 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for pilot feel LPF
     var tc_filter = []
-    const tc_freq = 1 / (get_form("ATC_INPUT_TC") * 2 * Math.PI)
+    var tc_freq
+    if (get_axis_prefix() == "YAW_") {
+        tc_freq = 1 / (get_form("PILOT_Y_RATE_TC") * 2 * Math.PI)
+    } else {
+        tc_freq = 1 / (get_form("ATC_INPUT_TC") * 2 * Math.PI)
+    }
     tc_filter.push(new LPF_1P(PID_rate, tc_freq))
     const tc_H = evaluate_transfer_functions([tc_filter], freq_max, freq_step, use_dB, unwrap_phase)
     // calculate transfer function for pilot input to the aircraft response
@@ -1115,6 +1120,7 @@ function load_log(log_file) {
     const other_params = [
         "INS_GYRO_FILTER",
         "ATC_INPUT_TC",
+        "PILOT_Y_RATE_TC",
         "ATC_ANG_RLL_P",
         "ATC_ANG_PIT_P",
         "ATC_ANG_YAW_P"
@@ -1153,6 +1159,7 @@ function load_log(log_file) {
         document.getElementById("endtime").value = end_time
     }
 
+    console.log(param)
     setup_FFT_data()
 }
 
@@ -1237,6 +1244,8 @@ function axis_changed() {
 }
 
 function update_PID_filters() {
+    document.getElementById('RollPitchTC').style.display = 'none';
+    document.getElementById('YawTC').style.display = 'none';
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
@@ -1247,6 +1256,7 @@ function update_PID_filters() {
         document.getElementById('FILT' + i).style.display = 'none';
     }
     if (document.getElementById('type_Roll').checked) {
+        document.getElementById('RollPitchTC').style.display = 'block';
         document.getElementById('RollPIDS').style.display = 'block';;
         document.getElementById('RollNOTCH').style.display = 'block';
         const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
@@ -1258,6 +1268,7 @@ function update_PID_filters() {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Pitch').checked) {
+        document.getElementById('RollPitchTC').style.display = 'block';
         document.getElementById('PitchPIDS').style.display = 'block';
         document.getElementById('PitchNOTCH').style.display = 'block';
         const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
@@ -1269,6 +1280,7 @@ function update_PID_filters() {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Yaw').checked) {
+        document.getElementById('YawTC').style.display = 'block';
         document.getElementById('YawPIDS').style.display = 'block';
         document.getElementById('YawNOTCH').style.display = 'block';
         const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
@@ -1748,6 +1760,14 @@ function save_parameters() {
                 }
                 NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value
                 NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value
+            }
+            if (name.startsWith("ATC_INPUT_")) {
+                var value = inputs[v].value;
+                params += name + "," + param_to_string(value) + "\n";
+            }
+            if (name.startsWith("PILOT_")) {
+                var value = inputs[v].value;
+                params += name + "," + param_to_string(value) + "\n";
             }
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
