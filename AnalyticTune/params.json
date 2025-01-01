@@ -729,6 +729,19 @@
       "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
     }
   },
+  "PILOT": {
+    "PILOT_Y_RATE_TC": {
+      "Description": "Pilot yaw rate control input time constant",
+      "DisplayName": "Pilot yaw rate control input time constant",
+      "Range": {
+        "high": "0.5",
+        "low": "0.01"
+      },
+      "Units": "s",
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pilot yaw rate control input time constant\n    // @Description: Pilot yaw rate control input time constant\n    // @Range: 0.01 0.5\n   // @User: Advanced"
+    }
+  },
   "INS": {
     "INS_ACC1_CALTEMP": {
       "Calibration": "1",
