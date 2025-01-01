@@ -1908,22 +1908,13 @@ function redraw_freq_resp() {
     if (document.getElementById("type_Pilot_Ctrlr").checked) {
         calc_data = calc_freq_resp.pilotctrl_H
         calc_data_coh = calc_freq_resp.pilotctrl_coh
-        if (sid_axis > 2 && sid_axis < 7) {
+        if (sid_axis > 3) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.pilotctrl_H
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
-    } else if (document.getElementById("type_Att_Stab").checked) {
-        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
-        calc_data_coh = calc_freq_resp.sysbl_coh
-        if (sid_axis < 10 || sid_axis > 12) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.attbl_H  // attitude stability
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Rate_Stab").checked) {
+    } else if (document.getElementById("type_Sys_Stab").checked) {
         calc_data = calc_freq_resp.sysbl_H  // entire control system stability
         calc_data_coh = calc_freq_resp.sysbl_coh
         if (sid_axis < 10 || sid_axis > 12) {
@@ -1932,10 +1923,24 @@ function redraw_freq_resp() {
         pred_data = pred_freq_resp.sysbl_H  // attitude stability
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
+    } else if (document.getElementById("type_Att_Stab").checked) {
+        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
+        calc_data_coh = calc_freq_resp.sysbl_coh
+        show_set_calc = false
+        pred_data = pred_freq_resp.attbl_H  // attitude stability
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
+    } else if (document.getElementById("type_Rate_Stab").checked) {
+        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
+        calc_data_coh = calc_freq_resp.sysbl_coh
+        show_set_calc = false
+        pred_data = pred_freq_resp.ratebl_H  // attitude stability
+        pred_data_coh = calc_freq_resp.bareAC_coh
+        show_set_pred = true
     } else if (document.getElementById("type_Att_DRB").checked) {
         calc_data = calc_freq_resp.DRB_H  // calculated disturbance rejection
         calc_data_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
-        if (sid_axis < 3 || sid_axis > 6) {
+        if (sid_axis < 4 || sid_axis > 6) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.DRB_H  // predicted disturbance rejection
@@ -1944,7 +1949,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr_nff").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 3 || sid_axis > 6) {
+        if (sid_axis < 4 || sid_axis > 6) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
@@ -1953,7 +1958,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis > 2 && sid_axis < 7) {
+        if (sid_axis > 3 && sid_axis < 7 || sid_axis > 9) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
@@ -1962,7 +1967,9 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
         calc_data = calc_freq_resp.ratectrl_H
         calc_data_coh = calc_freq_resp.ratectrl_coh
-        show_set_calc = true
+        if (sid_axis > 9) {
+            show_set_calc = false
+        }
         pred_data = pred_freq_resp.ratectrl_H
         pred_data_coh = calc_freq_resp.bareAC_coh
         show_set_pred = true
