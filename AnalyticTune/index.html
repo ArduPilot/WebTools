@@ -586,12 +586,8 @@
   calc_btn.onclick = function() {
       calculate_freq_resp();
   }
-  //var clear_btn = document.getElementById('clear_cookies');
-  //clear_btn.onclick = function() {
-  //    clear_cookies();
-  //}
 
-  let params = ["SCHED_LOOP_RATE"]
+  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC"]
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
       if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("FILT")) {
