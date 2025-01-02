@@ -647,6 +647,21 @@ var flight_data = {}
 var fft_plot = {}
 var fft_plot_Phase = {}
 var fft_plot_Coh = {}
+
+function link_plots() {
+
+    // Link all frequency axis
+    link_plot_axis_range([["FFTPlotMag", "x", "", fft_plot],
+                          ["FFTPlotPhase", "x", "", fft_plot_Phase],
+                          ["FFTPlotCoh", "x", "", fft_plot_Coh]])
+
+    // Link all reset calls
+    link_plot_reset([["FFTPlotMag", fft_plot],
+                     ["FFTPlotPhase", fft_plot_Phase],
+                     ["FFTPlotCoh", fft_plot_Coh]])
+
+}
+
 function setup_plots() {
 
     const time_scale_label = "Time (s)"
@@ -766,7 +781,7 @@ function setup_plots() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot_Coh.data, fft_plot_Coh.layout, {displaylogo: false});
 
-    //link_plots()
+    link_plots()
 }
 
 function get_axis_prefix() {
@@ -1224,7 +1239,7 @@ function setup_FFT_data() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot_Coh.data, fft_plot_Coh.layout, {displaylogo: false});
 
-//    link_plots()
+    link_plots()
 
 }
 
