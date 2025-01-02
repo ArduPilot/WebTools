@@ -1159,7 +1159,6 @@ function load_log(log_file) {
         document.getElementById("endtime").value = end_time
     }
 
-    console.log(param)
     setup_FFT_data()
 }
 
@@ -1343,7 +1342,7 @@ function calculate_freq_resp() {
                   window_size: window_size,
                   correction: win_correction })
 
-    console.log(data_set)
+//    console.log(data_set)
 
     // Windowing amplitude correction depends on spectrum of interest and resolution
     const FFT_resolution = data_set.FFT.average_sample_rate/data_set.FFT.window_size
@@ -1355,7 +1354,7 @@ function calculate_freq_resp() {
 
     // Number of windows averaged
     const mean_length = end_index - start_index
-    console.log(mean_length)
+//    console.log(mean_length)
 
     var H_pilot
     var coh_pilot
@@ -1470,18 +1469,18 @@ function load_time_history_data(t_start, t_end, axis) {
     let timeRATE_arr = log.get("RATE", "TimeUS")
     const ind1_i = nearestIndex(timeRATE_arr, t_start*1000000)
     const ind2_i = nearestIndex(timeRATE_arr, t_end*1000000)
-    console.log("ind1: ",ind1_i," ind2: ",ind2_i)
+//    console.log("ind1: ",ind1_i," ind2: ",ind2_i)
 
     let timeRATE = Array.from(timeRATE_arr)
-    console.log("time field pre slicing size: ", timeRATE.length)
+//    console.log("time field pre slicing size: ", timeRATE.length)
 
     timeRATE = timeRATE.slice(ind1_i, ind2_i)
-    console.log("time field post slicing size: ", timeRATE.length)
+//    console.log("time field post slicing size: ", timeRATE.length)
 
     // Determine average sample rate
     const trecord = (timeRATE[timeRATE.length - 1] - timeRATE[0]) / 1000000
     const samplerate = (timeRATE.length)/ trecord
-    console.log("sample rate: ", samplerate)
+//    console.log("sample rate: ", samplerate)
 
     const timeATT = log.get("ATT", "TimeUS")
     const ind1_a = nearestIndex(timeATT, t_start*1000000)
@@ -1682,43 +1681,6 @@ function window_size_inc(event) {
     last_window_size = event.target.value
 }
 
-// build url and query string for current view and copy to clipboard
-function get_link() {
-
-    if (!(navigator && navigator.clipboard && navigator.clipboard.writeText)) {
-        // copy not available
-        return
-    }
-
-    // get base url
-    var url =  new URL((window.location.href).split('?')[0]);
-
-    // Add all query strings
-    var sections = ["params", "PID_params"];
-    for (var j = 0; j<sections.length; j++) {
-        var items = document.forms[sections[j]].querySelectorAll('input,select');
-        for (var i=-0;i<items.length;i++) {
-            if (items[i].name === "") {
-                // Invalid name
-                continue
-            }
-            if (items[i].type == "radio" && !items[i].checked) {
-                // Only add checked radio buttons
-                continue;
-            }
-            if (items[i].type == "checkbox") {
-                url.searchParams.append(items[i].name, items[i].checked);
-                continue;
-            }
-            url.searchParams.append(items[i].name, items[i].value);
-        }
-    }
-
-    // copy to clipboard
-    navigator.clipboard.writeText(url.toString());
-
-}
-
 function save_parameters() {
 
     function save_from_elements(inputs) {
@@ -1728,6 +1690,10 @@ function save_parameters() {
         for (const v in inputs) {
             var name = "" + inputs[v].id;
             if (document.getElementById('type_Roll').checked) {
+                if (name.startsWith("ATC_INPUT_")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
                 if (name.startsWith("ATC_RAT_RLL")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
@@ -1739,6 +1705,10 @@ function save_parameters() {
                 NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value
                 NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value
             } else if (document.getElementById('type_Pitch').checked) {
+                if (name.startsWith("ATC_INPUT_")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
                 if (name.startsWith("ATC_RAT_PIT")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
@@ -1750,7 +1720,11 @@ function save_parameters() {
                 NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value
                 NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value
             } else if (document.getElementById('type_Yaw').checked) {
-                if (name.startsWith("ATC_RAT_YAW")) {
+                if (name.startsWith("PILOT_")) {
+                    var value = inputs[v].value;
+                    params += name + "," + param_to_string(value) + "\n";
+                }
+                    if (name.startsWith("ATC_RAT_YAW")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
@@ -1760,14 +1734,6 @@ function save_parameters() {
                 }
                 NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value
                 NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value
-            }
-            if (name.startsWith("ATC_INPUT_")) {
-                var value = inputs[v].value;
-                params += name + "," + param_to_string(value) + "\n";
-            }
-            if (name.startsWith("PILOT_")) {
-                var value = inputs[v].value;
-                params += name + "," + param_to_string(value) + "\n";
             }
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
@@ -1915,7 +1881,7 @@ function redraw_freq_resp() {
 
     var unwrap_ph = document.getElementById("PID_ScaleUnWrap").checked;
 
-    console.log(sid_axis)
+//    console.log(sid_axis)
     unwrap_ph = false
      // Set scaled x data
     const scaled_bins = frequency_scale.fun(calc_freq_resp.freq)
