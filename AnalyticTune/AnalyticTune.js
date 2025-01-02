@@ -990,6 +990,7 @@ function TimeUS_to_seconds(TimeUS) {
 let log
 var sid_axis
 var sid_sets = {}
+var use_ANG_message
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1071,6 +1072,14 @@ function load_log(log_file) {
         flight_data.data[3].y = log.get("RATE", "Y")
         update_time(RATE_time)
     }
+
+    // Determine if ANG message is used instead of ATT message
+    if ("ANG" in log.messageTypes) {
+        use_ANG_message = true
+    } else {
+        use_ANG_message = false
+    }
+
 
     // If found use zoom to non-zero SIDD
     if ((start_time != null) && (end_time != null)) {
@@ -1482,9 +1491,18 @@ function load_time_history_data(t_start, t_end, axis) {
     const samplerate = (timeRATE.length)/ trecord
 //    console.log("sample rate: ", samplerate)
 
-    const timeATT = log.get("ATT", "TimeUS")
-    const ind1_a = nearestIndex(timeATT, t_start*1000000)
-    const ind2_a = nearestIndex(timeATT, t_end*1000000)
+    var timeATT
+    var ind1_a
+    var ind2_a
+    if (use_ANG_message) {
+        timeATT = log.get("ANG", "TimeUS")
+        ind1_a = nearestIndex(timeATT, t_start*1000000)
+        ind2_a = nearestIndex(timeATT, t_end*1000000)
+    } else {
+        timeATT = log.get("ATT", "TimeUS")
+        ind1_a = nearestIndex(timeATT, t_start*1000000)
+        ind2_a = nearestIndex(timeATT, t_end*1000000)
+    }
 
     const timeSIDD = log.get("SIDD", "TimeUS")
     const ind1_s = nearestIndex(timeSIDD, t_start*1000000)
@@ -1521,8 +1539,15 @@ function load_time_history_data(t_start, t_end, axis) {
     let ActInputData = Array.from(log.get("RATE", ActInputParam))
     let RateTgtData = Array.from(log.get("RATE", RateTgtParam))
     let RateData = Array.from(log.get("RATE", RateParam))
-    let AttTgtData = Array.from(log.get("ATT", AttTgtParam))
-    let AttData = Array.from(log.get("ATT", AttParam))
+    var AttTgtData
+    var AttData
+    if (use_ANG_message) {
+        AttTgtData = Array.from(log.get("ANG", AttTgtParam))
+        AttData = Array.from(log.get("ANG", AttParam))
+    } else {
+        AttTgtData = Array.from(log.get("ATT", AttTgtParam))
+        AttData = Array.from(log.get("ATT", AttParam))
+    }
     let GyroRawData = Array.from(log.get("SIDD", GyroRawParam))
 
     // Slice ActInputData
