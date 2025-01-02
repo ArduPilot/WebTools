@@ -1045,16 +1045,16 @@ function load_log(log_file) {
         for (let k=1;k<SIDD_time.length;k++) {
             if (SIDD_time[k]-SIDD_time[k-1] > 0.5) {
                 sid_sets.tend[j] = SIDD_time[k-1]
-                if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j]) {
-                    sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j]
+                if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j] + 1.0) {
+                    sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j] + 1.0
                 }
                 j++
                 sid_sets.tstart[j] = SIDD_time[k]
             }
         }
         sid_sets.tend[j] = SIDD_time[SIDD_time.length-1]
-        if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j]) {
-            sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j]
+        if (sid_sets.tend[j]-sid_sets.tstart[j] > sid_sets.tlen[j] + 1.0) {
+            sid_sets.tend[j]=sid_sets.tstart[j]+sid_sets.tlen[j] + 1.0
         }
         start_time = sid_sets.tstart[0]
         end_time = sid_sets.tend[0]
