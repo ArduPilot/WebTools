@@ -2084,9 +2084,14 @@ function add_sid_sets() {
     let header = document.createElement("tr")
     table.appendChild(header)
 
-    function set_cell_style(cell, color) {
+    function set_cell_style(cell, color, center) {
         cell.style.border = "1px solid #000"
         cell.style.padding = "8px"
+
+        if (center !== false) {
+            cell.style.textAlign = "center"
+        }
+
         if (color != null) {
             // add alpha, 40%
             cell.style.backgroundColor = color + '66'
@@ -2118,47 +2123,88 @@ function add_sid_sets() {
     item.appendChild(document.createTextNode("End Time"))
     set_cell_style(item)
 
-    var num_sets = sid_sets.axis.length
+    const axisTypes = {
+       1: "Input Roll Angle",
+       2: "Input Pitch Angle",
+       3: "Input Yaw Angle",
+       4: "Recovery Roll Angle",
+       5: "Recovery Pitch Angle",
+       6: "Recovery Yaw Angle",
+       7: "Rate Roll",
+       8: "Rate Pitch",
+       9: "Rate Yaw",
+       10: "Mixer Roll",
+       11: "Mixer Pitch",
+       12: "Mixer Yaw",
+       13: "Mixer Thrust",
+       14: "Measured Lateral Position",
+       15: "Measured Longitudinal Position",
+       16: "Measured Lateral Velocity",
+       17: "Measured Longitudinal Velocity",
+       18: "Input Lateral Velocity",
+       19: "Input Longitudinal Velocity"
+    }
+
+    const num_sets = sid_sets.axis.length
     // Add line
-    let radio = document.createElement("input")
     for (let i = 0; i < num_sets; i++) {
         const color = num_sets > 1 ? plot_default_color(i) : null
 
+        // Add new row
         let row = document.createElement("tr")
         table.appendChild(row)
 
+        // Index
         let index = document.createElement("td")
         row.appendChild(index)
         set_cell_style(index, color)
         index.appendChild(document.createTextNode(i + 1))
 
+        // Use radio button
         let item = document.createElement("td")
         row.appendChild(item)
         set_cell_style(item, color)
 
-        radio = document.createElement("input")
+        let radio = document.createElement("input")
         radio.setAttribute('type', "radio")
         radio.setAttribute('id', "set_selection_" + i)
         radio.setAttribute('name', "sid_sets")
         radio.setAttribute('value', "set_set_" + i)
         radio.setAttribute('onchange', "update_time_range(this); time_range_changed(this)")
-        if (i == 0) {radio.checked = true}
         item.appendChild(radio)
 
-        item = document.createElement("td")
-        row.appendChild(item)
-        set_cell_style(item, color)
-        item.appendChild(document.createTextNode(sid_sets.axis[i]))
+        // Select first item by defualt
+        if (i == 0) {
+            radio.checked = true
+        }
 
+        // Axis
         item = document.createElement("td")
         row.appendChild(item)
-        set_cell_style(item, color)
-        item.appendChild(document.createTextNode(sid_sets.tstart[i]))
+        set_cell_style(item, color, false)
 
+        // Add type string
+        const axis = sid_sets.axis[i]
+        if (axis in axisTypes) {
+            // Number and type
+            item.appendChild(document.createTextNode(sid_sets.axis[i] + ": " + axisTypes[axis]))
+
+        } else {
+            // Number only
+            item.appendChild(document.createTextNode(sid_sets.axis[i]))
+        }
+
+        // Start time
         item = document.createElement("td")
         row.appendChild(item)
         set_cell_style(item, color)
-        item.appendChild(document.createTextNode(sid_sets.tend[i]))
+        item.appendChild(document.createTextNode(sid_sets.tstart[i].toFixed(2)))
+
+        // End time
+        item = document.createElement("td")
+        row.appendChild(item)
+        set_cell_style(item, color)
+        item.appendChild(document.createTextNode(sid_sets.tend[i].toFixed(2)))
 
     }
 }
