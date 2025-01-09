@@ -4,111 +4,166 @@
 <meta charset="utf-8" />
 <title>ArduPilot WIP Web Tools</title>
 <link rel="icon" href="../images/AP_favicon.png">
+
+<style> 
+    body { 
+    font-family: Arial, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    background-color: #e7f3ff; color: #333; 
+    }
+    header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+  }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    } 
+    h1 { 
+    text-align: center; 
+    color: #004080; margin-top: 20px; 
+    } 
+    .container { 
+    max-width: 1200px; margin: auto; padding: 20px; 
+    } 
+    .intro { 
+    text-align: center; margin-bottom: 30px; 
+    line-height: 1.6; 
+    } 
+    .tools { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 20px; justify-content: center; 
+    } 
+    .tool { 
+    background: white; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+    border-radius: 10px; 
+    overflow: hidden; 
+    width: 300px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center; 
+    transition: transform 0.2s ease; 
+    } 
+    .tool:hover { 
+    transform: translateY(-10px); 
+    } 
+    .tool img { 
+    width: 100%; height: auto; 
+    } 
+    .tool h2 { 
+    margin: 15px 0; color: #004080; 
+    } 
+    .tool p { 
+    padding: 0 15px; 
+    margin-bottom: 20px; 
+    font-size: 0.9rem; 
+    color: #555; 
+    } 
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+    margin-left: -150px;
+    margin-right: -150px;
+    margin-bottom: -30px;
+
+  }
+</style>     
 </head>
-<table style="width:1200px"><tr><td>
+<body>
+
+<header>
   <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-  <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
+    <a href="https://github.com/ArduPilot/WebTools">
+      <img src="../images/github-mark.png" alt="GitHub Logo">
+      <span>GitHub</span>
+    </a>
+</header>
 
-<h1 style="text-align:center; width:1200px"><a href="" style="color: #000000; text-decoration:none;">ArduPilot WIP Web Tools</a></h1>
 
-<div style="max-width:1200px;">
+<h1><a href="">ArduPilot WIP Web Tools</a></h1>
+<div class="container">
+  <div class="intro">
+    The tools on this page are either developer focused, or a work in progress, they are likely to be a little rough.
+  </div>
 
-The tools on this page are either developer focused, or a work in progress, they are likely to be a little rough.
-
-</div>
-
-<table>
-
-  <tr>
-    <td>
-      <a href="../StreamStats" style="margin: 20px; display: inline-block;"><img src="../images/StreamStats_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+  <div class="tools">
+    <div class="tool">
+      <a href="../StreamStats"><img src="../images/StreamStats_Icon.png" alt="Stream Stats Icon"></a>
       <h2>Stream stats</h2>
-      Message rate analysis for tlogs and bin logs.
-    </td>
-  </tr>
+      <p>Message rate analysis for tlogs and bin logs.</p>
+    </div>
 
-  <tr>
-    <td>
-      <a href="../KinematicTool" style="margin: 20px; display: inline-block;"><img src="../images/KinematicTool_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+    <div class="tool">
+      <a href="../KinematicTool"><img src="../images/KinematicTool_Icon.png" alt="Kinematic Tool Icon"></a>
       <h2>Kinematic Tool</h2>
-      A tool to help understanding of attitude control input shaping.
-    </td>
-  </tr>
+      <p>A tool to help understanding of attitude control input shaping.</p>
+    </div>
 
-  <tr>
-    <td>
-      <a href="../GeofenceGenerator" style="margin: 20px; display: inline-block;"><img src="../images/GeofenceGenerator_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+    <div class="tool">
+      <a href="../GeofenceGenerator"><img src="../images/GeofenceGenerator_Icon.png" alt="Geofence Generator Icon"></a>
       <h2>Geofence Generator</h2>
-      Generates ArduPilot geofences from Open Street Map waterway data.
-    </td>
-  </tr>
+      <p>Generates ArduPilot geofences from Open Street Map waterway data.</p>
+    </div>
 
-  <tr>
-    <td>
-      <a href="../RotationCheck" style="margin: 20px; display: inline-block;"><img src="../images/RotationCheck_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+    <div class="tool">
+      <a href="../RotationCheck"><img src="../images/RotationCheck_Icon.png" alt="Rotation Check Icon"></a>
       <h2>Rotation Check</h2>
-      A tool to help understand of rotations.
-    </td>
-  </tr>
+      <p>A tool to help understand of rotations.</p>
+    </div>
 
-  <tr>
-    <td>
-      <a href="../SysID" style="margin: 20px; display: inline-block;"><img src="../images/sysid_python_stateSpace.png" style="width:200px; height:200px; background-color: #f0f0f0;"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+    <div class="tool">
+      <a href="../SysID"><img src="../images/sysid_python_stateSpace.png" alt="SysID Icon"></a>
       <h2>SysID</h2>
-      A tool for identifying state-space or transfer function models for UAV dynamics
-    </td>
-  </tr>
+      <p>A tool for identifying state-space or transfer function models for UAV dynamics.</p>
+    </div>
 
-  <tr>
-    <td>
-      <a href="../TelemetryDashboard" style="margin: 20px; display: inline-block;"><img src="../images/TelemetryDashboard_Icon.png" style="width:200px;"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+    <div class="tool">
+      <a href="../TelemetryDashboard"><img src="../images/TelemetryDashboard_Icon.png" alt="Telemetry Dashboard Icon"></a>
       <h2>TelemetryDashboard</h2>
-      Telemetry Dashboard allows customizable data displays from a MAVLink telemetry stream. Requires a WebSocket server to forward raw binary MAVLink. Attempts to auto connect to MissionPlanner at <code>ws://127.0.0.1:56781</code>. Latest PyMAVLink can also be used eg: <a href="https://github.com/IamPete1/pymavlink/blob/WebSocket_forwarding_example/examples/mavtcpsniff.py">TCP to WebSocket</a>. 
+      <p>Telemetry Dashboard allows customizable data displays from a MAVLink telemetry stream. Requires a WebSocket server to forward raw binary MAVLink. Attempts to auto connect to MissionPlanner at <code>ws://127.0.0.1:56781</code>. Latest PyMAVLink can also be used eg: <a href="https://github.com/IamPete1/pymavlink/blob/WebSocket_forwarding_example/examples/mavtcpsniff.py">TCP to WebSocket</a>. 
       This is read only, MAVLink commands are not sent (including stream rate requests). 
       This is not a GCS replacement.
-    </td>
-  </tr>
+   </p>
+  </div> 
 
-  <tr>
-    <td>
-      <a href="../AnalyticTune" style="margin: 20px; display: inline-block;"><img src="../images/analytictune_pic.png" style="width:200px; height:200px; background-color: #f0f0f0;"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+  <div class="tool">
+      <a href="../AnalyticTune"><img src="../images/analytictune_pic.png"></a>
+    
       <h2>Analytic Tune</h2>
-      A tool for analytically tuning a multirotor or heli using system ID mode data
-    </td>
-  </tr>
+      <p>A tool for analytically tuning a multirotor or heli using system ID mode data </p>
+   </div>
 
   
-  <tr>
-    <td>
-      <a href="../ThrustExpo" style="margin: 20px; display: inline-block;"><img src="../images/ThrustExpo_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
+   <div class="tool">
+      <a href="../ThrustExpo"><img src="../images/ThrustExpo_Icon.png"></a>
+    
       <h2>Thrust Expo</h2>
-      Use thrust test stand data to analyze motor thrust linearity.
+      <p>Use thrust test stand data to analyze motor thrust linearity.
       Visualizes the relationship between measured thrust and throttle input, along with a plot of the thrust expo curve for optimization of MOT_THST_EXPO to achieve linear thrust response.
-      Can also estimate hover throttle.
-    </td>
-  </tr>
+      Can also estimate hover throttle.  </p>
+    </div>
+    </div>
 
-</table>
-
+    <footer>
+      &copy; 2025 ArduPilot. All Rights Reserved.
+    </footer>
 </body>
 </html>
