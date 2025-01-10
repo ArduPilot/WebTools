@@ -24,8 +24,6 @@
 <script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
 <script type="text/javascript" src="magfit.js"></script>
 
-</head>
-
 <style>
     div.plotly-notifier {
         visibility: hidden;
@@ -34,21 +32,53 @@
     .tippy-box {
         font-size: 20px;
     }
+    header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    }
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+    margin-left: -150px;
+    margin-right: -150px;
+    margin-bottom: -30px;
+    }
+    body{
+        background-color: #e7f3ff;
+    }
 </style>
 
-<table style="width:1200px"><tr><td>
-    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-    <br>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
-
-<table><tr><td style="width:1200px">
-<h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot MAGFit in flight compass calibration</a></h1>
-</td></tr></table>
+</head>
 
 <body>
+
+    <header>
+        <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+          <a href="https://github.com/ArduPilot/WebTools">
+            <img src="../images/github-mark.png" alt="GitHub Logo">
+            <span>GitHub</span>
+          </a>
+    </header>
+
+    <h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot MAGFit in flight compass calibration</a></h1>
 
 <p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
 This tool takes a .bin log and performs a "MAGFit inflight calibration". Calibration parameters are found that fit the measured magnetic field from the log to the expected field from the World Magnetic Model.
@@ -145,6 +175,8 @@ For best results use a flight log that covers as many orientations as possible. 
     </tr>
 </table>
 
+<br><br>
+
 <div id="mag_plot_x" style="width:1200px;height:300px"></div>
 <div id="mag_plot_y" style="width:1200px;height:300px"></div>
 <div id="mag_plot_z" style="width:1200px;height:300px"></div>
@@ -194,6 +226,8 @@ For best results use a flight log that covers as many orientations as possible. 
 
 <div id="error_plot" style="width:1200px;height:300px"></div>
 <div id="error_bars" style="width:1200px;height:300px"></div>
+
+<br><br>
 
 <table>
     <tr>
@@ -340,6 +374,9 @@ For best results use a flight log that covers as many orientations as possible. 
     </tr>
 </table>
 
+<footer>
+    &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 </body>
 
