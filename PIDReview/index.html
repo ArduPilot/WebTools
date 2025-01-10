@@ -17,26 +17,56 @@
 <script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
-</head>
-<table style="width:1200px"><tr><td>
-    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-    <br>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
-
-<table><tr><td style="width:1200px">
-<h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot PID Review Tool</a></h1>
-</td></tr></table>
-
-<body>
-
 <style>
     div.plotly-notifier {
         visibility: hidden;
     }
+    header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    }
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+    margin-left: -150px;
+    margin-right: -150px;
+    margin-bottom: -30px;
+    }
+    body{
+        background-color: #e7f3ff;
+    }
 </style>
+</head>
+
+<body>
+
+    <header>
+        <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+          <a href="https://github.com/ArduPilot/WebTools">
+            <img src="../images/github-mark.png" alt="GitHub Logo">
+            <span>GitHub</span>
+          </a>
+    </header>
+
+    <h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot PID Review Tool</a></h1>
 
 <table>
 <tr>
@@ -182,7 +212,11 @@
     </tr>
 </table>
 
+<br><br>
+
 <div id="FFTPlot" style="width:1200px;height:450px"></div>
+
+<br><br>
 
 <table>
     <td style="width: 250px;"></td>
@@ -225,6 +259,8 @@
 
 <div id="Spectrogram" style="width:1200px;height:450px"></div>
 
+<br><br>
+
 <table>
     <td style="width: 375px;"></td>
     <td>
@@ -256,6 +292,10 @@
         </fieldset>
     </td>
 </table>
+
+<footer>
+    &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 </body>
 
