@@ -20,24 +20,57 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 <script src='../modules/fft.js/dist/fft.js'></script>
-</head>
-<table style="width:1200px"><tr><td>
-    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-    <br>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
+
 
 <style>
-        div.plotly-notifier {
-                visibility: hidden;
-        }
+    div.plotly-notifier {
+            visibility: hidden;
+    }
+    header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+  }
+
+  header a {
+    color: #e7f3ff;
+    text-decoration: none;
+    display: flex;
+    font-size: 30px;
+    align-items: center;
+  }
+
+  header a img {
+    margin-right: 10px;
+    height: 50px;
+  }
+  footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+  }
+  body{
+    background-color: #e7f3ff;
+  }
 </style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;">ArduCopter Analytic Tune Tool</a></h1>
+</head>
 
 <body onload="load(); update_all_hidden(); setup_plots();">
+    <header>
+        <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+          <a href="https://github.com/ArduPilot/WebTools">
+            <img src="../images/github-mark.png" alt="GitHub Logo">
+            <span>GitHub</span>
+          </a>
+    </header>
+
+    <h1><a href="" style="color: #000000; text-decoration:none;">ArduCopter Analytic Tune Tool</a></h1>
 
 <table>
         <tr>
@@ -565,6 +598,10 @@
                 </p>
         </fieldset>
 </form>
+
+<footer>
+    &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 <script>
 
