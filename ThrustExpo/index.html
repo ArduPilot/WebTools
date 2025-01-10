@@ -20,52 +20,71 @@
         <script src="../Libraries/Array_Math.js"></script>
         <script src="../Libraries/Param_Helpers.js"></script>
         <script src="ThrustExpo.js"></script>
+
+        <style>
+            div.plotly-notifier {
+                visibility: hidden;
+            }
+            header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #004080;
+            color: white;
+            }
+            header a {
+            color: #e7f3ff; 
+            text-decoration: none;
+            font-size: 30px; 
+            display: flex; 
+            align-items: center; 
+            } 
+            header a img { 
+            margin-right: 10px; 
+            height: 50px; 
+            }
+            footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #004080;
+            color: white;
+            margin-top: 30px;
+            margin-left: -150px;
+            margin-right: -150px;
+            margin-bottom: -30px;
+            }
+            body{
+                background-color: #e7f3ff;
+            }
+        </style>
+
     </head>
 
     <body>
-        <header class="header">
-            <div class="logo-row">
-                <div>
-                    <a href="https://ardupilot.org">
-                        <img
-                            src="../images/ArduPilot.png"
-                            alt="ArduPilot Logo"
-                        />
-                    </a>
-                </div>
-                <div class="github-logo-cell">
-                    <a href="https://github.com/ArduPilot/WebTools">
-                        <img
-                            src="../images/github-mark.png"
-                            alt="GitHub Mark"
-                        />
-                    </a>
-                    <br />
-                    <a href="https://github.com/ArduPilot/WebTools">
-                        <img
-                            src="../images/GitHub_Logo.png"
-                            alt="GitHub Logo"
-                        />
-                    </a>
-                </div>
-            </div>
+        <header>
+            <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+              <a href="https://github.com/ArduPilot/WebTools">
+                <img src="../images/github-mark.png" alt="GitHub Logo">
+                <span>GitHub</span>
+              </a>
+          </header>
 
-            <h1>
-                <a href=""> ArduPilot Thrust Expo </a>
-            </h1>
-            <div id="app-description">
-                This tool estimates thrust linearization using thrust test stand
-                data. Load a parameter file or enter parameters manually. Copy
-                and paste test stand data from a spreadsheet or enter it
-                manually (press enter to edit a single cell). Current data is
-                optional (for reference only - not used in calculation). Once
-                the plot is generated, adjust MOT_THST_EXPO to improve the
-                linear fit. If the curve is poorly matched at the extremes, do
-                not chase a perfect fit. Rather, focus on midrange throttle
-                linearity.
-            </div>
-        </header>
-
+        <h1>
+            <a href=""> ArduPilot Thrust Expo </a>
+        </h1>
+        <div id="app-description">
+            This tool estimates thrust linearization using thrust test stand
+            data. Load a parameter file or enter parameters manually. Copy
+            and paste test stand data from a spreadsheet or enter it
+            manually (press enter to edit a single cell). Current data is
+            optional (for reference only - not used in calculation). Once
+            the plot is generated, adjust MOT_THST_EXPO to improve the
+            linear fit. If the curve is poorly matched at the extremes, do
+            not chase a perfect fit. Rather, focus on midrange throttle
+            linearity.
+        </div>
+        
         <div class="content">
             <table><tr><td>
             <fieldset>
@@ -228,6 +247,11 @@
 
             <div id="thrust-error-plot" class="thrust-plot"></div>
         </div>
+
+        <footer>
+            &copy; 2025 ArduPilot. All Rights Reserved.
+        </footer>
+
     </body>
     <script>
 
