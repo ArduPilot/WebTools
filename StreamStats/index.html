@@ -18,15 +18,6 @@
 <script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
-</head>
-<table style="width:1200px"><tr><td>
-  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-  <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
-
 <style>
   div.plotly-notifier {
     visibility: hidden;
@@ -35,11 +26,53 @@
   .tippy-box {
     font-size: 20px;
   }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    }
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 500px;
+    margin-left: -150px;
+    margin-right: -150px;
+    }
+    body{
+        background-color: #e7f3ff;
+    }
 </style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;">Stream Stats</a></h1>
+</head>
 
 <body onload="reset();">
+
+  <header>
+    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+      <a href="https://github.com/ArduPilot/WebTools">
+        <img src="../images/github-mark.png" alt="GitHub Logo">
+        <span>GitHub</span>
+      </a>
+  </header>
+
+  <h1><a href="" style="color: #000000; text-decoration:none;">Stream Stats</a></h1>
+
 <input id="fileItem" type="file" accept=".bin,.tlog" onchange="load(this)">
 
 <input id="OpenIn" type="button" value="Open In" disabled>
@@ -94,6 +127,10 @@
   <p id="LOGSTATS"></p>
   <div id="log_stats" style="width:800px;height:800px;margin-left:200px"></div>
 </div>
+
+<footer>
+  &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 <script>
 
