@@ -9,7 +9,7 @@
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color:#e7f3ff;
+    background-color:#f8fafc;
     color: #333;
   }
 
@@ -85,6 +85,7 @@
   .tool h2 {
     margin: 15px 0;
     color: #004080;
+    text-decoration: none;
   }
 
   .tool p {
@@ -127,9 +128,10 @@
     <div class="tool">
       <a href="./LogFinder">
         <img src="images/LogFinder_Icon.png" alt="Log Finder">
-        <h2>Log Finder</h2>
+        <h2 style="text-decoration: none;">Log Finder</h2>
       </a>
-      <p>Load and sort directories of logs. Tracks parameter changes and provides easy log transfer between tools.</p>
+      <p>A tool load and sort directories of logs. Note that directory read is not supported by all browsers. Logs are sorted by the unique hardware ID of the flight controller. Parameter changes are tracked between logs.
+      Open in links allow files to be easily opened in any of the other tools.</p>
     </div>
 
     <div class="tool">
@@ -145,7 +147,8 @@
         <img src="images/HardwareReport_Icon.png" alt="Hardware Report">
         <h2>Hardware Report</h2>
       </a>
-      <p>Overview of connected hardware, sensor health, and firmware details.</p>
+      <p>Provides a overview of connected hardware from a parameter file or log. If a log is used more information can be provided, such as sensor health status and exact firmware version. A range of options are available to extract parameters from logs, all, only changed or minimal removing calibration parameters.
+      Includes visualization for sensor position offsets.</p>
     </div>
 
     <div class="tool">
@@ -153,7 +156,8 @@
         <img src="images/MAGFit_Icon.png" alt="MAGFit">
         <h2>MAGFit</h2>
       </a>
-      <p>Calibrate compass from flight logs using world magnetic models.</p>
+      <p>Calibrate compass from flight log. This tool fits the logged magnetometer data to the world magnetic model providing offsets, iron correction, scale, motor compensation and checking orientation.
+      </p>
     </div>
 
     <div class="tool">
@@ -161,7 +165,7 @@
         <img src="images/FilterReview_Icon.png" alt="Filter Review">
         <h2>Filter Review</h2>
       </a>
-      <p>Analyze gyro noise and filter configurations without re-flying.</p>
+      <p>Gyro noise and filter configuration tool. Uses raw or batch IMU logs to show the vehicles noise profile. Filters can are applied logged pre-filter data to see the effect without the need to fly again.</p>
     </div>
 
     <div class="tool">
@@ -177,7 +181,9 @@
         <img src="images/FilterTool_Icon.png" alt="Filter Tool">
         <h2>Filter Tool</h2>
       </a>
-      <p>Visualize filter setups and analyze attenuation and phase lag.</p>
+      <p>Bode plot tool to give insight into gyro low pass and notch filter setup. This tool visualizes the attenuation and phase lag of a filter setup loaded from a parameter file.
+        For filter setup the FilterReview tool it is recommended it provides the same bode plot feedback. This filter tool allows the attenuation and phase lag of each filter to be plotted individually, something which the filter reivew tool cannot do. 
+        This tool also provides a estimated response for the rate PID gains.</p>
     </div>
 
     <div class="tool">
@@ -185,7 +191,7 @@
         <img src="images/under-construction-sign-icon.png" alt="Work in Progress">
         <h2>Work in Progress Tools</h2>
       </a>
-      <p>Explore experimental tools under development.</p>
+      <p> The tools that are a work in progress, they are likely to be a little rough.</p>
     </div>
   </div>
 </div>
