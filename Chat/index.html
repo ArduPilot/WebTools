@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Chat</title>
+  <link rel="icon" href="../images/AP_favicon.png">
+</head>
+<table style="width:1200px">
+  <tr>
+    <td>
+      <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+    </td>
+    <td>
+      <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a><br>
+      <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+    </td>
+  </tr>
+</table>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .chat-container {
+        width: 400px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        background-color: #f9f9f9;
+    }
+    .chat-box {
+        width: 100%;
+        height: 200px;
+        border: 1px solid #ccc;
+        background-color: white;
+        padding: 5px;
+        overflow-y: auto;
+    }
+    .user-text {
+        color: red;
+    }
+    .assistant-text {
+        color: black;
+    }
+    .input-container {
+        display: flex;
+        margin-top: 10px;
+    }
+    .input-field {
+        flex: 1;
+        padding: 5px;
+    }
+    .send-button {
+        margin-left: 5px;
+    }
+</style>
+
+<h1><a href="" style="color: #000000; text-decoration:none;">Chat</a></h1>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-container">
+        <button id="recButton">Rec</button>
+        <input type="text" id="userInput" class="input-field" placeholder="Type a message...">
+        <button class="send-button" onclick="send_message()">Send</button>
+    </div>
+  </div>
+
+  <!-- OpenAI API key input field -->
+  <div class="openaiapi-key-container">
+    <label for="openai_api_key">OpenAI API Key:</label>
+    <input type="password" id="openai_api_key" class="input-field">
+    <button onclick="toggle_openai_api_key_visibility()">👁️</button>
+  </div>
+
+  <!-- read-only input for Assistant ID -->
+  <div class="assistant-id-container">
+    <label for="assistantId">assistant id:</label>
+    <input type="text" id="assistantId" class="input-field" readonly>
+  </div>
+
+  <!-- read-only input for assistant thread id -->
+  <div class="assistant-thread-container">
+    <label for="assistantThreadId">thread id:</label>
+    <input type="text" id="assistantThreadId" class="input-field" readonly>
+  </div>
+
+  <!-- read-only input for Assistant status -->
+  <div class="assistant-run-status-container">
+    <label for="assistantRunStatus">run status:</label>
+    <input type="text" id="assistantRunStatus" class="input-field" readonly>
+  </div>
+
+  <h3 hidden>MAVLink</h3>
+  <p id="MAVLink"></p>
+
+  <!-- simple script functions local to this page -->
+  <script>
+    // show/hide the OpenAI API key field
+    function toggle_openai_api_key_visibility() {
+        let openai_key_input = document.getElementById("openai_api_key");
+        openai_key_input.type = openai_key_input.type === "password" ? "text" : "password";
+    }
+  </script>
+
+<script type="module">
+  // error handling
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+            msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+  window.addEventListener('unhandledrejection', function (e) {
+      throw new Error(e.reason.stack)
+  })
+
+  // imports
+  import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.71.0/+esm"
+  import EventEmitter from 'https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/+esm'
+
+  // constants
+  const OPENAI_API_KEY = ""; // replace with your OpenAI API key
+  const OPENAI_MODEL = "gpt-4o"
+  const OPENAI_ASSISTANT_NAME = "ArduPilot Vehicle Control via MAVLink"
+
+  // global variables
+  let openai = null
+  let openai_assistant_id = null
+  let openai_thread_id = null
+  let event_handler = null
+
+  // chat listener for user input and enter key
+  document.getElementById("userInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+          send_message();
+      }
+  })
+
+  // get openai API key (use this in API calls)
+  function get_openai_api_key() {
+      if (OPENAI_API_KEY.length > 0) {
+          return OPENAI_API_KEY;
+      }
+      return document.getElementById("openai_api_key").value.trim();
+  }
+
+  // check connection
+  check_connection();
+
+  // add text to chat box
+  function add_text_to_chat(text, role = "assistant") {
+      let div_class = role === "assistant" ? "assistant-text" : "user-text";
+      let chatBox = document.getElementById("chatBox");
+
+      if (role === "assistant") {
+          // try to find the last assistant message and append to it
+          let last_message = chatBox.querySelector(`.${div_class}:last-of-type`);
+          if (last_message) {
+              last_message.textContent += text;
+              chatBox.scrollTop = chatBox.scrollHeight;
+              return;
+          }
+      }
+
+      // create a new message div if no previous assistant message exists
+      let message_div = document.createElement("div");
+      message_div.className = div_class;
+      message_div.textContent = text;
+      chatBox.appendChild(message_div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // send message to AI assistant, get response and place in chat box text area
+  async function send_message() {
+      // check connection to OpenAI
+      if (!(await check_connection())) {
+          return;
+      }
+
+      let userInput = document.getElementById("userInput").value;
+      if (!userInput.trim()) return;
+
+      // display user input and clear input field
+      add_text_to_chat(userInput, "user");
+      document.getElementById("userInput").value = "";
+
+      // fetch response from assistant
+      let response = await get_assistant_response(userInput);
+
+      // display assistant response
+      add_text_to_chat(response, "assistant");
+  }
+
+  //
+  // methods below here interact directly with the OpenAI API
+  //
+
+  // check connection to OpenAI API and return true on succes, false on failure
+  async function check_connection() {
+      // check openai API key
+      if (!get_openai_api_key()) {
+          return false;
+      }
+      // check openai connection
+      if (!openai) {
+          openai = new OpenAI({apiKey: get_openai_api_key(), dangerouslyAllowBrowser: true});
+          if (!openai) {
+              return false;
+          }
+      }
+
+      // return immediately if assistant id has already been found
+      if (openai_assistant_id) {
+          return true
+      }
+
+      let assistantId = await find_assistant(OPENAI_ASSISTANT_NAME);
+      if (assistantId) {
+          // store assistant id
+          openai_assistant_id = assistantId
+          document.getElementById("assistantId").value = assistantId;
+
+          // create a new thread
+          openai_thread_id = await create_thread();
+          if (!openai_thread_id) {
+              alert("Error: Unable to create a new OpenAI thread");
+              return false;
+          }
+          // print thread id on the page
+          document.getElementById("assistantThreadId").value = openai_thread_id;
+
+          // setup event handler
+          event_handler = new EventHandler(openai)
+          if (!event_handler) {
+              alert("Error: Unable to create event handler");
+              return false;
+          }
+          event_handler.on("event", event_handler.onEvent.bind(event_handler))
+          return true;
+      } else {
+          alert("Error: Assistant not found. Please check your OpenAI API key and assistant name");
+          return false;
+      }
+  }
+
+  // get assistant response based on user input
+  async function find_assistant(assistant_name) {
+      // sanity check openai connection
+      if (!openai) {
+          return null;
+      }
+
+      try {
+          // get a list of all assistants
+          const assistants_list = await openai.beta.assistants.list({order: "desc", limit: 20});
+
+          // iterate through assistants and find the one with the matching name
+          let assistant = assistants_list.data.find(a => a.name === assistant_name);
+
+          // return assistant ID if found, otherwise return null
+          return assistant ? assistant.id : null;
+      } catch (error) {
+          // return null in case of an error
+          return null;
+      }
+  }
+
+  // create a new thread
+  // returns thread id on success, null on failure
+  async function create_thread() {
+    // sanity check the assistant id
+    if (!openai_assistant_id) {
+        return null;
+    }
+
+    try {
+        // create a thread
+        const new_thread = await openai.beta.threads.create();
+        return new_thread ? new_thread.id : null;
+    } catch (error) {
+        return null;
+    }
+  }
+
+  // get assistant response based on user input
+  async function get_assistant_response(input) {
+      // sanity check the assistant id
+      if (!openai_assistant_id) {
+          return "get_assistant_response: assistant not found";
+      }
+      // sanity check thread
+      if (!openai_thread_id) {
+          return "get_assistant_response: thread not found";
+      }
+
+      // add a message to the thread
+      const message = await openai.beta.threads.messages.create(openai_thread_id, { role: "user", content: input });
+
+      // run the assistant
+      const stream = await openai.beta.threads.runs.stream(openai_thread_id, { assistant_id: openai_assistant_id, stream: true })
+      stream.on('event', (event) => event_handler.emit("event", event))
+  }
+
+  class EventHandler extends EventEmitter {
+        constructor(client) {
+            super()
+            this.client = client;
+        }
+
+        async onEvent(event) {
+            try {
+                // print status on html page
+                document.getElementById("assistantRunStatus").value = event.event;
+
+                // retrieve events that are denoted with 'requires_action'
+                // since these will have our tool_calls
+                if (event.event === "thread.run.requires_action") {
+                    await this.handleRequiresAction(
+                        event.data,
+                        event.data.id,
+                        event.data.thread_id,
+                    )
+
+                } else if (event.event == "thread.message.completed") {
+                    // do nothing
+
+                } else if (event.event == "thread.run.created") {
+                    // do nothing
+
+                } else if (event.event == "thread.run.completed") {
+                    // do nothing
+
+                } else if (event.event == "thread.message.delta") {
+                    let delta_text = event.data.delta.content[0].text.value
+                    add_text_to_chat(delta_text, "assistant")
+
+                } else {
+                    console.log(event)
+                }
+
+            } catch (error) {
+                console.error("Error handling event:", error)
+            }
+        }
+
+        async handleRequiresAction(data, runId, threadId) {
+            try {
+                const toolOutputs = data.required_action.submit_tool_outputs.tool_calls.map((toolCall) => {
+                    return {
+                        tool_call_id: toolCall.id,
+                        output: function_call(toolCall.function.name, toolCall.function.arguments),
+                    }
+                })
+
+                // Submit all the tool outputs at the same time
+                await this.submitToolOutputs(toolOutputs, runId, threadId)
+            } catch (error) {
+                console.error("Error processing required action:", error)
+            }
+        }
+
+        async submitToolOutputs(toolOutputs, runId, threadId) {
+            try {
+                // Use the submitToolOutputsStream helper
+                const stream = this.client.beta.threads.runs.submitToolOutputsStream(
+                    threadId,
+                    runId,
+                    { tool_outputs: toolOutputs },
+                )
+                for await (const event of stream) {
+                    this.emit("event", event)
+                }
+            } catch (error) {
+                console.error("Error submitting tool outputs:", error)
+            }
+        }
+    }
+</script>
+</body>
+</html>
