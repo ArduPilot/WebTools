@@ -18357,7 +18357,6 @@ MAVLink20Processor.prototype.log = function(level, message) {
 
 MAVLink20Processor.prototype.send = function(mavmsg) {
     buf = mavmsg.pack(this);
-    //this.file.write(buf);
     this.seq = (this.seq + 1) % 256;
     this.total_packets_sent +=1;
     this.total_bytes_sent += buf.length;

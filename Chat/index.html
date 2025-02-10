@@ -62,7 +62,7 @@
   <div class="chat-container">
     <div class="chat-box" id="chatBox"></div>
     <div class="input-container">
-        <button id="recButton">Rec</button>
+        <button id="sendButton">Rec</button>
         <input type="text" id="userInput" class="input-field" placeholder="Type a message...">
         <button class="send-button" onclick="send_message()">Send</button>
     </div>
@@ -97,17 +97,25 @@
   <div class="mavlink-connection-container">
       <label for="MAVLinkConnection">MAVLink Connect:</label>
       <input type="text" id="mavlink-connect-url" class="input-field" value="ws://127.0.0.1:56781" readonly>
-      <button id="mavlink-connect-button" onclick="mavlink_toggle_connect()">Connect</button>
+      <button id="mavlink-connect-button">Connect</button>
   </div>
 
   <!-- MAVLink arming button -->
   <div class="mavlink-arm-container">
       <label for="mavlink-arm-vehicle">Arm Vehicle</label>
-      <button id="mavlink-arm-button" onclick="mavlink_arm_vehicle()">Arm</button>
+      <button id="mavlink-arm-button">Arm</button>
+  </div>
+
+  <!-- debug output text box -->
+  <div class="debug-output-container">
+      <textarea id="debugOutput" class="input-field" rows="10" readonly></textarea>
   </div>
 
   <!-- simple script functions local to this page -->
-  <script>
+  <script type="module">
+    // imports
+    import { mavlink_store } from './MAVLink/mavlink_store.js';
+
     // show/hide the OpenAI API key field
     function toggle_openai_api_key_visibility() {
         let openai_key_input = document.getElementById("openai_api_key");
@@ -116,7 +124,6 @@
 
     // MAVLink connection related functions
     let connect_button = document.getElementById("mavlink-connect-button");
-    let connect_url = document.getElementById("mavlink-connect-url").value;
     let is_connected = false; // connection state
     let mavlink_ws = null; // websocket object
     let mavlink_sysid = 254; // system id
@@ -132,6 +139,11 @@
         }
     }
 
+    // attach event listener to the connect button
+    if (connect_button) {
+        connect_button.addEventListener("click", mavlink_toggle_connect);
+    }
+
     // set the mavlink button connection state
     function mavlink_set_connect_state(connected) {
         is_connected = connected;
@@ -144,6 +156,13 @@
 
     // connect to the vehicle
     function mavlink_connect() {
+        // check connection URL
+        let connect_url = document.getElementById("mavlink-connect-url").value;
+        if (!connect_url) {
+            alert("Error: WebSocket URL is empty");
+            return;
+        }
+
         if (mavlink_ws == null) {
             // create a new websocket connection
             mavlink_ws = new WebSocket(connect_url);
@@ -188,6 +207,15 @@
 
     // mavlink message handler
     function mavlink_msg_handler(msg) {
+
+        // sanity check msg
+        if (msg == null || msg._id == null) {
+            return;
+        }
+
+        // store the message in the message store
+        mavlink_store.store_message(msg);
+
         switch (msg._id) {
             case 0: // HEARTBEAT
                 //alert("custom mode:" + msg.custom_mode);
@@ -245,10 +273,19 @@
         // send the message as an ArrayBuffer over the WebSocket
         if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
             mavlink_ws.send(uint);
-            alert("Sent ARM command via MAVLink");
+            add_text_to_debug("Sent ARM command via MAVLink");
         } else {
             alert("WebSocket is not open. Cannot send ARM command.");
         }
+    }
+    // attach event listener to the arm button
+    document.getElementById("mavlink-arm-button").addEventListener("click", mavlink_arm_vehicle);
+
+    // add text to debug text box
+    function add_text_to_debug(text) {
+        let debugOutput = document.getElementById("debugOutput");
+        debugOutput.value += text + "\n";
+        debugOutput.scrollTop = debugOutput.scrollHeight;
     }
 </script>
 
@@ -269,8 +306,9 @@
   })
 
   // imports
-  import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.71.0/+esm"
+  import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm'
   import EventEmitter from 'https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/+esm'
+  import { mavlink_store } from './MAVLink/mavlink_store.js';
 
   // constants
   const OPENAI_API_KEY = ""; // replace with your OpenAI API key
@@ -281,7 +319,7 @@
   let openai = null
   let openai_assistant_id = null
   let openai_thread_id = null
-  let event_handler = null
+  let openai_event_handler = null
 
   // chat listener for user input and enter key
   document.getElementById("userInput").addEventListener("keypress", function(event) {
@@ -322,6 +360,13 @@
       message_div.textContent = text;
       chatBox.appendChild(message_div);
       chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // add text to debug text box
+  function add_text_to_debug(text) {
+      let debugOutput = document.getElementById("debugOutput");
+      debugOutput.value += text + "\n";
+      debugOutput.scrollTop = debugOutput.scrollHeight;
   }
 
   // send message to AI assistant, get response and place in chat box text area
@@ -384,12 +429,12 @@
           document.getElementById("assistantThreadId").value = openai_thread_id;
 
           // setup event handler
-          event_handler = new EventHandler(openai)
-          if (!event_handler) {
+          openai_event_handler = new EventHandler(openai)
+          if (!openai_event_handler) {
               alert("Error: Unable to create event handler");
               return false;
           }
-          event_handler.on("event", event_handler.onEvent.bind(event_handler))
+          openai_event_handler.on("event", openai_event_handler.onEvent.bind(openai_event_handler))
           return true;
       } else {
           alert("Error: Assistant not found. Please check your OpenAI API key and assistant name");
@@ -452,7 +497,146 @@
 
       // run the assistant
       const stream = await openai.beta.threads.runs.stream(openai_thread_id, { assistant_id: openai_assistant_id, stream: true })
-      stream.on('event', (event) => event_handler.emit("event", event))
+      stream.on('event', (event) => openai_event_handler.emit("event", event))
+  }
+
+  // handle function call from assistant
+  function handle_function_call(name, args) {
+      add_text_to_debug("Function call: " + name + " with args: " + JSON.stringify(args));
+      // call the function
+      switch (name) {
+          case "get_vehicle_type":
+              // get the vehicle type (e.g. Copter, Plane, Rover, Boat, etc)
+              return get_vehicle_type();
+          case "get_parameter":
+              // Get a vehicle parameter's value.  The full list of available parameters and their values is available using the get_all_parameters function
+              // fallthrough
+          case "get_wakeup_timers":
+              // Retrieves a list of all active wakeup timers. You can optionally provide a message parameter to filter timers by their associated messages. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to find timers with specific keywords or patterns in their messages. For example, to retrieve all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
+              // fallthrough
+          case "get_vehicle_location_and_yaw":
+              // Get the vehicle's current location including latitude, longitude, altitude above sea level and altitude above home
+              // fallthrough
+          case "send_mavlink_set_position_target_global_int":
+              // Send a mavlink SET_POSITION_TARGET_GLOBAL_INT message to the vehicle.  This message is the preferred way to command a vehicle to fly to a specified location or to fly at a specfied velocity
+              // fallthrough
+          case "get_vehicle_state":
+              // Get the vehicle state including armed status and (flight) mode
+              // fallthrough
+          case "get_location_plus_offset":
+              // Calculate the latitude and longitude given an existing latitude and longitude and distances (in meters) North and East
+              // fallthrough
+          case "send_mavlink_command_int":
+              // Send a mavlink COMMAND_INT message to the vehicle.  Available commands including changing the flight mode, arming, disarming, takeoff and commanding the vehicle to fly to a specific location
+              // fallthrough
+          case "get_location_plus_dist_at_bearing":
+              // Calculate the latitude and longitude given an existing latitude and longitude and a distance in meters and a bearing in degrees
+              // fallthrough
+          case "get_parameter_description":
+              // Get vehicle parameter descriptions including description, units, min and max
+              // fallthrough
+          case "delete_wakeup_timers":
+              // Delete all active wakeup timers. You can optionally provide a message parameter to filter which timers will be deleted based on their message. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to delete timers with specific keywords or patterns in their message. For example, to delete all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
+              // fallthrough
+          case "set_parameter":
+              // Set a vehicle parameter's value.  The full list of parameters is available using the get_all_parameters function
+              // fallthrough
+          case "get_mavlink_message":
+              // Get a mavlink message including all fields and values sent by the vehicle.  The list of available messages can be retrieved using the get_available_mavlink_messages
+              add_text_to_debug("Unknown function: " + name);
+              return "Unknown function: " + name;
+          case "get_current_datetime":
+              // Get the current date and time, e.g. 'Saturday, June 24, 2023 6:14:14 PM
+              return getFormattedDate();
+          case "get_mode_mapping":
+              // Get a list of mode names to mode numbers available for this vehicle.  If the name or number parameter is provided only that mode's name and number will be returned.  If neither name nor number is provided the full list of available modes will be returned
+              // fallthrough
+          case "get_all_parameters":
+              // Get all available parameter names and values
+              // fallthrough
+          case "set_wakeup_timer":
+              // Set a timer to wake you up in a specified number of seconds in the future.  This allows taking actions in the future.  The wakeup message will appear with the user role but will look something like WAKEUP:<message>.  Multiple wakeup messages are supported
+              add_text_to_debug("Unknown function: " + name);
+              return "Unknown function: " + name;
+          case "get_available_mavlink_messages":
+              return get_available_mavlink_messages();
+          default:
+              add_text_to_debug("Unknown function: " + name);
+              return "Unknown function: " + name;
+      }
+  }
+
+    // function calls below here
+    // returns "Copter", "Plane", "Rover", "Boat", etc or "Unknown"
+    function get_vehicle_type() {
+
+        // get the latest HEARTBEAT message and perform a sanity check
+        let heartbeat_msg = mavlink_store.get_latest_message(0);
+        //add_text_to_debug("get_vehicle_type: got latest msg" + JSON.stringify(heartbeat_msg));
+        if (!heartbeat_msg || !heartbeat_msg.hasOwnProperty("type")) {
+            return "unknown because no HEARTBEAT message has been received from the vehicle";
+        }
+        let vehicle_type = heartbeat_msg["type"];
+
+        // get the vehicle type from the heartbeat message's type field
+        switch (vehicle_type) {
+            case mavlink20.MAV_TYPE_FIXED_WING:
+            case mavlink20.MAV_TYPE_VTOL_DUOROTOR:
+            case mavlink20.MAV_TYPE_VTOL_QUADROTOR:
+            case mavlink20.MAV_TYPE_VTOL_TILTROTOR:
+                return "Plane"
+            case mavlink20.MAV_TYPE_GROUND_ROVER:
+                return "Rover";
+            case mavlink20.MAV_TYPE_SURFACE_BOAT:
+                return "Boat";
+            case mavlink20.MAV_TYPE_SUBMARINE:
+                return "Sub";
+            case mavlink20.MAV_TYPE_QUADROTOR:
+            case mavlink20.MAV_TYPE_COAXIAL:
+            case mavlink20.MAV_TYPE_HEXAROTOR:
+            case mavlink20.MAV_TYPE_OCTOROTOR:
+            case mavlink20.MAV_TYPE_TRICOPTER:
+            case mavlink20.MAV_TYPE_DODECAROTOR:
+                return "Copter";
+            case mavlink20.MAV_TYPE_HELICOPTER:
+                return "Heli";
+            case mavlink20.MAV_TYPE_ANTENNA_TRACKER:
+                return "Tracker";
+            case mavlink20.MAV_TYPE_AIRSHIP:
+                return "Blimp";
+            default:
+                add_text_to_debug("get_vehicle_type: default, unknown");
+                return "unknown";
+        }
+
+        // if we got this far  we don't know the vehicle type
+        add_text_to_debug("get_vehicle_type: no match for type:" + hearbeat_msg.type);
+        return "unknown";
+    }
+
+    // get names of all available mavlink messages
+    function get_available_mavlink_messages() {
+        // get the available message names
+        let msg_names = mavlink_store.get_available_message_names();
+        if (!msg_names) {
+            return "No available messages";
+        }
+        return msg_names.join(", ");
+    }
+
+  // get the current time and date as a string. E.g. 'Saturday, June 24, 2023 6:14:14 PM'
+  function getFormattedDate() {
+      const options = {
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: 'numeric', 
+          second: 'numeric', 
+          hour12: true 
+      };
+      return new Date().toLocaleString('en-US', options);
   }
 
   class EventHandler extends EventEmitter {
@@ -466,29 +650,54 @@
                 // print status on html page
                 document.getElementById("assistantRunStatus").value = event.event;
 
+                // handle each event
+                switch (event.event) {
                 // retrieve events that are denoted with 'requires_action'
                 // since these will have our tool_calls
-                if (event.event === "thread.run.requires_action") {
+                case "thread.run.requires_action":
                     await this.handleRequiresAction(
                         event.data,
                         event.data.id,
                         event.data.thread_id,
                     )
-
-                } else if (event.event == "thread.message.completed") {
-                    // do nothing
-
-                } else if (event.event == "thread.run.created") {
-                    // do nothing
-
-                } else if (event.event == "thread.run.completed") {
-                    // do nothing
-
-                } else if (event.event == "thread.message.delta") {
+                    break;
+                case "thread.message.delta":
+                case "thread.run.step.delta":
                     let delta_text = event.data.delta.content[0].text.value
                     add_text_to_chat(delta_text, "assistant")
+                    break;
 
-                } else {
+                // events below can be ignored
+                case "thread.created":
+                case "thread.message.completed":
+                case "thread.run.created":
+                case "thread.run.queued":
+                case "thread.run.in_progress":
+                case "thread.run.completed":
+                case "thread.run.incomplete":
+                case "thread.run.failed":
+                case "thread.run.step.created":
+                case "thread.run.cancelling":
+                case "thread.run.step.in_progress":
+                case "thread.run.cancelled":
+                case "thread.run.expired":
+                case "thread.run.step.created":
+                case "thread.run.step.in_progress":
+                case "thread.run.step.completed":
+                case "thread.run.step.failed":
+                case "thread.run.step.cancelled":
+                case "thread.run.step.expired":
+                case "thread.message.created":
+                case "thread.message.in_progress":
+                case "thread.message.completed":
+                case "thread.message.incomplete":
+                case "error":
+                case "done":
+                    break;
+
+                // catch unhandled events
+                default:
+                    add_text_to_debug("Unhandled event: " + event.event)
                     console.log(event)
                 }
 
@@ -497,25 +706,29 @@
             }
         }
 
+        // handle requires action event by calling a local function and returning the result to the assistant
         async handleRequiresAction(data, runId, threadId) {
             try {
                 const toolOutputs = data.required_action.submit_tool_outputs.tool_calls.map((toolCall) => {
+                    let output = handle_function_call(toolCall.function.name, toolCall.function.arguments)
+                    add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
                     return {
                         tool_call_id: toolCall.id,
-                        output: function_call(toolCall.function.name, toolCall.function.arguments),
+                        output: output
                     }
                 })
 
-                // Submit all the tool outputs at the same time
+                // submit all the tool outputs at the same time
                 await this.submitToolOutputs(toolOutputs, runId, threadId)
             } catch (error) {
                 console.error("Error processing required action:", error)
             }
         }
 
+        // return function call results to the assistant
         async submitToolOutputs(toolOutputs, runId, threadId) {
             try {
-                // Use the submitToolOutputsStream helper
+                // use the submitToolOutputsStream helper
                 const stream = this.client.beta.threads.runs.submitToolOutputsStream(
                     threadId,
                     runId,
