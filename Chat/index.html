@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>Chat</title>
   <link rel="icon" href="../images/AP_favicon.png">
+  <script type="text/javascript" src="MAVLink/mavlink.js"></script>
 </head>
 <table style="width:1200px">
   <tr>
@@ -92,8 +93,18 @@
     <input type="text" id="assistantRunStatus" class="input-field" readonly>
   </div>
 
-  <h3 hidden>MAVLink</h3>
-  <p id="MAVLink"></p>
+  <!-- MAVLink connection button -->
+  <div class="mavlink-connection-container">
+      <label for="MAVLinkConnection">MAVLink Connect:</label>
+      <input type="text" id="mavlink-connect-url" class="input-field" value="ws://127.0.0.1:56781" readonly>
+      <button id="mavlink-connect-button" onclick="mavlink_toggle_connect()">Connect</button>
+  </div>
+
+  <!-- MAVLink arming button -->
+  <div class="mavlink-arm-container">
+      <label for="mavlink-arm-vehicle">Arm Vehicle</label>
+      <button id="mavlink-arm-button" onclick="mavlink_arm_vehicle()">Arm</button>
+  </div>
 
   <!-- simple script functions local to this page -->
   <script>
@@ -102,7 +113,144 @@
         let openai_key_input = document.getElementById("openai_api_key");
         openai_key_input.type = openai_key_input.type === "password" ? "text" : "password";
     }
-  </script>
+
+    // MAVLink connection related functions
+    let connect_button = document.getElementById("mavlink-connect-button");
+    let connect_url = document.getElementById("mavlink-connect-url").value;
+    let is_connected = false; // connection state
+    let mavlink_ws = null; // websocket object
+    let mavlink_sysid = 254; // system id
+    let mavlink_compid = MAVLink20Processor.MAV_COMP_ID_MISSIONPLANNER; // component id
+    let MAVLink = new MAVLink20Processor(null, mavlink_sysid, mavlink_compid);
+
+    // toggle connection state (called by Connect/Disconnect button)
+    function mavlink_toggle_connect() {
+        if (is_connected) {
+            mavlink_disconnect();
+        } else {
+            mavlink_connect();
+        }
+    }
+
+    // set the mavlink button connection state
+    function mavlink_set_connect_state(connected) {
+        is_connected = connected;
+        if (connected) {
+            connect_button.innerText = "Disconnect";
+        } else {
+            connect_button.innerText = "Connect";
+        }
+    }
+
+    // connect to the vehicle
+    function mavlink_connect() {
+        if (mavlink_ws == null) {
+            // create a new websocket connection
+            mavlink_ws = new WebSocket(connect_url);
+            mavlink_ws.binaryType = "arraybuffer"
+
+            // set up event handlers
+            mavlink_ws.onopen = function() {
+                mavlink_set_connect_state(true);
+            };
+            mavlink_ws.onclose = function() {
+                mavlink_set_connect_state(false);
+            };
+            mavlink_ws.onerror = function() {
+                mavlink_disconnect();
+            };
+
+            // parse incoming message and forward
+            mavlink_ws.onmessage = (msg) => {
+                // sanity check parser has been created
+                if (MAVLink == null) {
+                    return;
+                }
+                // parse message
+                for (const char of new Uint8Array(msg.data)) {
+                    const mavlink_msg = MAVLink.parseChar(char)
+                    if ((mavlink_msg != null) && (mavlink_msg._id != -1)) {
+                        // got a message with a known ID
+                        mavlink_msg_handler(mavlink_msg);
+                    }
+                }
+            }
+        }
+    }
+
+    // disconnect from the vehicle
+    function mavlink_disconnect() {
+        if (mavlink_ws != null) {
+            mavlink_ws.close();
+            mavlink_ws = null;
+        }
+    }
+
+    // mavlink message handler
+    function mavlink_msg_handler(msg) {
+        switch (msg._id) {
+            case 0: // HEARTBEAT
+                //alert("custom mode:" + msg.custom_mode);
+                //alert("Got a heartbeat: " + JSON.stringify(msg));
+                break;
+            case 1: // SYS_STATUS
+                //alert("Got a system status: " + JSON.stringify(msg));
+                break;
+            case 24: // GPS_RAW_INT
+                //alert("Got a GPS raw int: " + JSON.stringify(msg));
+                break;
+            case 30: // ATTITUDE
+                //alert("Got an attitude: " + JSON.stringify(msg));
+                break;
+            case 33: // GLOBAL_POSITION_INT
+                //alert("Got a global position int: " + JSON.stringify(msg));
+                break;
+            case 35: // HIGHRES_IMU
+                //alert("Got a high resolution IMU: " + JSON.stringify(msg));
+                break;
+            case 42: // NAMED_VALUE_FLOAT
+                //alert("Got a named value float: " + JSON.stringify(msg));
+                break;
+            case 74: // VFR_HUD
+                //alert("Got a VFR HUD: " + JSON.stringify(msg));
+                break;
+            case 253: // STATUSTEXT
+                //alert("Got a status text: " + JSON.stringify(msg));
+                break;
+            default:
+                //alert("Got a message id: " + JSON.stringify(msg));
+                break;
+        }
+    }
+
+    // arm the vehicle
+    function mavlink_arm_vehicle() {
+        if (mavlink_ws == null || mavlink_ws.readyState !== WebSocket.OPEN) {
+            alert("Please connect to the vehicle first");
+            return;
+        }
+        // construct the ARM command using COMMAND_LONG
+        let command_long_msg = new MAVLink20Processor.messages.COMMAND_LONG(
+            mavlink_sysid,   // Target system ID
+            mavlink_compid,  // Target component ID
+            400,             // MAV_CMD_COMPONENT_ARM_DISARM (command ID 400)
+            1,               // Confirmation
+            1,               // Param1: 1 to arm, 0 to disarm
+            0, 0, 0, 0, 0, 0 // Unused parameters
+        );
+
+        // pack the message
+        let packed_msg = command_long_msg.pack(mavlink_sysid, mavlink_compid);
+
+        // send the message as an ArrayBuffer over the WebSocket
+        if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
+            mavlink_ws.send(new Uint8Array(packed_msg));
+            alert("Sent ARM command via MAVLink");
+        } else {
+            alert("WebSocket is not open. Cannot send ARM command.");
+        }
+    }
+</script>
 
 <script type="module">
   // error handling
