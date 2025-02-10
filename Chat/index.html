@@ -230,21 +230,21 @@
             return;
         }
         // construct the ARM command using COMMAND_LONG
-        let command_long_msg = new MAVLink20Processor.messages.COMMAND_LONG(
-            mavlink_sysid,   // Target system ID
-            mavlink_compid,  // Target component ID
+        let command_long_msg = new mavlink20.messages.command_long(
+            1,   // Target system ID
+            1,  // Target component ID
             400,             // MAV_CMD_COMPONENT_ARM_DISARM (command ID 400)
             1,               // Confirmation
             1,               // Param1: 1 to arm, 0 to disarm
             0, 0, 0, 0, 0, 0 // Unused parameters
         );
 
-        // pack the message
-        let packed_msg = command_long_msg.pack(mavlink_sysid, mavlink_compid);
+        const buffer = MAVLink.send(command_long_msg)
+        const uint = new Uint8Array(buffer)
 
         // send the message as an ArrayBuffer over the WebSocket
         if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
-            mavlink_ws.send(new Uint8Array(packed_msg));
+            mavlink_ws.send(uint);
             alert("Sent ARM command via MAVLink");
         } else {
             alert("WebSocket is not open. Cannot send ARM command.");
