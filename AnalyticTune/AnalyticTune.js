@@ -385,8 +385,13 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     return this;
 }
 
-function get_PID_param_names() {
-    let prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+function get_PID_param_names(vehicle) {
+    var prefix = []
+    if (vehicle == "ArduCopter") {
+        prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+    } else if (vehicle == "ArduPlane") {
+        prefix = ["Q_A_RAT_RLL_", "Q_A_RAT_PIT_", "Q_A_RAT_YAW_"]
+    }
     let ret = []
     for (let i = 0; i < prefix.length; i++) {
         ret[i] = {p: prefix[i] + "P",
@@ -1006,6 +1011,7 @@ let log
 var sid_axis
 var sid_sets = {}
 var use_ANG_message
+var vehicle_type
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1026,6 +1032,20 @@ function load_log(log_file) {
         const last = time_s[time_s.length - 1]
         if ((end_time == null) || (last > end_time)) {
             end_time = last
+        }
+    }
+
+    if ("MSG" in log.messageTypes) {
+        const msg_text = log.get("MSG", "Message")
+        for (let k=0;k<msg_text.length;k++) {
+            parts = msg_text[k].split(" ")
+            if (parts[0] == "ArduPlane") {
+                vehicle_type = "ArduPlane"
+                break;
+            } else if (parts[0] == "ArduCopter") {
+                vehicle_type = "ArduCopter"
+                break;
+            }
         }
     }
 
@@ -1121,7 +1141,7 @@ function load_log(log_file) {
         }
     }
 
-    const pid_params = get_PID_param_names()
+    const pid_params = get_PID_param_names(vehicle_type)
     for (let i = 0; i < pid_params.length; i++) {
         for (const param of Object.values(pid_params[i])) {
             const value = get_param(param)
@@ -1270,6 +1290,7 @@ function update_PID_filters() {
     document.getElementById('RollPitchTC').style.display = 'none';
     document.getElementById('YawTC').style.display = 'none';
     document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('QRollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
     document.getElementById('RollNOTCH').style.display = 'none';
@@ -1280,7 +1301,12 @@ function update_PID_filters() {
     }
     if (document.getElementById('type_Roll').checked) {
         document.getElementById('RollPitchTC').style.display = 'block';
-        document.getElementById('RollPIDS').style.display = 'block';;
+        if (vehicle_type == "ArduCopter") {
+            document.getElementById('RollPIDS').style.display = 'block';
+        } else if (vehicle_type == "ArduPlane") {
+            console.log("printing Q_A_ params")
+            document.getElementById('QRollPIDS').style.display = 'block';
+        }
         document.getElementById('RollNOTCH').style.display = 'block';
         const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
         if (NTF_num > 0) {
