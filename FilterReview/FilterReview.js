@@ -2383,6 +2383,12 @@ async function load(log_file) {
 
     }
 
+    // May have log messages but nothing in them
+    if (Gyro_batch.start_time == undefined || Gyro_batch.end_time == undefined) {
+        alert("No valid gyro data found in log")
+        return
+    }
+
     // Populate filter version
     if (('VER' in log.messageTypes) && log.messageTypes.VER.expressions.includes("FV")) {
         // Version should be constant for whole log
