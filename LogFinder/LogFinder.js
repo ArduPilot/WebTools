@@ -637,7 +637,7 @@ function update_param_diff(table, rows) {
     rows[0].getData().param_diff = null
 
     // Calculate diff for each row
-    for (i = 1; i<rows.length; i++) {
+    for (let i = 1; i<rows.length; i++) {
         const param_diff = get_param_diff(rows[i].getData().info.params, rows[i-1].getData().info.params)
         rows[i].getData().param_diff = param_diff
     }
