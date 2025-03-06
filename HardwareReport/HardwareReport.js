@@ -12,6 +12,19 @@ import_done[1] = import('https://esm.sh/@octokit/request')
     .catch(error => console.log(error))
 
 
+function configurePlotlyCanvas() {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
+    if (contextType === '2d') {
+      contextAttributes = contextAttributes || {};
+      contextAttributes.willReadFrequently = true;
+    }
+    return originalGetContext.call(this, contextType, contextAttributes);
+  };
+}
+configurePlotlyCanvas()
+
+
 let ArduPilot_GitHub_tags
 let octokitRequest_ratelimit_reset
 async function check_release(hash, paragraph) {
