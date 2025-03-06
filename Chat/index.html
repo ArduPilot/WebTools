@@ -64,7 +64,7 @@
     <div class="input-container">
         <button id="sendButton">Rec</button>
         <input type="text" id="userInput" class="input-field" placeholder="Type a message...">
-        <button class="send-button" onclick="send_message()">Send</button>
+        <button class="send-button" id="sendMessageButton" >Send</button>
     </div>
   </div>
 
@@ -327,6 +327,8 @@
           send_message();
       }
   })
+  // listener for send message button click
+  document.getElementById("sendMessageButton").addEventListener("click", send_message);
 
   // get openai API key (use this in API calls)
   function get_openai_api_key() {
