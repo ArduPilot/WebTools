@@ -21,24 +21,60 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-</head>
-<table style="width:1200px"><tr><td>
-  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-  <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
-
 <style>
   div.plotly-notifier {
-    visibility: hidden;
+      visibility: hidden;
+  }
+  header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin-top: -10px;
+  margin-left: -10px;
+  margin-right: -10px;
+  background-color: #004080;
+  color: white;
+  }
+  header a {
+  color: #e7f3ff; 
+  text-decoration: none;
+  font-size: 30px; 
+  display: flex; 
+  align-items: center; 
+  } 
+  header a img { 
+  margin-right: 10px; 
+  height: 50px; 
+  }
+  footer {
+  text-align: center;
+  padding: 20px;
+  background-color: #004080;
+  color: white;
+  margin-top: 390px;
+  margin-left: -10px;
+  margin-right: -10px;
+  margin-bottom: -10px;
+  }
+  body{
+      background-color: #f8fafc;
   }
 </style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Log Finder</a></h1>
+</head>
 
 <body onload="initial_load(); reset();">
+
+  <header>
+    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+      <a href="https://github.com/ArduPilot/WebTools">
+        <img src="../images/github-mark.png" alt="GitHub Logo">
+        <span>GitHub</span>
+      </a>
+</header>
+
+  <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Log Finder</a></h1>
 
 <table>
   <tr>
@@ -63,6 +99,10 @@
 </P>
 
 <div id="tables"></div>
+
+<footer>
+  &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 <script>
 
