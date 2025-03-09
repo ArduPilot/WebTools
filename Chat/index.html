@@ -62,7 +62,7 @@
   <div class="chat-container">
     <div class="chat-box" id="chatBox"></div>
     <div class="input-container">
-        <button id="sendButton">Rec</button>
+        <button id="recordButton">Rec</button>
         <input type="text" id="userInput" class="input-field" placeholder="Type a message...">
         <button class="send-button" id="sendMessageButton" >Send</button>
     </div>
@@ -798,6 +798,160 @@
             }
         }
     }
+</script>
+
+<script type="module">
+    const recordButton = document.getElementById("recordButton");
+
+    const state = {
+    mediaRecorder: null,
+    audioChunks: [],
+    stream: null,
+    audioBlob: null,
+    isRecording: false,
+    listeners: {
+        dataavailable: null,
+        stop: null
+    }
+    };
+
+
+    async function startRecording(options = {}) {
+        if (state.isRecording) {
+            console.warn("recording is in progress");
+            return;
+        }
+        
+
+        state.isRecording = true;
+        state.audioChunks = [];
+
+
+        try {
+
+            const defaultOptions = {
+                mimeType: 'audio/webm', 
+                audioBitsPerSecond: 128000  // higher quality for better transcription later on
+            };
+            
+            const recordingOptions = {...defaultOptions, ...options};
+            
+            // Request microphone access
+            state.stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            
+            // Check if the preferred MIME type is supported
+            if (MediaRecorder.isTypeSupported(recordingOptions.mimeType)) {
+                state.mediaRecorder = new MediaRecorder(state.stream, recordingOptions);
+            } else {
+                console.warn(`${recordingOptions.mimeType} is not supported, using default codec`);
+                state.mediaRecorder = new MediaRecorder(state.stream);
+            }
+            
+            state.listeners.dataavailable = (event) => {
+                state.audioChunks.push(event.data);
+            };
+
+            state.listeners.stop = () => {
+                state.audioBlob = new Blob(state.audioChunks, { type: recordingOptions.mimeType });
+                
+                const audioUrl = URL.createObjectURL(state.audioBlob);
+                
+                
+                // stop all audio tracks and clean up
+                cleanupResources();
+                
+                notifyRecordingAvailable(audioUrl);
+            };
+            
+            
+            
+            state.mediaRecorder.addEventListener('dataavailable', state.listeners.dataavailable);
+            state.mediaRecorder.addEventListener('stop', state.listeners.stop);
+
+            state.mediaRecorder.start();
+
+            
+        } catch (error) {
+            state.isRecording = false;
+            cleanupResources();
+            console.error('Error accessing microphone:', error);
+            throw error;
+        }
+    }
+
+    function stopRecording() {
+        if (!state.mediaRecorder || state.mediaRecorder.state === 'inactive') {
+            return false;
+        }
+        
+        state.mediaRecorder.stop();
+        return true;
+    
+    
+    }
+
+    function cleanupResources() {
+        if (state.stream) {
+            state.stream.getTracks().forEach(track => track.stop());
+            state.stream = null;
+        }
+        
+        if (state.mediaRecorder) {
+            if (state.listeners.dataavailable) {
+            state.mediaRecorder.removeEventListener('dataavailable', state.listeners.dataavailable);
+            }
+            if (state.listeners.stop) {
+            state.mediaRecorder.removeEventListener('stop', state.listeners.stop);
+            }
+            state.mediaRecorder = null;
+        }
+        
+        state.isRecording = false;
+    }
+
+    function notifyRecordingAvailable(audioUrl) {
+        const event = new CustomEvent('recordingAvailable', { 
+            detail: { 
+            url: audioUrl,
+            filename: `recording-${new Date().toISOString()}.webm`
+            }
+        });
+        document.dispatchEvent(event);
+    }
+
+    //this function is purely for testing purposes
+    function saveAudio(detail) {
+        const downloadLink = document.createElement('a');
+        downloadLink.href = detail.url;
+        downloadLink.download = detail.filename;
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    document.addEventListener('recordingAvailable', (event)=>{
+        console.log(event)
+        saveAudio(event.detail)
+    });
+
+    
+    recordButton.addEventListener('click', () => {
+                    if (state.isRecording) {
+                        stopRecording();
+                    } else {
+                        startRecording().catch(err => {
+                            console.error("Failed to start recording:", err);
+                        });;
+                    }
+                });
+
 </script>
 </body>
 </html>
