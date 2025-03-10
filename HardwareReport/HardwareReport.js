@@ -2159,8 +2159,17 @@ function plot_data_rate(log) {
                 "-1": "None",
                  "0": "None",
                  "1": "MAVLink1",
+                 "2": "MAVLink2",
+                 "3": "Frsky D",
+                 "4": "Frsky SPort",
+                 "5": "GPS",
+                 // SerialProtocol_GPS2
+                 "7": "Alexmos Gimbal Serial",
+                 "8": "Gimbal",
+                 "9": "Rangefinder",
                 "10": "FrSky SPort Passthrough (OpenTX)",
                 "11": "Lidar360",
+                // SerialProtocol_Aerotenna_USD1
                 "13": "Beacon",
                 "14": "Volz servo out",
                 "15": "SBus servo out",
@@ -2168,7 +2177,6 @@ function plot_data_rate(log) {
                 "17": "Devo Telemetry",
                 "18": "OpticalFlow",
                 "19": "RobotisServo",
-                 "2": "MAVLink2",
                 "20": "NMEA Output",
                 "21": "WindVane",
                 "22": "SLCAN",
@@ -2179,7 +2187,6 @@ function plot_data_rate(log) {
                 "27": "HottTelem",
                 "28": "Scripting",
                 "29": "Crossfire VTX",
-                 "3": "Frsky D",
                 "30": "Generator",
                 "31": "Winch",
                 "32": "MSP",
@@ -2190,7 +2197,6 @@ function plot_data_rate(log) {
                 "37": "SmartAudio",
                 "38": "FETtecOneWire",
                 "39": "Torqeedo",
-                 "4": "Frsky SPort",
                 "40": "AIS",
                 "41": "CoDevESC",
                 "42": "DisplayPort",
@@ -2198,36 +2204,127 @@ function plot_data_rate(log) {
                 "44": "IRC Tramp",
                 "45": "DDS XRCE",
                 "46": "IMUDATA",
-                 "5": "GPS",
-                 "7": "Alexmos Gimbal Serial",
-                 "8": "Gimbal",
-                 "9": "Rangefinder"
+                // Reserving Serial Protocol 47 for SerialProtocol_IQ
+                "48": "PPP",
+                "49": "i-BUS Telemetry",
+                "50": "IOMCU",
             }
 
-            // Get protocol and baud rate
-            const param_prefix = "SERIAL" + inst + "_"
-            const protocol_num = params[param_prefix + "PROTOCOL"]
+            let title
+            let baud
 
-            let protocol_name = protocol_num
-            let IOMCU = false
-            if ((protocol_num == null) && (inst == 100)) {
-                // Intneral IOMCU UART is logged as instance 100
-                IOMCU = true
-                protocol_name = "IOMCU"
-
-            } else if (protocol_num in serial_protocols) {
-                protocol_name = serial_protocols[protocol_num]
-
-            }
-
-            const baud = IOMCU ? 1500000 : map_baudrate(params[param_prefix + "BAUD"])
-
-            let title = "Serial " + inst
-            if (protocol_name != null) {
-                title += ": " + protocol_name
-                if (baud != null) {
-                    title += ", " + baud + " baud"
+            function getProtocolName(num) {
+                if (num in serial_protocols) {
+                    return serial_protocols[num]
                 }
+                return "protocol " + num
+            }
+
+            function SerialTitle() {
+                const param_prefix = "SERIAL" + inst + "_"
+                const protocol_num = params[param_prefix + "PROTOCOL"]
+                if (protocol_num == undefined) {
+                    // Not a serial port
+                    return false
+                }
+                const name = getProtocolName(protocol_num)
+                title = `Serial ${inst}: ` + getProtocolName(protocol_num)
+
+                if (name == "IOMCU") {
+                    baud = 1500000
+                } else {
+                    baud = map_baudrate(params[param_prefix + "BAUD"])
+                    if (baud != null) {
+                        title += ", " + baud + " baud"
+                    }
+                }
+
+                return true
+            }
+
+            function NetTitle() {
+                const netInst = inst - 20
+                if (netInst < 1) {
+                    // Not a networking serial port
+                    return false
+                }
+                const param_prefix = "NET_P" + netInst + "_"
+                const protocol_num = params[param_prefix + "PROTOCOL"]
+                if (protocol_num == undefined) {
+                    // Not a networking serial port
+                    return false
+                }
+                title = `Networking Port ${netInst}: ` + getProtocolName(protocol_num)
+
+                const type = params[param_prefix + "TYPE"]
+                const types = {
+                    "1": "UDP client",
+                    "2": "UDP server",
+                    "3": "TCP client",
+                    "4": "TCP server",
+                }
+                if (type in types) {
+                    title += " " + types[type]
+                }
+
+                const IP0 = params[param_prefix + "IP0"]
+                const IP1 = params[param_prefix + "IP1"]
+                const IP2 = params[param_prefix + "IP2"]
+                const IP3 = params[param_prefix + "IP3"]
+                const PORT = params[param_prefix + "PORT"]
+
+                if (IP0 != undefined && IP1 != undefined && IP2 != undefined && IP3 != undefined && PORT != undefined) {
+                    title += ` ${IP0}.${IP1}.${IP2}.${IP3}:${PORT}`
+                }
+
+                return true
+            }
+
+            function DroneCANTitle(driverIst) {
+                const offset = driverIst == 1 ? 40 : 50
+                const DCInst = inst - offset
+                if (DCInst < 1) {
+                    // Not a DroneCAN serial port
+                    return false
+                }
+                const param_prefix = `CAN_D${driverIst}_UC_S${DCInst}_`
+                const protocol_num = params[param_prefix + "PRO"]
+                if (protocol_num == undefined) {
+                    // Not a DroneCAN serial port
+                    return false
+                }
+                title = `DroneCAN Driver ${driverIst} Port ${DCInst}: `
+
+                const node = params[param_prefix + "NOD"]
+                const index = params[param_prefix + "IDX"]
+                if (node != undefined && index != undefined) {
+                    title += `NodeID: ${node} Port: ${index} `
+                }
+
+                title += getProtocolName(protocol_num)
+
+                baud = map_baudrate(params[param_prefix + "BD"])
+                if (node != undefined && index != undefined) {
+                    title += " " + baud + " baud"
+                }
+
+                return true
+            }
+
+            function IOMCUTitle() {
+                if (inst != 100) {
+                    // Not IOMCU
+                    return false
+                }
+                baud = 1500000
+                title = "IMUCU, " + baud + " baud"
+                return true
+            }
+
+
+            if (!SerialTitle() && !NetTitle() && !DroneCANTitle(1) && !DroneCANTitle(2) && !IOMCUTitle()) {
+                // Generic title
+                title = "UART " + inst
             }
 
             const UART_inst = log.get_instance("UART", inst)
