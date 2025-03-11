@@ -499,10 +499,12 @@
                         <table>
                                 <tr>
                                         <td>
-                                                <fieldset style="width:300px;height:200px">
+                                                <fieldset style="width:400px;height:200px">
                                                         <legend>Control Loop</legend>
                                                         <input type="radio" id="type_Bare_AC" name="Control_Loop" value="Bare_AC"  onchange="redraw_freq_resp();">
-                                                        <label for="type_Bare_AC">Bare Aircraft</label><br>
+                                                        <label for="type_Bare_AC">Bare Aircraft</label>
+                                                        <input type="checkbox" id="UseAttitude" name="UseAttitude" onclick="calculate_freq_resp();">
+                                                        <label for="UseAttitude">Use Attitude to Improve Coherence</label><br>
                                                         <input type="radio" id="type_Rate_Ctrlr" name="Control_Loop" value="Rate_Ctrlr"  onchange="redraw_freq_resp();" checked>
                                                         <label for="type_Rate_Ctrlr">Rate Controller</label><br>
                                                         <input type="radio" id="type_Att_Ctrlr" name="Control_Loop" value="Att_Ctrlr"  onchange="redraw_freq_resp();">

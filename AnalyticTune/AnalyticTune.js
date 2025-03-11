@@ -1387,13 +1387,22 @@ function calculate_freq_resp() {
     } else {
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
     }
+
     var H_acft
     var coh_acft
-    [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
+    if (document.getElementById('UseAttitude').checked) {
+        [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
+    } else {
+        [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
+    }
 
     var H_rate
     var coh_rate
-    [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
+    if (document.getElementById('UseAttitude').checked) {
+        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
+    } else {
+        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
+    }
 
     var H_att
     var coh_att
@@ -1443,6 +1452,19 @@ function calculate_freq_resp() {
         coh_sys_bl_tf[k-1] = coh_sys_bl[k]
         freq_tf[k-1] = data_set.FFT.bins[k]
     }
+
+    if (document.getElementById('UseAttitude').checked) {
+        var loop_rate = get_form("SCHED_LOOP_RATE")
+        // determine transfer function for s
+        var der_filter = []
+        der_filter.push(new PID(loop_rate, 0, 0, 1, 0, 0))
+        const der_H = evaluate_transfer_functions([der_filter], sample_rate * 0.5, sample_rate / window_size, false, false)
+
+        // multiply transfer functions by s to change output from attitude to rate
+        H_acft_tf = complex_mul(H_acft_tf, der_H.H_total)
+        H_rate_tf = complex_mul(H_rate_tf, der_H.H_total)
+    }
+
 
     var H_rate_pred
     var H_att_ff_pred
