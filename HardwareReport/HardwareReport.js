@@ -1096,7 +1096,13 @@ function load_baro(log) {
             for (const inst of Object.keys(log.messageTypes.BARO.instances)) {
                 const i = parseFloat(inst)
                 if (baro[i] != null) {
-                    baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "Health"), 1)
+                    if (log.messageTypes.BARO.expressions.includes("Health")) {
+                        baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "Health"), 1)
+
+                    } else if (log.messageTypes.BARO.expressions.includes("H")) {
+                        baro[i].all_healthy = array_all_equal(log.get_instance("BARO", inst, "H"), 1)
+
+                    }
                 }
             }
         }
