@@ -392,10 +392,10 @@ function load_tlog(log_file) {
         let seq = header.sequence
         if (seq < comp.next_seq) {
             // Deal with wrap at 255
-            seq += 255
+            seq += 256
         }
         comp.dropped += seq - comp.next_seq
-        comp.next_seq = (header.sequence + 1) % 256
+        comp.next_seq = (seq + 1) % 256
 
         // Advance by message length
         offset += total_msg_length + timestamp_length
