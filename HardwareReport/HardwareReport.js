@@ -2690,17 +2690,26 @@ async function load_log(log_file) {
 
     // Voltage plot
     if (have_POWR || have_MCU) {
-        let plot = document.getElementById("Board_Voltage")
-        plot_visibility(plot, false)
+        let showPlot = false
 
         if (have_POWR) {
             const time = TimeUS_to_seconds(log.get("POWR", "TimeUS"))
 
-            Board_Voltage.data[1].x = time
-            Board_Voltage.data[1].y = log.get("POWR", "VServo")
+            const servo = log.get("POWR", "VServo")
+            if (!array_all_NaN(servo)) {
+                Board_Voltage.data[1].x = time
+                Board_Voltage.data[1].y = servo
+                showPlot = true
+            }
 
-            Board_Voltage.data[2].x = time
-            Board_Voltage.data[2].y = log.get("POWR", "Vcc")
+
+            const vcc = log.get("POWR", "Vcc")
+            if (!array_all_NaN(vcc)) {
+                Board_Voltage.data[2].x = time
+                Board_Voltage.data[2].y = vcc
+                showPlot = true
+            }
+
 
             if (!have_MCU && log.messageTypes.POWR.expressions.includes('MVolt')) {
                 Board_Voltage.data[3].x = time
@@ -2708,6 +2717,8 @@ async function load_log(log_file) {
 
                 Board_Voltage.data[0].x = [...time, ...time.toReversed()]
                 Board_Voltage.data[0].y = [...log.get("POWR", "MVmax"), ...log.get("POWR", "MVmin").toReversed()]
+
+                showPlot = true
             }
         }
 
@@ -2720,9 +2731,14 @@ async function load_log(log_file) {
             Board_Voltage.data[0].x = [...time, ...time.toReversed()]
             Board_Voltage.data[0].y = [...log.get("MCU", "MVmax"), ...log.get("MCU", "MVmin").toReversed()]
 
+            showPlot = true
         }
 
-        Plotly.redraw(plot)
+        if (showPlot) {
+            let plot = document.getElementById("Board_Voltage")
+            plot_visibility(plot, false)
+            Plotly.redraw(plot)
+        }
     }
 
     // Power flags
