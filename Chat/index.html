@@ -72,7 +72,7 @@
   <div class="openaiapi-key-container">
     <label for="openai_api_key">OpenAI API Key:</label>
     <input type="password" id="openai_api_key" class="input-field">
-    <button onclick="toggle_openai_api_key_visibility()">👁️</button>
+    <button id="toggleApiKeyButton">👁️</button>
   </div>
 
   <!-- read-only input for Assistant ID -->
@@ -95,7 +95,7 @@
 
   <!-- MAVLink connection button -->
   <div class="mavlink-connection-container">
-      <label for="MAVLinkConnection">MAVLink Connect:</label>
+      <label for="mavlink-connect-url">MAVLink Connect:</label>
       <input type="text" id="mavlink-connect-url" class="input-field" value="ws://127.0.0.1:56781" readonly>
       <button id="mavlink-connect-button">Connect</button>
   </div>
@@ -115,6 +115,9 @@
   <script type="module">
     // imports
     import { mavlink_store } from './MAVLink/mavlink_store.js';
+
+    // listener for toggle api key visibility button click
+    document.getElementById("toggleApiKeyButton").addEventListener("click", toggle_openai_api_key_visibility);
 
     // show/hide the OpenAI API key field
     function toggle_openai_api_key_visibility() {
@@ -612,7 +615,7 @@
         }
 
         // if we got this far  we don't know the vehicle type
-        add_text_to_debug("get_vehicle_type: no match for type:" + hearbeat_msg.type);
+        add_text_to_debug("get_vehicle_type: no match for type:" + heartbeat_msg.type);
         return "unknown";
     }
 
