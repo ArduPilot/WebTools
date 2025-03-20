@@ -1167,7 +1167,12 @@ function load_log(log_file) {
         "PILOT_Y_RATE_TC",
         "ATC_ANG_RLL_P",
         "ATC_ANG_PIT_P",
-        "ATC_ANG_YAW_P"
+        "ATC_ANG_YAW_P",
+        "Q_A_INPUT_TC",
+        "Q_PLT_Y_RATE_TC",
+        "Q_A_ANG_RLL_P",
+        "Q_A_ANG_PIT_P",
+        "Q_A_ANG_YAW_P"
     ]
 
     for (const param of other_params) {

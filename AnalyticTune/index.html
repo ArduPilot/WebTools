@@ -618,10 +618,10 @@
       calculate_freq_resp();
   }
 
-  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC"]
+  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"]
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
-      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("FILT")) {
+      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("FILT")) {
           params.push(param.id)
       }
   }
