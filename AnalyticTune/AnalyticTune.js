@@ -1297,51 +1297,58 @@ function update_PID_filters() {
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('QRollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
+    document.getElementById('QPitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
+    document.getElementById('QYawPIDS').style.display = 'none';
     document.getElementById('RollNOTCH').style.display = 'none';
+    document.getElementById('QRollNOTCH').style.display = 'none';
     document.getElementById('PitchNOTCH').style.display = 'none';
+    document.getElementById('QPitchNOTCH').style.display = 'none';
     document.getElementById('YawNOTCH').style.display = 'none';
+    document.getElementById('QYawNOTCH').style.display = 'none';
+    if (vehicle_type == "ArduCopter") {
+        var param_prefix = "ATC_";
+        var ele_prefix = "";
+    } else if (vehicle_type == "ArduPlane") {
+        var param_prefix = "Q_A_";
+        var ele_prefix = "Q";
+    }
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
     }
     if (document.getElementById('type_Roll').checked) {
-        document.getElementById('RollPitchTC').style.display = 'block';
-        if (vehicle_type == "ArduCopter") {
-            document.getElementById('RollPIDS').style.display = 'block';
-        } else if (vehicle_type == "ArduPlane") {
-            console.log("printing Q_A_ params")
-            document.getElementById('QRollPIDS').style.display = 'block';
-        }
-        document.getElementById('RollNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
+        document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'RollPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'RollNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(param_prefix + 'RAT_RLL_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
+        const NEF_num = document.getElementById(param_prefix + 'RAT_RLL_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Pitch').checked) {
-        document.getElementById('RollPitchTC').style.display = 'block';
-        document.getElementById('PitchPIDS').style.display = 'block';
-        document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
+        document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'PitchPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(param_prefix + 'RAT_PIT_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
+        const NEF_num = document.getElementById(param_prefix + 'RAT_PIT_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Yaw').checked) {
-        document.getElementById('YawTC').style.display = 'block';
-        document.getElementById('YawPIDS').style.display = 'block';
-        document.getElementById('YawNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
+        document.getElementById(ele_prefix + 'YawTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'YawPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'YawNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(param_prefix + 'RAT_YAW_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
+        const NEF_num = document.getElementById(param_prefix + 'RAT_YAW_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
