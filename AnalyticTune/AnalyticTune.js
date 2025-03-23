@@ -1788,50 +1788,50 @@ function save_parameters() {
         for (const v in inputs) {
             var name = "" + inputs[v].id;
             if (document.getElementById('type_Roll').checked) {
-                if (name.startsWith("ATC_INPUT_")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "INPUT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_RAT_RLL")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "RAT_RLL")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_RLL")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_RLL")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NTF').value
             } else if (document.getElementById('type_Pitch').checked) {
-                if (name.startsWith("ATC_INPUT_")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "INPUT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_RAT_PIT")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "RAT_PIT")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_PIT")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_PIT")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NTF').value
             } else if (document.getElementById('type_Yaw').checked) {
-                if (name.startsWith("PILOT_")) {
+                if (name.startsWith("PILOT_") || name.startsWith("Q_PLT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                    if (name.startsWith("ATC_RAT_YAW")) {
+                    if (name.startsWith(get_vehicle_att_prefix() + "RAT_YAW")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_YAW")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_YAW")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NTF').value
             }
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
@@ -1869,7 +1869,7 @@ async function load_parameters(file) {
     var lines = text.split('\n');
     for (i in lines) {
         var line = lines[i];
-        line = line.replace("Q_A_RAT_","ATC_RAT_");
+//        line = line.replace("Q_A_RAT_","ATC_RAT_");
         v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
