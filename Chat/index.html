@@ -518,7 +518,7 @@
               // fallthrough
           case "get_vehicle_location_and_yaw":
               // Get the vehicle's current location including latitude, longitude, altitude above sea level and altitude above home
-              // fallthrough
+              return get_vehicle_location_and_yaw()
           case "send_mavlink_set_position_target_global_int":
               // Send a mavlink SET_POSITION_TARGET_GLOBAL_INT message to the vehicle.  This message is the preferred way to command a vehicle to fly to a specified location or to fly at a specfied velocity
               // fallthrough
@@ -641,6 +641,36 @@
       return new Date().toLocaleString('en-US', options);
   }
 
+  //get the vehicle's location and yaw
+  function get_vehicle_location_and_yaw() {
+    // get GLOBAL_POSITION_INT
+    const gpi = mavlink_store.get_latest_message(33);
+
+    let lat_deg = 0
+    let lon_deg = 0
+    let alt_amsl_m = 0
+    let alt_rel_m = 0
+    let yaw_deg = 0
+
+    if (gpi) {
+        lat_deg = gpi.lat * 1e-7
+        lon_deg = gpi.lon * 1e-7
+        alt_amsl_m = gpi.alt * 1e-3
+        alt_rel_m = gpi.relative_alt * 1e-3
+        yaw_deg = gpi.hdg * 1e-2
+    }
+
+    const location = {
+            "latitude": lat_deg,
+            "longitude": lon_deg,
+            "altitude_amsl": alt_amsl_m,
+            "altitude_above_home": alt_rel_m,
+            "yaw" : yaw_deg
+        }
+    
+    return location;
+  }
+
   class EventHandler extends EventEmitter {
         constructor(client) {
             super()
@@ -713,6 +743,7 @@
             try {
                 const toolOutputs = data.required_action.submit_tool_outputs.tool_calls.map((toolCall) => {
                     let output = handle_function_call(toolCall.function.name, toolCall.function.arguments)
+                    output = JSON.stringify(output);
                     add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
                     return {
                         tool_call_id: toolCall.id,
