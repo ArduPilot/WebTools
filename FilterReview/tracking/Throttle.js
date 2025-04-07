@@ -332,7 +332,7 @@ class ThrottleTarget extends NotchTarget {
         const motors_throttle = Math.max(0, thrust)
         const throttle_norm = Math.sqrt(motors_throttle / config.ref)
         if (get_filter_version() == 2) {
-            return config.freq * throttle_norm
+            return Math.abs(config.freq * throttle_norm)
         }
         return config.freq * Math.max(config.min_ratio, throttle_norm)
     }
