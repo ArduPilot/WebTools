@@ -42,7 +42,7 @@ class RPMTarget extends NotchTarget {
         const freq = rpm * config.ref * (1.0/60.0)
         if (get_filter_version() == 2) {
             if (rpm_valid) {
-                return freq
+                return Math.abs(freq)
             }
             return 0.0
         }

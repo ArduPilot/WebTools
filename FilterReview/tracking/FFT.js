@@ -74,7 +74,7 @@ class FFTTarget extends NotchTarget {
             return config.freq
         }
         if (get_filter_version() == 2) {
-            return freq
+            return Math.abs(freq)
         }
         return Math.max(freq, config.freq)
     }

@@ -7,17 +7,24 @@ class StaticTarget extends NotchTarget {
     // Don't need to interpolate static
     interpolate(instance, time) { }
 
+    get_target(config) {
+        if (get_filter_version() == 2) {
+            return Math.abs(config.freq)
+        }
+        return config.freq
+    }
+
     get_target_freq(config) {
-        return { freq:[config.freq, config.freq], time:[Gyro_batch.start_time, Gyro_batch.end_time] }
+        return { freq:[this.get_target(config), this.get_target(config)], time:[Gyro_batch.start_time, Gyro_batch.end_time] }
     }
 
     get_target_freq_time(config, time) {
         // Target is independent of time
-        return [config.freq]
+        return [this.get_target(config)]
     }
 
     get_interpolated_target_freq(instance, index, config) {
-        return [config.freq]
+        return [this.get_target(config)]
     }
 
     have_data(config) {
