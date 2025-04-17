@@ -3,6 +3,11 @@ class ThrottleTarget extends NotchTarget {
     constructor(log) {
         super(log, "RATE", "AOut", "Throttle", 1)
 
+        // Need RC outputs for per motor throttle notch
+        if (!("RCOU" in log.messageTypes)) {
+            return
+        }
+
         // Read params
         const PARM = log.get("PARM")
 
