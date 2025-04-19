@@ -385,8 +385,13 @@ function NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,attenuation_dB) {
     return this;
 }
 
-function get_PID_param_names() {
-    let prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+function get_PID_param_names(vehicle) {
+    var prefix = []
+    if (vehicle == "ArduCopter") {
+        prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+    } else if (vehicle == "ArduPlane") {
+        prefix = ["Q_A_RAT_RLL_", "Q_A_RAT_PIT_", "Q_A_RAT_YAW_"]
+    }
     let ret = []
     for (let i = 0; i < prefix.length; i++) {
         ret[i] = {p: prefix[i] + "P",
@@ -807,7 +812,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // Calculate transfer function for Rate PID
     var PID_filter = []
-    var axis_prefix = "ATC_RAT_" + get_axis_prefix();
+    var axis_prefix = get_vehicle_att_prefix() + "RAT_" + get_axis_prefix();
     PID_filter.push(new PID(PID_rate,
         get_form(axis_prefix + "P"),
         get_form(axis_prefix + "I"),
@@ -881,7 +886,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for the angle P in prep for attitude controller calculation
     var Ang_P_filter = []
-    Ang_P_filter.push(new Ang_P(PID_rate, get_form("ATC_ANG_" + get_axis_prefix() + "P")))
+    Ang_P_filter.push(new Ang_P(PID_rate, get_form(get_vehicle_att_prefix() + "ANG_" + get_axis_prefix() + "P")))
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     // calculate transfer function for attitude controller with feedforward enabled (includes intermediate steps)
@@ -903,9 +908,9 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     var tc_filter = []
     var tc_freq
     if (get_axis_prefix() == "YAW_") {
-        tc_freq = 1 / (get_form("PILOT_Y_RATE_TC") * 2 * Math.PI)
+        tc_freq = 1 / (get_form(get_vehicle_plt_prefix() + "Y_RATE_TC") * 2 * Math.PI)
     } else {
-        tc_freq = 1 / (get_form("ATC_INPUT_TC") * 2 * Math.PI)
+        tc_freq = 1 / (get_form(get_vehicle_att_prefix() + "INPUT_TC") * 2 * Math.PI)
     }
     tc_filter.push(new LPF_1P(PID_rate, tc_freq))
     const tc_H = evaluate_transfer_functions([tc_filter], freq_max, freq_step, use_dB, unwrap_phase)
@@ -1006,6 +1011,7 @@ let log
 var sid_axis
 var sid_sets = {}
 var use_ANG_message
+var vehicle_type = "ArduCopter"
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1026,6 +1032,20 @@ function load_log(log_file) {
         const last = time_s[time_s.length - 1]
         if ((end_time == null) || (last > end_time)) {
             end_time = last
+        }
+    }
+
+    if ("MSG" in log.messageTypes) {
+        const msg_text = log.get("MSG", "Message")
+        for (let k=0;k<msg_text.length;k++) {
+            parts = msg_text[k].split(" ")
+            if (parts[0] == "ArduPlane") {
+                vehicle_type = "ArduPlane"
+                break;
+            } else if (parts[0] == "ArduCopter") {
+                vehicle_type = "ArduCopter"
+                break;
+            }
         }
     }
 
@@ -1121,7 +1141,7 @@ function load_log(log_file) {
         }
     }
 
-    const pid_params = get_PID_param_names()
+    const pid_params = get_PID_param_names(vehicle_type)
     for (let i = 0; i < pid_params.length; i++) {
         for (const param of Object.values(pid_params[i])) {
             const value = get_param(param)
@@ -1147,7 +1167,12 @@ function load_log(log_file) {
         "PILOT_Y_RATE_TC",
         "ATC_ANG_RLL_P",
         "ATC_ANG_PIT_P",
-        "ATC_ANG_YAW_P"
+        "ATC_ANG_YAW_P",
+        "Q_A_INPUT_TC",
+        "Q_PLT_Y_RATE_TC",
+        "Q_A_ANG_RLL_P",
+        "Q_A_ANG_PIT_P",
+        "Q_A_ANG_YAW_P"
     ]
 
     for (const param of other_params) {
@@ -1270,47 +1295,58 @@ function update_PID_filters() {
     document.getElementById('RollPitchTC').style.display = 'none';
     document.getElementById('YawTC').style.display = 'none';
     document.getElementById('RollPIDS').style.display = 'none';
+    document.getElementById('QRollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
+    document.getElementById('QPitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
+    document.getElementById('QYawPIDS').style.display = 'none';
     document.getElementById('RollNOTCH').style.display = 'none';
+    document.getElementById('QRollNOTCH').style.display = 'none';
     document.getElementById('PitchNOTCH').style.display = 'none';
+    document.getElementById('QPitchNOTCH').style.display = 'none';
     document.getElementById('YawNOTCH').style.display = 'none';
+    document.getElementById('QYawNOTCH').style.display = 'none';
+    if (vehicle_type == "ArduCopter") {
+        var ele_prefix = "";
+    } else if (vehicle_type == "ArduPlane") {
+        var ele_prefix = "Q";
+    }
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
     }
     if (document.getElementById('type_Roll').checked) {
-        document.getElementById('RollPitchTC').style.display = 'block';
-        document.getElementById('RollPIDS').style.display = 'block';;
-        document.getElementById('RollNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value;
+        document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'RollPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'RollNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value;
+        const NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Pitch').checked) {
-        document.getElementById('RollPitchTC').style.display = 'block';
-        document.getElementById('PitchPIDS').style.display = 'block';
-        document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value;
+        document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'PitchPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value;
+        const NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (document.getElementById('type_Yaw').checked) {
-        document.getElementById('YawTC').style.display = 'block';
-        document.getElementById('YawPIDS').style.display = 'block';
-        document.getElementById('YawNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value;
+        document.getElementById(ele_prefix + 'YawTC').style.display = 'block';
+        document.getElementById(ele_prefix + 'YawPIDS').style.display = 'block';
+        document.getElementById(ele_prefix + 'YawNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value;
+        const NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
@@ -1752,50 +1788,50 @@ function save_parameters() {
         for (const v in inputs) {
             var name = "" + inputs[v].id;
             if (document.getElementById('type_Roll').checked) {
-                if (name.startsWith("ATC_INPUT_")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "INPUT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_RAT_RLL")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "RAT_RLL")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_RLL")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_RLL")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_RLL_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_RLL_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_RLL_NTF').value
             } else if (document.getElementById('type_Pitch').checked) {
-                if (name.startsWith("ATC_INPUT_")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "INPUT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_RAT_PIT")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "RAT_PIT")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_PIT")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_PIT")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_PIT_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_PIT_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_PIT_NTF').value
             } else if (document.getElementById('type_Yaw').checked) {
-                if (name.startsWith("PILOT_")) {
+                if (name.startsWith("PILOT_") || name.startsWith("Q_PLT_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                    if (name.startsWith("ATC_RAT_YAW")) {
+                    if (name.startsWith(get_vehicle_att_prefix() + "RAT_YAW")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                if (name.startsWith("ATC_ANG_YAW")) {
+                if (name.startsWith(get_vehicle_att_prefix() + "ANG_YAW")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-                NEF_num = document.getElementById('ATC_RAT_YAW_NEF').value
-                NTF_num = document.getElementById('ATC_RAT_YAW_NTF').value
+                NEF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NEF').value
+                NTF_num = document.getElementById(get_vehicle_att_prefix() + 'RAT_YAW_NTF').value
             }
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
@@ -1833,7 +1869,7 @@ async function load_parameters(file) {
     var lines = text.split('\n');
     for (i in lines) {
         var line = lines[i];
-        line = line.replace("Q_A_RAT_","ATC_RAT_");
+//        line = line.replace("Q_A_RAT_","ATC_RAT_");
         v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
@@ -2270,4 +2306,22 @@ function set_sid_axis(axis) {
     }
     sid_axis = axis
     axis_changed()
+}
+
+function get_vehicle_att_prefix() {
+    if (vehicle_type == "ArduCopter") {
+        return "ATC_"
+    } else if (vehicle_type == "ArduPlane") {
+        return "Q_A_"
+    }
+    return ""
+}
+
+function get_vehicle_plt_prefix() {
+    if (vehicle_type == "ArduCopter") {
+        return "PILOT_"
+    } else if (vehicle_type == "ArduPlane") {
+        return "Q_PLT_"
+    }
+    return ""
 }
