@@ -812,18 +812,18 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // Calculate transfer function for Rate PID
     var PID_filter = []
-    var axis_prefix = get_vehicle_att_prefix() + "RAT_" + get_axis_prefix();
+    var param_prefix = get_rate_param_prefix();
     PID_filter.push(new PID(PID_rate,
-        get_form(axis_prefix + "P"),
-        get_form(axis_prefix + "I"),
-        get_form(axis_prefix + "D"),
-        get_form(axis_prefix + "FLTE"),
-        get_form(axis_prefix + "FLTD")));
+        get_form(param_prefix + "P"),
+        get_form(param_prefix + "I"),
+        get_form(param_prefix + "D"),
+        get_form(param_prefix + "FLTE"),
+        get_form(param_prefix + "FLTD")));
 
     const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     // calculate transfer funciton for the PID Error Notch filter
-    const nef_num = get_form(axis_prefix + "NEF")
+    const nef_num = get_form(param_prefix + "NEF")
     var nef_freq = 0.0
     if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
     if (nef_num > 0 && nef_freq > 0.0) {
@@ -837,7 +837,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for FF and DFF
     var FF_filter = []
-    FF_filter.push(new feedforward(PID_rate, get_form(axis_prefix + "FF"),get_form(axis_prefix + "D_FF")))
+    FF_filter.push(new feedforward(PID_rate, get_form(param_prefix + "FF"),get_form(param_prefix + "D_FF")))
     const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
     var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
@@ -847,12 +847,12 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for target LPF
     var T_filter = []
-    T_filter.push(new LPF_1P(PID_rate, get_form(axis_prefix + "FLTT")))
+    T_filter.push(new LPF_1P(PID_rate, get_form(param_prefix + "FLTT")))
     const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     // calculate transfer function for target PID notch and the target LPF combined, if the notch is defined.  Otherwise just 
     // provide the target LPF as the combined transfer function.
-    const ntf_num = get_form(axis_prefix + "NTF")
+    const ntf_num = get_form(param_prefix + "NTF")
     var ntf_freq = 0.0
     if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
     if (ntf_num > 0 && ntf_freq > 0.0) {
@@ -886,7 +886,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for the angle P in prep for attitude controller calculation
     var Ang_P_filter = []
-    Ang_P_filter.push(new Ang_P(PID_rate, get_form(get_vehicle_att_prefix() + "ANG_" + get_axis_prefix() + "P")))
+    Ang_P_filter.push(new Ang_P(PID_rate, get_form(get_angle_param_prefix() + "P")))
     const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
     // calculate transfer function for attitude controller with feedforward enabled (includes intermediate steps)
@@ -2324,4 +2324,14 @@ function get_vehicle_plt_prefix() {
         return "Q_PLT_"
     }
     return ""
+}
+
+function get_rate_param_prefix() {
+    var prefix = get_vehicle_att_prefix() + "RAT_" + get_axis_prefix();
+    return prefix
+}
+
+function get_angle_param_prefix() {
+    var prefix = get_vehicle_att_prefix() + "ANG_" + get_axis_prefix();
+    return prefix
 }
