@@ -4,116 +4,201 @@
 <meta charset="utf-8" />
 <title>ArduPilot Web Tools</title>
 <link rel="icon" href="images/AP_favicon.png">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color:#f8fafc;
+    color: #333;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+  }
+
+  header a {
+    color: #e7f3ff;
+    text-decoration: none;
+    display: flex;
+    font-size: 30px;
+    align-items: center;
+  }
+
+  header a img {
+    margin-right: 10px;
+    height: 50px;
+  }
+
+  h1 {
+    text-align: center;
+    color: #004080;
+    margin-top: 20px;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+  }
+
+  .intro {
+    text-align: center;
+    margin-bottom: 30px;
+    line-height: 1.6;
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+  }
+
+  .tool {
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.2s ease;
+  }
+
+  .tool:hover {
+    transform: translateY(-10px);
+  }
+
+  .tool img {
+    width: 100%;
+    height: auto;
+  }
+
+  .tool h2 {
+    margin: 15px 0;
+    color: #004080;
+    text-decoration: none;
+  }
+
+  .tool p {
+    padding: 0 15px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #555;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+  }
+</style>
 </head>
-<table style="width:1200px"><tr><td>
-  <a href="https://ardupilot.org"><img src="images/ArduPilot.png"></a>
-</td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="images/github-mark.png" style="width:60px"></a>
-  <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
+<body>
 
-<h1 style="text-align:center; width:1200px"><a href="" style="color: #000000; text-decoration:none;">ArduPilot Web Tools</a></h1>
+<header>
+  <a href="https://ardupilot.org">
+    <img src="images/ArduPilot.png" alt="ArduPilot Logo">
+    <span>ArduPilot Web Tools</span>
+  </a>
+  <a href="https://github.com/ArduPilot/WebTools">
+    <img src="images/github-mark.png" alt="GitHub Logo">
+    <span>GitHub</span>
+  </a>
+</header>
 
-<div style="max-width:1200px;">
+<h1>Welcome to ArduPilot Web Tools</h1>
 
-A number of web-based tools for ArduPilot log and parameter review. These tools operate on the client side, no data is uploaded to any server at any time. <br>
-Many of the tools have a "Open In" button, this allows a log that has been opened in one tool to be transferred to another, the selected tool will be opened in a new tab and the log loaded.
+<div class="container">
+  <div class="intro">
+    <p>A number of web-based tools for ArduPilot log and parameter review. These tools operate on the client side, ensuring your data stays private. Many tools support the "Open In" feature to transfer logs between tools seamlessly.</p>
+  </div>
 
+  <div class="tools">
+    <div class="tool">
+      <a href="./LogFinder">
+        <img src="images/LogFinder_Icon.png" alt="Log Finder">
+        <h2 style="text-decoration: none;">Log Finder</h2>
+      </a>
+      <p>A tool load and sort directories of logs. Note that directory read is not supported by all browsers. Logs are sorted by the unique hardware ID of the flight controller. Parameter changes are tracked between logs.
+      Open in links allow files to be easily opened in any of the other tools.</p>
+    </div>
+
+    <div class="tool">
+      <a href="https://plot.ardupilot.org/#/">
+        <img src="images/UAVLogViewer_Icon.gif" alt="UAV Log Viewer">
+        <h2>UAV Log Viewer</h2>
+      </a>
+      <p>General-purpose log review with 3D flight visualization.</p>
+    </div>
+
+    <div class="tool">
+      <a href="./HardwareReport">
+        <img src="images/HardwareReport_Icon.png" alt="Hardware Report">
+        <h2>Hardware Report</h2>
+      </a>
+      <p>Provides a overview of connected hardware from a parameter file or log. If a log is used more information can be provided, such as sensor health status and exact firmware version. A range of options are available to extract parameters from logs, all, only changed or minimal removing calibration parameters.
+      Includes visualization for sensor position offsets.</p>
+    </div>
+
+    <div class="tool">
+      <a href="./MAGFit">
+        <img src="images/MAGFit_Icon.png" alt="MAGFit">
+        <h2>MAGFit</h2>
+      </a>
+      <p>Calibrate compass from flight log. This tool fits the logged magnetometer data to the world magnetic model providing offsets, iron correction, scale, motor compensation and checking orientation.
+      </p>
+    </div>
+
+    <div class="tool">
+      <a href="./FilterReview">
+        <img src="images/FilterReview_Icon.png" alt="Filter Review">
+        <h2>Filter Review</h2>
+      </a>
+      <p>Gyro noise and filter configuration tool. Uses raw or batch IMU logs to show the vehicles noise profile. Filters can are applied logged pre-filter data to see the effect without the need to fly again.</p>
+    </div>
+
+    <div class="tool">
+      <a href="./PIDReview">
+        <img src="images/PIDReview_Icon.png" alt="PID Review">
+        <h2>PID Review</h2>
+      </a>
+      <p>Review PID tunes in the frequency domain with step response estimates.</p>
+    </div>
+
+    <div class="tool">
+      <a href="./FilterTool">
+        <img src="images/FilterTool_Icon.png" alt="Filter Tool">
+        <h2>Filter Tool</h2>
+      </a>
+      <p>Bode plot tool to give insight into gyro low pass and notch filter setup. This tool visualizes the attenuation and phase lag of a filter setup loaded from a parameter file.
+        For filter setup the FilterReview tool it is recommended it provides the same bode plot feedback. This filter tool allows the attenuation and phase lag of each filter to be plotted individually, something which the filter reivew tool cannot do. 
+        This tool also provides a estimated response for the rate PID gains.</p>
+    </div>
+
+    <div class="tool">
+      <a href="./Dev">
+        <img src="images/under-construction-sign-icon.png" alt="Work in Progress">
+        <h2>Work in Progress Tools</h2>
+      </a>
+      <p> The tools that are a work in progress, they are likely to be a little rough.</p>
+    </div>
+  </div>
 </div>
 
-<table>
-
-  <tr>
-    <td>
-      <a href="./LogFinder" style="margin: 20px; display: inline-block;"><img src="images/LogFinder_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>Log Finder</h2>
-      A tool load and sort directories of logs. Note that directory read is not supported by all browsers. Logs are sorted by the unique hardware ID of the flight controller. Parameter changes are tracked between logs.
-      Open in links allow files to be easily opened in any of the other tools.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="https://plot.ardupilot.org/#/" style="margin: 20px; display: inline-block;"><img src="images/UAVLogViewer_Icon.gif" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>UAV Log viewer</h2>
-      General purpose ArduPilot log review with 3D flight visualization.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="./HardwareReport" style="margin: 20px; display: inline-block;"><img src="images/HardwareReport_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>Hardware Report</h2>
-      Provides a overview of connected hardware from a parameter file or log. If a log is used more information can be provided, such as sensor health status and exact firmware version. A range of options are available to extract parameters from logs, all, only changed or minimal removing calibration parameters.
-      Includes visualization for sensor position offsets.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="./MAGFit" style="margin: 20px; display: inline-block;"><img src="images/MAGFit_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>MAGFit</h2>
-      Calibrate compass from flight log. This tool fits the logged magnetometer data to the world magnetic model providing offsets, iron correction, scale, motor compensation and checking orientation.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="./FilterReview" style="margin: 20px; display: inline-block;"><img src="images/FilterReview_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>Filter Review</h2>
-      Gyro noise and filter configuration tool. Uses raw or batch IMU logs to show the vehicles noise profile. Filters can are applied logged pre-filter data to see the effect without the need to fly again.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="./PIDReview" style="margin: 20px; display: inline-block;"><img src="images/PIDReview_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>PID Review</h2>
-      Review PID tune in the frequency domain. Step response estimate is generated. Results are split based on parameter changes.
-    </td>
-  </tr>
-
-
-  <tr>
-    <td>
-      <a href="./FilterTool" style="margin: 20px; display: inline-block;"><img src="images/FilterTool_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>Filter Tool</h2>
-      Bode plot tool to give insight into gyro low pass and notch filter setup. This tool visualizes the attenuation and phase lag of a filter setup loaded from a parameter file.
-      For filter setup the FilterReview tool it is recommended it provides the same bode plot feedback. This filter tool allows the attenuation and phase lag of each filter to be plotted individually, something which the filter reivew tool cannot do. 
-      This tool also provides a estimated response for the rate PID gains.
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="./Dev" style="margin: 20px; display: inline-block;"><img src="images/under-construction-sign-icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>Work in progress tools</h2>
-      The tools that are a work in progress, they are likely to be a little rough.
-    </td>
-  </tr>
-
-</table>
-
-
-
-
+<footer>
+  &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 </body>
 </html>

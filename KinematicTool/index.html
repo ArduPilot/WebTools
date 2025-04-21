@@ -17,24 +17,57 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
 </head>
-<table style="width:1200px"><tr><td>
-  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-  <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
-
 <style>
-  div.plotly-notifier {
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    margin-top: -10px;
+    margin-left: -10px;
+    margin-right: -10px;
+    background-color: #004080;
+    color: white;
+    }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    }
+    div.plotly-notifier {
     visibility: hidden;
-  }
+    }
+    body{
+    background-color: #f8faf7;
+    }
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+    margin-left: -10px;
+    margin-right: -10px;
+    margin-bottom: -10px;
+    }
+
 </style>
-
-<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Kinematic Tool</a></h1>
-
 <body onload="initial_load(); run_attitude()">
+    <header>
+        <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+          <a href="https://github.com/ArduPilot/WebTools">
+            <img src="../images/github-mark.png" alt="GitHub Logo">
+            <span>GitHub</span>
+          </a>
+      </header>
 
+    <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Kinematic Tool</a></h1>
 <table><tr><td style="width:1200px">
   <h2 style="text-align:center">Attitude Control Input Shaping</h2>
 </td></tr></table>
@@ -184,10 +217,14 @@
     </td>
   </tr>
 </table>
-
+<br><br>
 <div id="ang_pos" style="width:1200px;height:300px"></div>
 <div id="ang_vel" style="width:1200px;height:300px"></div>
 <div id="ang_accel" style="width:1200px;height:300px"></div>
+
+<footer>
+    &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 <script>
 

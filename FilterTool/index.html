@@ -11,26 +11,65 @@
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
 
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
-</head>
-<table style="width:1200px"><tr><td>
-    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-</td><td>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
-    <br>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-</td></tr></table>
 
 <style>
-        div.plotly-notifier {
-                visibility: hidden;
-        }
+    div.plotly-notifier {
+        visibility: hidden;
+    }
+    header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    margin-top: -10px;
+    margin-left: -10px;
+    margin-right: -10px;
+    background-color: #004080;
+    color: white;
+    }
+    header a {
+    color: #e7f3ff; 
+    text-decoration: none;
+    font-size: 30px; 
+    display: flex; 
+    align-items: center; 
+    } 
+    header a img { 
+    margin-right: 10px; 
+    height: 50px; 
+    }
+    footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #004080;
+    color: white;
+    margin-top: 30px;
+    margin-left: -10px;
+    margin-right: -10px;
+    margin-bottom: -10px;
+    }
+    body{
+        background-color: #f8faf7;
+    }
 </style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Filter Analysis</a></h1>
+</head>
 
-The following form will display the attenuation and phase lag for an
-ArduPilot 4.2 filter setup.
 <body onload="load(); update_all_hidden(); calculate_filter(); calculate_pid();">
+
+    <header>
+        <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+          <a href="https://github.com/ArduPilot/WebTools">
+            <img src="../images/github-mark.png" alt="GitHub Logo">
+            <span>GitHub</span>
+          </a>
+    </header>
+
+    <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Filter Analysis</a></h1>
+
+<h3>The following form will display the attenuation and phase lag for an
+ArduPilot 4.2 filter setup.</h3>
+
 <div id="Bode" style="width:1200px;height:900px"></div>
 <p>
   <input type="button" id="calculate" value="Calculate">
@@ -336,6 +375,10 @@ ArduPilot 4.2 filter setup.
                 </p>
         </fieldset>
 </form>
+
+<footer>
+    &copy; 2025 ArduPilot. All Rights Reserved.
+</footer>
 
 <script>
 
