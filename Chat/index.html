@@ -524,7 +524,7 @@
               // fallthrough
           case "get_vehicle_state":
               // Get the vehicle state including armed status and (flight) mode
-              // fallthrough
+              return get_vehicle_state();
           case "get_location_plus_offset":
               // Calculate the latitude and longitude given an existing latitude and longitude and distances (in meters) North and East
               // fallthrough
@@ -670,6 +670,26 @@
     
     return location;
   }
+
+
+    //get vehicle state
+    function get_vehicle_state(){
+        //get latest HEARTBEAT message
+        const heartbeat_msg = mavlink_store.get_latest_message(0);
+        //sanity check
+        if (!heartbeat_msg || !heartbeat_msg.hasOwnProperty("base_mode") || !heartbeat_msg.hasOwnProperty("custom_mode")) {
+            return "unknown because no HEARTBEAT message has been received from the vehicle";
+        }
+        //get the armed state flag by applying mask to base_model property
+        const armed_flag = (heartbeat_msg["base_mode"] & mavlink20.MAV_MODE_FLAG_SAFETY_ARMED) > 0;
+        //get mode number from custom_mode property
+        const mode_number = heartbeat_msg["custom_mode"];
+        
+        return {
+            "armed": armed_flag,
+            "mode": mode_number
+        }
+    }
 
   class EventHandler extends EventEmitter {
         constructor(client) {
