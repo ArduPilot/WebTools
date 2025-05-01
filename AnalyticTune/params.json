@@ -2680,6 +2680,453 @@
       "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
     }
   },
+  "RLL2SRV_": {
+    "TCONST": {
+      "Description": "Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate",
+      "DisplayName": "Roll axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis angle controller P gain\n    // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+    }
+  },
+  "PTCH2SRV_": {
+    "TCONST": {
+      "Description": "Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate",
+      "DisplayName": "Pitch axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis angle controller P gain\n    // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+    }
+  },
+  "YAW2SRV_": {
+    "TCONST": {
+      "Description": "Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate",
+      "DisplayName": "Yaw axis angle controller P gain",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis angle controller P gain\n    // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 6.000\n    // @User: Standard"
+    }
+  },
+  "PTCH_": {
+    "RATE_D": {
+      "Description": "Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_D_FF": {
+      "Description": "Pitch axis rate controller D feedforward gain.  ",
+      "DisplayName": "Pitch axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D FF gain\n    // @Description: Pitch axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FF": {
+      "Description": "Pitch axis rate controller feed forward",
+      "DisplayName": "Pitch axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0.05"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller feed forward\n    // @Description: Pitch axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTD": {
+      "Description": "Pitch axis rate controller derivative frequency in Hz",
+      "DisplayName": "Pitch axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller derivative frequency in Hz\n    // @Description: Pitch axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTE": {
+      "Description": "Pitch axis rate controller error frequency in Hz",
+      "DisplayName": "Pitch axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller error frequency in Hz\n    // @Description: Pitch axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTT": {
+      "Description": "Pitch axis rate controller target frequency in Hz",
+      "DisplayName": "Pitch axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller target frequency in Hz\n    // @Description: Pitch axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NTF": {
+      "Description": "Pitch Target Notch Filter Index",
+      "DisplayName": "Pitch Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Target Notch Filter Index\n    // @Description: Pitch Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NEF": {
+      "Description": "Pitch Error Notch Filter Index",
+      "DisplayName": "Pitch Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Pitch Error Notch Filter Index\n    // @Description: Pitch Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_I": {
+      "Description": "Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain\n    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_IMAX": {
+      "Description": "Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Pitch axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain maximum\n    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_P": {
+      "Description": "Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Pitch axis rate controller P gain\n    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    }
+  },
+  "RLL_": {
+    "RATE_D": {
+      "Description": "Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller D gain\n    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_D_FF": {
+      "Description": "Roll axis rate controller D feedforward gain.  ",
+      "DisplayName": "Roll axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller D FF gain\n    // @Description: Roll axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FF": {
+      "Description": "Roll axis rate controller feed forward",
+      "DisplayName": "Roll axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0.05"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller feed forward\n    // @Description: Roll axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTD": {
+      "Description": "Roll axis rate controller derivative frequency in Hz",
+      "DisplayName": "Roll axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller derivative frequency in Hz\n    // @Description: Roll axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTE": {
+      "Description": "Roll axis rate controller error frequency in Hz",
+      "DisplayName": "Roll axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller error frequency in Hz\n    // @Description: Roll axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTT": {
+      "Description": "Roll axis rate controller target frequency in Hz",
+      "DisplayName": "Roll axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller target frequency in Hz\n    // @Description: Roll axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NTF": {
+      "Description": "Roll Target Notch Filter Index",
+      "DisplayName": "Roll Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Target Notch Filter Index\n    // @Description: Roll Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NEF": {
+      "Description": "Roll Error Notch Filter Index",
+      "DisplayName": "Roll Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Roll Error Notch Filter Index\n    // @Description: Roll Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_I": {
+      "Description": "Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain\n    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_IMAX": {
+      "Description": "Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Roll axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain maximum\n    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_P": {
+      "Description": "Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Roll axis rate controller P gain\n    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    }
+  },
+  "YAW_": {
+    "RATE_D": {
+      "Description": "Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.02",
+        "low": "0.000"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D gain\n    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate\n    // @Range: 0.000 0.02\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FF": {
+      "Description": "Yaw axis rate controller feed forward",
+      "DisplayName": "Yaw axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller feed forward\n    // @Description: Yaw axis rate controller feed forward\n    // @Range: 0 0.5\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_D_FF": {
+      "Description": "Yaw axis rate controller D feedforward gain.  ",
+      "DisplayName": "Yaw axis rate controller D feedforward gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D FF gain\n    // @Description: Yaw axis rate controller D FF gain.\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTD": {
+      "Description": "Yaw axis rate controller derivative frequency in Hz",
+      "DisplayName": "Yaw axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller derivative frequency in Hz\n    // @Description: Yaw axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTE": {
+      "Description": "Yaw axis rate controller error frequency in Hz",
+      "DisplayName": "Yaw axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller error frequency in Hz\n    // @Description: Yaw axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_FLTT": {
+      "Description": "Yaw axis rate controller target frequency in Hz",
+      "DisplayName": "Yaw axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "Hz",
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller target frequency in Hz\n    // @Description: Yaw axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NTF": {
+      "Description": "Yaw Target Notch Filter Index",
+      "DisplayName": "Yaw Target Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Target Notch Filter Index\n    // @Description: Yaw Target Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_NEF": {
+      "Description": "Yaw Error Notch Filter Index",
+      "DisplayName": "Yaw Error Notch Filter Index",
+      "Increment": "1",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "__field_text": "\n    // @DisplayName: Yaw Error Notch Filter Index\n    // @Description: Yaw Error Notch Filter Index\n    // @Range: 1 8\n    // @Increment: 1\n    // @User: Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_I": {
+      "Description": "Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.2",
+        "low": "0.01"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain\n    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate\n    // @Range: 0.01 0.2\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_IMAX": {
+      "Description": "Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Yaw axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain maximum\n    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "RATE_P": {
+      "Description": "Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate",
+      "DisplayName": "Yaw axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.60",
+        "low": "0.180"
+      },
+      "User": "Standard",
+      "__field_text": "\n    // @DisplayName: Yaw axis rate controller P gain\n    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate\n    // @Range: 0.180 0.60\n    // @Increment: 0.005\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    }
+  },
     "json": {
     "version": 0
   }

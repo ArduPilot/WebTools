@@ -375,6 +375,35 @@
                                         <input id="Q_A_RAT_PIT_FLTD" name="Q_A_RAT_PIT_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
                                 </p>
                         </div>
+                        <div id="FWPitchPIDS" style="display:none">
+                                <p>
+                                        <input id="PTCH2SRV_TCONST" name="PTCH2SRV_TCONST" type="number" step="0.01" value="0.25" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_FF" name="PTCH_RATE_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_P" name="PTCH_RATE_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_I" name="PTCH_RATE_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_D" name="PTCH_RATE_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_D_FF" name="PTCH_RATE_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
+                                </p>       
+                                <p>
+                                        <input id="PTCH_RATE_FLTT" name="PTCH_RATE_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_FLTE" name="PTCH_RATE_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_FLTD" name="PTCH_RATE_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
                         <div id="YawPIDS" style="display:none">
                                 <p>
                                         <input id="ATC_ANG_YAW_P" name="ATC_ANG_YAW_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
@@ -453,6 +482,14 @@
                                         <input id="Q_A_RAT_RLL_NEF" name="Q_A_RAT_RLL_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
                                 </p>
                         </div>
+                        <div id="FWRollNOTCH" style="display:none">
+                                <p>
+                                        <input id="RLL_RATE_NTF" name="RLL_RATE_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="RLL_RATE_NEF" name="RLL_RATE_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
                         <div id="PitchNOTCH" style="display:none">
                                 <p>
                                         <input id="ATC_RAT_PIT_NTF" name="ATC_RAT_PIT_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
@@ -469,6 +506,14 @@
                                         <input id="Q_A_RAT_PIT_NEF" name="Q_A_RAT_PIT_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
                                 </p>
                         </div>
+                        <div id="FWPitchNOTCH" style="display:none">
+                                <p>
+                                        <input id="PTCH_RATE_NTF" name="PTCH_RATE_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="PTCH_RATE_NEF" name="PTCH_RATE_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
                         <div id="YawNOTCH" style="display:none">
                                 <p>
                                         <input id="ATC_RAT_YAW_NTF" name="ATC_RAT_YAW_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
@@ -483,6 +528,14 @@
                                 </p>
                                 <p>
                                         <input id="Q_A_RAT_YAW_NEF" name="Q_A_RAT_YAW_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                        </div>
+                        <div id="FWYawNOTCH" style="display:none">
+                                <p>
+                                        <input id="YAW_RATE_NTF" name="YAW_RATE_NTF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
+                                </p>
+                                <p>
+                                        <input id="YAW_RATE_NEF" name="YAW_RATE_NEF" type="number" step="1" value="0" onchange = "calculate_freq_resp()"/>
                                 </p>
                         </div>
                         <div id="FILT1" style="display:none">
@@ -738,13 +791,14 @@
       calculate_freq_resp();
   }
 
-  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"]
+  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC", "RLL_RATE_NTF", "RLL_RATE_NEF"]
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
-      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("FILT")) {
+      if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT")) {
           params.push(param.id)
       }
   }
+  console.log(params)
 
   load_param_inputs("params.json", params)
 
