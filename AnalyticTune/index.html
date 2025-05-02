@@ -791,7 +791,7 @@
       calculate_freq_resp();
   }
 
-  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC", "RLL_RATE_NTF", "RLL_RATE_NEF"]
+  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"]
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
       if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT")) {

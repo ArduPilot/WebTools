@@ -720,7 +720,6 @@ function setup_plots() {
             flight_data.layout[axi].overlaying = 'y'
         }
     }
-
     var plot = document.getElementById("FlightData")
     Plotly.purge(plot)
     Plotly.newPlot(plot, flight_data.data, flight_data.layout, {displaylogo: false});
@@ -1097,15 +1096,15 @@ function load_log(log_file) {
         add_sid_sets()
     }
 
-    if ("RATE" in log.messageTypes) {
-        const RATE_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
-        flight_data.data[1].x = RATE_time
+    if ("SIDD" in log.messageTypes) {
+        const SIDD_time = TimeUS_to_seconds(log.get("SIDD", "TimeUS"))
+        flight_data.data[1].x = SIDD_time
         flight_data.data[1].y = log.get("SIDD", "Gx")
-        flight_data.data[2].x = RATE_time
+        flight_data.data[2].x = SIDD_time
         flight_data.data[2].y = log.get("SIDD", "Gy")
-        flight_data.data[3].x = RATE_time
+        flight_data.data[3].x = SIDD_time
         flight_data.data[3].y = log.get("SIDD", "Gz")
-        update_time(RATE_time)
+        update_time(SIDD_time)
     }
 
     // Determine if ANG message is used instead of ATT message
@@ -1438,7 +1437,6 @@ function calculate_freq_resp() {
                   window_size: window_size,
                   correction: win_correction })
 
-//    console.log(data_set)
 
     // Windowing amplitude correction depends on spectrum of interest and resolution
     const FFT_resolution = data_set.FFT.average_sample_rate/data_set.FFT.window_size
@@ -1810,6 +1808,7 @@ function load_fw_time_history_data(t_start, t_end, axis) {
         SysBLInput: SysBLInputData,
         SysBLOutput: SysBLOutputData
     }
+
     return [data, samplerate]
 
 }
@@ -2141,7 +2140,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr_nff").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || sid_axis > 6) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 20) || sid_axis > 22) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
@@ -2150,7 +2149,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis > 3 && sid_axis < 7 || sid_axis > 9) {
+        if (sid_axis > 3 && sid_axis < 7 || (sid_axis > 9 && sid_axis < 20) || sid_axis > 22) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
