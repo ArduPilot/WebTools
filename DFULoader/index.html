@@ -23,8 +23,13 @@
     </style>
   </head>
   <body>
+<table style="width:1200px"><tr><td>
     <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-    <a href="https://github.com/devanlai/webdfu"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"></a>
+</td><td>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+    <br>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
     <p>
       <span id="status"></span>
     </p>
@@ -57,7 +62,7 @@
         <p>Use "Choose File" to select the bootloader file</p>
       </li>
       <li>
-        <p>Press "Download" to flash the bootloader to your device</p>
+        <p>Press "Flash Bootloader" to flash the bootloader to your device</p>
       </li>
       <li>
         <p>On completion power cycle your flight controller and load
@@ -80,8 +85,6 @@
     </p>
     <fieldset>
       <form id="configForm">
-        <label for="transferSize">Transfer Size:</label>
-        <input type="number" name="transferSize" id="transferSize" value="1024"/>
         <div id="dfuseFields" hidden="true">
           <label for="dfuseStartAddress">DfuSe Start Address:</label>
           <input type="text" name="dfuseStartAddress" id="dfuseStartAddress" title="Initial memory address to read/write from (hex)" size="10" pattern="0x[A-Fa-f0-9]+"/>
@@ -96,7 +99,7 @@
             <input type="file" id="firmwareFile" name="file" disabled="true"/>
           </p>
           <p>
-            <button id="download" disabled="true">Download</button>
+            <button id="download" disabled="true">Flash Bootloader</button>
           </p>
           <div class="log" id="downloadLog"></div>
         </fieldset>
