@@ -529,20 +529,26 @@ function show_internal_errors(log) {
     let internal_errors = []
 
     // Add from PM
-    if (('PM' in log.messageTypes) &&
-        log.messageTypes.PM.expressions.includes("IntE") &&
-        log.messageTypes.PM.expressions.includes("ErrL") &&
-        log.messageTypes.PM.expressions.includes("ErrC")) {
-        
-        const PM = log.get("PM")
-        const len = PM.TimeUS.length
-        for (let i = 0; i < len; i++) {
-            internal_errors.push({
-                time: PM.TimeUS[i],
-                mask: PM.IntE[i],
-                line: PM.ErrL[i],
-                count: PM.ErrC[i]
-            })
+    if ('PM' in log.messageTypes) {
+        const errorField = 
+            log.messageTypes.PM.expressions.includes("IntE") ? "IntE" :
+            log.messageTypes.PM.expressions.includes("InE") ? "InE" : undefined
+
+        const errorCount = 
+            log.messageTypes.PM.expressions.includes("ErrC") ? "ErrC" :
+            log.messageTypes.PM.expressions.includes("ErC") ? "ErC" : undefined
+
+        if (log.messageTypes.PM.expressions.includes("ErrL") && (errorField != undefined) && (errorCount != undefined)) {
+            const PM = log.get("PM")
+            const len = PM.TimeUS.length
+            for (let i = 0; i < len; i++) {
+                internal_errors.push({
+                    time: PM.TimeUS[i],
+                    mask: PM[errorField][i],
+                    line: PM.ErrL[i],
+                    count: PM[errorCount][i]
+                })
+            }
         }
     }
 
