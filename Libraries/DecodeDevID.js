@@ -107,6 +107,8 @@ baro_types = {
     0x13 : "MS5637",
     0x14 : "BMP390",
     0x15 : "BMP581",
+    0x16 : "SPA06",
+    0x17 : "AUAV",
 }
 
 airspeed_types = {
@@ -120,6 +122,7 @@ airspeed_types = {
     0x08 : "ANALOG",
     0x09 : "NMEA",
     0x0A : "ASP5033",
+    0x0B : "AUAV",
 }
 
 function get(lookup, index) {
