@@ -11,6 +11,18 @@ function get_version_and_board(log) {
     let build_type
     let filter_version
 
+    const build_types = {
+        ArduRover:      1,
+        ArduCopter:     2,
+        ArduPlane:      3,
+        AntennaTracker: 4,
+        ArduSub:        7,
+        Blimp:         12,
+    }
+    const build_names = Object.fromEntries(
+        Object.entries(build_types).map(([name, id]) => [id, name])
+    )
+
     if ('VER' in log.messageTypes) {
         const VER = log.get("VER")
 
@@ -30,6 +42,16 @@ function get_version_and_board(log) {
 
     if ('MSG' in log.messageTypes) {
         const MSG = log.get("MSG")
+
+        if (build_names[build_type] && !fw_string.startsWith(build_names[build_type])) {
+            // If the log is from OEM-customized firmware with an
+            // AP_CUSTOM_FIRMWARE_STRING, append the base firmware info to match
+            // how it will appear in the MSGs. Otherwise, os_string and
+            // flight_controller will be returned undefined.
+            const { Maj = [0], Min = [0], Pat = [0] } = log.get("VER")
+            fw_string += ` [${build_names[build_type]} V${Maj[0]}.${Min[0]}.${Pat[0]}]`
+        }
+
         // Look for firmware string in MSGs, this marks the start of the log start msgs
         // The subsequent messages give more info, this is a bad way of doing it
         const len = MSG.Message.length
@@ -43,14 +65,6 @@ function get_version_and_board(log) {
                 continue
             }
             if (fw_string == null) {
-                const build_types = {
-                    ArduRover: 1,
-                    ArduCopter: 2,
-                    ArduPlane: 3,
-                    AntennaTracker: 4,
-                    ArduSub: 7,
-                    Blimp: 12,
-                }
                 let types = []
                 for (const type of Object.keys(build_types)) {
                     types.push("(?:" + type + ")")
