@@ -2601,18 +2601,23 @@ async function load_log(log_file) {
         }
     }
 
-    if ((version.flight_controller != null) || (version.board_id != null)) {
+    const haveFlightController = version.flight_controller != null
+    const haveBoardId = version.board_id != null
+    if (haveFlightController || haveBoardId) {
         let section = document.getElementById("FC")
         section.hidden = false
         section.previousElementSibling.hidden = false
-        if (version.flight_controller != null) {
+        if (haveFlightController) {
             // Print name given in log
             section.appendChild(document.createTextNode(version.flight_controller))
         }
-        if (version.board_id != null) {
+        if (haveBoardId) {
+            if (haveFlightController) {
+                section.appendChild(document.createElement("br"))
+                section.appendChild(document.createElement("br"))
+            }
+
             // Lookup the board ID
-            section.appendChild(document.createElement("br"))
-            section.appendChild(document.createElement("br"))
             section.appendChild(document.createTextNode("Board ID: " + version.board_id))
             if (version.board_id in board_types) {
                 section.appendChild(document.createTextNode(" " + board_types[version.board_id]))
