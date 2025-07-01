@@ -1,4 +1,6 @@
 [
+  { "type": "file_search" },
+  { "type": "code_interpreter" },
   {
     "type": "function",
     "function": {

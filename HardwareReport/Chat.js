@@ -14,7 +14,34 @@ let currentThreadId = null;
 let fileId;
 let documentTitle = document.title;
 
-const globalLogs = [
+
+
+async function connectIfNeeded(){
+    const openai_API_KEY = localStorage.getItem('openai-api-key');
+    if (!openai_API_KEY)
+        throw new Error('openai API key not configured.');
+    if (!openai){
+        openai = new Openai({apiKey: openai_API_KEY, dangerouslyAllowBrowser: true});
+            if (!openai) {
+                throw new Error('Could not connect to open AI');
+            }
+        }
+    if (!assistantId){
+        assistantId = await findAssistantIdByName(TARGET_ASSISTANT_NAME);
+    }
+    if (!currentThreadId){
+        currentThreadId = await createThread();
+    }
+    
+    if (document.title !== documentTitle) {
+        fileId = await uploadLogs();
+        documentTitle = document.title;
+    }
+
+}
+
+async function uploadLogs() {
+    const globalLogs = [
         { name: "Sensor_Offset", value: Sensor_Offset },
         { name: "Temperature", value: Temperature },
         { name: "Board_Voltage", value: Board_Voltage },
@@ -43,32 +70,6 @@ const globalLogs = [
         { name: "defaults", value: defaults },
         { name: "board_types", value: board_types }
     ];
-
-async function connectIfNeeded(){
-    const openai_API_KEY = localStorage.getItem('openai-api-key');
-    if (!openai_API_KEY)
-        throw new Error('openai API key not configured.');
-    if (!openai){
-        openai = new Openai({apiKey: openai_API_KEY, dangerouslyAllowBrowser: true});
-            if (!openai) {
-                throw new Error('Could not connect to open AI');
-            }
-        }
-    if (!assistantId){
-        assistantId = await findAssistantIdByName(TARGET_ASSISTANT_NAME);
-    }
-    if (!currentThreadId){
-        currentThreadId = await createThread();
-    }
-    
-    if (document.title !== documentTitle) {
-        fileId = await uploadLogs();
-        documentTitle = document.title;
-    }
-
-}
-
-async function uploadLogs() {
     console.log(globalLogs);
     
     const jsonString = JSON.stringify(globalLogs);
@@ -82,7 +83,6 @@ async function uploadLogs() {
     });
     const fileId = uploadRes.id;
     console.log("Uploaded file ID:", fileId);
-    await openai.beta.assistants.update(assistantId, { tools: [{type: 'file_search'}] })
     return fileId;
 
 }
@@ -124,7 +124,7 @@ async function sendQueryToAssistant(query){
         content: query,
         attachments: fileId && [{
             file_id: fileId,
-            tools: [{ type: "file_search" }]
+            tools: [{ type: "code_interpreter" }, {type: "file_search"}]
         }] });
     if (!message)
         throw new Error("Could not send message to assistant");
@@ -153,6 +153,8 @@ async function handleRunStream(runStream){
 }
 
 async function handleToolCall(event) {
+    console.log(event);
+    
     if (!event.data.required_action.submit_tool_outputs || !event.data.required_action.submit_tool_outputs.tool_calls)
         throw new Error ("passed event does not require action")
     const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
@@ -234,6 +236,7 @@ function saveAPIKey(){
 
 
 function toggleChat(show) {
+    
     const chatWindow = document.getElementById('ai-chat-window');
     const chatBubble = document.getElementById('ai-chat-bubble');
     if (show){
