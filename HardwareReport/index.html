@@ -65,7 +65,7 @@
   }
 
   #ai-chat-window {
-    width: 360px;
+    width: 460px;
     height: 550px;
     background-color: #ffffff;
     border-radius: 12px;
@@ -127,6 +127,13 @@
     line-height: 1.45;
     font-size: 0.9em;
     word-wrap: break-word;
+    order: 0;
+    white-space: pre-wrap;
+  }
+
+  #thinking-message {
+    order: 1;
+    display: none;
   }
 
   .ai-chat-message.user {
@@ -467,6 +474,7 @@
   <div id="ai-chat-window" style="display: none;">
     <div class="ai-chat-header">
       <h3>AI Assistant</h3>
+      
       <button class="ai-chat-close-button" id="ai-chat-close-button">
         <svg viewBox="0 0 24 24">
           <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -477,9 +485,12 @@
     <form class="api-key-container ai-chat-input-area" style="border-bottom: 1px solid #e0e0e0; border-top: none;">
       <input type="password" id="openai-api-key" placeholder="Enter OpenAI API Key" style="flex-grow: 1;">
       <button type="button" id="save-api-key">Save</button>
+      <button type="button" id="upgrade-assistant" style="background-color: #28a745; margin-left: 8px;" title="Upgrade to the latest version of the Assistant">Upgrade</button>
     </form>
+    
     <ul class="ai-chat-messages">
       <li class="ai-chat-message assistant">Hello! How can I help you today?</li>
+      <li class="ai-chat-message assistant" id="thinking-message">Thinking...</li>
     </ul>
     <form class="ai-chat-input-area" id="ai-chat-input-area">
       <input type="text" id="ai-chat-input" placeholder="Type your message...">
