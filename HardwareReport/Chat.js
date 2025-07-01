@@ -214,7 +214,8 @@ async function loadTools(){
 
 async function upgradeAssistant() {
     const upgradeButton = document.getElementById('upgrade-assistant');
-    upgradeButton.title = 'Upgrade in progress...'
+    upgradeButton.title = 'Upgrade in progress...';
+    upgradeButton.textContent = "Upgrading...";
     await connectIfNeeded();
     const response = await openai.beta.assistants.del(assistantId);
     assistantId=null;
@@ -224,8 +225,11 @@ async function upgradeAssistant() {
 
     //connecting again would automatically recreate a new assistant with no additional overhead
     await connectIfNeeded();
-    if (assistantId)
-        upgradeButton.title = 'Upgraded successfully to the newest Assistant version'
+    if (assistantId){
+        upgradeButton.title = 'Upgraded successfully to the newest Assistant version';
+        upgradeButton.textContent = 'Upgraded';
+    }
+        
 }
 
 

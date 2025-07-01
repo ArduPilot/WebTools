@@ -188,6 +188,13 @@
   .ai-chat-input-area button:hover {
     background-color: #0056b3;
   }
+  #upgrade-assistant {
+    background-color: #28a745; 
+    margin-left: 8px;
+  }
+  #upgrade-assistant:hover {
+    background-color: #228d3b;
+  }
 </style>
 
 <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Hardware Report</a></h1>
@@ -485,7 +492,7 @@
     <form class="api-key-container ai-chat-input-area" style="border-bottom: 1px solid #e0e0e0; border-top: none;">
       <input type="password" id="openai-api-key" placeholder="Enter OpenAI API Key" style="flex-grow: 1;">
       <button type="button" id="save-api-key">Save</button>
-      <button type="button" id="upgrade-assistant" style="background-color: #28a745; margin-left: 8px;" title="Upgrade to the latest version of the Assistant">Upgrade</button>
+      <button type="button" id="upgrade-assistant" title="Upgrade to the latest version of the Assistant">Upgrade</button>
     </form>
     
     <ul class="ai-chat-messages">
