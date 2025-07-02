@@ -313,7 +313,7 @@ class ThrottleTarget extends NotchTarget {
     }
 
     have_data(config) {
-        const dynamic = (config.options & (1<<1)) != 0
+        const dynamic = (config?.options & (1<<1)) != 0
         if (dynamic) {
             if (this.data.length == 0) {
                 return false
