@@ -1,0 +1,538 @@
+TOP-LEVEL STRUCTURE
+The file is a JSON array. Each element has the form:
+
+{
+  "name": <string>,
+  "value": <object|null>
+}
+
+If value is null, treat as 'not available'.
+The names that follow correspond to the "name" property, their schemas correspond to the schemas of the corresponding object's "value" property.
+
+PER-NAME SCHEMAS
+
+
+--- Temperature ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "name": <string>,                 // Label like "IMU 1", "MCU", "heater target", etc.
+      "meta": <string>,                 // Same as name; used for hovertemplate
+      "hovertemplate": <string>,       // Always follows a standard format with %{meta}, %{x}, %{y}
+      "x": [<number>, ...],            // Optional — array of timestamps in seconds
+      "y": { <index>: <number>, ... }  // Optional — object mapping indices to temperature values
+    },
+    ...
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,   // bottom margin
+      "l": <number>,   // left margin
+      "r": <number>,   // right margin
+      "t": <number>    // top margin
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],  // Start and end of time range
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Temperature (°C)" },
+      "range": [<number>, <number>],  // Min and max temperature
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing temperature data.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- Board_Voltage ---
+Schema:
+  {
+  "data": [
+    {
+      "type": "scatter",                 // Only the first trace
+      "fill": "toself",
+      "line": { "color": "transparent" },
+      "showlegend": false,
+      "hoverinfo": "none"
+    },
+    {
+      "mode": "lines",
+      "name": <string>,                 // "servo", "board", or "MCU"
+      "meta": <string>,                 // same as name
+      "hovertemplate": <string>        // Format: "%{meta} ... %{x:.2f} s ... %{y:.2f} V"
+      "x": [<number>, ...],            // Optional — array of timestamps in seconds
+      "y": { <index>: <number>, ... }  // Optional — object mapping indices to voltage values
+    },
+    ...
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],   // Time range
+      "autorange": true
+    },
+    "yaxis": {
+      "title": { "text": "Voltage" },
+      "rangemode": "tozero",
+      "range": [<number>, <number>],   // Voltage range (e.g., 0 to 4)
+      "autorange": true
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing board voltage.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+
+--- power_flags ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "name": <string>,          // e.g. "Primary<br>power supply"
+      "meta": <string>,          // same as name
+      "hovertemplate": <string>, // "%{meta} … %{x:.2f} s … %{y:.2f}"
+      // Optional time-series payloads (x & y) may be present in some traces
+    },
+    …
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>, "l": <number>, "r": <number>, "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true
+    },
+    "yaxis": {
+      "title": { "text": "Power flags" },
+      "rangemode": "tozero",
+      "range": [<number>, <number>],  // 0-to-4 in this example
+      "autorange": true
+    }
+  }
+}
+
+Description: Contains a plot area information for power flag events.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- performance_load ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "hovertemplate": <string>,   // "%{x:.2f} s<br>%{y:.2f} %"
+      "x": [<number>, ...],        // Timestamps in seconds
+      "y": [<number>, ...]         // Load values in percent (typically 0–100)
+    }
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>, "l": <number>, "r": <number>, "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Load (%)" },
+      "range": [<number>, <number>],     // e.g., [-1, 1] in sparse cases
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing CPU load.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- performance_mem ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "hovertemplate": "<extra></extra>%{x:.2f} s<br>%{y:.2f} B",
+      "x": [<number>, ...],        // Timestamps in seconds
+      "y": { <index>: <number>, ... }  // Sparse mapping of index → memory value (in bytes)
+    }
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>, "l": <number>, "r": <number>, "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Free memory (bytes)" },
+      "range": [<number>, <number>],    // e.g., 524287 to 524289 in this minimal example
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing CPU free memory.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- performance_time ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "name": <string>,            // "Worst" or "Average"
+      "meta": <string>,            // same as name
+      "hovertemplate": <string>,   // Includes loop rate unit: "Hz"
+      "x": [<number>, ...],        // Timestamps in seconds
+      "y": [<number>, ...] | {<index>: <number>, ...} // Full array or sparse object of Hz values
+    },
+    ...
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>, "l": <number>, "r": <number>, "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Loop rate (Hz)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing CPU loop times.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- stack_mem ---
+Schema:
+  {
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": {
+        "text": "Time (s)"
+      }
+    },
+    "yaxis": {
+      "title": {
+        "text": "Free memory (bytes)"
+      }
+    }
+  }
+  // NOTE: "data" key is completely missing
+}
+
+Description: Contains a plot area information for stack free memory.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- stack_pct ---
+Schema:
+  {
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": {
+        "text": "Time (s)"
+      }
+    },
+    "yaxis": {
+      "title": {
+        "text": "Memory usage (%)"
+      }
+    }
+  }
+  // NOTE: "data" field is absent
+}
+
+Description: Contains a plot area information for visualizing stack memory usage.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- log_dropped ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "hovertemplate": "<extra></extra>%{x:.2f} s<br>%{y:.2f}",
+      "x": [<number>, ...],            // Timestamps in seconds
+      "y": { <index>: <number>, ... }  // Dropped log messages at each time index
+    }
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": {
+        "text": "Time (s)"
+      },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": {
+        "text": "Dropped messages"
+      },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing dropped log messages.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- log_buffer ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "name": "Maximum" | "Average" | "Minimum",
+      "meta": "Maximum" | "Average" | "Minimum",
+      "hovertemplate": "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B",
+      "x": [<number>, ...],            // Time in seconds
+      "y": { <index>: <number>, ... }  // Buffer free space in bytes
+    },
+    ...
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Free Buffer Space (bytes)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area information for visualizing log buffer free space.
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- log_stats ---
+Schema:
+  {
+  "data": [
+    {
+      "type": "pie",
+      "textposition": "inside",
+      "textinfo": "label+percent",
+      "hovertemplate": "%{label}<br>%{value:,i} Bytes<br>%{percent}<extra></extra>",
+      "labels": [<string>, ...],   // Log message types (e.g. CTUN, NKF0, ATT, ...)
+      "values": [<number>, ...]    // Size in bytes for each log type
+    }
+  ],
+  "layout": {
+    "showlegend": false,
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    }
+  }
+}
+
+Description: Displays and plots log statistics showing the total size and composition of the log file, including the size occupied by various message types (e.g., AHR2, SIM, XKV1, XKV2, MODE, D32, D16, DU16, DFLT, PTUN, GUIP, DMS, RALY, RFRH, RFRF, REV2, BCN, AIS5).
+Notes:
+- Always compute TOTAL_BYTES = sum(values) at load time.  If TOTAL_BYTES is zero, report “no log data available” and skip further calculations.
+- Define PERCENT(i) = 100 * values[i] / TOTAL_BYTES for any index i.
+- If the user asks for “log composition” or any other general breakdown:
+    • Build a list of (label, PERCENT) pairs for all indices where values[i] > 0.  
+    • Sort that list by PERCENT descending.  
+    • Return the top 10 items (or all if fewer than 10).  Format each as “LABEL: x.xx %”.
+- If the user asks for the percentage of a specific message type:
+    • Find the index j where labels[j] (case-insensitive match) equals the requested name.  
+    • If no such index exists, notify the user that the message type is not present.  
+    • Otherwise return PERCENT(j) to two decimal places (e.g. “XKF1: 3.47 %”).  If values[j] is zero, report “0 % (present but no data logged)”.
+- Ignore any entries whose values are zero when building summaries, except when explicitly requested by the user.
+- Treat label matches case-insensitively and ignore surrounding whitespace.
+- If fewer than 10 non-zero entries exist, return all of them; do not pad with zero-byte types.
+
+--- clock_drift ---
+Schema:
+  {
+  "data": [
+    {
+      "mode": "lines",
+      "name": <string>,           // e.g. "GPS 0"
+      "meta": <string>,           // e.g. "GPS 0"
+      "hovertemplate": "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} ms",
+      "x": [<number>, ...],       // Timestamps in seconds
+      "y": [<number>, ...]        // Drift in milliseconds
+    }
+  ],
+  "layout": {
+    "legend": {
+      "itemclick": false,
+      "itemdoubleclick": false
+    },
+    "margin": {
+      "b": <number>,
+      "l": <number>,
+      "r": <number>,
+      "t": <number>
+    },
+    "xaxis": {
+      "title": { "text": "Time (s)" },
+      "range": [<number>, <number>],
+      "autorange": true,
+      "type": "linear"
+    },
+    "yaxis": {
+      "title": { "text": "Clock drift (ms)" },
+      "range": [<number>, <number>],
+      "autorange": false,
+      "type": "linear"
+    }
+  }
+}
+
+Description: Contains a plot area for visualizing clock drift.	
+Notes:
+- Process each field as shown.
+- If value is null, skip.
+
+--- ins ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- compass ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- baro ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- airspeed ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- gps ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- rangefinder ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- flow ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- viso ---
+Schema: <list> (list of objects, simple structure, directly interpretable)
+
+--- can ---
+Schema: <list> (list of objects, simple structure, directly interpretable)

@@ -42,7 +42,6 @@ async function connectIfNeeded(){
 
 async function uploadLogs() {
     const globalLogs = [
-        { name: "Sensor_Offset", value: Sensor_Offset },
         { name: "Temperature", value: Temperature },
         { name: "Board_Voltage", value: Board_Voltage },
         { name: "power_flags", value: power_flags },
@@ -55,8 +54,6 @@ async function uploadLogs() {
         { name: "log_buffer", value: log_buffer },
         { name: "log_stats", value: log_stats },
         { name: "clock_drift", value: clock_drift },
-        { name: "ArduPilot_GitHub_tags", value: ArduPilot_GitHub_tags },
-        { name: "octokitRequest_ratelimit_reset", value: octokitRequest_ratelimit_reset },
         { name: "ins", value: ins },
         { name: "compass", value: compass },
         { name: "baro", value: baro },
@@ -65,10 +62,7 @@ async function uploadLogs() {
         { name: "rangefinder", value: rangefinder },
         { name: "flow", value: flow },
         { name: "viso", value: viso },
-        { name: "can", value: can },
-        { name: "params", value: params },
-        { name: "defaults", value: defaults },
-        { name: "board_types", value: board_types }
+        { name: "can", value: can }
     ];
     console.log(globalLogs);
     
@@ -87,6 +81,55 @@ async function uploadLogs() {
 
 }
 
+async function getOrCreateVectorStore(name = "schema-store") {
+  const list = await openai.beta.vectorStores.list();
+  list.data.forEach(vs=> vs.name===null && openai.beta.vectorStores.del(vs.id) && console.log("deleting",vs.id));
+  const existing = list.data.find(vs => vs.name === name);
+  return existing ?? await openai.beta.vectorStores.create({ name });
+}
+
+async function purgeOldSchemaFile(vectorStoreId, targetFilename = "logs_schema_and_notes.txt") {
+  const refs = await openai.beta.vectorStores.files.list(vectorStoreId);
+  for (const ref of refs.data) {
+    const file = await openai.files.retrieve(ref.id);
+    if (file.filename === targetFilename) {
+      
+      await openai.beta.vectorStores.files.del(vectorStoreId, ref.id);
+      
+      await openai.files.del(ref.id);
+    }
+  }
+}
+
+async function uploadNewSchemaFile(vectorStoreId, file) {
+  const newFile = await openai.files.create({
+    file,
+    purpose: "assistants",
+  });
+  console.log(newFile);
+  
+  // add & wait until embeddings are ready
+  await openai.beta.vectorStores.fileBatches.createAndPoll(vectorStoreId, {
+    file_ids: [newFile.id],
+  });
+
+  return newFile.id;
+}
+
+async function uploadSchema(){
+    const file = await loadSchema();
+    const vectorStore = await getOrCreateVectorStore();
+    console.log("vector store created", vectorStore);
+    
+    await purgeOldSchemaFile(vectorStore.id);
+    console.log("purging done");
+    
+    await uploadNewSchemaFile(vectorStore.id, file);
+    console.log("uploading done");
+    
+    return vectorStore.id;
+}
+
 async function createThread(){
     if (!assistantId)
         throw new Error("cannot create thread before initializing assistant");
@@ -97,7 +140,16 @@ async function createThread(){
 }
 
 async function createAssistant(name, instructions, model, tools){
-    const assistant = await openai.beta.assistants.create({instructions,name,model,tools});
+    const vectorStoreId = await uploadSchema();
+    console.log("vector id", vectorStoreId);
+    
+    const assistant = await openai.beta.assistants.create({
+        instructions,
+        name,
+        model,
+        tools,
+        tool_resources: {file_search:{vector_store_ids: [vectorStoreId]}}
+    });
     if (!assistant)
         throw new Error("error creating new assistant");
     return assistant;
@@ -119,12 +171,14 @@ async function findAssistantIdByName(name) {
 
 async function sendQueryToAssistant(query){
     await connectIfNeeded();
+    console.log("filedId", fileId);
+    
     const message = await openai.beta.threads.messages.create(currentThreadId, { 
         role: "user",
         content: query,
         attachments: fileId && [{
             file_id: fileId,
-            tools: [{ type: "code_interpreter" }, {type: "file_search"}]
+            tools: [{ type: "code_interpreter" }]
         }] });
     if (!message)
         throw new Error("Could not send message to assistant");
@@ -153,8 +207,6 @@ async function handleRunStream(runStream){
 }
 
 async function handleToolCall(event) {
-    console.log(event);
-    
     if (!event.data.required_action.submit_tool_outputs || !event.data.required_action.submit_tool_outputs.tool_calls)
         throw new Error ("passed event does not require action")
     const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
@@ -200,6 +252,15 @@ async function loadInstructions() {
     return data;
 }
 
+async function loadSchema() {
+    const response = await fetch('logs_schema_and_notes.txt');
+    if (!response.ok) 
+        throw new Error('error fetching file');
+    const blob = await response.blob();
+    if (!blob)
+        throw new Error("could not load instructions for new assistant");
+    return new File([blob], 'logs_schema_and_notes.txt',{ type:blob.type});
+}
 
 
 async function loadTools(){
