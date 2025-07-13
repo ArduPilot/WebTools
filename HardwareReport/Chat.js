@@ -12,16 +12,15 @@ let assistantId = null;
 let currentThreadId = null;
 let fileId;
 let documentTitle = document.title; //title change => signals new file upload
-
+let apiKey = null; // Store the API key in memory
 
 //makes mutiple checks crucial for the assistant to work
 async function connectIfNeeded(){
-    const openai_API_KEY = sessionStorage.getItem('openai-api-key'); //if there an api key is saved, it will be in session storage
-    if (!openai_API_KEY)
+    if (!apiKey)
         throw new Error('openai API key not configured.');
     if (!openai){
         // instantiate openai object
-        openai = new Openai({apiKey: openai_API_KEY, dangerouslyAllowBrowser: true});
+        openai = new Openai({apiKey, dangerouslyAllowBrowser: true});
             if (!openai) {
                 throw new Error('Could not connect to open AI');
             }
@@ -347,10 +346,9 @@ async function upgradeAssistant() {
         
 }
 
-//save the api key in the session storage, user will have to re-enter it when tab is closed
+//save the api key in memory only, user will have to re-enter it when page is refreshed
 function saveAPIKey(){
-    const apiKey = document.getElementById('openai-api-key').value.trim();
-    sessionStorage.setItem('openai-api-key', apiKey);    
+    apiKey = document.getElementById('openai-api-key').value.trim();
 }
 
 //toggle chat window
@@ -414,8 +412,6 @@ async function init(){
     document.getElementById("ai-chat-close-button").addEventListener('click', ()=>toggleChat(false));
     document.getElementById("ai-chat-input-area").addEventListener('submit', sendMessage);
     document.getElementById('save-api-key').addEventListener('click', saveAPIKey);
-    //in case an api key was previously saved, add UI feedback to signal that to the user
-    document.getElementById('openai-api-key').value=sessionStorage.getItem('openai-api-key');
     document.getElementById('upgrade-assistant').addEventListener('click',upgradeAssistant);
 }
 
