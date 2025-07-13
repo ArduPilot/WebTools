@@ -16,7 +16,7 @@ let documentTitle = document.title; //title change => signals new file upload
 
 //makes mutiple checks crucial for the assistant to work
 async function connectIfNeeded(){
-    const openai_API_KEY = localStorage.getItem('openai-api-key'); //if there an api key is saved, it will be in local storage
+    const openai_API_KEY = sessionStorage.getItem('openai-api-key'); //if there an api key is saved, it will be in session storage
     if (!openai_API_KEY)
         throw new Error('openai API key not configured.');
     if (!openai){
@@ -100,14 +100,14 @@ async function getOrCreateVectorStore(name = "schema-store") {
     if (!list)
         throw new Error("error fetching vector stores list");
     const existing = list.data.find(vs => vs.name === name);
-    if (!existing)
-        return;
+    if (existing)
+        return existing;
     //create new vector store in case one doesn't already exist
     const vectorStore = await openai.beta.vectorStores.create({ name });
     return vectorStore;
 }
 
-//deleted old shchema file, used primary as part of the version update pipeline
+//deleted old schema file, used primarily as part of the version update pipeline
 async function purgeOldSchemaFile(vectorStoreId, targetFilename = "logs_schema_and_notes.txt") {
     const refs = await openai.beta.vectorStores.files.list(vectorStoreId);
     if (!refs)
@@ -117,10 +117,10 @@ async function purgeOldSchemaFile(vectorStoreId, targetFilename = "logs_schema_a
         if (!file)
             throw new Error("error retrieving file");
         if (file.filename === targetFilename) {
-        //detach from vector store
-        await openai.beta.vectorStores.files.del(vectorStoreId, ref.id);
-        //delete the file itself
-        await openai.files.del(ref.id);
+            //detach from vector store
+            await openai.beta.vectorStores.files.del(vectorStoreId, ref.id);
+            //delete the file itself
+            await openai.files.del(ref.id);
         }
     }
 }
@@ -315,7 +315,7 @@ async function loadTools(){
     const response = await fetch("assistantTools.json");
     if (!response.ok)
         throw new Error("error fetching file");
-    const data = response.json();
+    const data = await response.json();
     if (!data)
         throw new Error("could not load assistant tools for new assistant");
     return data;
@@ -347,10 +347,10 @@ async function upgradeAssistant() {
         
 }
 
-//save the api key in the local storage, user will not have to re-enter it manually every time
+//save the api key in the session storage, user will have to re-enter it when tab is closed
 function saveAPIKey(){
     const apiKey = document.getElementById('openai-api-key').value.trim();
-    localStorage.setItem('openai-api-key', apiKey);    
+    sessionStorage.setItem('openai-api-key', apiKey);    
 }
 
 //toggle chat window
@@ -415,7 +415,7 @@ async function init(){
     document.getElementById("ai-chat-input-area").addEventListener('submit', sendMessage);
     document.getElementById('save-api-key').addEventListener('click', saveAPIKey);
     //in case an api key was previously saved, add UI feedback to signal that to the user
-    document.getElementById('openai-api-key').value=localStorage.getItem('openai-api-key');
+    document.getElementById('openai-api-key').value=sessionStorage.getItem('openai-api-key');
     document.getElementById('upgrade-assistant').addEventListener('click',upgradeAssistant);
 }
 
