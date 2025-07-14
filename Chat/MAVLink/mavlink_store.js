@@ -46,6 +46,22 @@ class MAVLinkMessageStore {
         return this.store[sysid][compid][msgid];
     }
 
+    find_message_by_name(name, sysid = this.sysid_default, compid = this.compid_default) {
+      if (!this.store[sysid] || !this.store[sysid][compid]) {
+        return null;
+      }
+
+      for (let id in this.store[sysid][compid]) {
+        const msg = this.store[sysid][compid][id];
+        if (msg._name === name) {
+          return msg;
+        }
+      }
+
+      return null;
+    }
+
+
     // get available message names.  returns an array of message names
     // or null if no messages are available
     get_available_message_names(sysid = this.sysid_default, compid = this.compid_default) {
