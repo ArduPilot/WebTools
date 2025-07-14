@@ -17,71 +17,12 @@
   <script type="text/javascript" src="MAVLink/mavlink.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<!-- <table style="width:1200px">
-    <tr>
-        <td>
-            <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
-        </td>
-        <td>
-            <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png"
-                    style="width:60px"></a><br>
-            <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
-        </td>
-    </tr>
-</table> -->
-
-<!-- <style>
-    body {
-        font-family: Arial, sans-serif;
-    }
-
-    .chat-container {
-        width: 400px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 10px;
-        background-color: #f9f9f9;
-    }
-
-    .chat-box {
-        width: 100%;
-        height: 200px;
-        border: 1px solid #ccc;
-        background-color: white;
-        padding: 5px;
-        overflow-y: auto;
-    }
-
-    .user-text {
-        color: red;
-    }
-
-    .assistant-text {
-        color: black;
-    }
-
-    .input-container {
-        display: flex;
-        margin-top: 10px;
-    }
-
-    .input-field {
-        flex: 1;
-        padding: 5px;
-    }
-
-    .send-button {
-        margin-left: 5px;
-    } 
-</style> -->
-
-<!-- <h1><a href="" style="color: #000000; text-decoration:none;">Chat</a></h1> -->
 
 <body class="bg-gray-100 font-inter antialiased">
   <div class="container mx-auto p-4">
     <h1 class="text-3xl font-semibold text-blue-600 text-center mb-6">ArduPilot AI Chat Control</h1>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- AI Chat Panel -->
       <div class="bg-white shadow-md rounded-lg p-4 flex flex-col">
         <div class="flex items-center gap-4 mb-4">
@@ -93,7 +34,7 @@
         </div>
 
         <div id="chatBox" class="flex-1 overflow-y-auto space-y-3 mb-4 flex flex-col max-h-[73vh]">
-          <div class="chat-message-bot">
+          <div class="bg-gray-100 rounded-lg p-3 mb-2 self-start max-w-[80%]">
             <p class="text-sm">Welcome! I'm your ArduPilot AI assistant. You can control the drone using
               natural language commands like:</p>
             <ul class="list-disc pl-5 mt-2 text-sm">
@@ -107,17 +48,21 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <input type="text" id="userInput" placeholder="Type your command or question..."
-            class="flex-1 rounded-md border-gray-300 shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
+            class="flex-1 min-w-[150px] rounded-md border border-gray-300 shadow-sm p-3 focus:ring-2 focus:ring-blue-500"
             autocomplete="off">
-          <button id="sendMessageButton" class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3">
+
+          <button id="sendMessageButton"
+            class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path
                 d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
             </svg>
           </button>
-          <button id="recordButton" class="bg-purple-500 hover:bg-purple-600 text-white rounded-md p-3">
+
+          <button id="recordButton"
+            class="bg-purple-500 hover:bg-purple-600 text-white rounded-md p-3 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd"
                 d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
@@ -126,204 +71,71 @@
           </button>
         </div>
 
-        <div id="command-history" class="command-history mt-2 hidden">
+        <div id="command-history" class="mt-2 hidden max-h-[100px] overflow-y-auto border-t border-gray-200 pt-1.5">
           <!-- Command history items will be added here -->
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_80px_auto] gap-2 mt-4">
-          <!-- QGC Address -->
-          <input type="text" id="mavlink-connect-url" class="rounded-md border-gray-300 shadow-sm p-2 w-full"
-            value="ws://127.0.0.1:56781" readonly>
+        <div class="flex flex-wrap items-center gap-2 mt-4">
+          <input type="text" id="mavlink-connect-url"
+            class="flex-1 min-w-[200px] rounded-md border border-gray-300 shadow-sm p-2" value="ws://127.0.0.1:56781"
+            readonly>
 
-          <!-- Target ID -->
-          <input type="number" id="target-id" placeholder="ID" value="1" min="1"
-            class="rounded-md border-gray-300 shadow-sm p-2 w-full text-center">
-
-          <!-- Single stateful button -->
           <button id="mavlink-connect-button"
-            class="bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2 whitespace-nowrap w-full">
+            class="bg-green-500 hover:bg-green-600 text-white rounded-md px-5 py-2 whitespace-nowrap">
             Connect
           </button>
         </div>
+
+
       </div>
 
-      <!-- Telemetry Panel -->
-      <div class="bg-white shadow-md rounded-lg p-4">
-        <h2 class="text-xl font-semibold mb-4">Vehicle Telemetry</h2>
+      <!-- Side Panel -->
+      <div class="bg-white shadow-md rounded-lg p-4 flex flex-col h-[85vh] overflow-y-auto">
+        <h2 class="text-xl font-semibold mb-4">AI Configuration</h2>
 
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div class="bg-gray-50 p-3 rounded">
-            <div class="text-sm text-gray-500">Flight Mode</div>
-            <div id="flight-mode" class="text-xl font-bold text-blue-600">DISCONNECTED</div>
-          </div>
-          <div class="bg-gray-50 p-3 rounded">
-            <div class="text-sm text-gray-500">Armed State</div>
-            <div id="armed-state" class="text-xl font-bold text-red-600">DISARMED</div>
-          </div>
-          <div class="bg-gray-50 p-3 rounded">
-            <div class="text-sm text-gray-500">Battery</div>
-            <div class="flex items-center gap-2">
-              <div id="battery-voltage" class="text-xl font-bold">-.- V</div>
-              <div class="battery-indicator flex-1">
-                <div id="battery-level" class="battery-level" style="width: 0%"></div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-gray-50 p-3 rounded">
-            <div class="text-sm text-gray-500">GPS Status</div>
-            <div id="gps-status" class="text-xl font-bold">NO FIX</div>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <h3 class="font-medium mb-2">Attitude Indicator</h3>
-          <div class="attitude-indicator h-32 rounded-md relative">
-            <div class="absolute inset-0 grid grid-cols-3 grid-rows-3">
-              <div class="border-r border-b border-white opacity-20"></div>
-              <div class="border-r border-b border-white opacity-20"></div>
-              <div class="border-b border-white opacity-20"></div>
-              <div class="border-r border-white opacity-20"></div>
-              <div class="border-r border-white opacity-20"></div>
-              <div class="border-white opacity-20"></div>
-              <div class="border-r border-t border-white opacity-20"></div>
-              <div class="border-r border-t border-white opacity-20"></div>
-              <div class="border-t border-white opacity-20"></div>
-            </div>
-            <div class="attitude-horizon"></div>
-            <div id="attitude-ball" class="attitude-ball"></div>
-          </div>
-          <div class="grid grid-cols-3 gap-2 mt-2">
-            <div class="text-center">
-              <div class="text-sm text-gray-500">Roll</div>
-              <div id="roll-value" class="font-mono">0.0°</div>
-            </div>
-            <div class="text-center">
-              <div class="text-sm text-gray-500">Pitch</div>
-              <div id="pitch-value" class="font-mono">0.0°</div>
-            </div>
-            <div class="text-center">
-              <div class="text-sm text-gray-500">Yaw</div>
-              <div id="yaw-value" class="font-mono">0.0°</div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="font-medium mb-2">Flight Mode</h3>
+        <div class="mb-3">
+          <label for="openai_api_key" class="block text-sm font-medium text-gray-700 mb-1">OpenAI API
+            Key:</label>
           <div class="flex gap-2">
-            <select id="flight-mode-select" class="flex-1 rounded-md border p-2">
-              <option value="STABILIZE">Stabilize</option>
-              <option value="ACRO">Acro</option>
-              <option value="ALT_HOLD">Altitude Hold</option>
-              <option value="AUTO">Auto</option>
-              <option value="GUIDED">Guided</option>
-              <option value="LOITER">Loiter</option>
-              <option value="RTL">Return to Launch</option>
-              <option value="CIRCLE">Circle</option>
-              <option value="LAND">Land</option>
-              <option value="DRIFT">Drift</option>
-              <option value="POSHOLD">Position Hold</option>
-            </select>
-            <button id="set-mode-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 rounded">
-              Set
+            <input type="password" id="openai_api_key" class="flex-1 rounded-md border-gray-300 shadow-sm p-3"
+              autocomplete="off">
+            <button id="toggleApiKeyButton" class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3"> <svg
+                id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
+                <path fill-rule="evenodd"
+                  d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
+                  clip-rule="evenodd" />
+                <path
+                  d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
+              </svg>
             </button>
           </div>
         </div>
 
-        <div class="mt-4 border-t pt-4 border-gray-200">
-          <h3 class="text-lg font-semibold mb-3">AI Configuration</h3>
 
-          <div class="mb-3">
-            <label for="openai_api_key" class="block text-sm font-medium text-gray-700 mb-1">OpenAI API
-              Key:</label>
-            <div class="flex gap-2">
-              <input type="password" id="openai_api_key" class="flex-1 rounded-md border-gray-300 shadow-sm p-3"
-                autocomplete="off">
-              <button id="toggleApiKeyButton" class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3"> <svg
-                  id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                  class="h-5 w-5">
-                  <path fill-rule="evenodd"
-                    d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
-                    clip-rule="evenodd" />
-                  <path
-                    d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-
-          <div class="mb-3">
-            <label for="assistantId" class="block text-sm font-medium text-gray-700 mb-1">Assistant
-              ID:</label>
-            <input type="text" id="assistantId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
-              readonly>
-          </div>
-
-          <div class="mb-3">
-            <label for="assistantThreadId" class="block text-sm font-medium text-gray-700 mb-1">Thread
-              ID:</label>
-            <input type="text" id="assistantThreadId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
-              readonly>
-          </div>
-
-          <div class="mb-3">
-            <label for="assistantRunStatus" class="block text-sm font-medium text-gray-700 mb-1">Run
-              Status:</label>
-            <input type="text" id="assistantRunStatus"
-              class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50" readonly>
-          </div>
+        <div class="mb-3">
+          <label for="assistantId" class="block text-sm font-medium text-gray-700 mb-1">Assistant
+            ID:</label>
+          <input type="text" id="assistantId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
+            readonly>
         </div>
 
-      </div>
-
-      <!-- Map and Position Panel -->
-      <div class="bg-white shadow-md rounded-lg p-4">
-        <h2 class="text-xl font-semibold mb-4">Position Tracking</h2>
-
-        <div id="map" class="rounded-md mb-4"></div>
-
-        <div class="grid grid-cols-3 gap-2 mb-4">
-          <div class="bg-gray-50 p-2 rounded">
-            <div class="text-xs text-gray-500">Latitude</div>
-            <div id="lat-value" class="font-mono text-sm">0.000000</div>
-          </div>
-          <div class="bg-gray-50 p-2 rounded">
-            <div class="text-xs text-gray-500">Longitude</div>
-            <div id="lon-value" class="font-mono text-sm">0.000000</div>
-          </div>
-          <div class="bg-gray-50 p-2 rounded">
-            <div class="text-xs text-gray-500">Altitude</div>
-            <div id="alt-value" class="font-mono text-sm">0.0 m</div>
-          </div>
+        <div class="mb-3">
+          <label for="assistantThreadId" class="block text-sm font-medium text-gray-700 mb-1">Thread
+            ID:</label>
+          <input type="text" id="assistantThreadId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
+            readonly>
         </div>
 
-        <div class="mb-4">
-          <h3 class="font-medium mb-2">Pre-Flight Checks</h3>
-          <div id="preflight-results" class="space-y-2">
-            <div class="text-center text-gray-500 py-4">Not connected</div>
-          </div>
-          <button id="preflight-btn" class="w-full mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md">
-            Run Pre-Flight Checks
-          </button>
-        </div>
-
-        <div>
-          <h3 class="font-medium mb-2">Quick Commands</h3>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="mavlink-arm-button" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded">Arm</button>
-            <button id="mavlink-disarm-button"
-              class="bg-red-500 hover:bg-red-600 text-white p-2 rounded">Disarm</button>
-            <button id="takeoff-btn" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Takeoff</button>
-            <button id="land-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded">Land</button>
-            <button id="rtl-btn" class="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded">RTL</button>
-            <button id="emergency-btn" class="bg-red-700 hover:bg-red-800 text-white p-2 rounded">Emergency
-              Stop</button>
-          </div>
+        <div class="mb-3">
+          <label for="assistantRunStatus" class="block text-sm font-medium text-gray-700 mb-1">Run
+            Status:</label>
+          <input type="text" id="assistantRunStatus" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
+            readonly>
         </div>
 
         <!-- DEBUG OUTPUT CONTAINER -->
         <div class="mt-4 border-t pt-4 border-gray-200">
+          <h2 class="text-xl font-semibold mb-4">Debug Output</h2>
           <label for="debugOutput" class="block text-sm font-medium text-gray-700 mb-1">Debug Output:</label>
           <textarea id="debugOutput"
             class="w-full rounded-md border-gray-300 shadow-sm p-2 text-xs font-mono bg-gray-50" rows="10" readonly>
@@ -334,7 +146,7 @@
     </div>
   </div>
 
-  <!-- <script src="script.js"></script> -->
+  <!-- script for Mavlink export  -->
   <script src="shared.js"></script>
   <!-- simple script functions local to this page -->
   <script type="module">
@@ -342,13 +154,16 @@
     import { mavlink_store } from './MAVLink/mavlink_store.js';
     import { setMAVLink, setMavlinkWS } from './shared.js';
 
+    // global variable to store parameter names and values received via MAVLink
+    window.mavlink_parameters = {};
 
+    window.pending_param_requests = {}
+    window.pending_all_params_request = null;
 
     // show/hide the OpenAI API key field
     function toggle_openai_api_key_visibility() {
       let openai_key_input = document.getElementById("openai_api_key");
       const eyeIconContainer = document.getElementById("eyeIcon"); // Get reference to the SVG element
-      // openai_key_input.type = openai_key_input.type === "password" ? "text" : "password";
       // Eye Icon (Open) - Standard 20x20 Solid Heroicon
       const eyeOpenSVGPath = `
                 <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
@@ -481,6 +296,30 @@
         case 1: // SYS_STATUS
           //alert("Got a system status: " + JSON.stringify(msg));
           break;
+        case 22: // PARAM_VALUE
+          const param_id = msg.param_id.replace(/\u0000/g, '').trim();
+          const param_value = msg.param_value;
+          const param_index = msg.param_index;
+          const param_count = msg.param_count;
+
+          add_text_to_debug(`PARAM_VALUE received: ${param_id} = ${param_value}`);
+
+          // Handle single parameter pending requests
+          if (window.pending_param_requests[param_id]) {
+            window.pending_param_requests[param_id]({ [param_id]: param_value });
+            delete window.pending_param_requests[param_id];
+          }
+
+          // All parameters request resolver
+          if (window.pending_all_params_request) {
+            window.pending_all_params_request.params[param_id] = param_value;
+            if (param_index === param_count - 1) {
+              // This was the last parameter
+              window.pending_all_params_request.resolve(window.pending_all_params_request.params);
+              window.pending_all_params_request = null;
+            }
+          }
+          break;
         case 24: // GPS_RAW_INT
           //alert("Got a GPS raw int: " + JSON.stringify(msg));
           break;
@@ -600,7 +439,7 @@
     import { MAVLink, mavlink_ws } from './shared.js';
 
     // constants
-    const OPENAI_API_KEY = "your_api_key"; // replace with your OpenAI API key
+    const OPENAI_API_KEY = ""; // replace with your OpenAI API key
     const OPENAI_MODEL = "gpt-4o"
     const OPENAI_ASSISTANT_NAME = "ArduPilot Vehicle Control via MAVLink"
 
@@ -632,6 +471,10 @@
 
     // global variable to store wakeup messages
     let wakeup_schedule = [];
+    // global variables for mavlink_parameters
+    let mavlink_parameters = window.mavlink_parameters;
+    let pending_param_requests = window.pending_param_requests;
+
     window.onload = function () {
       // initialize the check wakeup:
       check_wakeup_timers();
@@ -703,14 +546,12 @@
 
       // show the message in chat as system or wakeup message
       add_text_to_chat(message, "user"); // use "system" or custom style class
-      // debugmu?
 
       // get assistant response
       let response = await get_assistant_response(message);
 
       // show assistant response
       add_text_to_chat(response, "assistant");
-      // debugmu?
     }
 
     //
@@ -824,7 +665,7 @@
     }
 
     // handle function call from assistant
-    function handle_function_call(name, args) {
+    async function handle_function_call(name, args) {
       add_text_to_debug("Function call: " + name + " with args: " + JSON.stringify(args));
       // call the function
       switch (name) {
@@ -835,7 +676,9 @@
           // Get a vehicle parameter's value.  The full list of available parameters and their values is available using the get_all_parameters function
           // fallthrough
           add_text_to_debug("get_parameter args: " + JSON.stringify(args));
-          return get_parameter(args);
+          const repsonse = await get_parameter(args);
+          add_text_to_debug("get_parameter response: " + JSON.stringify(repsonse));
+          return repsonse;
         case "get_wakeup_timers":
           // Retrieves a list of all active wakeup timers. You can optionally provide a message parameter to filter timers by their associated messages. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to find timers with specific keywords or patterns in their messages. For example, to retrieve all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
           // fallthrough
@@ -875,19 +718,25 @@
           add_text_to_debug("get_location_plus_dist_at_bearing response: " + JSON.stringify(location_plus_dist_at_bearing));
           return location_plus_dist_at_bearing;
         case "get_parameter_description":
-        // Get vehicle parameter descriptions including description, units, min and max
-        // fallthrough
+          // Get vehicle parameter descriptions including description, units, min and max
+          // fallthrough
+          add_text_to_debug("get_parameter_description args: " + JSON.stringify(args));
+          const param_desc = await get_parameter_description(args);
+          add_text_to_debug("get_parameter_description response: " + JSON.stringify(param_desc));
+          return param_desc;
         case "delete_wakeup_timers":
           // Delete all active wakeup timers. You can optionally provide a message parameter to filter which timers will be deleted based on their message. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to delete timers with specific keywords or patterns in their message. For example, to delete all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
           // fallthrough
           return delete_wakeup_timers(args);
         case "set_parameter":
-        // Set a vehicle parameter's value.  The full list of parameters is available using the get_all_parameters function
-        // fallthrough
+          // Set a vehicle parameter's value.  The full list of parameters is available using the get_all_parameters function
+          // fallthrough
+          add_text_to_debug("set_parameter args: " + JSON.stringify(args));
+          return set_parameter(args);
         case "get_mavlink_message":
           // Get a mavlink message including all fields and values sent by the vehicle.  The list of available messages can be retrieved using the get_available_mavlink_messages
-          add_text_to_debug("Unknown function: " + name);
-          return "Unknown function: " + name;
+          add_text_to_debug("get_mavlink_message args: " + JSON.stringify(args));
+          return get_mavlink_message(args);
         case "get_current_datetime":
           // Get the current date and time, e.g. 'Saturday, June 24, 2023 6:14:14 PM
           add_text_to_debug("get_current_datetime called");
@@ -899,13 +748,16 @@
           add_text_to_debug("get_mode_mapping response: " + JSON.stringify(mode_mapping));
           return mode_mapping;
         case "get_all_parameters":
-        // Get all available parameter names and values
-        // fallthrough
+          // Get all available parameter names and values
+          // fallthrough
+          add_text_to_debug("get_all_parameters called with args: " + JSON.stringify(args));
+          return await get_all_parameters(args);
         case "set_wakeup_timer":
           // Set a timer to wake you up in a specified number of seconds in the future.  This allows taking actions in the future.  The wakeup message will appear with the user role but will look something like WAKEUP:<message>.  Multiple wakeup messages are supported
           return set_wakeup_timer(args);
         case "get_available_mavlink_messages":
-          return get_available_mavlink_messages();
+          add_text_to_debug("get_available_mavlink_messages called");
+          return mavlink_store.get_available_message_names();
         default:
           add_text_to_debug("Unknown function: " + name);
           return "Unknown function: " + name;
@@ -1123,37 +975,95 @@
       return mode_list;
     }
 
-    // get a vehicle parameter's value
-    function get_parameter(args) {
-      // check if the parameter name is provided
-      if (!args || !args.hasOwnProperty("name")) {
-        add_text_to_debug("get_parameter: name not specified");
-        return "get_parameter: name not specified";
+    function get_mavlink_message(args) {
+      // Check if it's a string and parse it
+      if (typeof args === "string") {
+        try {
+          args = JSON.parse(args);
+        } catch (e) {
+          return { status: "error", message: "Invalid JSON in arguments" };
+        }
       }
-      const param_name = args.name;
-      add_text_to_debug("get_parameter: name: " + param_name);
-      const param_list = {};
 
-      // handle param name containing regex
-      if (contains_regex(param_name)) {
-        for (const existing_param_name of all_params) {
-          if (pattern.test(existing_param_name)) {
-            if (param_value === null) {
-              add_text_to_debug("get_parameter: unable to get " + existing_param_name);
-            } else {
-              param_list[existing_param_name] = param_value;
+      // check if name is provided
+      if (!args || !args.hasOwnProperty("message")) {
+        add_text_to_debug("get_mavlink_message: message is null");
+        return "get_mavlink_message: message is Null";
+      }
+
+      add_text_to_debug("get_mavlink_message: args: " + JSON.stringify(args));
+
+      const msg = mavlink_store.find_message_by_name(args.message);
+      if (!msg) {
+        return "get_mavlink_message: message not found";
+      }
+      return msg;
+    }
+
+    function get_parameter(args) {
+      try {
+        return new Promise((resolve, reject) => {
+          // Parse input
+          if (typeof args === "string") {
+            try {
+              args = JSON.parse(args);
+            } catch (e) {
+              add_text_to_debug("get_parameter: ERROR parsing args string");
+              reject("Invalid arguments: JSON parse error");
+              return;
             }
           }
-        }
-      } else {
-        // handle simple case of a single parameter name
-        if (param_value === null) {
-          return "get_parameter: " + param_name + " parameter not found";
-        }
-        param_list[param_name] = param_value;
-      }
 
-      return param_list;
+          if (!args || !args.name) {
+            reject("get_parameter: name not specified");
+            return;
+          }
+
+          const param_name = args.name.trim();
+
+          // Check WebSocket ready
+          if (!MAVLink || !mavlink_ws || mavlink_ws.readyState !== WebSocket.OPEN) {
+            reject("MAVLink or WebSocket not ready");
+            return;
+          }
+
+          // Register resolver for this param
+          pending_param_requests[param_name] = resolve;
+
+          try {
+            // Create PARAM_REQUEST_READ message
+            const message = new mavlink20.messages.param_request_read(
+              1,               // target_system
+              1,               // target_component
+              param_name,      // param_id
+              -1               // use param_id, not param_index
+            );
+
+            const buffer = MAVLink.send(message);
+            const uintArray = new Uint8Array(buffer);
+
+            // Send over WebSocket
+            mavlink_ws.send(uintArray);
+            add_text_to_debug(`Sent PARAM_REQUEST_READ for ${param_name}`);
+          } catch (error) {
+            delete pending_param_requests[param_name];
+            reject("Error sending PARAM_REQUEST_READ: " + error);
+            return;
+          }
+
+          // timeout
+          setTimeout(() => {
+            if (pending_param_requests[param_name]) {
+              delete pending_param_requests[param_name];
+              reject(`Timeout waiting for PARAM_VALUE for ${param_name}`);
+            }
+          }, 5000);
+        });
+      }
+      catch (error) {
+        add_text_to_debug("get_parameter: Error retrieving parameter: " + error);
+        return "get_parameter: Error retrieving parameter: " + error;
+      }
     }
 
     // returns true if string contains regex characters
@@ -1165,6 +1075,244 @@
         }
       }
       return false;
+    }
+
+    function get_all_parameters() {
+      return new Promise((resolve, reject) => {
+        if (!MAVLink || !mavlink_ws || mavlink_ws.readyState !== WebSocket.OPEN) {
+          reject("MAVLink or WebSocket not ready");
+          return;
+        }
+
+        if (window.pending_all_params_request) {
+          reject("Another get_all_parameters request is already in progress");
+          return;
+        }
+
+        // Set up the pending request
+        window.pending_all_params_request = {
+          params: {},
+          resolve: resolve
+        };
+
+        try {
+          const message = new mavlink20.messages.param_request_list(
+            1, // target_system
+            1  // target_component
+          );
+
+          const buffer = MAVLink.send(message);
+          const uintArray = new Uint8Array(buffer);
+
+          mavlink_ws.send(uintArray);
+
+          add_text_to_debug("Sent PARAM_REQUEST_LIST to vehicle");
+        } catch (error) {
+          window.pending_all_params_request = null;
+          reject("Error sending PARAM_REQUEST_LIST: " + error);
+          return;
+        }
+
+        // Optional timeout
+        setTimeout(() => {
+          if (window.pending_all_params_request) {
+            window.pending_all_params_request = null;
+            reject("Timeout waiting for all parameters");
+          }
+        }, 15000);
+      });
+    }
+
+    // Global cache for parameter metadata
+    const parameter_metadata_cache = {};
+
+    const parameter_url_map = {
+      Tracker: "https://autotest.ardupilot.org/Parameters/AntennaTracker/apm.pdef.json",
+      Copter: "https://autotest.ardupilot.org/Parameters/ArduCopter/apm.pdef.json",
+      Plane: "https://autotest.ardupilot.org/Parameters/ArduPlane/apm.pdef.json",
+      Rover: "https://autotest.ardupilot.org/Parameters/Rover/apm.pdef.json",
+      Sub: "https://autotest.ardupilot.org/Parameters/ArduSub/apm.pdef.json"
+    };
+
+    async function load_parameter_metadata(vehicle_type) {
+      if (parameter_metadata_cache[vehicle_type]) {
+        add_text_to_debug(`Using cached parameter metadata for ${vehicle_type}`);
+        return parameter_metadata_cache[vehicle_type];
+      }
+
+      const url = parameter_url_map[vehicle_type];
+      if (!url) {
+        add_text_to_debug(`No parameter definition URL found for vehicle type: ${vehicle_type}`);
+        return null;
+      }
+
+      try {
+        add_text_to_debug(`Fetching parameter metadata for ${vehicle_type} from ${url}`);
+        const res = await fetch(url);
+        if (!res.ok) {
+          add_text_to_debug(`Failed to fetch parameter metadata for ${vehicle_type}: ${res.status}`);
+          return null;
+        }
+
+        const data = await res.json();
+        parameter_metadata_cache[vehicle_type] = data;
+        return data;
+
+      } catch (error) {
+        add_text_to_debug(`Error fetching parameter metadata for ${vehicle_type}:`, error);
+        return null;
+      }
+    }
+
+    function find_param_in_tree(tree, vehicle_type, param_upper) {
+      for (const [key, val] of Object.entries(tree)) {
+        if (typeof val === "object") {
+          if (key.toUpperCase() === param_upper) {
+            return { key, meta: val };
+          }
+          if (`${vehicle_type}:${param_upper}` === key.toUpperCase()) {
+            return { key, meta: val };
+          }
+          const result = find_param_in_tree(val, vehicle_type, param_upper);
+          if (result) return result;
+        }
+      }
+      return null;
+    }
+
+    function get_single_parameter_description(param_tree, vehicle_type, param_name) {
+      const param_upper = param_name.toUpperCase();
+
+      const result = find_param_in_tree(param_tree, vehicle_type, param_upper);
+
+      if (!result) return null;
+
+      const { key: found_key, meta } = result;
+
+      const output = { name: found_key };
+
+      if (meta.Description) output["description"] = meta.Description;
+      if (meta.Units) output["units"] = meta.Units;
+
+      if (meta.Range) {
+        if (typeof meta.Range === "string" && meta.Range.includes(" ")) {
+          const [min, max] = meta.Range.split(" ");
+          output["min"] = parseFloat(min);
+          output["max"] = parseFloat(max);
+        } else if (typeof meta.Range === "object") {
+          if (meta.Range.low !== undefined) output["min"] = meta.Range.low;
+          if (meta.Range.high !== undefined) output["max"] = meta.Range.high;
+        }
+      }
+
+      if (meta.Default !== undefined) output["default"] = meta.Default;
+      if (meta.Values) output["values"] = meta.Values;
+      if (meta.Bitmask) output["bitmask"] = meta.Bitmask;
+
+      return output;
+    }
+
+
+    async function get_parameter_description(args) {
+      if (typeof args === "string") {
+        try {
+          args = JSON.parse(args);
+        } catch {
+          return "get_parameter_description: invalid JSON";
+        }
+      }
+
+      if (!args || !args.name) {
+        return "get_parameter_description: name not specified";
+      }
+
+      const param_name = args.name;
+      const vehicle_type = get_vehicle_type();
+      const param_tree = await load_parameter_metadata(vehicle_type);
+      if (!param_tree) {
+        return `get_parameter_description: No metadata for vehicle type: ${vehicle_type}`;
+      }
+
+      const results = {};
+
+      if (contains_regex(param_name)) {
+        const pattern = new RegExp(param_name.replace(/\*/g, ".*"), "i");
+
+        for (const [key, val] of Object.entries(param_tree)) {
+          if (pattern.test(key)) {
+            const single = get_single_parameter_description(param_tree, vehicle_type, key);
+            if (single) results[key] = single;
+          } else if (typeof val === "object") {
+            for (const [subkey] of Object.entries(val)) {
+              if (pattern.test(subkey)) {
+                const single = get_single_parameter_description(param_tree, vehicle_type, subkey);
+                if (single) results[subkey] = single;
+              }
+            }
+          }
+        }
+
+        if (Object.keys(results).length === 0) {
+          return `get_parameter_description: No parameters matched pattern: ${param_name}`;
+        }
+        return results;
+      }
+
+      // Exact
+      const single = get_single_parameter_description(param_tree, vehicle_type, param_name);
+      if (!single) {
+        return `get_parameter_description: ${param_name} parameter description not found`;
+      }
+
+      results[param_name] = single;
+      return results;
+    }
+
+    // send a PARAM_SET message to change a vehicle parameter
+    function set_parameter(args) {
+      if (typeof args === "string") {
+        try {
+          args = JSON.parse(args);
+        } catch (e) {
+          add_text_to_debug("ERROR set_parameter: Could not parse args JSON");
+          return "Invalid arguments: JSON parse error";
+        }
+      }
+
+      if (!args || !args.hasOwnProperty("name") || args.value === undefined) {
+        return "set_parameter: name and value required";
+      }
+
+      if (!MAVLink || !mavlink_ws) {
+        return "set_parameter: MAVLink or WebSocket not ready";
+      }
+
+      const name = args.name ? args.name.trim() : null;
+      if (!name) {
+        return "set_parameter: name cannot be empty";
+      }
+
+      const value = parseFloat(args.value);
+      const message = new mavlink20.messages.param_set(
+        1, // target system
+        1, // target component
+        name,
+        value,
+        mavlink20.MAV_PARAM_TYPE_REAL32
+      );
+      const buffer = MAVLink.send(message);
+      const uint = new Uint8Array(buffer);
+
+      if (mavlink_ws.readyState === WebSocket.OPEN) {
+        try {
+          mavlink_ws.send(uint);
+          return "set_parameter: sent";
+        } catch (error) {
+          add_text_to_debug("Error sending PARAM_SET: " + error);
+          return "set_parameter: send failed";
+        }
+      }
+      return "set_parameter: WebSocket not open";
     }
 
     function send_mavlink_set_position_target_global_int(args) {
@@ -1185,24 +1333,14 @@
       try {
         const time_boot_ms = args.time_boot_ms ?? 0;
         const target_system = args.target_system ?? 1;
-        if (!args.hasOwnProperty("target_system")) {
-          add_text_to_debug("send_mavlink_set_position_target_global_int: target_system not specified, using default 1");
-        } else {
-          add_text_to_debug("send_mavlink_set_position_target_global_int: target_system: " + args.target_system);
-        }
-        // self.mpstate.settings.target_system bunun yerine ne yazmaliyiq bunu tap...
-        // target_system = arguments.get("target_system", self.mpstate.settings.target_system)
+        add_text_to_debug("target_system: " + target_system);
+
 
         const target_component = args.target_component ?? 1;
         const coordinate_frame = args.coordinate_frame ?? 5;
         const type_mask = args.type_mask ?? 0; // ignore all position, velocity and acceleration except for the ones we set
 
         add_text_to_debug("target_component: " + target_component + ", coordinate_frame: " + coordinate_frame + ", type_mask: " + type_mask);
-        // Position
-        // const lat_int = args.latitude !== undefined ? int(args.latitude * 1e7) : 0;
-        // const lon_int = args.longitude !== undefined ? int(args.longitude * 1e7) : 0;
-        // const alt = args.alt ?? 0;
-        add_text_to_debug("args.latitude: " + args.latitude + ", args.longitude: " + args.longitude + ", args.alt: " + args.alt);
         const lat_int = args.latitude !== undefined ? Math.round(args.latitude * 1e7) : 0;
         const lon_int = args.longitude !== undefined ? Math.round(args.longitude * 1e7) : 0;
         const alt = args.alt !== undefined ? args.alt : 0;  // in meters
@@ -1249,7 +1387,6 @@
 
         const buffer = MAVLink.send(message);
         const uint = new Uint8Array(buffer);
-        // console.log([...uint]);
         if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
           try {
             mavlink_ws.send(uint);
@@ -1276,10 +1413,7 @@
         return { success: false, error: "MAVLink not initialized" };
       }
 
-      add_text_to_debug("send_mavlink_command_int: args: " + args);
       const parsed = JSON.parse(args);
-      add_text_to_debug("send_mavlink_command_int: parsed: " + JSON.stringify(parsed));
-      add_text_to_debug("send_mavlink_command_int: command: " + parsed.command);
       if (!parsed.hasOwnProperty("command")) {
         add_text_to_debug("send_mavlink_command_int: command not found in args");
         return "command_int not sent.  command field required";
@@ -1365,7 +1499,6 @@
       // add timer to wakeup schedule
       const triggerTime = Date.now() + seconds * 1000; // seconds → milliseconds → match Date.now()
       add_text_to_debug("set_wakeup_timer: triggerTime: " + new Date(triggerTime).toLocaleString());
-      add_text_to_debug("current time: " + new Date(Date.now()).toLocaleString());
       wakeup_schedule.push({ time: triggerTime, message: message });
       add_text_to_debug("wakeup_schedule: " + JSON.stringify(wakeup_schedule));
       return "set_wakeup_timer: wakeup timer set";
@@ -1717,15 +1850,18 @@
       // handle requires action event by calling a local function and returning the result to the assistant
       async handleRequiresAction(data, runId, threadId) {
         try {
-          const toolOutputs = data.required_action.submit_tool_outputs.tool_calls.map((toolCall) => {
-            let output = handle_function_call(toolCall.function.name, toolCall.function.arguments)
-            output = JSON.stringify(output);
-            add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
-            return {
-              tool_call_id: toolCall.id,
-              output: output
-            }
-          })
+          const toolOutputs = await Promise.all(
+            data.required_action.submit_tool_outputs.tool_calls.map(async (toolCall) => {
+              let output = await handle_function_call(toolCall.function.name, toolCall.function.arguments);
+              output = JSON.stringify(output);
+              add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
+              return {
+                tool_call_id: toolCall.id,
+                output: output
+              }
+            })
+          )
+
           // submit all the tool outputs at the same time
           await this.submitToolOutputs(toolOutputs, runId, threadId)
         } catch (error) {
@@ -1796,15 +1932,13 @@
       }
 
       // show the message in chat as system or wakeup message
-      add_text_to_chat(message, "user"); // use "system" or custom style class
-      // debugmu?
+      add_text_to_chat(message, "user");
 
       // get assistant response
       let response = await get_assistant_response(message);
 
       // show assistant response
       add_text_to_chat(response, "assistant");
-      // debugmu?
     }
 
     // get assistant response based on user input
