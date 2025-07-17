@@ -109,6 +109,8 @@
               </svg>
             </button>
           </div>
+          <button id="openai-connect-button"
+            class="bg-green-500 hover:bg-green-600 text-white rounded-md px-5 py-2 mt-2">Connect AI</button>
         </div>
 
 
@@ -467,7 +469,18 @@
     }
 
     // check connection
-    check_connection();
+    // check_connection();
+
+    // attach connection handler to the OpenAI connect button
+    const openaiConnectButton = document.getElementById("openai-connect-button");
+    if (openaiConnectButton) {
+      openaiConnectButton.addEventListener("click", () => {
+        check_connection();
+      });
+    }
+
+    // expose check_connection globally for other modules
+    window.check_openai_connection = check_connection;
 
     // global variable to store wakeup messages
     let wakeup_schedule = [];
@@ -1890,9 +1903,11 @@
 
   <script type="module">
     import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm";
-
-    // Access the global OpenAI instance safely
-    const openai = window.openai;
+    
+    // Helper to access the global OpenAI instance
+    function getOpenAIInstance() {
+      return window.openai;
+    }
 
     // add text to chat box
     function add_text_to_chat(text, role = "assistant") {
@@ -1953,6 +1968,8 @@
       }
 
       // add a message to the thread
+      const openai = getOpenAIInstance();
+
       const message = await openai.beta.threads.messages.create(openai_thread_id, { role: "user", content: input });
 
       // run the assistant
@@ -2055,15 +2072,28 @@
 
     async function handleTranscription(blob) {
       try {
+        // ensure OpenAI connection exists
+        let openai = getOpenAIInstance();
+        if (!openai && window.check_openai_connection) {
+          const ok = await window.check_openai_connection();
+          if (!ok) {
+            add_text_to_debug("Unable to connect to OpenAI");
+            return;
+          }
+          openai = getOpenAIInstance();
+        }
+
         const formData = new FormData();
         formData.append("file", blob, "recording.webm");
         formData.append("model", "whisper-1");
         // update this static language option with dynamic in future , let user choose language
         formData.append("language", "en");
 
+        const apiKey = openai ? openai.apiKey : document.getElementById("openai_api_key").value.trim();
+
         const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
           method: "POST",
-          headers: { "Authorization": `Bearer ${openai.apiKey}` },
+          headers: { "Authorization": `Bearer ${apiKey}` },
           body: formData
         });
         const data = await resp.json();
