@@ -1,12 +1,11 @@
-import Openai from 'https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm';
 
-  
 //constants
 const TARGET_ASSISTANT_NAME = "ArduPilot WebTool";
 const TARGET_ASSISTANT_MODEL = "gpt-4o";
 
 
 // global variables
+let Openai = null;
 let openai = null;
 let assistantId = null;
 let currentThreadId = null;
@@ -14,10 +13,42 @@ let fileId;
 let documentTitle = document.title; //title change => signals new file upload
 let apiKey = null; // Store the API key in memory
 
+//checks if user is connected to the internet, avoids cached imports
+async function isActuallyOnlineViaCDN() {
+  try {
+    const res = await fetch('https://cdn.jsdelivr.net/npm/openai@4.85.4/package.json', {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+//tries to load package from cdn, if it fails and there is no connection, hide chat widget
+async function verifyCDNStatus() {
+  const isOnline = await isActuallyOnlineViaCDN();
+  if (!isOnline) {
+    document.getElementById("ai-chat-widget-container").style.display = 'none'
+    return;
+  }
+  try {
+    Openai = (await import('https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm')).OpenAI;
+    console.log(Openai);
+    
+    document.getElementById("ai-chat-widget-container").style.display = 'block'
+  } catch (e) {
+    document.getElementById("ai-chat-widget-container").style.display = 'none'
+  }
+}
+
+
 //makes mutiple checks crucial for the assistant to work
 async function connectIfNeeded(){
     if (!apiKey)
         throw new Error('openai API key not configured.');
+    else
+        document.getElementById('api-error-message').style.display='none'
     if (!openai){
         // instantiate openai object
         openai = new Openai({apiKey, dangerouslyAllowBrowser: true});
@@ -47,6 +78,7 @@ async function uploadLogs() {
     //store real time values of global variables in the logs array
     //these global variables are declared in HardwareReport.js and are visible to this file
     const logs = [
+        { name: "version", value: version},
         { name: "Temperature", value: Temperature },
         { name: "Board_Voltage", value: Board_Voltage },
         { name: "power_flags", value: power_flags },
@@ -213,7 +245,9 @@ async function sendQueryToAssistant(query){
     if (!run)
         throw new Error("Could not establish run streaming");
     //UI update for the user
+    const messagesContainer = document.querySelector('#ai-chat-window .ai-chat-messages');
     document.getElementById('thinking-message').style.display= 'block';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     handleRunStream(run);
     
@@ -281,7 +315,9 @@ async function handleToolCall(event) {
 
     if (!run)
         throw new Error ("error occurred while submitting tool outputs");
+    const messagesContainer = document.querySelector('#ai-chat-window .ai-chat-messages');
     document.getElementById('thinking-message').style.display= 'block';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
     //handle the run again
     handleRunStream(run);
     
@@ -347,7 +383,9 @@ async function upgradeAssistant() {
 }
 
 //save the api key in memory only, user will have to re-enter it when page is refreshed
-function saveAPIKey(){
+function saveAPIKey(event){
+    //prevent default form behavior of page refresh upon submission
+    event.preventDefault();   
     apiKey = document.getElementById('openai-api-key').value.trim();
 }
 
@@ -411,8 +449,11 @@ async function init(){
     document.getElementById("ai-chat-bubble").addEventListener('click', ()=>toggleChat(true));
     document.getElementById("ai-chat-close-button").addEventListener('click', ()=>toggleChat(false));
     document.getElementById("ai-chat-input-area").addEventListener('submit', sendMessage);
-    document.getElementById('save-api-key').addEventListener('click', saveAPIKey);
+    document.getElementById('save-api-key').addEventListener('submit', saveAPIKey);
     document.getElementById('upgrade-assistant').addEventListener('click',upgradeAssistant);
+    //attempt to load package from cdn, if it fails => user is offline => hide chat widget, webtool would still work offline
+    verifyCDNStatus();
+
 }
 
 init();

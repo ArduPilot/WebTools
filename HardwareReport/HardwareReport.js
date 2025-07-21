@@ -2524,6 +2524,7 @@ function TimeUS_to_seconds(TimeUS) {
 
 let params = {}
 let defaults = {}
+let version = {}
 async function load_log(log_file) {
 
     // Make sure imports are fully loaded before starting
@@ -2583,7 +2584,7 @@ async function load_log(log_file) {
 
     load_params(log)
 
-    const version = get_version_and_board(log)
+    version = get_version_and_board(log)
 
     if (version.fw_string != null) {
         let section = document.getElementById("VER")

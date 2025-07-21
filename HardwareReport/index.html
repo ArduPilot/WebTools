@@ -135,6 +135,12 @@
     order: 1;
     display: none;
   }
+  
+  #api-error-message {
+    order: 1;
+    display: none;
+    color: red;
+  }
 
   .ai-chat-message.user {
     background-color: #007AFF;
@@ -489,15 +495,16 @@
         </svg>
       </button>
     </div>
-    <form class="api-key-container ai-chat-input-area" style="border-bottom: 1px solid #e0e0e0; border-top: none;">
+    <form id="save-api-key" class="api-key-container ai-chat-input-area" style="border-bottom: 1px solid #e0e0e0; border-top: none;">
       <input type="password" id="openai-api-key" placeholder="Enter OpenAI API Key" style="flex-grow: 1;">
-      <button type="button" id="save-api-key">Save</button>
+      <button type="submit" >Save</button>
       <button type="button" id="upgrade-assistant" title="Upgrade to the latest version of the Assistant">Upgrade</button>
     </form>
     
     <ul class="ai-chat-messages">
       <li class="ai-chat-message assistant">Hello! How can I help you today?</li>
       <li class="ai-chat-message assistant" id="thinking-message">Thinking...</li>
+      <li class="ai-chat-message assistant" id="api-error-message">Please provide a valid api key</li>
     </ul>
     <form class="ai-chat-input-area" id="ai-chat-input-area">
       <input type="text" id="ai-chat-input" placeholder="Type your message...">
@@ -509,14 +516,21 @@
 
 <script>
 
-  window.onerror = function(msg, url, linenumber) {
-      alert('Sorry, something went wrong.\n\n' + 
-            'Please try a hard reload of this page to clear its cache.\n\n' +
-            'If the error persists open an issue on the GitHub repo.\n' +
-            'Include a copy of the log and the following error message:\n\n' +
-            msg + '\n' +
-            'URL: '+ url +'\n' +
-            'Line Number: '+ linenumber)
+  window.onerror = function(msg, url, linenumber, colnumber, error) {
+      if (msg.includes('openai API key not configured') || msg.includes('Incorrect API key provided')){
+        document.getElementById('api-error-message').style.display='block';
+        const upgradeButton = document.getElementById('upgrade-assistant');
+        upgradeButton.title = 'Upgraded successfully to the newest Assistant version';
+        upgradeButton.textContent = 'Upgraded';
+      }
+      else
+        alert('Sorry, something went wrong.\n\n' + 
+              'Please try a hard reload of this page to clear its cache.\n\n' +
+              'If the error persists open an issue on the GitHub repo.\n' +
+              'Include a copy of the log and the following error message:\n\n' +
+              msg + '\n' +
+              'URL: '+ url +'\n' +
+              'Line Number: '+ linenumber)
       return false
   }
   window.addEventListener('unhandledrejection', function (e) {

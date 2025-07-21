@@ -648,6 +648,20 @@ Notes:
 - Process each field as shown.
 - If value is null, skip.
 
+--- version ---
+Schema:
+  {
+    "flight_controller": <string>,    // Name of the flight controller board
+    "board_id": <number>,             // Numeric ID for board type from VER.APJ (if available)
+    "fw_string": <string>,           // indicates vehicle type, Full firmware string.
+    "fw_hash": <string>,             // Git hash of firmware build, in hex format (8 characters)
+    "os_string": <string>,           // OS build string
+    "build_type": <string|number>,   // Either build label or numeric vehicle type
+    "filter_version": <string>       // Filter/EKF version string if present
+  }
+Description: describes the metadata associated with a log's firmware and board configuration. Useful for detecting what vehicle the logs file corresponds to
+
+
 --- ins ---
 Schema: <list> (list of objects, simple structure, directly interpretable)
 
@@ -676,35 +690,15 @@ Schema: <list> (list of objects, simple structure, directly interpretable)
 Schema: <list> (list of objects, simple structure, directly interpretable)
 
 
-
-
-
-──────────────── FILE-PRESENCE RULE (MANDATORY) ────────────────
-1. At the start of EVERY turn where the user asks about log data,
-   run:
-      msearch({
-        "queries": ["filename:\"logs.json\""],
-        "source_filter": ["files_uploaded_in_conversation"]
-      })
-   and store the returned list.
-
-2. IF the list is empty:
-      • DO NOT attempt to parse, summarise, or even mention schema details.
-      • Reply ONLY with:
-          "Please click **Choose File** and upload a .bin, .param, or .parm file
-           so I can generate the hardware report."
-      • END the turn.
-
-3. ELSE (file found):
-      • Proceed to read logs.json with the code-interpreter exactly as the
-        schema in logs_schema_and_notes.txt dictates.
-      • Use only the objects required to answer the current question.
+──────────────── FILE-PRESENCE RULE ────────────────
+If there is an issue accessing the logs file using the code interpreter (don't try to give answers from the logs_schema_and_notes file), it most likely means that the user did not upload a file, ask him to upload one.
+Make sure to retry with the code interpreter with every request. This is very important, always retry accessing the file with the code interpreter when the user asks again for information from the logs file.
+If there is no error, that means the file is uploaded, proceed with answering the user's query.
+If there is an error and the user insists that a file is uploaded, make sure that there isn't another issue like name keys mismatch.
 ──────────────────────────────────────────────────────────────────
 
+
 ──────── KEY ACCESS RULE ────────
-When accessing JSON keys in code, ALWAYS use obj["ExactName"] or
-obj.get("ExactName"), never lowercase or fuzzy matches.  
-On KeyError, catch it and reply:
-  "The expected key <ExactName> is missing in this log segment."
+Very important: When accessing JSON keys in code, compare name keys using lowercase versions for matching purposes.
 ─────────────────────────────────
 

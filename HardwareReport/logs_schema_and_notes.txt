@@ -11,6 +11,18 @@ The names that follow correspond to the "name" property, their schemas correspon
 
 PER-NAME SCHEMAS
 
+--- version ---
+Schema:
+  {
+    "flight_controller": <string>,    // Name of the flight controller board, e.g., "Pixhawk 6X", "CUAV V5+", etc.
+    "board_id": <number>,             // Numeric ID for board type from VER.APJ (if available)
+    "fw_string": <string>,           // indicates vehicle type, Full firmware string like "ArduPlane V4.4.0 (abcd1234)"
+    "fw_hash": <string>,             // Git hash of firmware build, in hex format (8 characters)
+    "os_string": <string>,           // OS build string like "ChibiOS: 21.11"
+    "build_type": <string|number>,   // Either build label (e.g. "beta") or numeric vehicle type (e.g. 3 for ArduPlane)
+    "filter_version": <string>       // Filter/EKF version string if present
+  }
+Description: describes the metadata associated with a log's firmware and board configuration. Useful for detecting what vehicle the logs file corresponds
 
 --- Temperature ---
 Schema:
@@ -509,6 +521,20 @@ Description: Contains a plot area for visualizing clock drift.
 Notes:
 - Process each field as shown.
 - If value is null, skip.
+
+--- version ---
+Schema:
+  {
+    "flight_controller": <string>,    // Name of the flight controller board
+    "board_id": <number>,             // Numeric ID for board type from VER.APJ (if available)
+    "fw_string": <string>,           // indicates vehicle type, Full firmware string.
+    "fw_hash": <string>,             // Git hash of firmware build, in hex format (8 characters)
+    "os_string": <string>,           // OS build string
+    "build_type": <string|number>,   // Either build label or numeric vehicle type
+    "filter_version": <string>       // Filter/EKF version string if present
+  }
+Description: describes the metadata associated with a log's firmware and board configuration. Useful for detecting what vehicle the logs file corresponds to
+
 
 --- ins ---
 Schema: <list> (list of objects, simple structure, directly interpretable)
