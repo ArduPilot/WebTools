@@ -78,7 +78,7 @@
         <div class="flex flex-wrap items-center gap-2 mt-4">
           <input type="text" id="mavlink-connect-url"
             class="flex-1 min-w-[200px] rounded-md border border-gray-300 shadow-sm p-2" value="ws://127.0.0.1:56781"
-            readonly>
+            placeholder="WebSocket URL">
 
           <button id="mavlink-connect-button"
             class="bg-green-500 hover:bg-green-600 text-white rounded-md px-5 py-2 whitespace-nowrap">
@@ -94,8 +94,7 @@
         <h2 class="text-xl font-semibold mb-4">AI Configuration</h2>
 
         <div class="mb-3">
-          <label for="openai_api_key" class="block text-sm font-medium text-gray-700 mb-1">OpenAI API
-            Key:</label>
+          <label for="openai_api_key" class="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key:</label>
           <div class="flex gap-2">
             <input type="password" id="openai_api_key" class="flex-1 rounded-md border-gray-300 shadow-sm p-3"
               autocomplete="off">
@@ -122,10 +121,14 @@
         </div>
 
         <div class="mb-3">
-          <label for="assistantThreadId" class="block text-sm font-medium text-gray-700 mb-1">Thread
-            ID:</label>
-          <input type="text" id="assistantThreadId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
-            readonly>
+          <label for="assistantThreadId" class="block text-sm font-medium text-gray-700 mb-1">Thread ID:</label>
+          <div class="flex items-center space-x-2">
+            <input type="text" id="assistantThreadId"
+              class="flex-grow rounded-md border border-gray-300 shadow-sm p-2 bg-gray-50" readonly>
+            <button id="startNewChatButton" class="bg-red-500 hover:bg-red-600 text-white rounded-md px-4 py-2">
+              Start New Chat
+            </button>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -349,66 +352,6 @@
       }
     }
 
-    // arm the vehicle
-    function mavlink_arm_vehicle() {
-      if (mavlink_ws == null || mavlink_ws.readyState !== WebSocket.OPEN) {
-        alert("Please connect to the vehicle first");
-        return;
-      }
-      // construct the ARM command using COMMAND_LONG
-      let command_long_msg = new mavlink20.messages.command_long(
-        1,   // Target system ID
-        1,  // Target component ID
-        400,             // MAV_CMD_COMPONENT_ARM_DISARM (command ID 400)
-        1,               // Confirmation
-        1,               // Param1: 1 to arm, 0 to disarm
-        0, 0, 0, 0, 0, 0 // Unused parameters
-      );
-
-      const buffer = MAVLink.send(command_long_msg)
-      const uint = new Uint8Array(buffer)
-
-      // send the message as an ArrayBuffer over the WebSocket
-      if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
-        mavlink_ws.send(uint);
-        add_text_to_debug("Sent ARM command via MAVLink");
-      } else {
-        alert("WebSocket is not open. Cannot send ARM command.");
-      }
-    }
-    // disarm the vehicle
-    function mavlink_disarm_vehicle() {
-      if (mavlink_ws == null || mavlink_ws.readyState !== WebSocket.OPEN) {
-        alert("Please connect to the vehicle first");
-        return;
-      }
-      // construct the DISARM command using COMMAND_LONG
-      let command_long_msg = new mavlink20.messages.command_long(
-        1,   // Target system ID
-        1,  // Target component ID
-        400,             // MAV_CMD_COMPONENT_ARM_DISARM (command ID 400)
-        1,               // Confirmation
-        0,               // Param1: 1 to arm, 0 to disarm
-        0, 0, 0, 0, 0, 0 // Unused parameters
-      );
-
-      const buffer = MAVLink.send(command_long_msg)
-      const uint = new Uint8Array(buffer)
-
-      // send the message as an ArrayBuffer over the WebSocket
-      if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
-        mavlink_ws.send(uint);
-        add_text_to_debug("Sent DISARM command via MAVLink");
-      } else {
-        alert("WebSocket is not open. Cannot send DISARM command.");
-      }
-    }
-
-    // attach event listener to the arm button
-    document.getElementById("mavlink-arm-button").addEventListener("click", mavlink_arm_vehicle);
-    // attach event listener to the disarm the vehicle
-    document.getElementById("mavlink-disarm-button").addEventListener("click", mavlink_disarm_vehicle);
-
     // add text to debug text box
     function add_text_to_debug(text) {
       let debugOutput = document.getElementById("debugOutput");
@@ -451,6 +394,15 @@
     window.openai_thread_id = null
     window.openai_event_handler = null
 
+    window.chatBusy = false
+
+    function setChatBusy(state) {
+      window.chatBusy = state
+      document.getElementById("sendMessageButton").disabled = state
+      document.getElementById("recordButton").disabled = state
+      document.getElementById("userInput").disabled = state
+    }
+
     // chat listener for user input and enter key
     document.getElementById("userInput").addEventListener("keypress", function (event) {
       if (event.key === "Enter") {
@@ -468,14 +420,21 @@
       return document.getElementById("openai_api_key").value.trim();
     }
 
-    // check connection
-    // check_connection();
-
     // attach connection handler to the OpenAI connect button
     const openaiConnectButton = document.getElementById("openai-connect-button");
     if (openaiConnectButton) {
       openaiConnectButton.addEventListener("click", () => {
         check_connection();
+      });
+    }
+
+    const startNewChatButton = document.getElementById("startNewChatButton");
+    if (startNewChatButton) {
+      startNewChatButton.addEventListener("click", () => {
+        if (confirm("Start a new chat? This will clear the existing conversation.")) {
+          localStorage.removeItem('thread_id');
+          location.reload();
+        }
       });
     }
 
@@ -491,6 +450,16 @@
     window.onload = function () {
       // initialize the check wakeup:
       check_wakeup_timers();
+
+      // check for previous chat thread
+      const stored = localStorage.getItem('thread_id');
+      if (stored) {
+        if (confirm("Continue your previous chat? Click Cancel to start a new session.")) {
+          document.getElementById('assistantThreadId').value = stored;
+        } else {
+          localStorage.removeItem('thread_id');
+        }
+      }
     };
 
     // add text to chat box
@@ -525,8 +494,13 @@
 
     // send message to AI assistant, get response and place in chat box text area
     async function send_message() {
+      if (window.chatBusy) {
+        return;
+      }
+
       // check connection to OpenAI
       if (!(await check_connection())) {
+        setChatBusy(false)
         return;
       }
 
@@ -537,6 +511,8 @@
       add_text_to_chat(userInput, "user");
       document.getElementById("userInput").value = "";
 
+      setChatBusy(true)
+
       // fetch response from assistant
       let response = await get_assistant_response(userInput);
 
@@ -546,8 +522,13 @@
 
     // send a message to the assistant, used for wakeup messages
     async function send_to_assistant(message) {
+      if (window.chatBusy) {
+        return;
+      }
+
       // check connection
       if (!(await check_connection())) {
+        setChatBusy(false)
         return;
       }
 
@@ -559,6 +540,8 @@
 
       // show the message in chat as system or wakeup message
       add_text_to_chat(message, "user"); // use "system" or custom style class
+
+      setChatBusy(true)
 
       // get assistant response
       let response = await get_assistant_response(message);
@@ -575,12 +558,14 @@
     async function check_connection() {
       // check openai API key
       if (!get_openai_api_key()) {
+        setChatBusy(false)
         return false;
       }
       // check openai connection
       if (!openai) {
         openai = new OpenAI({ apiKey: get_openai_api_key(), dangerouslyAllowBrowser: true });
         if (!openai) {
+          setChatBusy(false)
           return false;
         }
       }
@@ -593,28 +578,41 @@
       let assistantId = await find_assistant(OPENAI_ASSISTANT_NAME);
       if (assistantId) {
         // store assistant id
-        openai_assistant_id = assistantId
+        openai_assistant_id = assistantId;
         document.getElementById("assistantId").value = assistantId;
 
-        // create a new thread
-        openai_thread_id = await create_thread();
-        if (!openai_thread_id) {
-          alert("Error: Unable to create a new OpenAI thread");
-          return false;
+        // check for previous chat thread
+        let stored = localStorage.getItem('thread_id');
+        if (stored) {
+          openai_thread_id = stored;
+          document.getElementById("assistantThreadId").value = openai_thread_id;
+          await load_thread_history(openai_thread_id);
+        } else {
+          openai_thread_id = await create_thread();
+          if (!openai_thread_id) {
+            alert("Error: Unable to create a new OpenAI thread");
+            return false;
+          }
+          localStorage.setItem('thread_id', openai_thread_id);
+          document.getElementById("assistantThreadId").value = openai_thread_id;
         }
-        // print thread id on the page
-        document.getElementById("assistantThreadId").value = openai_thread_id;
 
         // setup event handler
         openai_event_handler = new EventHandler(openai)
         if (!openai_event_handler) {
           alert("Error: Unable to create event handler");
+          setChatBusy(false)
           return false;
         }
         openai_event_handler.on("event", openai_event_handler.onEvent.bind(openai_event_handler))
         return true;
       } else {
         alert("Error: Assistant not found. Please check your OpenAI API key and assistant name");
+        setChatBusy(false);
+
+        // clear openai object
+        openai = null;
+
         return false;
       }
     }
@@ -657,6 +655,24 @@
         return null;
       }
     }
+
+    async function load_thread_history(threadId) {
+      if (!openai) { return; }
+      try {
+        const history = await openai.beta.threads.messages.list(threadId, { order: 'asc', limit: 100 });
+        for (const msg of history.data) {
+          if (msg.role === 'assistant' || msg.role === 'user') {
+            const content = msg.content[0]?.text?.value || '';
+            if (content) {
+              add_text_to_chat(content, msg.role);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load history', e);
+      }
+    }
+
 
     // get assistant response based on user input
     async function get_assistant_response(input) {
@@ -1068,9 +1084,10 @@
           setTimeout(() => {
             if (pending_param_requests[param_name]) {
               delete pending_param_requests[param_name];
-              reject(`Timeout waiting for PARAM_VALUE for ${param_name}`);
+              add_text_to_debug(`Timeout waiting for PARAM_VALUE for ${param_name}`);
+              reject(`No PARAM_VALUE received for "${param_name}" within 10 seconds. The parameter may not exist on this vehicle.`);
             }
-          }, 5000);
+          }, 10000);
         });
       }
       catch (error) {
@@ -1126,7 +1143,7 @@
           return;
         }
 
-        // Optional timeout
+        // timeout
         setTimeout(() => {
           if (window.pending_all_params_request) {
             window.pending_all_params_request = null;
@@ -1166,6 +1183,7 @@
           add_text_to_debug(`Failed to fetch parameter metadata for ${vehicle_type}: ${res.status}`);
           return null;
         }
+        add_text_to_debug(`Successfully fetched parameter metadata for ${vehicle_type}`);
 
         const data = await res.json();
         parameter_metadata_cache[vehicle_type] = data;
@@ -1200,29 +1218,7 @@
 
       if (!result) return null;
 
-      const { key: found_key, meta } = result;
-
-      const output = { name: found_key };
-
-      if (meta.Description) output["description"] = meta.Description;
-      if (meta.Units) output["units"] = meta.Units;
-
-      if (meta.Range) {
-        if (typeof meta.Range === "string" && meta.Range.includes(" ")) {
-          const [min, max] = meta.Range.split(" ");
-          output["min"] = parseFloat(min);
-          output["max"] = parseFloat(max);
-        } else if (typeof meta.Range === "object") {
-          if (meta.Range.low !== undefined) output["min"] = meta.Range.low;
-          if (meta.Range.high !== undefined) output["max"] = meta.Range.high;
-        }
-      }
-
-      if (meta.Default !== undefined) output["default"] = meta.Default;
-      if (meta.Values) output["values"] = meta.Values;
-      if (meta.Bitmask) output["bitmask"] = meta.Bitmask;
-
-      return output;
+      return result;
     }
 
 
@@ -1827,9 +1823,12 @@
             case "thread.run.created":
             case "thread.run.queued":
             case "thread.run.in_progress":
+              break;
             case "thread.run.completed":
             case "thread.run.incomplete":
             case "thread.run.failed":
+              setChatBusy(false)
+              break;
             case "thread.run.step.created":
             case "thread.run.cancelling":
             case "thread.run.step.in_progress":
@@ -1839,14 +1838,18 @@
             case "thread.run.step.in_progress":
             case "thread.run.step.completed":
             case "thread.run.step.failed":
+            // setChatBusy(false)
+            // break
             case "thread.run.step.cancelled":
             case "thread.run.step.expired":
             case "thread.message.created":
             case "thread.message.in_progress":
+              break;
             case "thread.message.completed":
             case "thread.message.incomplete":
             case "error":
             case "done":
+              setChatBusy(false)
               break;
 
             // catch unhandled events
@@ -1865,8 +1868,16 @@
         try {
           const toolOutputs = await Promise.all(
             data.required_action.submit_tool_outputs.tool_calls.map(async (toolCall) => {
-              let output = await handle_function_call(toolCall.function.name, toolCall.function.arguments);
-              output = JSON.stringify(output);
+              let output;
+              try {
+                output = await handle_function_call(toolCall.function.name, toolCall.function.arguments);
+              } catch (err) {
+                add_text_to_debug("handle_function_call error: " + err);
+                output = JSON.stringify({ error: err.toString() });
+              }
+
+              output = typeof output === "string" ? output : JSON.stringify(output);
+
               add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
               return {
                 tool_call_id: toolCall.id,
@@ -1903,10 +1914,17 @@
 
   <script type="module">
     import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm";
-    
+
     // Helper to access the global OpenAI instance
     function getOpenAIInstance() {
       return window.openai;
+    }
+
+    function setChatBusy(state) {
+      window.chatBusy = state
+      document.getElementById("sendMessageButton").disabled = state
+      document.getElementById("recordButton").disabled = state
+      document.getElementById("userInput").disabled = state
     }
 
     // add text to chat box
@@ -1937,23 +1955,6 @@
       let debugOutput = document.getElementById("debugOutput");
       debugOutput.value += text + "\n";
       debugOutput.scrollTop = debugOutput.scrollHeight;
-    }
-
-    // send a message to the assistant, used for wakeup messages
-    async function send_to_assistant(message) {
-      // check connection
-      if (!(await check_connection())) {
-        return;
-      }
-
-      // show the message in chat as system or wakeup message
-      add_text_to_chat(message, "user");
-
-      // get assistant response
-      let response = await get_assistant_response(message);
-
-      // show assistant response
-      add_text_to_chat(response, "assistant");
     }
 
     // get assistant response based on user input
@@ -1994,6 +1995,11 @@
     };
 
     async function startRecording(options = {}) {
+      if (window.chatBusy) {
+        add_text_to_debug("Recording is busy, please wait");
+        return;
+      }
+
       if (state.isRecording) {
         add_text_to_debug("recording is in progress");
         return;
@@ -2042,6 +2048,7 @@
         state.isRecording = false;
         cleanupResources();
         add_text_to_debug("Error accessing microphone: " + error);
+        setChatBusy(false);
       }
     }
 
@@ -2050,6 +2057,8 @@
         return false;
       }
       state.mediaRecorder.stop();
+      setChatBusy(true);
+      add_text_to_debug("Recording stopped, processing audio...");
       return true;
     }
 
