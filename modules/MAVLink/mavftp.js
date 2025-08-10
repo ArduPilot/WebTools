@@ -232,6 +232,9 @@ class MAVFTP {
     // Handle BurstReadFile response
     handleBurstReadResponse(op) {
 	if (op.opcode === this.OP.Ack && op.payload) {
+	    if (!this.fileBuffer) {
+		return;
+	    }
 	    // Expand buffer if needed
 	    const newSize = op.offset + op.size;
 	    if (newSize > this.fileBuffer.length) {
