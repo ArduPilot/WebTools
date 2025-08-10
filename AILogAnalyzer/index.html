@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Analyzer AI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="../images/AP_favicon.png" type="image/png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>AI Log Analyzer</h1>
+            <button id="updateAssistantBtn" class="update-btn">Update Assistant</button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Chat Section -->
+            <section class="chat-section">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai-message">
+                        Hello! Upload a .bin log file to analyze your flight data.
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="file" id="fileInput" accept=".bin,.log" />
+                    <label for="fileInput" class="file-upload-label">
+                        Drop or click to upload .bin/.log files for analysis
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="messageInput" placeholder="Ask about your flight data..." />
+                        <button id="sendBtn">Send</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visualization Section -->
+            <section class="viz-section">
+                <h3>Visualizations</h3>
+                <div class="viz-placeholder" id="vizArea">
+                    <p>Charts and graphs will appear here when analyzing log data.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="logAnalyzer.js" type="module"></script>
+</body>
+</html>
