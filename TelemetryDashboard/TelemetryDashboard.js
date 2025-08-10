@@ -113,14 +113,14 @@ function setup_connect(button_svg, button_color) {
 
             // Have been connected
 	    been_connected = true;
-	    setup_passphase = false;
+	    setup_passphrase = false;
 
 	    heartbeat_interval = setInterval(() => {
 		try {
-		    if (!setup_passphase) {
+		    if (!setup_passphrase) {
 			const passphrase = passphrase_input.value.trim();
 			if (passphrase.length > 0) {
-			    setup_passphase = true;
+			    setup_passphrase = true;
 			    const enc = new TextEncoder();
 			    const data = enc.encode(passphrase);
 			    const hash = mavlink20.sha256(data);
