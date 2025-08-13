@@ -17,7 +17,7 @@ let openai = null;
 let assistantId = null;
 let currentThreadId = null;
 let fileId = null;
-let apiKey = localStorage.getItem("apiKey");
+let apiKey = null;
 let isProcessing = false;
 
 // DOM Elements
@@ -64,7 +64,6 @@ function showApiKeyPrompt() {
         e.preventDefault();
         apiKey = document.getElementById('apiKeyInput').value.trim();
         if (apiKey) {
-            localStorage.setItem("apiKey", apiKey);
             modal.remove();
             connectIfNeeded();
         }
@@ -107,6 +106,28 @@ function showOfflineMessage() {
     messageInput.disabled = true;
     messageInput.placeholder = "AI chat unavailable in offline mode";
     sendButton.disabled = true;
+}
+
+// Helper: detect 401 Unauthorized errors from OpenAI SDK responses
+function isUnauthorizedError(error) {
+    return (
+        error?.status === 401 ||
+        error?.response?.status === 401 ||
+        error?.code === 401 ||
+        error?.error?.type === 'invalid_request_error' && /unauthorized|invalid api key/i.test(error?.message || '') ||
+        /401/.test(String(error)) && /unauthorized|invalid api key/i.test(String(error))
+    );
+}
+
+// Helper: show invalid API key message and prompt for a new key
+function handleInvalidApiKey() {
+    addChatMessage("Invalid OpenAI API key (401). Please enter a valid key.", 'error');
+    // Reset client state to force re-authentication
+    openai = null;
+    assistantId = null;
+    currentThreadId = null;
+    // Prompt for a new key
+    showApiKeyPrompt();
 }
 
 //Connect to the OpenAI API and initialize the assistant if needed
@@ -154,6 +175,10 @@ async function connectIfNeeded() {
                 assistantId = assistant.id;
             }
         } catch (error) {
+            if (isUnauthorizedError(error)) {
+                handleInvalidApiKey();
+                throw new Error('Invalid API key (401)');
+            }
             throw new Error('Could not initialize assistant');
         }
     }
@@ -163,13 +188,16 @@ async function connectIfNeeded() {
             // Create a new thread
             const thread = await openai.beta.threads.create();
             currentThreadId = thread.id;
+            // Update UI to show successful connection
+            addChatMessage("Connected to AI assistant! Upload a log file or ask a question about drone flight analysis.", 'system');    
         } catch (error) {
+            if (isUnauthorizedError(error)) {
+                handleInvalidApiKey();
+                throw new Error('Invalid API key (401)');
+            }
             throw new Error('Could not create conversation thread');
         }
     }
-    
-    // Update UI to show successful connection
-    addChatMessage("Connected to AI assistant! Upload a log file or ask a question about drone flight analysis.", 'system');
 }
 
 //definition of the callable tool "get" by the assistant, returns parsed message data
@@ -434,6 +462,7 @@ function showThinkingMessage(show) {
 
 //calls the tool requested by the assistant, submits the tool output, and handles the run
 async function handleToolCall(event) {
+    showThinkingMessage(true)
     //sanity check
     if (!event.data.required_action.submit_tool_outputs || !event.data.required_action.submit_tool_outputs.tool_calls)
         throw new Error ("passed event does not require action");
@@ -491,9 +520,10 @@ async function handleToolCall(event) {
         handleRunStream(run);
         return;
     }
-
+    
     // End current run
     await openai.beta.threads.runs.cancel(currentThreadId, event.data.id);
+    
 
     // Create a new message in the same thread, passing the new file/output
     showThinkingMessage(true)
@@ -533,6 +563,7 @@ async function handleRunStream(runStream) {
             // Handle different event types
             switch (event.event) {
                 case 'thread.message.delta':
+                    
                     // New message content received
                     const content = event.data.delta.content;
                     if (!content || content.length === 0) continue;
@@ -550,7 +581,8 @@ async function handleRunStream(runStream) {
                             try {
                                 showThinkingMessage(false); // Hide thinking indicator when we have a graph to display
                                 
-                                const response = await openai.files.content(item.image_file.file_id);
+                                const imageFileId = item.image_file.file_id;
+                                const response = await openai.files.content(imageFileId);
                                 const blob = await response.blob();
                                 const url = URL.createObjectURL(blob);
                                 const image = document.createElement("img");
@@ -559,6 +591,8 @@ async function handleRunStream(runStream) {
                                 
                                 // Add to visualization area instead of chat
                                 addVisualization(image);
+
+                                
                                 
                             } catch (imageError) {
                                 console.error("Failed to load image:", imageError);
@@ -576,11 +610,12 @@ async function handleRunStream(runStream) {
                     
                 case 'thread.run.completed':
                     // Run completed
-                    showThinkingMessage(false);
                     break;
                     
                 case 'thread.run.failed':
                     // Run failed
+                    console.log(event);
+                    
                     showThinkingMessage(false);
                     addChatMessage("Sorry, there was an error processing your request. Please try again.", 'error');
                     break;
@@ -616,6 +651,9 @@ async function processUserMessage(message) {
         
         // Show thinking indicator immediately
         showThinkingMessage(true);
+
+        //make sure connection is established before creating a message
+        await connectIfNeeded();
         
         // Add the user message to the thread with file attachments if available
         await openai.beta.threads.messages.create(
@@ -682,7 +720,7 @@ function addChatMessage(content, sender) {
     messageElement.classList.add('message');
     
     if (sender === 'assistant' || sender === 'ai') {
-        buffer = ''
+        buffer = content
         messageElement.classList.add('ai-message');
         messageElement.classList.add('markdown');
         messageElement.textContent = content;
