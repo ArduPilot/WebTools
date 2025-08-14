@@ -156,7 +156,7 @@
   <!-- simple script functions local to this page -->
   <script type="module">
     // imports
-    import { mavlink_store } from './MAVLink/mavlink_store.js';
+    import { mavlink_store } from '../modules/MAVLink/mavlink_store.js';
     import { setMAVLink, setMavlinkWS } from './shared.js';
 
     // global variable to store parameter names and values received via MAVLink
@@ -379,7 +379,7 @@
     // imports
     import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm'
     import EventEmitter from 'https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/+esm'
-    import { mavlink_store } from './MAVLink/mavlink_store.js';
+    import { mavlink_store } from '../modules/MAVLink/mavlink_store.js';
     // import the shared functions
     import { MAVLink, mavlink_ws } from './shared.js';
 
