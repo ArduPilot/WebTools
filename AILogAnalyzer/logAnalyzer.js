@@ -1,7 +1,7 @@
 let import_done = []
 var DataflashParser
 import_done[0] = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
-import "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+import "https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"
 import "https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"
 
 
@@ -687,7 +687,7 @@ async function processUserMessage(message) {
     }
 }
 
-let buffer;
+let buffer='';
 //Add a message to the chat window
 function addChatMessage(content, sender) {
     const messagesContainer = document.getElementById('chatMessages');
