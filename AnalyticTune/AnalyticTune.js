@@ -392,7 +392,7 @@ function get_PID_param_names(vehicle) {
     } else if (vehicle == "ArduPlane_VTOL") {
         prefix = ["Q_A_RAT_RLL_", "Q_A_RAT_PIT_", "Q_A_RAT_YAW_"]
     } else if (vehicle == "ArduPlane_FW") {
-        prefix = ["RLL_RATE_", "PIT_RATE_", "YAW_RATE_"]
+        prefix = ["RLL_RATE_", "PTCH_RATE_", "YAW_RATE_"]
     }
     let ret = []
     for (let i = 0; i < prefix.length; i++) {
@@ -819,9 +819,9 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     var PID_filter = []
     var param_prefix = get_rate_param_prefix();
     PID_filter.push(new PID(PID_rate,
-        get_form(param_prefix + "P"),
-        get_form(param_prefix + "I"),
-        get_form(param_prefix + "D"),
+        get_form(param_prefix + "P")*aspeed*aspeed,
+        get_form(param_prefix + "I")*aspeed*aspeed,
+        get_form(param_prefix + "D")*aspeed*aspeed,
         get_form(param_prefix + "FLTE"),
         get_form(param_prefix + "FLTD")));
 
@@ -842,7 +842,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
 
     // calculate transfer function for FF and DFF
     var FF_filter = []
-    FF_filter.push(new feedforward(PID_rate, get_form(param_prefix + "FF"),get_form(param_prefix + "D_FF")))
+    FF_filter.push(new feedforward(PID_rate, get_form(param_prefix + "FF") * aspeed / eas2tas,get_form(param_prefix + "D_FF") * aspeed / eas2tas))
     const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
     var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     for (let k=0;k<H_acft[0].length+1;k++) {
@@ -1025,6 +1025,8 @@ var sid_axis
 var sid_sets = {}
 var use_ANG_message
 var vehicle_type = "ArduCopter"
+var aspeed = 1.0
+var eas2tas = 1.0
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -1157,8 +1159,17 @@ function load_log(log_file) {
             }
         }
     }
-    console.log(vehicle_type)
+
+    if (vehicle_type == "ArduPlane_FW") {
+        document.getElementById("type_Att_Ctrlr").disabled = true
+        document.getElementById("type_Pilot_Ctrlr").disabled = true
+    } else {
+        document.getElementById("type_Att_Ctrlr").disabled = false
+        document.getElementById("type_Pilot_Ctrlr").disabled = false
+    }
+
     const pid_params = get_PID_param_names(vehicle_type)
+
     for (let i = 0; i < pid_params.length; i++) {
         for (const param of Object.values(pid_params[i])) {
             const value = get_param(param)
@@ -1360,6 +1371,7 @@ function update_PID_filters() {
         }
         document.getElementById(ele_prefix + 'PitchPIDS').style.display = 'block';
         document.getElementById(ele_prefix + 'PitchNOTCH').style.display = 'block';
+        console.log(ele_prefix + 'PitchPIDS')
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
@@ -1734,14 +1746,14 @@ function load_fw_time_history_data(t_start, t_end, axis) {
     var GyroRawParam = ""
     if (axis == "Roll") {
         ActInputParam = "Aile"
-        RateTgtParam = "DRll"
+        RateTgtParam = "rdes"
         RateParam = "Gx"
         AttTgtParam = "DRll"
         AttParam = "Rll"
         GyroRawParam = "Gx"
     } else if (axis == "Pitch") {
         ActInputParam = "Elev"
-        RateTgtParam = "DPit"
+        RateTgtParam = "pdes"
         RateParam = "Gy"
         AttTgtParam = "DPit"
         AttParam = "Pit"
@@ -1763,6 +1775,7 @@ function load_fw_time_history_data(t_start, t_end, axis) {
 
     // Slice ActInputData
     ActInputData = ActInputData.slice(ind1_p, ind2_p)
+    ActInputData = array_scale(ActInputData, 0.01745)
     // Slice RateTgtData and Convert data from degrees/second to radians/second
     RateTgtData = RateTgtData.slice(ind1_p, ind2_p)
     RateTgtData = array_scale(RateTgtData, 0.01745)
@@ -1770,6 +1783,13 @@ function load_fw_time_history_data(t_start, t_end, axis) {
     RateData = RateData.slice(ind1_s, ind2_s)
     RateData = array_scale(RateData, 0.01745)
 
+    // determine average aspeed and eas2tas
+    let aspeedData = Array.from(log.get("SIDP", "aspd"))
+    let eas2tasData = Array.from(log.get("SIDP", "eastas"))
+    aspeedData = aspeedData.slice(ind1_p, ind2_p)
+    eas2tasData = eas2tasData.slice(ind1_p, ind2_p)
+    aspeed = array_mean(aspeedData)
+    eas2tas = array_mean(eas2tasData)
 
     // Slice AttTgtData Convert data from degrees/second to radians/second
     AttTgtData = AttTgtData.slice(ind1_p, ind2_p)
@@ -2149,7 +2169,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Att_Ctrlr").checked) {
         calc_data = calc_freq_resp.attctrl_H
         calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis > 3 && sid_axis < 7 || (sid_axis > 9 && sid_axis < 20) || sid_axis > 22) {
+        if ((sid_axis > 3 && sid_axis < 7) || (sid_axis > 9 && sid_axis < 20) ) { //|| sid_axis > 22) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
@@ -2158,7 +2178,7 @@ function redraw_freq_resp() {
     } else if (document.getElementById("type_Rate_Ctrlr").checked) {
         calc_data = calc_freq_resp.ratectrl_H
         calc_data_coh = calc_freq_resp.ratectrl_coh
-        if (sid_axis > 9) {
+        if (sid_axis > 9 && sid_axis < 20) {
             show_set_calc = false
         }
         pred_data = pred_freq_resp.ratectrl_H
