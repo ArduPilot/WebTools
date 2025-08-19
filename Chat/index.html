@@ -14,7 +14,7 @@
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
 
-  <script type="text/javascript" src="MAVLink/mavlink.js"></script>
+  <script type="text/javascript" src="../modules/MAVLink/mavlink.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -1068,11 +1068,9 @@
               -1               // use param_id, not param_index
             );
 
-            const buffer = MAVLink.send(message);
-            const uintArray = new Uint8Array(buffer);
+            const pkt = message.pack(MAVLink);
+            mavlink_ws.send(Uint8Array.from(pkt));
 
-            // Send over WebSocket
-            mavlink_ws.send(uintArray);
             add_text_to_debug(`Sent PARAM_REQUEST_READ for ${param_name}`);
           } catch (error) {
             delete pending_param_requests[param_name];
@@ -1131,10 +1129,8 @@
             1  // target_component
           );
 
-          const buffer = MAVLink.send(message);
-          const uintArray = new Uint8Array(buffer);
-
-          mavlink_ws.send(uintArray);
+          const pkt = message.pack(MAVLink);
+          mavlink_ws.send(Uint8Array.from(pkt));
 
           add_text_to_debug("Sent PARAM_REQUEST_LIST to vehicle");
         } catch (error) {
@@ -1309,12 +1305,11 @@
         value,
         mavlink20.MAV_PARAM_TYPE_REAL32
       );
-      const buffer = MAVLink.send(message);
-      const uint = new Uint8Array(buffer);
 
       if (mavlink_ws.readyState === WebSocket.OPEN) {
         try {
-          mavlink_ws.send(uint);
+          const pkt = message.pack(MAVLink);
+          mavlink_ws.send(Uint8Array.from(pkt));
           return "set_parameter: sent";
         } catch (error) {
           add_text_to_debug("Error sending PARAM_SET: " + error);
@@ -1394,11 +1389,11 @@
         );
         add_text_to_debug("send_mavlink_set_position_target_global_int: message: " + JSON.stringify(message));
 
-        const buffer = MAVLink.send(message);
-        const uint = new Uint8Array(buffer);
         if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
           try {
-            mavlink_ws.send(uint);
+            const pkt = message.pack(MAVLink);
+            mavlink_ws.send(Uint8Array.from(pkt));
+
             // add_text_to_debug("send_mavlink_command_int: mav_result: " + mav_result);
           } catch (error) {
             add_text_to_debug("Error sending COMMAND_INT: " + error);
@@ -1452,11 +1447,11 @@
         param1, param2, param3, param4,
         x, y, z
       );
-      const buffer = MAVLink.send(command_long_msg);
-      const uint = new Uint8Array(buffer)
       if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
         try {
-          mavlink_ws.send(uint);
+          const pkt = command_long_msg.pack(MAVLink);
+          mavlink_ws.send(Uint8Array.from(pkt));
+
           // add_text_to_debug("send_mavlink_command_int: mav_result: " + mav_result);
         } catch (error) {
           add_text_to_debug("Error sending COMMAND_INT: " + error);
