@@ -401,6 +401,10 @@ function setProcessingState(isActive) {
     
     if (messageInput) {
         messageInput.disabled = isActive;
+        if (isActive)
+            messageInput.placeholder = "Assistant is working...";
+        else
+            messageInput.placeholder = "Ask about your flight data..."
     }
     
     if (fileUploadLabel) {
