@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat</title>
+  <title>ArduPilot AI Chat Control</title>
   <link rel="icon" href="../images/AP_favicon.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,2111 +15,248 @@
   <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
 
   <script type="text/javascript" src="../modules/MAVLink/mavlink.js"></script>
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="./style.css">
 </head>
 
-<body class="bg-gray-100 font-inter antialiased">
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-semibold text-blue-600 text-center mb-6">ArduPilot AI Chat Control</h1>
+<body class="antialiased">
+  <div class="flex flex-col h-screen">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- AI Chat Panel -->
-      <div class="bg-white shadow-md rounded-lg p-4 flex flex-col">
-        <div class="flex items-center gap-4 mb-4">
-          <h2 class="text-xl font-semibold">AI Chat Interface</h2>
-          <!-- <span id="connection-status"
-                        class="ml-auto inline-flex items-center rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-semibold text-white">
-                        Disconnected
-                    </span> -->
+    <!-- Header (Only visible on Desktop) -->
+    <header
+      class="text-center p-4 shadow-sm shrink-0 lg:flex hidden rounded-b-lg bg-[var(--bg-secondary)] border-b border-[var(--border-color)]">
+      <div class="container mx-auto flex items-center justify-center gap-4 relative text-[var(--blue-accent)]">
+        <h1 class="text-xl font-bold text-[var(--blue-accent)]">ArduPilot AI Chat Control</h1>
+        <!-- Theme Toggle Button for desktop header -->
+        <div id="theme-toggle-container-desktop" class="absolute right-0 top-1/2 -translate-y-1/2">
+          <button id="themeToggleButtonDesktop"
+            class="bg-gray-200 text-gray-800 p-2 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg id="themeIconDesktop" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mode Chooser Card (Centered Overlay) -->
+    <div id="modeChooser"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+      <div
+        class="max-w-md w-full rounded-2xl shadow-2xl p-8 transform transition-all opacity-100 scale-100 bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+        <h2 class="text-2xl font-bold text-center mb-2 text-[var(--blue-accent)]">Choose Session Mode</h2>
+        <p class="text-sm text-center mb-6 text-[var(--text-muted)]">Select how to run this session.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button id="pickAssistant"
+            class="w-full font-semibold rounded-lg py-3 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2">
+            Assistant API
+          </button>
+          <button id="pickRealtime"
+            class="w-full font-semibold rounded-lg py-3 transition-all duration-200 ease-in-out shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2">
+            Realtime API
+          </button>
+        </div>
+        <div class="text-xs mt-6 space-y-3">
+          <div>
+            <div class="font-semibold text-[var(--blue-accent)]">Realtime</div>
+            <ul class="list-disc list-inside pl-1 mt-1 space-y-1 text-[var(--text-primary)]">
+              <li>Very low latency streaming</li>
+              <li>Session lasts about 28 minutes, then auto-reconnects with a summary</li>
+              <li>History is temporary, older sessions cannot be resumed</li>
+            </ul>
+          </div>
+          <div>
+            <div class="font-semibold text-[var(--blue-accent)]">Assistant</div>
+            <ul class="list-disc list-inside pl-1 mt-1 space-y-1 text-[var(--text-primary)]">
+              <li>Slower, turn-based text interaction.</li>
+              <li>Conversation thread is stored and can be resumed later.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App Layout -->
+    <main id="appRoot" class="flex-1 container mx-auto p-2 lg:p-6 flex flex-col lg:grid lg:grid-cols-5 gap-6 hidden">
+
+      <!-- AI Chat Panel (spanning 3 columns on large screens for 60% width) -->
+      <div
+        class="lg:col-span-3 shadow-lg rounded-2xl p-3 lg:p-4 flex flex-col border overflow-hidden mobile-chat-full-height bg-[var(--bg-secondary)] border-[var(--border-color)]">
+        <!-- Chat Panel Header (flex to align title, timer, and theme toggle for mobile) -->
+        <div class="flex items-center justify-between chat-panel-header shrink-0">
+          <h2 class="text-xl font-bold text-[var(--blue-accent)]">AI Chat</h2>
+          <div class="flex items-center gap-2">
+            <!-- Session countdown (only visible on mobile here) -->
+            <div id="sessionTimer"
+              class="flex items-center gap-2 px-2 py-1 rounded-full border text-sm lg:hidden hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-12a.75.75 0 00-1.5 0v4c0 .199.079.39.22.53l2.5 2.5a.75.75 0 101.06-1.06l-2.28-2.28V6z"
+                  clip-rule="evenodd" />
+              </svg>
+              <span id="sessionExpiryTimerText" class="font-medium">28:00</span>
+            </div>
+            <!-- Theme Toggle Button for mobile chat panel -->
+            <div id="theme-toggle-container-mobile" class="lg:hidden">
+              <button id="themeToggleButtonMobile"
+                class="bg-gray-200 text-gray-800 p-2 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg id="themeIconMobile" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div id="chatBox" class="flex-1 overflow-y-auto space-y-3 mb-4 flex flex-col max-h-[73vh]">
-          <div class="bg-gray-100 rounded-lg p-3 mb-2 self-start max-w-[80%]">
-            <p class="text-sm">Welcome! I'm your ArduPilot AI assistant. You can control the drone using
-              natural language commands like:</p>
-            <ul class="list-disc pl-5 mt-2 text-sm">
+        <div id="chatBox" class="flex-1 overflow-y-auto p-3 space-y-4 flex flex-col rounded-lg mb-4">
+          <div class="assistant-text">
+            <p class="font-medium">Welcome! I'm your ArduPilot AI assistant.</p>
+            <p class="mt-2">You can control the drone with commands like:</p>
+            <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
               <li>"Arm the drone"</li>
               <li>"Take off to 10 meters"</li>
               <li>"Fly north for 50 meters"</li>
               <li>"Return to launch"</li>
-              <li>"Change to guided mode"</li>
-              <li>"Emergency stop"</li>
             </ul>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <input type="text" id="userInput" placeholder="Type your command or question..."
-            class="flex-1 min-w-[150px] rounded-md border border-gray-300 shadow-sm p-3 focus:ring-2 focus:ring-blue-500"
-            autocomplete="off">
-
-          <button id="sendMessageButton"
-            class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-          </button>
-
-          <button id="recordButton"
-            class="bg-purple-500 hover:bg-purple-600 text-white rounded-md p-3 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd"
-                d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                clip-rule="evenodd" />
-            </svg>
-          </button>
-        </div>
-
-        <div id="command-history" class="mt-2 hidden max-h-[100px] overflow-y-auto border-t border-gray-200 pt-1.5">
-          <!-- Command history items will be added here -->
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2 mt-4">
-          <input type="text" id="mavlink-connect-url"
-            class="flex-1 min-w-[200px] rounded-md border border-gray-300 shadow-sm p-2" value="ws://127.0.0.1:56781"
-            placeholder="WebSocket URL">
-
-          <button id="mavlink-connect-button"
-            class="bg-green-500 hover:bg-green-600 text-white rounded-md px-5 py-2 whitespace-nowrap">
-            Connect
-          </button>
-        </div>
-
-
-      </div>
-
-      <!-- Side Panel -->
-      <div class="bg-white shadow-md rounded-lg p-4 flex flex-col h-[85vh] overflow-y-auto">
-        <h2 class="text-xl font-semibold mb-4">AI Configuration</h2>
-
-        <div class="mb-3">
-          <label for="openai_api_key" class="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key:</label>
-          <div class="flex gap-2">
-            <input type="password" id="openai_api_key" class="flex-1 rounded-md border-gray-300 shadow-sm p-3"
+        <!-- User Input Section -->
+        <div class="mt-auto pt-4 border-t shrink-0">
+          <!-- User Message Input and Buttons -->
+          <div class="flex items-center gap-3 chat-input-row">
+            <input type="text" id="userInput" placeholder="Type your command..."
+              class="flex-1 w-full rounded-lg shadow-sm px-3 py-2 text-base transition input-row-element input-base"
               autocomplete="off">
-            <button id="toggleApiKeyButton" class="bg-blue-500 hover:bg-blue-600 text-white rounded-md p-3"> <svg
-                id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                <path fill-rule="evenodd"
-                  d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
-                  clip-rule="evenodd" />
-                <path
-                  d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
-              </svg>
-            </button>
+
+            <div class="flex gap-3 input-button-group">
+              <button id="sendMessageButton" title="Send Message" class="btn btn-green input-row-element">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+              </button>
+
+              <button id="recordButton" title="Use Voice" class="btn btn-yellow input-row-element">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill="currentColor"
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <button id="openai-connect-button"
-            class="bg-green-500 hover:bg-green-600 text-white rounded-md px-5 py-2 mt-2">Connect AI</button>
-        </div>
 
-
-        <div class="mb-3">
-          <label for="assistantId" class="block text-sm font-medium text-gray-700 mb-1">Assistant
-            ID:</label>
-          <input type="text" id="assistantId" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
-            readonly>
-        </div>
-
-        <div class="mb-3">
-          <label for="assistantThreadId" class="block text-sm font-medium text-gray-700 mb-1">Thread ID:</label>
-          <div class="flex items-center space-x-2">
-            <input type="text" id="assistantThreadId"
-              class="flex-grow rounded-md border border-gray-300 shadow-sm p-2 bg-gray-50" readonly>
-            <button id="startNewChatButton" class="bg-red-500 hover:bg-red-600 text-white rounded-md px-4 py-2">
-              Start New Chat
+          <!-- MAVLink Connection Input and Button -->
+          <div class="flex items-center gap-3 mt-4 connect-drone-row">
+            <input type="text" id="mavlink-connect-url"
+              class="flex-1 rounded-lg shadow-sm text-sm transition input-row-element input-base"
+              value="ws://127.0.0.1:56781" placeholder="WebSocket URL">
+            <button id="mavlink-connect-button"
+              class="btn btn-blue px-5 py-2 whitespace-nowrap text-sm input-row-element">
+              Connect Drone
             </button>
           </div>
         </div>
-
-        <div class="mb-3">
-          <label for="assistantRunStatus" class="block text-sm font-medium text-gray-700 mb-1">Run
-            Status:</label>
-          <input type="text" id="assistantRunStatus" class="w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-50"
-            readonly>
-        </div>
-
-        <!-- DEBUG OUTPUT CONTAINER -->
-        <div class="mt-4 border-t pt-4 border-gray-200">
-          <h2 class="text-xl font-semibold mb-4">Debug Output</h2>
-          <label for="debugOutput" class="block text-sm font-medium text-gray-700 mb-1">Debug Output:</label>
-          <textarea id="debugOutput"
-            class="w-full rounded-md border-gray-300 shadow-sm p-2 text-xs font-mono bg-gray-50" rows="10" readonly>
-                    </textarea>
-        </div>
-
       </div>
-    </div>
+
+      <!-- Side Panel (spanning 2 columns on large screens for 40% width) -->
+      <div
+        class="lg:col-span-2 shadow-lg rounded-2xl p-4 flex flex-col border overflow-hidden side-panel-mobile-styling bg-[var(--bg-secondary)] border-[var(--border-color)]">
+        <div class="p-4 border-b shrink-0">
+          <h2 class="text-xl font-bold text-[var(--blue-accent)]">Configuration</h2>
+        </div>
+        <div class="flex-1 p-6 space-y-5 overflow-y-auto">
+          <div class="space-y-4">
+            <div>
+              <label for="openai_api_key" class="block text-sm font-medium mb-1">OpenAI API Key:</label>
+              <div class="flex gap-2">
+                <input type="password" id="openai_api_key"
+                  class="flex-1 rounded-lg shadow-sm p-3 transition input-row-element overflow-x-auto min-w-0 input-base input-muted"
+                  autocomplete="off">
+                <button id="toggleApiKeyButton" class="btn btn-blue p-2 input-row-element">
+                  <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
+                      clip-rule="evenodd" />
+                    <path
+                      d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
+
+                  </svg>
+                </button>
+              </div>
+              <button id="openai-connect-button" class="w-full btn btn-green px-5 py-2.5 mt-3">
+                Connect AI</button>
+            </div>
+
+            <div id="assistantIdContainer">
+              <label for="assistantId" class="block text-sm font-medium mb-1">Assistant ID:</label>
+              <input type="text" id="assistantId"
+                class="w-full rounded-lg shadow-sm p-2 text-xs font-mono input-row-element input-base input-muted"
+                readonly>
+            </div>
+
+            <!-- thread id for assistant api -->
+            <div id="assistantThreadIdContainer">
+              <label for="assistantThreadId" class="block text-sm font-medium mb-1">Thread ID:</label>
+              <div class="flex items-center space-x-2">
+                <input type="text" id="assistantThreadId"
+                  class="flex-grow rounded-lg shadow-sm p-2 text-xs font-mono input-row-element min-w-0 input-base input-muted"
+                  readonly>
+                <button id="startNewChatButton"
+                  class="btn btn-red px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white">
+                  New Chat
+                </button>
+              </div>
+            </div>
+
+            <!-- session id for realtime api -->
+            <div id="sessionIdContainer" class="hidden">
+              <label for="sessionId" class="block text-sm font-medium mb-1">Session ID:</label>
+              <input type="text" id="sessionId"
+                class="w-full rounded-lg shadow-sm p-2 text-xs font-mono input-row-element input-base input-muted"
+                readonly>
+            </div>
+
+
+            <div>
+              <label for="assistantRunStatus" class="block text-sm font-medium mb-1">Run Status:</label>
+              <input type="text" id="assistantRunStatus"
+                class="w-full rounded-lg shadow-sm p-2 text-xs input-row-element input-base input-muted" readonly>
+            </div>
+          </div>
+
+          <div class="border-t pt-5">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-bold">Debug Output</h3>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" id="autoScrollToggle" checked class="rounded">
+                Auto-scroll
+              </label>
+            </div>
+            <textarea id="debugOutput"
+              class="w-full rounded-lg shadow-sm p-3 text-xs font-mono h-48 resize-y input-base input-muted"
+              readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- script for Mavlink export  -->
-  <script src="shared.js"></script>
-  <!-- simple script functions local to this page -->
-  <script type="module">
-    // imports
-    import { mavlink_store } from '../modules/MAVLink/mavlink_store.js';
-    import { setMAVLink, setMavlinkWS } from './shared.js';
+  <!-- Handles chat mode selection and initialization -->
+  <script type="module" src="./main.js"></script>
 
-    // global variable to store parameter names and values received via MAVLink
-    window.mavlink_parameters = {};
+  <!-- Toggle Script (Theme and API key visibility) -->
+  <script type="module" src="./toggle.js"></script>
 
-    window.pending_param_requests = {}
-    window.pending_all_params_request = null;
+  <!-- MAVLink connection and message handling logic -->
+  <script type="module" src="./mavlink-connection.js"></script>
 
-    // show/hide the OpenAI API key field
-    function toggle_openai_api_key_visibility() {
-      let openai_key_input = document.getElementById("openai_api_key");
-      const eyeIconContainer = document.getElementById("eyeIcon"); // Get reference to the SVG element
-      // Eye Icon (Open) - Standard 20x20 Solid Heroicon
-      const eyeOpenSVGPath = `
-                <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" />
-            `;
-
-      // Eye-Slash Icon (Closed) - Standard 20x20 Solid Heroicon
-      const eyeClosedSVGPath = `
-                <path fill-rule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z" clip-rule="evenodd" />
-                <path d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
-            `;
-
-      if (openai_key_input.type === "password") {
-        openai_key_input.type = "text";
-        // Change icon to 'eye open'
-        eyeIconContainer.innerHTML = eyeOpenSVGPath;
-      } else {
-        openai_key_input.type = "password";
-        // Change icon to 'eye slash'
-        eyeIconContainer.innerHTML = eyeClosedSVGPath;
-      }
-    }
-    // listener for toggle api key visibility button click
-    document.getElementById("toggleApiKeyButton").addEventListener("click", toggle_openai_api_key_visibility);
-
-    // MAVLink connection related functions
-    let connect_button = document.getElementById("mavlink-connect-button");
-    let is_connected = false; // connection state
-    let mavlink_ws = null; // websocket object
-    let mavlink_sysid = 254; // system id
-    let mavlink_compid = MAVLink20Processor.MAV_COMP_ID_MISSIONPLANNER; // component id
-    let MAVLink = new MAVLink20Processor(null, mavlink_sysid, mavlink_compid);
-
-    // set the MAVLink processor 
-    setMAVLink(MAVLink);
-
-    // toggle connection state (called by Connect/Disconnect button)
-    function mavlink_toggle_connect() {
-      if (is_connected) {
-        mavlink_disconnect();
-      } else {
-        mavlink_connect();
-      }
-    }
-
-    // attach event listener to the connect button
-    if (connect_button) {
-      connect_button.addEventListener("click", mavlink_toggle_connect);
-    }
-
-    // set the mavlink button connection state
-    function mavlink_set_connect_state(connected) {
-      is_connected = connected;
-      if (connected) {
-        connect_button.innerText = "Disconnect";
-      } else {
-        connect_button.innerText = "Connect";
-      }
-    }
-
-    // connect to the vehicle
-    function mavlink_connect() {
-      // check connection URL
-      let connect_url = document.getElementById("mavlink-connect-url").value;
-      if (!connect_url) {
-        alert("Error: WebSocket URL is empty");
-        return;
-      }
-
-      if (mavlink_ws == null) {
-        // create a new websocket connection
-        mavlink_ws = new WebSocket(connect_url);
-        mavlink_ws.binaryType = "arraybuffer"
-
-        // set up event handlers
-        mavlink_ws.onopen = function () {
-          mavlink_set_connect_state(true);
-        };
-        mavlink_ws.onclose = function () {
-          mavlink_set_connect_state(false);
-        };
-        mavlink_ws.onerror = function () {
-          mavlink_disconnect();
-        };
-
-        // parse incoming message and forward
-        mavlink_ws.onmessage = (msg) => {
-          // sanity check parser has been created
-          if (MAVLink == null) {
-            return;
-          }
-          // parse message
-          for (const char of new Uint8Array(msg.data)) {
-            const mavlink_msg = MAVLink.parseChar(char)
-            if ((mavlink_msg != null) && (mavlink_msg._id != -1)) {
-              // got a message with a known ID
-              mavlink_msg_handler(mavlink_msg);
-            }
-          }
-        }
-      }
-      // set the mavlink websocket connection
-      setMavlinkWS(mavlink_ws);
-    }
-
-    // disconnect from the vehicle
-    function mavlink_disconnect() {
-      if (mavlink_ws != null) {
-        mavlink_ws.close();
-        mavlink_ws = null;
-      }
-    }
-
-    // mavlink message handler
-    function mavlink_msg_handler(msg) {
-
-      // sanity check msg
-      if (msg == null || msg._id == null) {
-        return;
-      }
-
-      // store the message in the message store
-      mavlink_store.store_message(msg);
-
-      switch (msg._id) {
-        case 0: // HEARTBEAT
-          //alert("custom mode:" + msg.custom_mode);
-          //alert("Got a heartbeat: " + JSON.stringify(msg));
-          break;
-        case 1: // SYS_STATUS
-          //alert("Got a system status: " + JSON.stringify(msg));
-          break;
-        case 22: // PARAM_VALUE
-          const param_id = msg.param_id.replace(/\u0000/g, '').trim();
-          const param_value = msg.param_value;
-          const param_index = msg.param_index;
-          const param_count = msg.param_count;
-
-          add_text_to_debug(`PARAM_VALUE received: ${param_id} = ${param_value}`);
-
-          // Handle single parameter pending requests
-          if (window.pending_param_requests[param_id]) {
-            window.pending_param_requests[param_id]({ [param_id]: param_value });
-            delete window.pending_param_requests[param_id];
-          }
-
-          // All parameters request resolver
-          if (window.pending_all_params_request) {
-            window.pending_all_params_request.params[param_id] = param_value;
-            if (param_index === param_count - 1) {
-              // This was the last parameter
-              window.pending_all_params_request.resolve(window.pending_all_params_request.params);
-              window.pending_all_params_request = null;
-            }
-          }
-          break;
-        case 24: // GPS_RAW_INT
-          //alert("Got a GPS raw int: " + JSON.stringify(msg));
-          break;
-        case 30: // ATTITUDE
-          //alert("Got an attitude: " + JSON.stringify(msg));
-          break;
-        case 33: // GLOBAL_POSITION_INT
-          //alert("Got a global position int: " + JSON.stringify(msg));
-          break;
-        case 35: // HIGHRES_IMU
-          //alert("Got a high resolution IMU: " + JSON.stringify(msg));
-          break;
-        case 42: // NAMED_VALUE_FLOAT
-          //alert("Got a named value float: " + JSON.stringify(msg));
-          break;
-        case 74: // VFR_HUD
-          //alert("Got a VFR HUD: " + JSON.stringify(msg));
-          break;
-        case 253: // STATUSTEXT
-          //alert("Got a status text: " + JSON.stringify(msg));
-          break;
-        default:
-          //alert("Got a message id: " + JSON.stringify(msg));
-          break;
-      }
-    }
-
-    // add text to debug text box
-    function add_text_to_debug(text) {
-      let debugOutput = document.getElementById("debugOutput");
-      debugOutput.value += text + "\n";
-      debugOutput.scrollTop = debugOutput.scrollHeight;
-    }
-  </script>
-
-  <script type="module">
-    // error handling
-    window.onerror = function (msg, url, linenumber) {
-      alert('Sorry, something went wrong.\n\n' +
-        'Please try a hard reload of this page to clear its cache.\n\n' +
-        'If the error persists open an issue on the GitHub repo.\n' +
-        'Include a copy of the log and the following error message:\n\n' +
-        msg + '\n' +
-        'URL: ' + url + '\n' +
-        'Line Number: ' + linenumber)
-      return false
-    }
-    window.addEventListener('unhandledrejection', function (e) {
-      throw new Error(e.reason.stack)
-    })
-
-    // imports
-    import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm'
-    import EventEmitter from 'https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/+esm'
-    import { mavlink_store } from '../modules/MAVLink/mavlink_store.js';
-    // import the shared functions
-    import { MAVLink, mavlink_ws } from './shared.js';
-
-    // constants
-    const OPENAI_API_KEY = ""; // replace with your OpenAI API key
-    const OPENAI_MODEL = "gpt-4o"
-    const OPENAI_ASSISTANT_NAME = "ArduPilot Vehicle Control via MAVLink"
-
-    // global variables 
-    window.openai = null
-    window.openai_assistant_id = null
-    window.openai_thread_id = null
-    window.openai_event_handler = null
-
-    window.chatBusy = false
-
-    function setChatBusy(state) {
-      window.chatBusy = state
-      document.getElementById("sendMessageButton").disabled = state
-      document.getElementById("recordButton").disabled = state
-      document.getElementById("userInput").disabled = state
-    }
-
-    // chat listener for user input and enter key
-    document.getElementById("userInput").addEventListener("keypress", function (event) {
-      if (event.key === "Enter") {
-        send_message();
-      }
-    })
-    // listener for send message button click
-    document.getElementById("sendMessageButton").addEventListener("click", send_message);
-
-    // get openai API key (use this in API calls)
-    function get_openai_api_key() {
-      if (OPENAI_API_KEY.length > 0) {
-        return OPENAI_API_KEY;
-      }
-      return document.getElementById("openai_api_key").value.trim();
-    }
-
-    // attach connection handler to the OpenAI connect button
-    const openaiConnectButton = document.getElementById("openai-connect-button");
-    if (openaiConnectButton) {
-      openaiConnectButton.addEventListener("click", () => {
-        check_connection();
-      });
-    }
-
-    const startNewChatButton = document.getElementById("startNewChatButton");
-    if (startNewChatButton) {
-      startNewChatButton.addEventListener("click", () => {
-        if (confirm("Start a new chat? This will clear the existing conversation.")) {
-          localStorage.removeItem('thread_id');
-          location.reload();
-        }
-      });
-    }
-
-    // expose check_connection globally for other modules
-    window.check_openai_connection = check_connection;
-
-    // global variable to store wakeup messages
-    let wakeup_schedule = [];
-    // global variables for mavlink_parameters
-    let mavlink_parameters = window.mavlink_parameters;
-    let pending_param_requests = window.pending_param_requests;
-
-    window.onload = function () {
-      // initialize the check wakeup:
-      check_wakeup_timers();
-
-      // check for previous chat thread
-      const stored = localStorage.getItem('thread_id');
-      if (stored) {
-        if (confirm("Continue your previous chat? Click Cancel to start a new session.")) {
-          document.getElementById('assistantThreadId').value = stored;
-        } else {
-          localStorage.removeItem('thread_id');
-        }
-      }
-    };
-
-    // add text to chat box
-    function add_text_to_chat(text, role = "assistant") {
-      let div_class = role === "assistant" ? "assistant-text" : "user-text";
-      let chatBox = document.getElementById("chatBox");
-
-      if (role === "assistant") {
-        // try to find the last assistant message and append to it
-        let last_message = chatBox.querySelector(`.${div_class}:last-of-type`);
-        if (last_message) {
-          last_message.textContent += text;
-          chatBox.scrollTop = chatBox.scrollHeight;
-          return;
-        }
-      }
-
-      // create a new message div if no previous assistant message exists
-      let message_div = document.createElement("div");
-      message_div.className = div_class;
-      message_div.textContent = text;
-      chatBox.appendChild(message_div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // add text to debug text box
-    function add_text_to_debug(text) {
-      let debugOutput = document.getElementById("debugOutput");
-      debugOutput.value += text + "\n";
-      debugOutput.scrollTop = debugOutput.scrollHeight;
-    }
-
-    // send message to AI assistant, get response and place in chat box text area
-    async function send_message() {
-      if (window.chatBusy) {
-        return;
-      }
-
-      // check connection to OpenAI
-      if (!(await check_connection())) {
-        setChatBusy(false)
-        return;
-      }
-
-      let userInput = document.getElementById("userInput").value;
-      if (!userInput.trim()) return;
-
-      // display user input and clear input field
-      add_text_to_chat(userInput, "user");
-      document.getElementById("userInput").value = "";
-
-      setChatBusy(true)
-
-      // fetch response from assistant
-      let response = await get_assistant_response(userInput);
-
-      // display assistant response
-      add_text_to_chat(response, "assistant");
-    }
-
-    // send a message to the assistant, used for wakeup messages
-    async function send_to_assistant(message) {
-      if (window.chatBusy) {
-        return;
-      }
-
-      // check connection
-      if (!(await check_connection())) {
-        setChatBusy(false)
-        return;
-      }
-
-      // sanity check message
-      if (!message || message.trim() === "") {
-        add_text_to_debug("send_to_assistant: message is empty");
-        return;
-      }
-
-      // show the message in chat as system or wakeup message
-      add_text_to_chat(message, "user"); // use "system" or custom style class
-
-      setChatBusy(true)
-
-      // get assistant response
-      let response = await get_assistant_response(message);
-
-      // show assistant response
-      add_text_to_chat(response, "assistant");
-    }
-
-    //
-    // methods below here interact directly with the OpenAI API
-    //
-
-    // check connection to OpenAI API and return true on succes, false on failure
-    async function check_connection() {
-      // check openai API key
-      if (!get_openai_api_key()) {
-        setChatBusy(false)
-        return false;
-      }
-      // check openai connection
-      if (!openai) {
-        openai = new OpenAI({ apiKey: get_openai_api_key(), dangerouslyAllowBrowser: true });
-        if (!openai) {
-          setChatBusy(false)
-          return false;
-        }
-      }
-
-      // return immediately if assistant id has already been found
-      if (openai_assistant_id) {
-        return true
-      }
-
-      let assistantId = await find_assistant(OPENAI_ASSISTANT_NAME);
-      if (assistantId) {
-        // store assistant id
-        openai_assistant_id = assistantId;
-        document.getElementById("assistantId").value = assistantId;
-
-        // check for previous chat thread
-        let stored = localStorage.getItem('thread_id');
-        if (stored) {
-          openai_thread_id = stored;
-          document.getElementById("assistantThreadId").value = openai_thread_id;
-          await load_thread_history(openai_thread_id);
-        } else {
-          openai_thread_id = await create_thread();
-          if (!openai_thread_id) {
-            alert("Error: Unable to create a new OpenAI thread");
-            return false;
-          }
-          localStorage.setItem('thread_id', openai_thread_id);
-          document.getElementById("assistantThreadId").value = openai_thread_id;
-        }
-
-        // setup event handler
-        openai_event_handler = new EventHandler(openai)
-        if (!openai_event_handler) {
-          alert("Error: Unable to create event handler");
-          setChatBusy(false)
-          return false;
-        }
-        openai_event_handler.on("event", openai_event_handler.onEvent.bind(openai_event_handler))
-        return true;
-      } else {
-        alert("Error: Assistant not found. Please check your OpenAI API key and assistant name");
-        setChatBusy(false);
-
-        // clear openai object
-        openai = null;
-
-        return false;
-      }
-    }
-
-    // get assistant response based on user input
-    async function find_assistant(assistant_name) {
-      // sanity check openai connection
-      if (!openai) {
-        return null;
-      }
-
-      try {
-        // get a list of all assistants
-        const assistants_list = await openai.beta.assistants.list({ order: "desc", limit: 20 });
-
-        // iterate through assistants and find the one with the matching name
-        let assistant = assistants_list.data.find(a => a.name === assistant_name);
-
-        // return assistant ID if found, otherwise return null
-        return assistant ? assistant.id : null;
-      } catch (error) {
-        // return null in case of an error
-        return null;
-      }
-    }
-
-    // create a new thread
-    // returns thread id on success, null on failure
-    async function create_thread() {
-      // sanity check the assistant id
-      if (!openai_assistant_id) {
-        return null;
-      }
-
-      try {
-        // create a thread
-        const new_thread = await openai.beta.threads.create();
-        return new_thread ? new_thread.id : null;
-      } catch (error) {
-        return null;
-      }
-    }
-
-    async function load_thread_history(threadId) {
-      if (!openai) { return; }
-      try {
-        const history = await openai.beta.threads.messages.list(threadId, { order: 'asc', limit: 100 });
-        for (const msg of history.data) {
-          if (msg.role === 'assistant' || msg.role === 'user') {
-            const content = msg.content[0]?.text?.value || '';
-            if (content) {
-              add_text_to_chat(content, msg.role);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load history', e);
-      }
-    }
-
-
-    // get assistant response based on user input
-    async function get_assistant_response(input) {
-      // sanity check the assistant id
-      if (!openai_assistant_id) {
-        return "get_assistant_response: assistant not found";
-      }
-      // sanity check thread
-      if (!openai_thread_id) {
-        return "get_assistant_response: thread not found";
-      }
-
-      // add a message to the thread
-      const message = await openai.beta.threads.messages.create(openai_thread_id, { role: "user", content: input });
-
-      // run the assistant
-      const stream = await openai.beta.threads.runs.stream(openai_thread_id, { assistant_id: openai_assistant_id, stream: true })
-      stream.on('event', (event) => openai_event_handler.emit("event", event))
-    }
-
-    // handle function call from assistant
-    async function handle_function_call(name, args) {
-      add_text_to_debug("Function call: " + name + " with args: " + JSON.stringify(args));
-      // call the function
-      switch (name) {
-        case "get_vehicle_type":
-          // get the vehicle type (e.g. Copter, Plane, Rover, Boat, etc)
-          return get_vehicle_type();
-        case "get_parameter":
-          // Get a vehicle parameter's value.  The full list of available parameters and their values is available using the get_all_parameters function
-          // fallthrough
-          add_text_to_debug("get_parameter args: " + JSON.stringify(args));
-          const repsonse = await get_parameter(args);
-          add_text_to_debug("get_parameter response: " + JSON.stringify(repsonse));
-          return repsonse;
-        case "get_wakeup_timers":
-          // Retrieves a list of all active wakeup timers. You can optionally provide a message parameter to filter timers by their associated messages. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to find timers with specific keywords or patterns in their messages. For example, to retrieve all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
-          // fallthrough
-          add_text_to_debug("get_wakeup_timers: args: " + JSON.stringify(args));
-          const wakeup_response = get_wakeup_timers(args);
-          return wakeup_response;
-        case "get_vehicle_location_and_yaw":
-          // Get the vehicle's current location including latitude, longitude, altitude above sea level and altitude above home
-          return get_vehicle_location_and_yaw()
-        case "send_mavlink_set_position_target_global_int":
-          // Send a mavlink SET_POSITION_TARGET_GLOBAL_INT message to the vehicle.  This message is the preferred way to command a vehicle to fly to a specified location or to fly at a specfied velocity
-          // fallthrough
-          add_text_to_debug("args: " + JSON.stringify(args));
-          return send_mavlink_set_position_target_global_int(args);
-        case "get_vehicle_state":
-          // Get the vehicle state including armed status and (flight) mode
-          add_text_to_debug("get_vehicle_state args: " + JSON.stringify(args));
-          return get_vehicle_state();
-        case "get_location_plus_offset":
-          // Calculate the latitude and longitude given an existing latitude and longitude and distances (in meters) North and East
-          // fallthrough
-          add_text_to_debug("get_location_plus_offset args: " + JSON.stringify(args));
-          const location_plus_offset = get_location_plus_offset(args);
-          add_text_to_debug("get_location_plus_offset response: " + JSON.stringify(location_plus_offset));
-          return location_plus_offset;
-        case "send_mavlink_command_int":
-          // Send a mavlink COMMAND_INT message to the vehicle.  Available commands including changing the flight mode, arming, disarming, takeoff and commanding the vehicle to fly to a specific location
-          // fallthrough
-          add_text_to_debug("args: " + JSON.stringify(args));
-          const response = send_mavlink_command_int(args);
-          return response;
-        case "get_location_plus_dist_at_bearing":
-          // Calculate the latitude and longitude given an existing latitude and longitude and a distance in meters and a bearing in degrees
-          // fallthrough
-          add_text_to_debug("get_location_plus_dist_at_bearing args: " + JSON.stringify(args));
-          const location_plus_dist_at_bearing = get_location_plus_dist_at_bearing(args);
-          add_text_to_debug("get_location_plus_dist_at_bearing response: " + JSON.stringify(location_plus_dist_at_bearing));
-          return location_plus_dist_at_bearing;
-        case "get_parameter_description":
-          // Get vehicle parameter descriptions including description, units, min and max
-          // fallthrough
-          add_text_to_debug("get_parameter_description args: " + JSON.stringify(args));
-          const param_desc = await get_parameter_description(args);
-          add_text_to_debug("get_parameter_description response: " + JSON.stringify(param_desc));
-          return param_desc;
-        case "delete_wakeup_timers":
-          // Delete all active wakeup timers. You can optionally provide a message parameter to filter which timers will be deleted based on their message. When specifying the message parameter, you can use regular expressions (regex) to match patterns within the timer messages. This is useful when you want to delete timers with specific keywords or patterns in their message. For example, to delete all timers containing the word 'hello', you can use the regex '.*hello.*', where the dot-star (.*) pattern matches any character sequence.
-          // fallthrough
-          return delete_wakeup_timers(args);
-        case "set_parameter":
-          // Set a vehicle parameter's value.  The full list of parameters is available using the get_all_parameters function
-          // fallthrough
-          add_text_to_debug("set_parameter args: " + JSON.stringify(args));
-          return set_parameter(args);
-        case "get_mavlink_message":
-          // Get a mavlink message including all fields and values sent by the vehicle.  The list of available messages can be retrieved using the get_available_mavlink_messages
-          add_text_to_debug("get_mavlink_message args: " + JSON.stringify(args));
-          return get_mavlink_message(args);
-        case "get_current_datetime":
-          // Get the current date and time, e.g. 'Saturday, June 24, 2023 6:14:14 PM
-          add_text_to_debug("get_current_datetime called");
-          return getFormattedDate();
-        case "get_mode_mapping":
-          // Get a list of mode names to mode numbers available for this vehicle.  If the name or number parameter is provided only that mode's name and number will be returned.  If neither name nor number is provided the full list of available modes will be returned
-          // fallthrough
-          const mode_mapping = get_mode_mapping(args);
-          add_text_to_debug("get_mode_mapping response: " + JSON.stringify(mode_mapping));
-          return mode_mapping;
-        case "get_all_parameters":
-          // Get all available parameter names and values
-          // fallthrough
-          add_text_to_debug("get_all_parameters called with args: " + JSON.stringify(args));
-          return await get_all_parameters(args);
-        case "set_wakeup_timer":
-          // Set a timer to wake you up in a specified number of seconds in the future.  This allows taking actions in the future.  The wakeup message will appear with the user role but will look something like WAKEUP:<message>.  Multiple wakeup messages are supported
-          return set_wakeup_timer(args);
-        case "get_available_mavlink_messages":
-          add_text_to_debug("get_available_mavlink_messages called");
-          return mavlink_store.get_available_message_names();
-        default:
-          add_text_to_debug("Unknown function: " + name);
-          return "Unknown function: " + name;
-      }
-    }
-
-    // function calls below here
-    // returns "Copter", "Plane", "Rover", "Boat", etc or "Unknown"
-    function get_vehicle_type() {
-      // get the latest HEARTBEAT message and perform a sanity check
-      let heartbeat_msg = mavlink_store.get_latest_message(0);
-      //add_text_to_debug("get_vehicle_type: got latest msg" + JSON.stringify(heartbeat_msg));
-      if (!heartbeat_msg || !heartbeat_msg.hasOwnProperty("type")) {
-        return "unknown because no HEARTBEAT message has been received from the vehicle";
-      }
-      let vehicle_type = heartbeat_msg["type"];
-
-      // get the vehicle type from the heartbeat message's type field
-      switch (vehicle_type) {
-        case mavlink20.MAV_TYPE_FIXED_WING:
-        case mavlink20.MAV_TYPE_VTOL_DUOROTOR:
-        case mavlink20.MAV_TYPE_VTOL_QUADROTOR:
-        case mavlink20.MAV_TYPE_VTOL_TILTROTOR:
-          return "Plane"
-        case mavlink20.MAV_TYPE_GROUND_ROVER:
-          return "Rover";
-        case mavlink20.MAV_TYPE_SURFACE_BOAT:
-          return "Boat";
-        case mavlink20.MAV_TYPE_SUBMARINE:
-          return "Sub";
-        case mavlink20.MAV_TYPE_QUADROTOR:
-        case mavlink20.MAV_TYPE_COAXIAL:
-        case mavlink20.MAV_TYPE_HEXAROTOR:
-        case mavlink20.MAV_TYPE_OCTOROTOR:
-        case mavlink20.MAV_TYPE_TRICOPTER:
-        case mavlink20.MAV_TYPE_DODECAROTOR:
-          return "Copter";
-        case mavlink20.MAV_TYPE_HELICOPTER:
-          return "Heli";
-        case mavlink20.MAV_TYPE_ANTENNA_TRACKER:
-          return "Tracker";
-        case mavlink20.MAV_TYPE_AIRSHIP:
-          return "Blimp";
-        default:
-          add_text_to_debug("get_vehicle_type: default, unknown");
-          return "unknown";
-      }
-
-      // if we got this far  we don't know the vehicle type
-      add_text_to_debug("get_vehicle_type: no match for type:" + heartbeat_msg.type);
-      return "unknown";
-    }
-
-    // return a mapping of mode names to numbers for the current vehicle type
-    function get_mode_mapping(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("get_mode_mapping: ERROR parsing args string");
-          args = {};
-        }
-      }
-
-      args = args || {};
-
-      // get name and/or number arguments
-      let mode_name = args.name ?? null;
-      if (mode_name != null) {
-        mode_name = mode_name.toUpperCase();
-      }
-
-      let mode_number = args.number ?? null;
-      if (mode_number != null) {
-        mode_number = parseInt(mode_number, 10);
-      }
-
-      // prepare list of modes
-      let mode_list = [];
-      let mode_mapping = {};
-
-      const vehicle_type = get_vehicle_type();
-      switch (vehicle_type) {
-        case "Heli":
-        case "Blimp":
-        case "Copter":
-          mode_mapping = {
-            "STABILIZE": mavlink20.COPTER_MODE_STABILIZE,
-            "ACRO": mavlink20.COPTER_MODE_ACRO,
-            "ALT_HOLD": mavlink20.COPTER_MODE_ALT_HOLD,
-            "AUTO": mavlink20.COPTER_MODE_AUTO,
-            "GUIDED": mavlink20.COPTER_MODE_GUIDED,
-            "LOITER": mavlink20.COPTER_MODE_LOITER,
-            "RTL": mavlink20.COPTER_MODE_RTL,
-            "CIRCLE": mavlink20.COPTER_MODE_CIRCLE,
-            "LAND": mavlink20.COPTER_MODE_LAND,
-            "DRIFT": mavlink20.COPTER_MODE_DRIFT,
-            "SPORT": mavlink20.COPTER_MODE_SPORT,
-            "FLIP": mavlink20.COPTER_MODE_FLIP,
-            "AUTOTUNE": mavlink20.COPTER_MODE_AUTOTUNE,
-            "POSHOLD": mavlink20.COPTER_MODE_POSHOLD,
-            "BRAKE": mavlink20.COPTER_MODE_BRAKE,
-            "THROW": mavlink20.COPTER_MODE_THROW,
-            "AVOID_ADSB": mavlink20.COPTER_MODE_AVOID_ADSB,
-            "GUIDED_NOGPS": mavlink20.COPTER_MODE_GUIDED_NOGPS,
-            "SMART_RTL": mavlink20.COPTER_MODE_SMART_RTL,
-            "FLOWHOLD": mavlink20.COPTER_MODE_FLOWHOLD,
-            "FOLLOW": mavlink20.COPTER_MODE_FOLLOW,
-            "ZIGZAG": mavlink20.COPTER_MODE_ZIGZAG,
-            "SYSTEMID": mavlink20.COPTER_MODE_SYSTEMID,
-            "AUTOROTATE": mavlink20.COPTER_MODE_AUTOROTATE,
-            "AUTO_RTL": mavlink20.COPTER_MODE_AUTO_RTL
-          };
-          break;
-        case "Plane":
-          mode_mapping = {
-            "MANUAL": mavlink20.PLANE_MODE_MANUAL,
-            "CIRCLE": mavlink20.PLANE_MODE_CIRCLE,
-            "STABILIZE": mavlink20.PLANE_MODE_STABILIZE,
-            "TRAINING": mavlink20.PLANE_MODE_TRAINING,
-            "ACRO": mavlink20.PLANE_MODE_ACRO,
-            "FLY_BY_WIRE_A": mavlink20.PLANE_MODE_FLY_BY_WIRE_A,
-            "FLY_BY_WIRE_B": mavlink20.PLANE_MODE_FLY_BY_WIRE_B,
-            "CRUISE": mavlink20.PLANE_MODE_CRUISE,
-            "AUTOTUNE": mavlink20.PLANE_MODE_AUTOTUNE,
-            "AUTO": mavlink20.PLANE_MODE_AUTO,
-            "RTL": mavlink20.PLANE_MODE_RTL,
-            "LOITER": mavlink20.PLANE_MODE_LOITER,
-            "TAKEOFF": mavlink20.PLANE_MODE_TAKEOFF,
-            "AVOID_ADSB": mavlink20.PLANE_MODE_AVOID_ADSB,
-            "GUIDED": mavlink20.PLANE_MODE_GUIDED,
-            "INITIALIZING": mavlink20.PLANE_MODE_INITIALIZING,
-            "QSTABILIZE": mavlink20.PLANE_MODE_QSTABILIZE,
-            "QHOVER": mavlink20.PLANE_MODE_QHOVER,
-            "QLOITER": mavlink20.PLANE_MODE_QLOITER,
-            "QLAND": mavlink20.PLANE_MODE_QLAND,
-            "QRTL": mavlink20.PLANE_MODE_QRTL,
-            "QAUTOTUNE": mavlink20.PLANE_MODE_QAUTOTUNE,
-            "QACRO": mavlink20.PLANE_MODE_QACRO,
-            "THERMAL": mavlink20.PLANE_MODE_THERMAL
-          };
-          break;
-        case "Boat":
-        case "Rover":
-          mode_mapping = {
-            "MANUAL": mavlink20.ROVER_MODE_MANUAL,
-            "ACRO": mavlink20.ROVER_MODE_ACRO,
-            "STEERING": mavlink20.ROVER_MODE_STEERING,
-            "HOLD": mavlink20.ROVER_MODE_HOLD,
-            "LOITER": mavlink20.ROVER_MODE_LOITER,
-            "FOLLOW": mavlink20.ROVER_MODE_FOLLOW,
-            "SIMPLE": mavlink20.ROVER_MODE_SIMPLE,
-            "AUTO": mavlink20.ROVER_MODE_AUTO,
-            "RTL": mavlink20.ROVER_MODE_RTL,
-            "SMART_RTL": mavlink20.ROVER_MODE_SMART_RTL,
-            "GUIDED": mavlink20.ROVER_MODE_GUIDED,
-            "INITIALIZING": mavlink20.ROVER_MODE_INITIALIZING
-          };
-          break;
-        case "Sub":
-          mode_mapping = {
-            "STABILIZE": mavlink20.SUB_MODE_STABILIZE,
-            "ACRO": mavlink20.SUB_MODE_ACRO,
-            "ALT_HOLD": mavlink20.SUB_MODE_ALT_HOLD,
-            "AUTO": mavlink20.SUB_MODE_AUTO,
-            "GUIDED": mavlink20.SUB_MODE_GUIDED,
-            "CIRCLE": mavlink20.SUB_MODE_CIRCLE,
-            "SURFACE": mavlink20.SUB_MODE_SURFACE,
-            "POSHOLD": mavlink20.SUB_MODE_POSHOLD,
-            "MANUAL": mavlink20.SUB_MODE_MANUAL
-          };
-          break;
-        case "Tracker":
-          mode_mapping = {
-            "MANUAL": mavlink20.TRACKER_MODE_MANUAL,
-            "STOP": mavlink20.TRACKER_MODE_STOP,
-            "SCAN": mavlink20.TRACKER_MODE_SCAN,
-            "SERVO_TEST": mavlink20.TRACKER_MODE_SERVO_TEST,
-            "AUTO": mavlink20.TRACKER_MODE_AUTO,
-            "INITIALIZING": mavlink20.TRACKER_MODE_INITIALIZING
-          };
-          break;
-        default:
-          // maybe we don't know the vehicle type
-          add_text_to_debug("get_mode_mapping: unknown vehicle type: " + vehicle_type);
-          return `get_mode_mapping: failed to retrieve mode mapping: unknown vehicle type: ${vehicle_type}`;
-      }
-
-      // handle request for all modes
-      if (mode_name === null && mode_number === null) {
-        for (let mname in mode_mapping) {
-          let mnumber = mode_mapping[mname];
-          mode_list.push({ "name": mname.toUpperCase(), "number": mnumber });
-        }
-      }
-      // handle request using mode name
-      else if (mode_name !== null) {
-        for (let mname in mode_mapping) {
-          if (mname.toUpperCase() === mode_name) {
-            mode_list.push({ "name": mname.toUpperCase(), "number": mode_mapping[mname] });
-          }
-        }
-      }
-      // handle request using mode number
-      else if (mode_number !== null) {
-        for (let mname in mode_mapping) {
-          let mnumber = mode_mapping[mname];
-          if (mnumber === mode_number) {
-            mode_list.push({ "name": mname.toUpperCase(), "number": mnumber });
-          }
-        }
-      }
-
-      // return list of modes
-      return mode_list;
-    }
-
-    function get_mavlink_message(args) {
-      // Check if it's a string and parse it
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          return { status: "error", message: "Invalid JSON in arguments" };
-        }
-      }
-
-      // check if name is provided
-      if (!args || !args.hasOwnProperty("message")) {
-        add_text_to_debug("get_mavlink_message: message is null");
-        return "get_mavlink_message: message is Null";
-      }
-
-      add_text_to_debug("get_mavlink_message: args: " + JSON.stringify(args));
-
-      const msg = mavlink_store.find_message_by_name(args.message);
-      if (!msg) {
-        return "get_mavlink_message: message not found";
-      }
-      return msg;
-    }
-
-    function get_parameter(args) {
-      try {
-        return new Promise((resolve, reject) => {
-          // Parse input
-          if (typeof args === "string") {
-            try {
-              args = JSON.parse(args);
-            } catch (e) {
-              add_text_to_debug("get_parameter: ERROR parsing args string");
-              reject("Invalid arguments: JSON parse error");
-              return;
-            }
-          }
-
-          if (!args || !args.name) {
-            reject("get_parameter: name not specified");
-            return;
-          }
-
-          const param_name = args.name.trim();
-
-          // Check WebSocket ready
-          if (!MAVLink || !mavlink_ws || mavlink_ws.readyState !== WebSocket.OPEN) {
-            reject("MAVLink or WebSocket not ready");
-            return;
-          }
-
-          // Register resolver for this param
-          pending_param_requests[param_name] = resolve;
-
-          try {
-            // Create PARAM_REQUEST_READ message
-            const message = new mavlink20.messages.param_request_read(
-              1,               // target_system
-              1,               // target_component
-              param_name,      // param_id
-              -1               // use param_id, not param_index
-            );
-
-            const pkt = message.pack(MAVLink);
-            mavlink_ws.send(Uint8Array.from(pkt));
-
-            add_text_to_debug(`Sent PARAM_REQUEST_READ for ${param_name}`);
-          } catch (error) {
-            delete pending_param_requests[param_name];
-            reject("Error sending PARAM_REQUEST_READ: " + error);
-            return;
-          }
-
-          // timeout
-          setTimeout(() => {
-            if (pending_param_requests[param_name]) {
-              delete pending_param_requests[param_name];
-              add_text_to_debug(`Timeout waiting for PARAM_VALUE for ${param_name}`);
-              reject(`No PARAM_VALUE received for "${param_name}" within 10 seconds. The parameter may not exist on this vehicle.`);
-            }
-          }, 10000);
-        });
-      }
-      catch (error) {
-        add_text_to_debug("get_parameter: Error retrieving parameter: " + error);
-        return "get_parameter: Error retrieving parameter: " + error;
-      }
-    }
-
-    // returns true if string contains regex characters
-    function contains_regex(string) {
-      const regex_characters = ".^$*+?{}[]\\|()";
-      for (const char of regex_characters) {
-        if (string.includes(char)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function get_all_parameters() {
-      return new Promise((resolve, reject) => {
-        if (!MAVLink || !mavlink_ws || mavlink_ws.readyState !== WebSocket.OPEN) {
-          reject("MAVLink or WebSocket not ready");
-          return;
-        }
-
-        if (window.pending_all_params_request) {
-          reject("Another get_all_parameters request is already in progress");
-          return;
-        }
-
-        // Set up the pending request
-        window.pending_all_params_request = {
-          params: {},
-          resolve: resolve
-        };
-
-        try {
-          const message = new mavlink20.messages.param_request_list(
-            1, // target_system
-            1  // target_component
-          );
-
-          const pkt = message.pack(MAVLink);
-          mavlink_ws.send(Uint8Array.from(pkt));
-
-          add_text_to_debug("Sent PARAM_REQUEST_LIST to vehicle");
-        } catch (error) {
-          window.pending_all_params_request = null;
-          reject("Error sending PARAM_REQUEST_LIST: " + error);
-          return;
-        }
-
-        // timeout
-        setTimeout(() => {
-          if (window.pending_all_params_request) {
-            window.pending_all_params_request = null;
-            reject("Timeout waiting for all parameters");
-          }
-        }, 15000);
-      });
-    }
-
-    // Global cache for parameter metadata
-    const parameter_metadata_cache = {};
-
-    const parameter_url_map = {
-      Tracker: "https://autotest.ardupilot.org/Parameters/AntennaTracker/apm.pdef.json",
-      Copter: "https://autotest.ardupilot.org/Parameters/ArduCopter/apm.pdef.json",
-      Plane: "https://autotest.ardupilot.org/Parameters/ArduPlane/apm.pdef.json",
-      Rover: "https://autotest.ardupilot.org/Parameters/Rover/apm.pdef.json",
-      Sub: "https://autotest.ardupilot.org/Parameters/ArduSub/apm.pdef.json"
-    };
-
-    async function load_parameter_metadata(vehicle_type) {
-      if (parameter_metadata_cache[vehicle_type]) {
-        add_text_to_debug(`Using cached parameter metadata for ${vehicle_type}`);
-        return parameter_metadata_cache[vehicle_type];
-      }
-
-      const url = parameter_url_map[vehicle_type];
-      if (!url) {
-        add_text_to_debug(`No parameter definition URL found for vehicle type: ${vehicle_type}`);
-        return null;
-      }
-
-      try {
-        add_text_to_debug(`Fetching parameter metadata for ${vehicle_type} from ${url}`);
-        const res = await fetch(url);
-        if (!res.ok) {
-          add_text_to_debug(`Failed to fetch parameter metadata for ${vehicle_type}: ${res.status}`);
-          return null;
-        }
-        add_text_to_debug(`Successfully fetched parameter metadata for ${vehicle_type}`);
-
-        const data = await res.json();
-        parameter_metadata_cache[vehicle_type] = data;
-        return data;
-
-      } catch (error) {
-        add_text_to_debug(`Error fetching parameter metadata for ${vehicle_type}:`, error);
-        return null;
-      }
-    }
-
-    function find_param_in_tree(tree, vehicle_type, param_upper) {
-      for (const [key, val] of Object.entries(tree)) {
-        if (typeof val === "object") {
-          if (key.toUpperCase() === param_upper) {
-            return { key, meta: val };
-          }
-          if (`${vehicle_type}:${param_upper}` === key.toUpperCase()) {
-            return { key, meta: val };
-          }
-          const result = find_param_in_tree(val, vehicle_type, param_upper);
-          if (result) return result;
-        }
-      }
-      return null;
-    }
-
-    function get_single_parameter_description(param_tree, vehicle_type, param_name) {
-      const param_upper = param_name.toUpperCase();
-
-      const result = find_param_in_tree(param_tree, vehicle_type, param_upper);
-
-      if (!result) return null;
-
-      return result;
-    }
-
-
-    async function get_parameter_description(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch {
-          return "get_parameter_description: invalid JSON";
-        }
-      }
-
-      if (!args || !args.name) {
-        return "get_parameter_description: name not specified";
-      }
-
-      const param_name = args.name;
-      const vehicle_type = get_vehicle_type();
-      const param_tree = await load_parameter_metadata(vehicle_type);
-      if (!param_tree) {
-        return `get_parameter_description: No metadata for vehicle type: ${vehicle_type}`;
-      }
-
-      const results = {};
-
-      if (contains_regex(param_name)) {
-        const pattern = new RegExp(param_name.replace(/\*/g, ".*"), "i");
-
-        for (const [key, val] of Object.entries(param_tree)) {
-          if (pattern.test(key)) {
-            const single = get_single_parameter_description(param_tree, vehicle_type, key);
-            if (single) results[key] = single;
-          } else if (typeof val === "object") {
-            for (const [subkey] of Object.entries(val)) {
-              if (pattern.test(subkey)) {
-                const single = get_single_parameter_description(param_tree, vehicle_type, subkey);
-                if (single) results[subkey] = single;
-              }
-            }
-          }
-        }
-
-        if (Object.keys(results).length === 0) {
-          return `get_parameter_description: No parameters matched pattern: ${param_name}`;
-        }
-        return results;
-      }
-
-      // Exact
-      const single = get_single_parameter_description(param_tree, vehicle_type, param_name);
-      if (!single) {
-        return `get_parameter_description: ${param_name} parameter description not found`;
-      }
-
-      results[param_name] = single;
-      return results;
-    }
-
-    // send a PARAM_SET message to change a vehicle parameter
-    function set_parameter(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR set_parameter: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      if (!args || !args.hasOwnProperty("name") || args.value === undefined) {
-        return "set_parameter: name and value required";
-      }
-
-      if (!MAVLink || !mavlink_ws) {
-        return "set_parameter: MAVLink or WebSocket not ready";
-      }
-
-      const name = args.name ? args.name.trim() : null;
-      if (!name) {
-        return "set_parameter: name cannot be empty";
-      }
-
-      const value = parseFloat(args.value);
-      const message = new mavlink20.messages.param_set(
-        1, // target system
-        1, // target component
-        name,
-        value,
-        mavlink20.MAV_PARAM_TYPE_REAL32
-      );
-
-      if (mavlink_ws.readyState === WebSocket.OPEN) {
-        try {
-          const pkt = message.pack(MAVLink);
-          mavlink_ws.send(Uint8Array.from(pkt));
-          return "set_parameter: sent";
-        } catch (error) {
-          add_text_to_debug("Error sending PARAM_SET: " + error);
-          return "set_parameter: send failed";
-        }
-      }
-      return "set_parameter: WebSocket not open";
-    }
-
-    function send_mavlink_set_position_target_global_int(args) {
-      if (!MAVLink || !mavlink_ws) {
-        add_text_to_debug("MAVLink or WebSocket not ready");
-        return { success: false, error: "MAVLink not initialized" };
-      }
-
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      try {
-        const time_boot_ms = args.time_boot_ms ?? 0;
-        const target_system = args.target_system ?? 1;
-        add_text_to_debug("target_system: " + target_system);
-
-
-        const target_component = args.target_component ?? 1;
-        const coordinate_frame = args.coordinate_frame ?? 5;
-        const type_mask = args.type_mask ?? 0; // ignore all position, velocity and acceleration except for the ones we set
-
-        add_text_to_debug("target_component: " + target_component + ", coordinate_frame: " + coordinate_frame + ", type_mask: " + type_mask);
-        const lat_int = args.latitude !== undefined ? Math.round(args.latitude * 1e7) : 0;
-        const lon_int = args.longitude !== undefined ? Math.round(args.longitude * 1e7) : 0;
-        const alt = args.alt !== undefined ? args.alt : 0;  // in meters
-
-        add_text_to_debug(`lat_int: ${lat_int}, lon_int: ${lon_int}, alt: ${alt}`);
-
-        // Velocity
-        const vx = args.vx ?? 0;
-        const vy = args.vy ?? 0;
-        const vz = args.vz ?? 0;
-
-        // Acceleration (ignored if not needed)
-        const afx = args.afx ?? 0;
-        const afy = args.afy ?? 0;
-        const afz = args.afz ?? 0;
-
-        // Yaw and yaw_rate
-        const yaw = args.yaw ?? 0;
-        const yaw_rate = args.yaw_rate ?? 0;
-
-
-        // sanity check arguments
-        if (type_mask === 3576) {
-          // if position is specified check lat, lon, alt are provided
-          if (!args.hasOwnProperty("latitude")) {
-            return "send_mavlink_set_position_target_global_int: latitude field required";
-          }
-          if (!args.hasOwnProperty("longitude")) {
-            return "send_mavlink_set_position_target_global_int: longitude field required";
-          }
-          if (!args.hasOwnProperty("alt")) {
-            return "send_mavlink_set_position_target_global_int: alt field required";
-          }
-        }
-
-        const message = new mavlink20.messages.set_position_target_global_int(
-          time_boot_ms, target_system, target_component,
-          coordinate_frame, type_mask,
-          lat_int, lon_int, alt,
-          vx, vy, vz, afx, afy, afz,
-          yaw, yaw_rate
-        );
-        add_text_to_debug("send_mavlink_set_position_target_global_int: message: " + JSON.stringify(message));
-
-        if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
-          try {
-            const pkt = message.pack(MAVLink);
-            mavlink_ws.send(Uint8Array.from(pkt));
-
-            // add_text_to_debug("send_mavlink_command_int: mav_result: " + mav_result);
-          } catch (error) {
-            add_text_to_debug("Error sending COMMAND_INT: " + error);
-            return "command_int not sent.  Error sending COMMAND_INT: " + error;
-          }
-        } else {
-          add_text_to_debug("WebSocket not open. Cannot send COMMAND_INT.");
-        }
-      } catch (error) {
-        add_text_to_debug("Error sending SET_POSITION_TARGET_GLOBAL_INT: " + error);
-      }
-
-      return "set_position_target_global_int sent";
-    }
-
-
-    // send a mavlink COMMAND_INT message to the vehicle
-    function send_mavlink_command_int(args) {
-      if (!MAVLink || !mavlink_ws) {
-        add_text_to_debug("MAVLink or WebSocket not ready");
-        return { success: false, error: "MAVLink not initialized" };
-      }
-
-      const parsed = JSON.parse(args);
-      if (!parsed.hasOwnProperty("command")) {
-        add_text_to_debug("send_mavlink_command_int: command not found in args");
-        return "command_int not sent.  command field required";
-      }
-      const command = parsed.command;
-      const frame = parsed.frame || 0;
-      const target_system = 1;
-      const target_component = 1;
-      const confirmation = 1;
-      const param1 = parsed.hasOwnProperty("param1") ? parsed.param1 : 0;
-      const param2 = parsed.hasOwnProperty("param2") ? parsed.param2 : 0;
-      const param3 = parsed.hasOwnProperty("param3") ? parsed.param3 : 0;
-      const param4 = parsed.hasOwnProperty("param4") ? parsed.param4 : 0;
-      const x = parsed.hasOwnProperty("x") ? parsed.x : 0;
-      const y = parsed.hasOwnProperty("y") ? parsed.y : 0;
-      const z = parsed.hasOwnProperty("z") ? parsed.z : 0;
-
-      // sanity check arguments
-      if (command == 22 && z == 0) {
-        return "command_int not sent.  MAV_CMD_NAV_TAKEOFF requires alt in z field"
-      }
-
-      // Build COMMAND_INT MAVLink message
-      let command_long_msg = new mavlink20.messages.command_long(
-        target_system, target_component,
-        command, confirmation,
-        param1, param2, param3, param4,
-        x, y, z
-      );
-      if (mavlink_ws && mavlink_ws.readyState === WebSocket.OPEN) {
-        try {
-          const pkt = command_long_msg.pack(MAVLink);
-          mavlink_ws.send(Uint8Array.from(pkt));
-
-          // add_text_to_debug("send_mavlink_command_int: mav_result: " + mav_result);
-        } catch (error) {
-          add_text_to_debug("Error sending COMMAND_INT: " + error);
-          return "command_int not sent.  Error sending COMMAND_INT: " + error;
-        }
-      } else {
-        add_text_to_debug("WebSocket not open. Cannot send COMMAND_INT.");
-      }
-      return "command_int succeeded";
-    }
-
-    // get the current time and date as a string. E.g. 'Saturday, June 24, 2023 6:14:14 PM'
-    function getFormattedDate() {
-      add_text_to_debug("getFormattedDate called");
-      const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: true
-      };
-      return new Date().toLocaleString('en-US', options);
-    }
-
-    // set a wakeup timer
-    function set_wakeup_timer(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR set_wakeup_timer: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      // check required arguments are specified
-      const seconds = args.seconds ?? -1;
-      if (seconds < 0) {
-        return "set_wakeup_timer: seconds not specified";
-      }
-      const message = args.message ?? null;
-      if (message === null) {
-        return "set_wakeup_timer: message not specified";
-      }
-
-      // add timer to wakeup schedule
-      const triggerTime = Date.now() + seconds * 1000; // seconds → milliseconds → match Date.now()
-      add_text_to_debug("set_wakeup_timer: triggerTime: " + new Date(triggerTime).toLocaleString());
-      wakeup_schedule.push({ time: triggerTime, message: message });
-      add_text_to_debug("wakeup_schedule: " + JSON.stringify(wakeup_schedule));
-      return "set_wakeup_timer: wakeup timer set";
-    }
-
-    // get wake timers
-    function get_wakeup_timers(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR set_wakeup_timer: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      try {
-
-        // check message argument, default to null meaning all
-        const message = args.message ?? null;
-        // prepare list of matching timers
-        let matching_timers = [];
-
-        // handle simple case of all timers
-        if (message === null) {
-          matching_timers = wakeup_schedule;
-          add_text_to_debug("get_wakeup_timers: returning all timers");
-        }
-
-        // handle regex in message
-        else if (contains_regex(message)) {
-          const pattern = new RegExp(message, "i"); // ignore case
-          for (const wakeup_timer of wakeup_schedule) {
-            if (pattern.test(wakeup_timer.message)) {
-              matching_timers.push(wakeup_timer);
-            }
-          }
-          add_text_to_debug("get_wakeup_timers: returning timers matching regex: " + message);
-        }
-
-        // handle case of a specific message
-        else {
-          for (const wakeup_timer of wakeup_schedule) {
-            if (wakeup_timer.message === message) {
-              matching_timers.push(wakeup_timer);
-            }
-          }
-          add_text_to_debug("get_wakeup_timers: returning timers matching message: " + message);
-        }
-
-        // return matching timers
-        return matching_timers;
-
-      } catch (e) {
-        add_text_to_debug("ERROR get_wakeup_timers: " + e);
-        return "Invalid arguments: JSON parse error";
-      }
-    }
-
-    // delete wake timers
-    function delete_wakeup_timers(args) {
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR set_wakeup_timer: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      // check message argument, default to all
-      const message = args.message ?? null;
-
-      // find matching timers
-      let numDeleted = 0;
-
-      add_text_to_debug("delete_wakeup_timers: message: " + message);
-      // handle simple case of deleting all timers
-      if (message === null) {
-        numDeleted = wakeup_schedule.length;
-        wakeup_schedule.length = 0;
-        add_text_to_debug("delete_wakeup_timers: deleted all timers");
-      }
-      // handle regex in message
-      else if (contains_regex(message)) {
-        const pattern = new RegExp(message, "i");
-        for (let i = wakeup_schedule.length - 1; i >= 0; i--) {
-          if (pattern.test(wakeup_schedule[i].message)) {
-            wakeup_schedule.splice(i, 1);
-            numDeleted++;
-          }
-        }
-        add_text_to_debug("delete_wakeup_timers: deleted timers matching regex: " + message);
-      }
-      // handle simple case of a single message
-      else {
-        for (let i = wakeup_schedule.length - 1; i >= 0; i--) {
-          if (wakeup_schedule[i].message === message) {
-            wakeup_schedule.splice(i, 1);
-            numDeleted++;
-          }
-        }
-        add_text_to_debug("delete_wakeup_timers: deleted timers matching message: " + message);
-      }
-
-      // return number deleted and remaining
-      return `delete_wakeup_timers: deleted ${numDeleted} timers, ${wakeup_schedule.length} remaining`;
-    }
-
-    // check if any wakeup timers have expired and send messages if they have
-    // this function never returns so it should be called from a new thread
-    function check_wakeup_timers() {
-      setInterval(() => {
-        // check if any timers are set
-        if (wakeup_schedule.length === 0) {
-          return;
-        }
-
-        const now = Date.now();
-
-        // iterate backward to safely remove expired timers
-        for (let i = wakeup_schedule.length - 1; i >= 0; i--) {
-          if (now >= wakeup_schedule[i].time) {
-            const message = "WAKEUP:" + wakeup_schedule[i].message;
-            add_text_to_debug("check_wakeup_timers: sending message: " + message);
-
-            send_to_assistant(message);
-
-            wakeup_schedule.splice(i, 1); // remove expired timer
-          }
-        }
-      }, 1000); // wait for one second
-    }
-
-
-    //get the vehicle's location and yaw
-    function get_vehicle_location_and_yaw() {
-      // get GLOBAL_POSITION_INT
-      const gpi = mavlink_store.get_latest_message(33);
-
-      let lat_deg = 0
-      let lon_deg = 0
-      let alt_amsl_m = 0
-      let alt_rel_m = 0
-      let yaw_deg = 0
-
-      if (gpi) {
-        lat_deg = gpi.lat * 1e-7
-        lon_deg = gpi.lon * 1e-7
-        alt_amsl_m = gpi.alt * 1e-3
-        alt_rel_m = gpi.relative_alt * 1e-3
-        yaw_deg = gpi.hdg * 1e-2
-      }
-
-      const location = {
-        "latitude": lat_deg,
-        "longitude": lon_deg,
-        "altitude_amsl": alt_amsl_m,
-        "altitude_above_home": alt_rel_m,
-        "yaw": yaw_deg
-      }
-
-      return location;
-    }
-
-
-    //get vehicle state
-    function get_vehicle_state() {
-      //get latest HEARTBEAT message
-      const heartbeat_msg = mavlink_store.get_latest_message(0);
-      //sanity check
-      if (!heartbeat_msg || !heartbeat_msg.hasOwnProperty("base_mode") || !heartbeat_msg.hasOwnProperty("custom_mode")) {
-        return "unknown because no HEARTBEAT message has been received from the vehicle";
-      }
-      //get the armed state flag by applying mask to base_model property
-      const armed_flag = (heartbeat_msg["base_mode"] & mavlink20.MAV_MODE_FLAG_SAFETY_ARMED) > 0;
-      //get mode number from custom_mode property
-      const mode_number = heartbeat_msg["custom_mode"];
-
-      return {
-        "armed": armed_flag,
-        "mode": mode_number
-      }
-    }
-
-    // Calculate the latitude and longitude given distances (in meters) North and East
-    function get_location_plus_offset(args) {
-      // check if args is a string, if so, parse it
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("ERROR: Could not parse args JSON");
-          return "Invalid arguments: JSON parse error";
-        }
-      }
-
-      const lat = args.latitude ?? 0;
-      const lon = args.longitude ?? 0;
-      const dist_north = args.distance_north ?? 0;
-      const dist_east = args.distance_east ?? 0;
-      const { latitude: lat_with_offset, longitude: lon_with_offset } =
-        get_latitude_longitude_given_offset(lat, lon, dist_north, dist_east);
-
-      add_text_to_debug("get_location_plus_offset: lat: " + lat + ", lon: " + lon + ", dist_north: " + dist_north + ", dist_east: " + dist_east);
-
-      return {
-        latitude: lat_with_offset,
-        longitude: lon_with_offset
-      };
-    }
-
-    // Calculate the latitude and longitude given a distance (in meters) and bearing (in degrees)
-    function get_location_plus_dist_at_bearing(args) {
-      add_text_to_debug("2get_location_plus_dist_at_bearing: args: " + JSON.stringify(args));
-
-      // If args is a string, parse it
-      if (typeof args === "string") {
-        try {
-          args = JSON.parse(args);
-        } catch (e) {
-          add_text_to_debug("get_location_plus_dist_at_bearing: ERROR parsing args string");
-          return { latitude: 0, longitude: 0 };
-        }
-      }
-
-      const lat = args.latitude ?? 0;
-      const lon = args.longitude ?? 0;
-      const distance = args.distance ?? 0;
-      const bearing_deg = args.bearing ?? 0;
-
-      const dist_north = Math.cos(bearing_deg * Math.PI / 180) * distance;
-      const dist_east = Math.sin(bearing_deg * Math.PI / 180) * distance;
-
-      const { latitude: lat_with_offset, longitude: lon_with_offset } =
-        get_latitude_longitude_given_offset(lat, lon, dist_north, dist_east);
-
-      add_text_to_debug(`get_location_plus_dist_at_bearing: lat: ${lat}, lon: ${lon}, distance: ${distance}, bearing: ${bearing_deg}`);
-
-      return {
-        latitude: lat_with_offset,
-        longitude: lon_with_offset
-      };
-
-
-    }
-
-
-    // wrap latitude to range -90 to 90
-    function wrap_latitude(latitude_deg) {
-      if (latitude_deg > 90) {
-        return 180 - latitude_deg;
-      }
-      if (latitude_deg < -90) {
-        return -(180 + latitude_deg);
-      }
-      return latitude_deg;
-    }
-    // wrap longitude to range -180 to 180
-    function wrap_longitude(longitude_deg) {
-      if (longitude_deg > 180) {
-        return longitude_deg - 360;
-      }
-      if (longitude_deg < -180) {
-        return longitude_deg + 360;
-      }
-      return longitude_deg;
-    }
-
-    // calculate latitude and longitude given distances (in meters) North and East
-    // returns latitude and longitude in degrees
-    function get_latitude_longitude_given_offset(latitude, longitude, dist_north, dist_east) {
-      const lat_lon_to_meters_scaling = 89.8320495336892 * 1e-7;
-      const lat_diff = dist_north * lat_lon_to_meters_scaling;
-      const lon_diff = dist_east * lat_lon_to_meters_scaling / Math.max(0.01, Math.cos((latitude + lat_diff) * Math.PI / 180 / 2));
-      return {
-        latitude: wrap_latitude(latitude + lat_diff),
-        longitude: wrap_longitude(longitude + lon_diff)
-      };
-    }
-
-    class EventHandler extends EventEmitter {
-      constructor(client) {
-        super()
-        this.client = client;
-      }
-
-      async onEvent(event) {
-        try {
-          // print status on html page
-          document.getElementById("assistantRunStatus").value = event.event;
-
-          // handle each event
-          switch (event.event) {
-            // retrieve events that are denoted with 'requires_action'
-            // since these will have our tool_calls
-            case "thread.run.requires_action":
-              await this.handleRequiresAction(
-                event.data,
-                event.data.id,
-                event.data.thread_id,
-              )
-              break;
-            case "thread.message.delta":
-            case "thread.run.step.delta":
-              let delta_text = event.data.delta.content[0].text.value
-              add_text_to_chat(delta_text, "assistant")
-              break;
-
-            // events below can be ignored
-            case "thread.created":
-            case "thread.message.completed":
-            case "thread.run.created":
-            case "thread.run.queued":
-            case "thread.run.in_progress":
-              break;
-            case "thread.run.completed":
-            case "thread.run.incomplete":
-            case "thread.run.failed":
-              setChatBusy(false)
-              break;
-            case "thread.run.step.created":
-            case "thread.run.cancelling":
-            case "thread.run.step.in_progress":
-            case "thread.run.cancelled":
-            case "thread.run.expired":
-            case "thread.run.step.created":
-            case "thread.run.step.in_progress":
-            case "thread.run.step.completed":
-            case "thread.run.step.failed":
-            // setChatBusy(false)
-            // break
-            case "thread.run.step.cancelled":
-            case "thread.run.step.expired":
-            case "thread.message.created":
-            case "thread.message.in_progress":
-              break;
-            case "thread.message.completed":
-            case "thread.message.incomplete":
-            case "error":
-            case "done":
-              setChatBusy(false)
-              break;
-
-            // catch unhandled events
-            default:
-              add_text_to_debug("Unhandled event: " + event.event)
-              console.log(event)
-          }
-
-        } catch (error) {
-          console.error("Error handling event:", error)
-        }
-      }
-
-      // handle requires action event by calling a local function and returning the result to the assistant
-      async handleRequiresAction(data, runId, threadId) {
-        try {
-          const toolOutputs = await Promise.all(
-            data.required_action.submit_tool_outputs.tool_calls.map(async (toolCall) => {
-              let output;
-              try {
-                output = await handle_function_call(toolCall.function.name, toolCall.function.arguments);
-              } catch (err) {
-                add_text_to_debug("handle_function_call error: " + err);
-                output = JSON.stringify({ error: err.toString() });
-              }
-
-              output = typeof output === "string" ? output : JSON.stringify(output);
-
-              add_text_to_debug("fn:" + toolCall.function.name + " output:" + output)
-              return {
-                tool_call_id: toolCall.id,
-                output: output
-              }
-            })
-          )
-
-          // submit all the tool outputs at the same time
-          await this.submitToolOutputs(toolOutputs, runId, threadId)
-        } catch (error) {
-          console.error("Error processing required action:", error)
-        }
-      }
-
-      // return function call results to the assistant
-      async submitToolOutputs(toolOutputs, runId, threadId) {
-        try {
-          // use the submitToolOutputsStream helper
-          const stream = this.client.beta.threads.runs.submitToolOutputsStream(
-            threadId,
-            runId,
-            { tool_outputs: toolOutputs },
-          )
-          for await (const event of stream) {
-            this.emit("event", event)
-          }
-        } catch (error) {
-          console.error("Error submitting tool outputs:", error)
-        }
-      }
-    }
-  </script>
-
-  <script type="module">
-    import OpenAI from "https://cdn.jsdelivr.net/npm/openai@4.85.4/+esm";
-
-    // Helper to access the global OpenAI instance
-    function getOpenAIInstance() {
-      return window.openai;
-    }
-
-    function setChatBusy(state) {
-      window.chatBusy = state
-      document.getElementById("sendMessageButton").disabled = state
-      document.getElementById("recordButton").disabled = state
-      document.getElementById("userInput").disabled = state
-    }
-
-    // add text to chat box
-    function add_text_to_chat(text, role = "assistant") {
-      let div_class = role === "assistant" ? "assistant-text" : "user-text";
-      let chatBox = document.getElementById("chatBox");
-
-      if (role === "assistant") {
-        // try to find the last assistant message and append to it
-        let last_message = chatBox.querySelector(`.${div_class}:last-of-type`);
-        if (last_message) {
-          last_message.textContent += text;
-          chatBox.scrollTop = chatBox.scrollHeight;
-          return;
-        }
-      }
-
-      // create a new message div if no previous assistant message exists
-      let message_div = document.createElement("div");
-      message_div.className = div_class;
-      message_div.textContent = text;
-      chatBox.appendChild(message_div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // add text to debug text box
-    function add_text_to_debug(text) {
-      let debugOutput = document.getElementById("debugOutput");
-      debugOutput.value += text + "\n";
-      debugOutput.scrollTop = debugOutput.scrollHeight;
-    }
-
-    // get assistant response based on user input
-    async function get_assistant_response(input) {
-      // sanity check the assistant id
-      if (!openai_assistant_id) {
-        return "get_assistant_response: assistant not found";
-      }
-      // sanity check thread
-      if (!openai_thread_id) {
-        return "get_assistant_response: thread not found";
-      }
-
-      // add a message to the thread
-      const openai = getOpenAIInstance();
-
-      const message = await openai.beta.threads.messages.create(openai_thread_id, { role: "user", content: input });
-
-      // run the assistant
-      const stream = await openai.beta.threads.runs.stream(openai_thread_id, { assistant_id: openai_assistant_id, stream: true })
-      stream.on('event', (event) => openai_event_handler.emit("event", event))
-    }
-
-
-
-    const recordButton = document.getElementById("recordButton");
-
-    const state = {
-      mediaRecorder: null,
-      audioChunks: [],
-      stream: null,
-      audioBlob: null,
-      isRecording: false,
-      listeners: {
-        dataavailable: null,
-        stop: null
-      }
-    };
-
-    async function startRecording(options = {}) {
-      if (window.chatBusy) {
-        add_text_to_debug("Recording is busy, please wait");
-        return;
-      }
-
-      if (state.isRecording) {
-        add_text_to_debug("recording is in progress");
-        return;
-      }
-
-      state.isRecording = true;
-      state.audioChunks = [];
-
-      try {
-        const defaultOptions = {
-          mimeType: "audio/webm",
-          audioBitsPerSecond: 128000
-        };
-        const recordingOptions = { ...defaultOptions, ...options };
-
-        state.stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-
-        if (MediaRecorder.isTypeSupported(recordingOptions.mimeType)) {
-          state.mediaRecorder = new MediaRecorder(state.stream, recordingOptions);
-        } else {
-          add_text_to_debug(recordingOptions.mimeType + " is not supported, using default codec");
-          state.mediaRecorder = new MediaRecorder(state.stream);
-        }
-
-        state.listeners.dataavailable = event => {
-          state.audioChunks.push(event.data);
-        };
-
-        state.listeners.stop = async () => {
-          state.audioBlob = new Blob(state.audioChunks, { type: recordingOptions.mimeType });
-          cleanupResources();
-          await handleTranscription(state.audioBlob);
-        };
-
-        state.mediaRecorder.addEventListener("dataavailable", state.listeners.dataavailable);
-        state.mediaRecorder.addEventListener("stop", state.listeners.stop);
-        state.mediaRecorder.start();
-
-      } catch (error) {
-        state.isRecording = false;
-        cleanupResources();
-        add_text_to_debug("Error accessing microphone: " + error);
-        setChatBusy(false);
-      }
-    }
-
-    function stopRecording() {
-      if (!state.mediaRecorder || state.mediaRecorder.state === "inactive") {
-        return false;
-      }
-      state.mediaRecorder.stop();
-      setChatBusy(true);
-      add_text_to_debug("Recording stopped, processing audio...");
-      return true;
-    }
-
-    function cleanupResources() {
-      if (state.stream) {
-        state.stream.getTracks().forEach(track => track.stop());
-        state.stream = null;
-      }
-      if (state.mediaRecorder) {
-        if (state.listeners.dataavailable) {
-          state.mediaRecorder.removeEventListener("dataavailable", state.listeners.dataavailable);
-        }
-        if (state.listeners.stop) {
-          state.mediaRecorder.removeEventListener("stop", state.listeners.stop);
-        }
-        state.mediaRecorder = null;
-      }
-      state.isRecording = false;
-    }
-
-    async function handleTranscription(blob) {
-      try {
-        // ensure OpenAI connection exists
-        let openai = getOpenAIInstance();
-        if (!openai && window.check_openai_connection) {
-          const ok = await window.check_openai_connection();
-          if (!ok) {
-            add_text_to_debug("Unable to connect to OpenAI");
-            return;
-          }
-          openai = getOpenAIInstance();
-        }
-
-        const formData = new FormData();
-        formData.append("file", blob, "recording.webm");
-        formData.append("model", "whisper-1");
-        // update this static language option with dynamic in future , let user choose language
-        formData.append("language", "en");
-
-        const apiKey = openai ? openai.apiKey : document.getElementById("openai_api_key").value.trim();
-
-        const resp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${apiKey}` },
-          body: formData
-        });
-        const data = await resp.json();
-        const transcript = data.text.trim();
-        add_text_to_chat(transcript, "user");
-        const response = await get_assistant_response(transcript);
-        add_text_to_chat(response, "assistant");
-      } catch (err) {
-        add_text_to_debug("Transcription error: " + err);
-      }
-    }
-
-    recordButton.addEventListener("click", () => {
-      if (state.isRecording) {
-        stopRecording();
-      } else {
-        startRecording().catch(err => {
-          add_text_to_debug("Failed to start recording: " + err);
-        });
-      }
-    });
-  </script>
+  <!-- script for handling function calls -->
+  <script type="module" src="./function-calls.js"></script>
 
 </body>
 

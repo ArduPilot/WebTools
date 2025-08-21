@@ -1,4 +1,3 @@
-// shared.js
 export let MAVLink = null;
 export let mavlink_ws = null;
 
