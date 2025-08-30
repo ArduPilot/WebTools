@@ -791,15 +791,15 @@ function setup_plots() {
 }
 
 function get_axis_prefix() {
-    if (document.getElementById('type_Roll').checked) {
+    if (page_axis == "Roll") {
         return "RLL"
-    } else if (document.getElementById('type_Pitch').checked) {
+    } else if (page_axis == "Pitch") {
         if (vehicle_type == "ArduPlane_FW") {
             return "PTCH"
         } else {
             return "PIT"
         }
-    } else if (document.getElementById('type_Yaw').checked) {
+    } else if (page_axis == "Yaw") {
         return "YAW"
     }
     return ""
@@ -1351,7 +1351,7 @@ function update_PID_filters() {
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
     }
-    if (document.getElementById('type_Roll').checked) {
+    if (page_axis == "Roll") {
         if (vehicle_type != "ArduPlane_FW") {
             document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
         }
@@ -1365,7 +1365,7 @@ function update_PID_filters() {
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
-    } else if (document.getElementById('type_Pitch').checked) {
+    } else if (page_axis == "Pitch") {
         if (vehicle_type != "ArduPlane_FW") {
             document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
         }
@@ -1380,7 +1380,7 @@ function update_PID_filters() {
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
-    } else if (document.getElementById('type_Yaw').checked) {
+    } else if (page_axis == "Yaw") {
         if (vehicle_type != "ArduPlane_FW") {
             document.getElementById(ele_prefix + 'YawTC').style.display = 'block';
         }
@@ -1427,19 +1427,11 @@ function calculate_freq_resp() {
     const t_start = document.getElementById('starttime').value.trim()
     const t_end = document.getElementById('endtime').value.trim()
     update_PID_filters()
-    var eval_axis = ""
-    if (document.getElementById('type_Roll').checked) {
-        eval_axis = "Roll"
-    } else if (document.getElementById('type_Pitch').checked) {
-        eval_axis = "Pitch"
-    } else if (document.getElementById('type_Yaw').checked) {
-        eval_axis = "Yaw"
-    }
     var sample_rate
     if (vehicle_type == "ArduPlane_FW") {
-        [data_set, sample_rate] = load_fw_time_history_data(t_start, t_end, eval_axis)
+        [data_set, sample_rate] = load_fw_time_history_data(t_start, t_end, page_axis)
     } else {
-        [data_set, sample_rate] = load_vtol_time_history_data(t_start, t_end, eval_axis)
+        [data_set, sample_rate] = load_vtol_time_history_data(t_start, t_end, page_axis)
     }
     data_set.FFT = run_fft(data_set, Object.keys(data_set), window_size, window_spacing, windowing_function, fft)
 
@@ -1464,7 +1456,7 @@ function calculate_freq_resp() {
 
     var H_pilot
     var coh_pilot
-    if (document.getElementById('type_Yaw').checked) {        
+    if (page_axis == "Yaw") {        
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
     } else {
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
@@ -1868,6 +1860,7 @@ function calculate_freq_resp_from_FFT(input_fft, output_fft, start_index, end_in
     return [H, coh]
 }
 
+var page_axis = "Roll"
 function load() {
 
     // Load params
@@ -2432,11 +2425,11 @@ function update_time_range() {
 function set_sid_axis(axis) {
 
     if (axis == 1 || axis == 4 || axis == 7 || axis == 10 || axis == 20 || axis == 23) {
-        document.getElementById("type_Roll").checked = true
+        page_axis = "Roll"
     } else if (axis == 2 || axis == 5 || axis == 8 || axis == 11 || axis == 21 || axis == 24) {
-        document.getElementById("type_Pitch").checked = true
+        page_axis = "Pitch"
     } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12 || axis == 22 || axis == 25) {
-        document.getElementById("type_Yaw").checked = true
+        page_axis = "Yaw"
     }
     sid_axis = axis
     axis_changed()
