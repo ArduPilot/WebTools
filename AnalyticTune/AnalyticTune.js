@@ -1939,7 +1939,11 @@ function save_parameters() {
         var NTF_num
         for (const v in inputs) {
             var name = "" + inputs[v].id;
-            if (name.startsWith(get_vehicle_atc_prefix() + "INPUT_")) {
+            if (name.startsWith(get_vehicle_atc_prefix() + "INPUT_") && (page_axis == "Roll" || page_axis == "Pitch")) {
+                var value = inputs[v].value;
+                params += name + "," + param_to_string(value) + "\n";
+            }
+            if (name.startsWith(get_vehicle_plt_prefix()) && page_axis == "Yaw") {
                 var value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
