@@ -2689,14 +2689,7 @@
       "low": "0"
     },
     "Units": "s",
-    "User": "Standard",
-    "Values": {
-      "0.05": "Very Crisp",
-      "0.1": "Crisp",
-      "0.15": "Medium",
-      "0.2": "Soft",
-      "0.5": "Very Soft"
-    }
+    "User": "Standard"
   },
   "PTCH": {
     "PTCH2SRV_RLL": {
