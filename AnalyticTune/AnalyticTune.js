@@ -1323,7 +1323,9 @@ function axis_changed() {
 
 function update_PID_filters() {
     document.getElementById('RollPitchTC').style.display = 'none';
+    document.getElementById('QRollPitchTC').style.display = 'none';
     document.getElementById('YawTC').style.display = 'none';
+    document.getElementById('QYawTC').style.display = 'none';
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('QRollPIDS').style.display = 'none';
     document.getElementById('FWRollPIDS').style.display = 'none';
@@ -1395,8 +1397,6 @@ function update_PID_filters() {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     }
-
-
 }
 
 // Determine the frequency response from log data
