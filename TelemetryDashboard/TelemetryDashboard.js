@@ -43,8 +43,14 @@ function setup_connect(button_svg, button_color) {
 
     const url_input = tip_div.querySelector(`input[id="target_url"]`)
 
+    const heartbeat_checkbox = tip_div.querySelector(`input[id="send_heartbeat"]`)
+    const passphrase_input = tip_div.querySelector(`input[id="signing_passphrase"]`)
+    
     const connect_button = tip_div.querySelector(`input[id="connection_button"]`)
     const disconnect_button = tip_div.querySelector(`input[id="disconnection_button"]`)
+
+    const system_id_input = tip_div.querySelector(`input[id="system_id"]`);
+    const component_id_input = tip_div.querySelector(`input[id="component_id"]`);
 
     // Websocket object
     let ws = null
@@ -59,6 +65,17 @@ function setup_connect(button_svg, button_color) {
         disconnect_button.disabled = !connected
     }
     set_inputs(false)
+
+    function apply_ids() {
+	// clamp to valid ranges; fall back to GCS-like defaults 255/190
+	let sid = parseInt(system_id_input?.value || "255", 10);
+	let cid = parseInt(component_id_input?.value || "190", 10);
+	if (!Number.isFinite(sid) || sid < 1 || sid > 255) sid = 255;
+	if (!Number.isFinite(cid) || cid < 0 || cid > 255) cid = 190;
+
+	MAVLink.srcSystem = sid;
+	MAVLink.srcComponent = cid;
+    }
 
     // Connect to WebSocket server
     function connect(target, auto_connect) {
@@ -82,6 +99,9 @@ function setup_connect(button_svg, button_color) {
         ws.onopen = () => {
             button_color("green")
 
+	    // setup system IDs
+	    apply_ids();
+
             // Hide tip
             tip.hide()
 
@@ -92,8 +112,47 @@ function setup_connect(button_svg, button_color) {
             url_input.value = target
 
             // Have been connected
-            been_connected = true
-        }
+	    been_connected = true;
+	    setup_passphrase = false;
+
+	    heartbeat_interval = setInterval(() => {
+		try {
+		    if (!setup_passphrase) {
+			const passphrase = passphrase_input.value.trim();
+			if (passphrase.length > 0) {
+			    setup_passphrase = true;
+			    const enc = new TextEncoder();
+			    const data = enc.encode(passphrase);
+			    const hash = mavlink20.sha256(data);
+			    MAVLink.signing.secret_key = new Uint8Array(hash);
+			    MAVLink.signing.sign_outgoing = true;
+			}
+		    }
+
+		    if (heartbeat_checkbox.checked) {
+			const msg = new mavlink20.messages.heartbeat(
+			    6,  // MAV_TYPE_GCS
+			    8,  // MAV_AUTOPILOT_INVALID
+			    0,  // base_mode
+			    0,  // custom_mode
+			    4   // MAV_STATE_ACTIVE
+			);
+			const pkt = msg.pack(MAVLink);
+			ws.send(Uint8Array.from(pkt));
+			//console.log("Sent HEARTBEAT", pkt);
+		    }
+		} catch (e) {
+		    console.error("Error sending HEARTBEAT:", e.message);
+		    console.error(e.stack);
+
+		    if (heartbeat_interval !== null) {
+			clearInterval(heartbeat_interval)
+			heartbeat_interval = null
+			console.warn("Heartbeat disabled; will retry on reconnect.")
+		    }
+		}
+	    }, 1000);
+	}
 
         ws.onclose = () => {
             if ((auto_connect === true) && !been_connected) {
@@ -115,10 +174,15 @@ function setup_connect(button_svg, button_color) {
         }
 
         ws.onmessage = (msg) => {
-            // Feed data to MAVLink parser and forward messages
-            for (const char of new Uint8Array(msg.data)) {
-                const m = MAVLink.parseChar(char)
-                if ((m != null) && (m._id != -1)) {
+	    // Feed data to MAVLink parser and forward messages
+	    MAVLink.pushBuffer(new Uint8Array(msg.data));
+	    while (true) {
+		const m = MAVLink.parseChar(null);
+		if (m === null) {
+		    break;
+		}
+		if (m._id != -1) {
+		    //console.log(m);
                     // Got message with known ID
                     // Sent to each Widget
                     for (const widget of grid.getGridItems()) {
@@ -130,7 +194,6 @@ function setup_connect(button_svg, button_color) {
                 }
             }
         }
-
     }
 
     // Disconnect from WebSocket server
