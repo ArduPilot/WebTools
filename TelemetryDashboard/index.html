@@ -176,6 +176,21 @@
                 <input id="target_url" type="url" placeholder="ws://127.0.0.1:5863" required="true" pattern="^(ws|wss)://.*">
                 <br>
                 <br>
+                <div style="display: flex; align-items: center;">
+                  <input id="send_heartbeat" type="checkbox" style="margin-right: 0.5em;">
+                  <label for="send_heartbeat">Send Heartbeat</label>
+                </div>
+                <div style="display:flex; gap:.75em; align-items:center;">
+                  <label for="system_id" style="min-width:7em;">System ID</label>
+                  <input id="system_id" type="number" min="1" max="255" step="1" value="255" style="width:6em;">
+                  <label for="component_id" style="min-width:7em;">Component ID</label>
+                  <input id="component_id" type="number" min="0" max="255" step="1" value="190" style="width:6em;">
+                </div>
+                <br>
+                <br>
+                <label for="signing_passphrase">Signing passphrase</label>
+                <input id="signing_passphrase" type="text" placeholder="Enter passphrase" style="width: 100%;">
+                <br><br>
                 <input id="connection_button" type="button" value="Connect">
                 <input id="disconnection_button" type="button" value="Disconnect">
             </div>
@@ -200,20 +215,21 @@
     })
 
     // Load grid
-    let grid
-    let grid_changed = false
-    load_default_grid()
+    let grid;
+    let grid_changed = false;
 
     // MAVLink parsing
-    MAVLink = new MAVLink20Processor()
+    let MAVLink = new MAVLink20Processor();
+
+    load_default_grid();
 
     // Setup editor for use later
-    init_editor()
+    init_editor();
 
     // Setup widget pallet
-    init_pallet()
+    init_pallet();
 
     // Bind unload event to allow prompt for save
-    window.addEventListener('beforeunload', handle_unload)
+    window.addEventListener('beforeunload', handle_unload);
 
 </script>

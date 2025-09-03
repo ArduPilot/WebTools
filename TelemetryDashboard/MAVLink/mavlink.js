@@ -6,14 +6,72 @@ Generated from: all.xml,ardupilotmega.xml,ASLUAV.xml,common.xml,development.xml,
 Note: this file has been auto-generated. DO NOT EDIT
 */
 
-var jspack
-import("./local_modules/jspack/jspack.js").then((mod) => {
-    jspack = new mod.default()
-}).catch((e) => {
-    // Discard annoying error.
-    // This fails in the sandbox because of CORS
-    // Only really want the message definitions in that case, not the parser, so its OK.
-})
+// Detect environment
+const isNode = typeof process !== 'undefined' &&
+               process.versions &&
+               process.versions.node;
+
+// Handle jspack dependency
+let jspack;
+if (isNode) {
+    jspack = (global && global.jspack) || require("jspack").jspack;
+} else {
+    import("./local_modules/jspack/jspack.js").then((mod) => {
+	jspack = new mod.default()
+    }).catch((e) => {
+    });
+}
+
+// Handle Node.js specific modules
+let events, util;
+if (isNode) {
+    events = require("events");
+    util = require("util");
+} else {
+    // Browser polyfills for Node.js modules
+    util = { 
+        inherits: function(constructor, superConstructor) {
+            constructor.prototype = Object.create(superConstructor.prototype);
+            constructor.prototype.constructor = constructor;
+        }
+    };
+    
+    // Simple EventEmitter polyfill for browsers
+    events = { 
+        EventEmitter: function() {
+            this._events = {};
+            
+            this.on = function(event, listener) {
+                if (!this._events[event]) {
+                    this._events[event] = [];
+                }
+                this._events[event].push(listener);
+            };
+            
+            this.emit = function(event, ...args) {
+                if (this._events[event]) {
+                    this._events[event].forEach(listener => {
+                        try {
+                            listener.apply(this, args);
+                        } catch (e) {
+                            console.error('Error in event listener:', e);
+                        }
+                    });
+                }
+            };
+            
+            this.removeListener = function(event, listener) {
+                if (this._events[event]) {
+                    const index = this._events[event].indexOf(listener);
+                    if (index > -1) {
+                        this._events[event].splice(index, 1);
+                    }
+                }
+            };
+        }
+    };
+}
+
 
 mavlink20 = function(){};
 
@@ -55,7 +113,7 @@ mavlink20.MAVLINK_IFLAG_SIGNED = 0x01
 mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN = 13
 
 // Mavlink headers incorporate sequence, source system (platform) and source component. 
-mavlink20.header = function(msgId, mlen, seq, srcSystem, srcComponent, incompat_flags=0, compat_flags=0,) {
+mavlink20.header = function(msgId, mlen, seq, srcSystem, srcComponent, incompat_flags=0, compat_flags=0) {
 
     this.mlen = ( typeof mlen === 'undefined' ) ? 0 : mlen;
     this.seq = ( typeof seq === 'undefined' ) ? 0 : seq;
@@ -90,36 +148,140 @@ mavlink20.message.prototype.set = function(args,verbose) {
     }, this);
 };
 
-// trying to be the same-ish as the python function of the same name
+/*
+  sha256 implementation
+  embedded to avoid async issues in web browsers with crypto library
+  with thanks to https://geraintluff.github.io/sha256/
+*/
+mavlink20.sha256 = function(inputBytes) {
+    const K = new Uint32Array([
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
+        0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+        0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
+        0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+        0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
+        0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+        0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
+        0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
+        0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
+        0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]);
+
+    function ROTR(n, x) { return (x >>> n) | (x << (32 - n)); }
+
+    function Σ0(x) { return ROTR(2, x) ^ ROTR(13, x) ^ ROTR(22, x); }
+    function Σ1(x) { return ROTR(6, x) ^ ROTR(11, x) ^ ROTR(25, x); }
+    function σ0(x) { return ROTR(7, x) ^ ROTR(18, x) ^ (x >>> 3); }
+    function σ1(x) { return ROTR(17, x) ^ ROTR(19, x) ^ (x >>> 10); }
+
+    function Ch(x, y, z) { return (x & y) ^ (~x & z); }
+    function Maj(x, y, z) { return (x & y) ^ (x & z) ^ (y & z); }
+
+    const H = new Uint32Array([
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    ]);
+
+    const l = inputBytes.length;
+    const bitLen = l * 8;
+
+    const withPadding = new Uint8Array(((l + 9 + 63) >> 6) << 6); // pad to multiple of 64 bytes
+    withPadding.set(inputBytes);
+    withPadding[l] = 0x80;
+    withPadding.set([
+        0, 0, 0, 0,
+        (bitLen >>> 24) & 0xff,
+        (bitLen >>> 16) & 0xff,
+        (bitLen >>> 8) & 0xff,
+        bitLen & 0xff
+    ], withPadding.length - 8);
+
+    const w = new Uint32Array(64);
+    for (let i = 0; i < withPadding.length; i += 64) {
+        for (let j = 0; j < 16; j++) {
+            w[j] = (
+                (withPadding[i + 4 * j] << 24) |
+                (withPadding[i + 4 * j + 1] << 16) |
+                (withPadding[i + 4 * j + 2] << 8) |
+                (withPadding[i + 4 * j + 3])
+            ) >>> 0;
+        }
+        for (let j = 16; j < 64; j++) {
+            w[j] = (σ1(w[j - 2]) + w[j - 7] + σ0(w[j - 15]) + w[j - 16]) >>> 0;
+        }
+
+        let [a, b, c, d, e, f, g, h] = H;
+
+        for (let j = 0; j < 64; j++) {
+            const T1 = (h + Σ1(e) + Ch(e, f, g) + K[j] + w[j]) >>> 0;
+            const T2 = (Σ0(a) + Maj(a, b, c)) >>> 0;
+            h = g;
+            g = f;
+            f = e;
+            e = (d + T1) >>> 0;
+            d = c;
+            c = b;
+            b = a;
+            a = (T1 + T2) >>> 0;
+        }
+
+        H[0] = (H[0] + a) >>> 0;
+        H[1] = (H[1] + b) >>> 0;
+        H[2] = (H[2] + c) >>> 0;
+        H[3] = (H[3] + d) >>> 0;
+        H[4] = (H[4] + e) >>> 0;
+        H[5] = (H[5] + f) >>> 0;
+        H[6] = (H[6] + g) >>> 0;
+        H[7] = (H[7] + h) >>> 0;
+    }
+
+    const output = new Uint8Array(32);
+    for (let i = 0; i < 8; i++) {
+        output[i * 4 + 0] = (H[i] >>> 24) & 0xff;
+        output[i * 4 + 1] = (H[i] >>> 16) & 0xff;
+        output[i * 4 + 2] = (H[i] >>> 8) & 0xff;
+        output[i * 4 + 3] = H[i] & 0xff;
+    }
+
+    return output;
+}
+
+// create a message signature
+mavlink20.create_signature = function(key, msgbuf) {
+    const input = new Uint8Array(32 + msgbuf.length);
+    input.set(key, 0);
+    input.set(msgbuf, 32);
+
+    const hash = mavlink20.sha256(input);
+    const sig = hash.slice(0, 6);
+
+    return sig;
+}
+
+// sign outgoing packet
 mavlink20.message.prototype.sign_packet = function( mav) {
-    var crypto= require('crypto');
-    var h =  crypto.createHash('sha256');
+    function packUint48LE(value) {
+        const bytes = []
+        for (let i = 0; i < 6; i++) {
+            bytes.push(Number((value >> BigInt(8 * i)) & 0xFFn));
+        }
+        return bytes;
+    }
 
-    //mav.signing.timestamp is a 48bit number, or 6 bytes.
+    var tsbuf = packUint48LE(BigInt(mav.signing.timestamp));
 
-        // due to js not being able to shift numbers  more than 32, we'll use this instead.. 
-        // js stores all its numbers as a 64bit float with 53 bits of mantissa, so have room for 48 ok. 
-        // positive shifts left, negative shifts right
-        function shift(number, shift) { 
-            return number * Math.pow(2, shift); 
-        } 
-
-    var thigh = shift(mav.signing.timestamp,-32) // 2 bytes from the top, shifted right by 32 bits
-    var tlow  = (mav.signing.timestamp & 0xfffffff )  // 4 bytes from the bottom
-
-    // I means unsigned 4bytes, H means unsigned 2 bytes
     // first add the linkid(1 byte) and timestamp(6 bytes) that start the signature
-    this._msgbuf = this._msgbuf.concat(jspack.Pack('<BIH', [mav.signing.link_id, tlow, thigh  ] ) );
- 
-    h.update(mav.signing.secret_key);
-    h.update(new Uint8Array.from(this._msgbuf));
-    var hashDigest = h.digest();
-    sig = hashDigest.slice(0,6)
-    this._msgbuf  = this._msgbuf.concat( ... sig ); 
+    this._msgbuf = this._msgbuf.concat([mav.signing.link_id])
+    this._msgbuf = this._msgbuf.concat(tsbuf);
 
-    mav.signing.timestamp += 1
-} 
+    sig = mavlink20.create_signature(mav.signing.secret_key, this._msgbuf);
+    this._msgbuf = this._msgbuf.concat( ... sig );
 
+    mav.signing.timestamp += 1;
+}
 
 // This pack function builds the header and produces a complete MAVLink message,
 // including header and message CRC.
@@ -177,10 +339,13 @@ mavlink20.ACCELCAL_VEHICLE_POS_ENUM_END = 16777217 //
 // HEADING_TYPE
 mavlink20.HEADING_TYPE_COURSE_OVER_GROUND = 0 // 
 mavlink20.HEADING_TYPE_HEADING = 1 // 
-mavlink20.HEADING_TYPE_ENUM_END = 2 // 
+mavlink20.HEADING_TYPE_DEFAULT = 2 // 
+mavlink20.HEADING_TYPE_ENUM_END = 3 // 
 
 // MAV_CMD
-mavlink20.MAV_CMD_NAV_WAYPOINT = 16 // Navigate to waypoint.
+mavlink20.MAV_CMD_NAV_WAYPOINT = 16 // Navigate to waypoint. This is intended for use in missions (for guided
+                        // commands outside of missions use
+                        // MAV_CMD_DO_REPOSITION).
 mavlink20.MAV_CMD_NAV_LOITER_UNLIM = 17 // Loiter around this waypoint an unlimited amount of time
 mavlink20.MAV_CMD_NAV_LOITER_TURNS = 18 // Loiter around this waypoint for X turns
 mavlink20.MAV_CMD_NAV_LOITER_TIME = 19 // Loiter around this waypoint for X seconds
@@ -230,7 +395,7 @@ mavlink20.MAV_CMD_NAV_VTOL_TAKEOFF = 84 // Takeoff from ground using VTOL mode, 
                         // both VTOL and fixed-wing flight
                         // (multicopters, boats,etc.).
 mavlink20.MAV_CMD_NAV_VTOL_LAND = 85 // Land using VTOL mode
-mavlink20.MAV_CMD_NAV_GUIDED_ENABLE = 92 // hand control over to an external controller
+mavlink20.MAV_CMD_NAV_GUIDED_ENABLE = 92 // Hand control over to an external controller
 mavlink20.MAV_CMD_NAV_DELAY = 93 // Delay the next navigation command a number of seconds or until a
                         // specified time
 mavlink20.MAV_CMD_NAV_PAYLOAD_PLACE = 94 // Descend and place payload. Vehicle moves to specified location,
@@ -254,7 +419,8 @@ mavlink20.MAV_CMD_CONDITION_LAST = 159 // NOP - This command is only used to mar
 mavlink20.MAV_CMD_DO_SET_MODE = 176 // Set system mode.
 mavlink20.MAV_CMD_DO_JUMP = 177 // Jump to the desired command in the mission list.  Repeat this action
                         // only the specified number of times
-mavlink20.MAV_CMD_DO_CHANGE_SPEED = 178 // Change speed and/or throttle set points
+mavlink20.MAV_CMD_DO_CHANGE_SPEED = 178 // Change speed and/or throttle set points. The value persists until it
+                        // is overridden or there is a mode change
 mavlink20.MAV_CMD_DO_SET_HOME = 179 // Changes the home location either to the current location or a
                         // specified location.
 mavlink20.MAV_CMD_DO_SET_PARAMETER = 180 // Set a system parameter.  Caution!  Use of this command requires
@@ -318,7 +484,10 @@ mavlink20.MAV_CMD_DO_LAND_START = 189 // Mission command to perform a landing. T
                         // the closest landing sequence.
 mavlink20.MAV_CMD_DO_RALLY_LAND = 190 // Mission command to perform a landing from a rally point.
 mavlink20.MAV_CMD_DO_GO_AROUND = 191 // Mission command to safely abort an autonomous landing.
-mavlink20.MAV_CMD_DO_REPOSITION = 192 // Reposition the vehicle to a specific WGS84 global position.
+mavlink20.MAV_CMD_DO_REPOSITION = 192 // Reposition the vehicle to a specific WGS84 global position. This
+                        // command is intended for guided commands
+                        // (for missions use MAV_CMD_NAV_WAYPOINT
+                        // instead).
 mavlink20.MAV_CMD_DO_PAUSE_CONTINUE = 193 // If in a GPS controlled position mode, hold the current position or
                         // continue.
 mavlink20.MAV_CMD_DO_SET_REVERSE = 194 // Set moving direction to forward or reverse.
@@ -364,7 +533,15 @@ mavlink20.MAV_CMD_DO_SET_CAM_TRIGG_DIST = 206 // Mission command to set camera t
                         // is exceeded. This command can also be used
                         // to set the shutter integration time for the
                         // camera.
-mavlink20.MAV_CMD_DO_FENCE_ENABLE = 207 // Mission command to enable the geofence
+mavlink20.MAV_CMD_DO_FENCE_ENABLE = 207 //            Enable the geofence.           This can be used in a
+                        // mission or via the command protocol.
+                        // The persistence/lifetime of the setting is
+                        // undefined.           Depending on flight
+                        // stack implementation it may persist until
+                        // superseded, or it may revert to a system
+                        // default at the end of a mission.
+                        // Flight stacks typically reset the setting
+                        // to system defaults on reboot.
 mavlink20.MAV_CMD_DO_PARACHUTE = 208 // Mission item/command to release a parachute or enable/disable auto
                         // release.
 mavlink20.MAV_CMD_DO_MOTOR_TEST = 209 // Mission command to perform motor test.
@@ -432,11 +609,14 @@ mavlink20.MAV_CMD_OBLIQUE_SURVEY = 260 // Mission command to set a Camera Auto M
                         // setup (providing an increased HFOV). This
                         // command can also be used to set the shutter
                         // integration time for the camera.
+mavlink20.MAV_CMD_DO_SET_STANDARD_MODE = 262 // Enable the specified standard MAVLink mode.           If the mode is
+                        // not supported the vehicle should ACK with
+                        // MAV_RESULT_FAILED.
 mavlink20.MAV_CMD_MISSION_START = 300 // start running a mission
 mavlink20.MAV_CMD_COMPONENT_ARM_DISARM = 400 // Arms / Disarms a component
 mavlink20.MAV_CMD_RUN_PREARM_CHECKS = 401 // Instructs system to run pre-arm checks.  This command should return
                         // MAV_RESULT_TEMPORARILY_REJECTED in the case
-                        // the system is armed, otherwse
+                        // the system is armed, otherwise
                         // MAV_RESULT_ACCEPTED.  Note that the return
                         // value from executing this command does not
                         // indicate whether the vehicle is armable or
@@ -517,6 +697,20 @@ mavlink20.MAV_CMD_DO_SET_SYS_CMP_ID = 610 //            Set system and component
                         // to a new system/component id.
                         // Recipients must reject command addressed to
                         // broadcast system ID.
+mavlink20.MAV_CMD_DO_SET_GLOBAL_ORIGIN = 611 // Sets the GNSS coordinates of the vehicle local origin (0,0,0)
+                        // position.           Vehicle should emit
+                        // GPS_GLOBAL_ORIGIN irrespective of whether
+                        // the origin is changed.           This
+                        // enables transform between the local
+                        // coordinate frame and the global (GNSS)
+                        // coordinate frame, which may be necessary
+                        // when (for example) indoor and outdoor
+                        // settings are connected and the MAV should
+                        // move from in- to outdoor.           This
+                        // command supersedes SET_GPS_GLOBAL_ORIGIN.
+                        // Should be sent in a COMMAND_INT (Expected
+                        // frame is MAV_FRAME_GLOBAL, and this should
+                        // be assumed when sent in COMMAND_LONG).
 mavlink20.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW = 1000 // Set gimbal manager pitch/yaw setpoints (low rate command). It is
                         // possible to set combinations of the values
                         // below. E.g. an angle as well as a desired
@@ -823,10 +1017,6 @@ mavlink20.MAV_CMD_STORM32_DO_GIMBAL_MANAGER_SETUP = 60010 // Command to configur
                         // react to this command. The selected profile
                         // is reported in the
                         // STORM32_GIMBAL_MANAGER_STATUS message.
-mavlink20.MAV_CMD_STORM32_DO_GIMBAL_ACTION = 60011 // Command to initiate gimbal actions. Usually performed by the gimbal
-                        // device, but some can also be done by the
-                        // gimbal manager. It is hence best to
-                        // broadcast this command.
 mavlink20.MAV_CMD_QSHOT_DO_CONFIGURE = 60020 // Command to set the shot manager mode.
 mavlink20.MAV_CMD_PRS_SET_ARM = 60050 // AVSS defined command. Set PRS arm statuses.
 mavlink20.MAV_CMD_PRS_GET_ARM = 60051 // AVSS defined command. Gets PRS arm statuses
@@ -1187,7 +1377,8 @@ mavlink20.EKF_PRED_POS_HORIZ_REL = 256 // Set if EKF's predicted horizontal posi
 mavlink20.EKF_PRED_POS_HORIZ_ABS = 512 // Set if EKF's predicted horizontal position (absolute) estimate is
                         // good.
 mavlink20.EKF_UNINITIALIZED = 1024 // Set if EKF has never been healthy.
-mavlink20.EKF_STATUS_FLAGS_ENUM_END = 1025 // 
+mavlink20.EKF_GPS_GLITCHING = 32768 // Set if EKF believes the GPS input data is faulty.
+mavlink20.EKF_STATUS_FLAGS_ENUM_END = 32769 // 
 
 // PID_TUNING_AXIS
 mavlink20.PID_TUNING_ROLL = 1 // 
@@ -1224,94 +1415,102 @@ mavlink20.DEEPSTALL_STAGE_LAND = 6 // Stalling and steering towards the land poi
 mavlink20.DEEPSTALL_STAGE_ENUM_END = 7 // 
 
 // PLANE_MODE
-mavlink20.PLANE_MODE_MANUAL = 0 // 
-mavlink20.PLANE_MODE_CIRCLE = 1 // 
-mavlink20.PLANE_MODE_STABILIZE = 2 // 
-mavlink20.PLANE_MODE_TRAINING = 3 // 
-mavlink20.PLANE_MODE_ACRO = 4 // 
-mavlink20.PLANE_MODE_FLY_BY_WIRE_A = 5 // 
-mavlink20.PLANE_MODE_FLY_BY_WIRE_B = 6 // 
-mavlink20.PLANE_MODE_CRUISE = 7 // 
-mavlink20.PLANE_MODE_AUTOTUNE = 8 // 
-mavlink20.PLANE_MODE_AUTO = 10 // 
-mavlink20.PLANE_MODE_RTL = 11 // 
-mavlink20.PLANE_MODE_LOITER = 12 // 
-mavlink20.PLANE_MODE_TAKEOFF = 13 // 
-mavlink20.PLANE_MODE_AVOID_ADSB = 14 // 
-mavlink20.PLANE_MODE_GUIDED = 15 // 
-mavlink20.PLANE_MODE_INITIALIZING = 16 // 
-mavlink20.PLANE_MODE_QSTABILIZE = 17 // 
-mavlink20.PLANE_MODE_QHOVER = 18 // 
-mavlink20.PLANE_MODE_QLOITER = 19 // 
-mavlink20.PLANE_MODE_QLAND = 20 // 
-mavlink20.PLANE_MODE_QRTL = 21 // 
-mavlink20.PLANE_MODE_QAUTOTUNE = 22 // 
-mavlink20.PLANE_MODE_QACRO = 23 // 
-mavlink20.PLANE_MODE_THERMAL = 24 // 
-mavlink20.PLANE_MODE_ENUM_END = 25 // 
+mavlink20.PLANE_MODE_MANUAL = 0 // MANUAL
+mavlink20.PLANE_MODE_CIRCLE = 1 // CIRCLE
+mavlink20.PLANE_MODE_STABILIZE = 2 // STABILIZE
+mavlink20.PLANE_MODE_TRAINING = 3 // TRAINING
+mavlink20.PLANE_MODE_ACRO = 4 // ACRO
+mavlink20.PLANE_MODE_FLY_BY_WIRE_A = 5 // FBWA
+mavlink20.PLANE_MODE_FLY_BY_WIRE_B = 6 // FBWB
+mavlink20.PLANE_MODE_CRUISE = 7 // CRUISE
+mavlink20.PLANE_MODE_AUTOTUNE = 8 // AUTOTUNE
+mavlink20.PLANE_MODE_AUTO = 10 // AUTO
+mavlink20.PLANE_MODE_RTL = 11 // RTL
+mavlink20.PLANE_MODE_LOITER = 12 // LOITER
+mavlink20.PLANE_MODE_TAKEOFF = 13 // TAKEOFF
+mavlink20.PLANE_MODE_AVOID_ADSB = 14 // AVOID ADSB
+mavlink20.PLANE_MODE_GUIDED = 15 // GUIDED
+mavlink20.PLANE_MODE_INITIALIZING = 16 // INITIALISING
+mavlink20.PLANE_MODE_QSTABILIZE = 17 // QSTABILIZE
+mavlink20.PLANE_MODE_QHOVER = 18 // QHOVER
+mavlink20.PLANE_MODE_QLOITER = 19 // QLOITER
+mavlink20.PLANE_MODE_QLAND = 20 // QLAND
+mavlink20.PLANE_MODE_QRTL = 21 // QRTL
+mavlink20.PLANE_MODE_QAUTOTUNE = 22 // QAUTOTUNE
+mavlink20.PLANE_MODE_QACRO = 23 // QACRO
+mavlink20.PLANE_MODE_THERMAL = 24 // THERMAL
+mavlink20.PLANE_MODE_LOITER_ALT_QLAND = 25 // LOITER2QLAND
+mavlink20.PLANE_MODE_AUTOLAND = 26 // AUTOLAND
+mavlink20.PLANE_MODE_ENUM_END = 27 // 
 
 // COPTER_MODE
-mavlink20.COPTER_MODE_STABILIZE = 0 // 
-mavlink20.COPTER_MODE_ACRO = 1 // 
-mavlink20.COPTER_MODE_ALT_HOLD = 2 // 
-mavlink20.COPTER_MODE_AUTO = 3 // 
-mavlink20.COPTER_MODE_GUIDED = 4 // 
-mavlink20.COPTER_MODE_LOITER = 5 // 
-mavlink20.COPTER_MODE_RTL = 6 // 
-mavlink20.COPTER_MODE_CIRCLE = 7 // 
-mavlink20.COPTER_MODE_LAND = 9 // 
-mavlink20.COPTER_MODE_DRIFT = 11 // 
-mavlink20.COPTER_MODE_SPORT = 13 // 
-mavlink20.COPTER_MODE_FLIP = 14 // 
-mavlink20.COPTER_MODE_AUTOTUNE = 15 // 
-mavlink20.COPTER_MODE_POSHOLD = 16 // 
-mavlink20.COPTER_MODE_BRAKE = 17 // 
-mavlink20.COPTER_MODE_THROW = 18 // 
-mavlink20.COPTER_MODE_AVOID_ADSB = 19 // 
-mavlink20.COPTER_MODE_GUIDED_NOGPS = 20 // 
-mavlink20.COPTER_MODE_SMART_RTL = 21 // 
-mavlink20.COPTER_MODE_FLOWHOLD = 22 // 
-mavlink20.COPTER_MODE_FOLLOW = 23 // 
-mavlink20.COPTER_MODE_ZIGZAG = 24 // 
-mavlink20.COPTER_MODE_SYSTEMID = 25 // 
-mavlink20.COPTER_MODE_AUTOROTATE = 26 // 
-mavlink20.COPTER_MODE_AUTO_RTL = 27 // 
-mavlink20.COPTER_MODE_ENUM_END = 28 // 
+mavlink20.COPTER_MODE_STABILIZE = 0 // STABILIZE
+mavlink20.COPTER_MODE_ACRO = 1 // ACRO
+mavlink20.COPTER_MODE_ALT_HOLD = 2 // ALT HOLD
+mavlink20.COPTER_MODE_AUTO = 3 // AUTO
+mavlink20.COPTER_MODE_GUIDED = 4 // GUIDED
+mavlink20.COPTER_MODE_LOITER = 5 // LOITER
+mavlink20.COPTER_MODE_RTL = 6 // RTL
+mavlink20.COPTER_MODE_CIRCLE = 7 // CIRCLE
+mavlink20.COPTER_MODE_LAND = 9 // LAND
+mavlink20.COPTER_MODE_DRIFT = 11 // DRIFT
+mavlink20.COPTER_MODE_SPORT = 13 // SPORT
+mavlink20.COPTER_MODE_FLIP = 14 // FLIP
+mavlink20.COPTER_MODE_AUTOTUNE = 15 // AUTOTUNE
+mavlink20.COPTER_MODE_POSHOLD = 16 // POSHOLD
+mavlink20.COPTER_MODE_BRAKE = 17 // BRAKE
+mavlink20.COPTER_MODE_THROW = 18 // THROW
+mavlink20.COPTER_MODE_AVOID_ADSB = 19 // AVOID ADSB
+mavlink20.COPTER_MODE_GUIDED_NOGPS = 20 // GUIDED NOGPS
+mavlink20.COPTER_MODE_SMART_RTL = 21 // SMARTRTL
+mavlink20.COPTER_MODE_FLOWHOLD = 22 // FLOWHOLD
+mavlink20.COPTER_MODE_FOLLOW = 23 // FOLLOW
+mavlink20.COPTER_MODE_ZIGZAG = 24 // ZIGZAG
+mavlink20.COPTER_MODE_SYSTEMID = 25 // SYSTEMID
+mavlink20.COPTER_MODE_AUTOROTATE = 26 // AUTOROTATE
+mavlink20.COPTER_MODE_AUTO_RTL = 27 // AUTO RTL
+mavlink20.COPTER_MODE_TURTLE = 28 // TURTLE
+mavlink20.COPTER_MODE_ENUM_END = 29 // 
 
 // SUB_MODE
-mavlink20.SUB_MODE_STABILIZE = 0 // 
-mavlink20.SUB_MODE_ACRO = 1 // 
-mavlink20.SUB_MODE_ALT_HOLD = 2 // 
-mavlink20.SUB_MODE_AUTO = 3 // 
-mavlink20.SUB_MODE_GUIDED = 4 // 
-mavlink20.SUB_MODE_CIRCLE = 7 // 
-mavlink20.SUB_MODE_SURFACE = 9 // 
-mavlink20.SUB_MODE_POSHOLD = 16 // 
-mavlink20.SUB_MODE_MANUAL = 19 // 
-mavlink20.SUB_MODE_ENUM_END = 20 // 
+mavlink20.SUB_MODE_STABILIZE = 0 // STABILIZE
+mavlink20.SUB_MODE_ACRO = 1 // ACRO
+mavlink20.SUB_MODE_ALT_HOLD = 2 // ALT HOLD
+mavlink20.SUB_MODE_AUTO = 3 // AUTO
+mavlink20.SUB_MODE_GUIDED = 4 // GUIDED
+mavlink20.SUB_MODE_CIRCLE = 7 // CIRCLE
+mavlink20.SUB_MODE_SURFACE = 9 // SURFACE
+mavlink20.SUB_MODE_POSHOLD = 16 // POSHOLD
+mavlink20.SUB_MODE_MANUAL = 19 // MANUAL
+mavlink20.SUB_MODE_MOTORDETECT = 20 // MOTORDETECT
+mavlink20.SUB_MODE_SURFTRAK = 21 // SURFTRAK
+mavlink20.SUB_MODE_ENUM_END = 22 // 
 
 // ROVER_MODE
-mavlink20.ROVER_MODE_MANUAL = 0 // 
-mavlink20.ROVER_MODE_ACRO = 1 // 
-mavlink20.ROVER_MODE_STEERING = 3 // 
-mavlink20.ROVER_MODE_HOLD = 4 // 
-mavlink20.ROVER_MODE_LOITER = 5 // 
-mavlink20.ROVER_MODE_FOLLOW = 6 // 
-mavlink20.ROVER_MODE_SIMPLE = 7 // 
-mavlink20.ROVER_MODE_AUTO = 10 // 
-mavlink20.ROVER_MODE_RTL = 11 // 
-mavlink20.ROVER_MODE_SMART_RTL = 12 // 
-mavlink20.ROVER_MODE_GUIDED = 15 // 
-mavlink20.ROVER_MODE_INITIALIZING = 16 // 
+mavlink20.ROVER_MODE_MANUAL = 0 // MANUAL
+mavlink20.ROVER_MODE_ACRO = 1 // ACRO
+mavlink20.ROVER_MODE_STEERING = 3 // STEERING
+mavlink20.ROVER_MODE_HOLD = 4 // HOLD
+mavlink20.ROVER_MODE_LOITER = 5 // LOITER
+mavlink20.ROVER_MODE_FOLLOW = 6 // FOLLOW
+mavlink20.ROVER_MODE_SIMPLE = 7 // SIMPLE
+mavlink20.ROVER_MODE_DOCK = 8 // DOCK
+mavlink20.ROVER_MODE_CIRCLE = 9 // CIRCLE
+mavlink20.ROVER_MODE_AUTO = 10 // AUTO
+mavlink20.ROVER_MODE_RTL = 11 // RTL
+mavlink20.ROVER_MODE_SMART_RTL = 12 // SMART RTL
+mavlink20.ROVER_MODE_GUIDED = 15 // GUIDED
+mavlink20.ROVER_MODE_INITIALIZING = 16 // INITIALISING
 mavlink20.ROVER_MODE_ENUM_END = 17 // 
 
 // TRACKER_MODE
-mavlink20.TRACKER_MODE_MANUAL = 0 // 
-mavlink20.TRACKER_MODE_STOP = 1 // 
-mavlink20.TRACKER_MODE_SCAN = 2 // 
-mavlink20.TRACKER_MODE_SERVO_TEST = 3 // 
-mavlink20.TRACKER_MODE_AUTO = 10 // 
-mavlink20.TRACKER_MODE_INITIALIZING = 16 // 
+mavlink20.TRACKER_MODE_MANUAL = 0 // MANUAL
+mavlink20.TRACKER_MODE_STOP = 1 // STOP
+mavlink20.TRACKER_MODE_SCAN = 2 // SCAN
+mavlink20.TRACKER_MODE_SERVO_TEST = 3 // SERVO TEST
+mavlink20.TRACKER_MODE_GUIDED = 4 // GUIDED
+mavlink20.TRACKER_MODE_AUTO = 10 // AUTO
+mavlink20.TRACKER_MODE_INITIALIZING = 16 // INITIALISING
 mavlink20.TRACKER_MODE_ENUM_END = 17 // 
 
 // OSD_PARAM_CONFIG_TYPE
@@ -1363,7 +1562,7 @@ mavlink20.HL_FAILURE_FLAG_3D_GYRO = 16 // Gyroscope sensor failure.
 mavlink20.HL_FAILURE_FLAG_3D_MAG = 32 // Magnetometer sensor failure.
 mavlink20.HL_FAILURE_FLAG_TERRAIN = 64 // Terrain subsystem failure.
 mavlink20.HL_FAILURE_FLAG_BATTERY = 128 // Battery failure/critical low battery.
-mavlink20.HL_FAILURE_FLAG_RC_RECEIVER = 256 // RC receiver failure/no rc connection.
+mavlink20.HL_FAILURE_FLAG_RC_RECEIVER = 256 // RC receiver failure/no RC connection.
 mavlink20.HL_FAILURE_FLAG_OFFBOARD_LINK = 512 // Offboard link failure.
 mavlink20.HL_FAILURE_FLAG_ENGINE = 1024 // Engine failure.
 mavlink20.HL_FAILURE_FLAG_GEOFENCE = 2048 // Geofence violation.
@@ -1422,7 +1621,7 @@ mavlink20.MAV_SYS_STATUS_SENSOR_YAW_POSITION = 4096 // 0x1000 yaw position
 mavlink20.MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL = 8192 // 0x2000 z/altitude control
 mavlink20.MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL = 16384 // 0x4000 x/y position control
 mavlink20.MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS = 32768 // 0x8000 motor outputs / control
-mavlink20.MAV_SYS_STATUS_SENSOR_RC_RECEIVER = 65536 // 0x10000 rc receiver
+mavlink20.MAV_SYS_STATUS_SENSOR_RC_RECEIVER = 65536 // 0x10000 RC receiver
 mavlink20.MAV_SYS_STATUS_SENSOR_3D_GYRO2 = 131072 // 0x20000 2nd 3D gyro
 mavlink20.MAV_SYS_STATUS_SENSOR_3D_ACCEL2 = 262144 // 0x40000 2nd 3D accelerometer
 mavlink20.MAV_SYS_STATUS_SENSOR_3D_MAG2 = 524288 // 0x80000 2nd 3D magnetometer
@@ -1457,16 +1656,15 @@ mavlink20.MAV_FRAME_LOCAL_OFFSET_NED = 7 // NED local tangent frame (x: North, y
                         // travels with the vehicle.
 mavlink20.MAV_FRAME_BODY_NED = 8 // Same as MAV_FRAME_LOCAL_NED when used to represent position values.
                         // Same as MAV_FRAME_BODY_FRD when used with
-                        // velocity/accelaration values.
+                        // velocity/acceleration values.
 mavlink20.MAV_FRAME_BODY_OFFSET_NED = 9 // This is the same as MAV_FRAME_BODY_FRD.
 mavlink20.MAV_FRAME_GLOBAL_TERRAIN_ALT = 10 // Global (WGS84) coordinate frame with AGL altitude (altitude at ground
                         // level).
 mavlink20.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT = 11 // Global (WGS84) coordinate frame (scaled) with AGL altitude (altitude
                         // at ground level).
-mavlink20.MAV_FRAME_BODY_FRD = 12 // FRD local tangent frame (x: Forward, y: Right, z: Down) with origin
-                        // that travels with vehicle. The forward axis
-                        // is aligned to the front of the vehicle in
-                        // the horizontal plane.
+mavlink20.MAV_FRAME_BODY_FRD = 12 // FRD local frame aligned to the vehicle's attitude (x: Forward, y:
+                        // Right, z: Down) with an origin that travels
+                        // with vehicle.
 mavlink20.MAV_FRAME_RESERVED_13 = 13 // MAV_FRAME_BODY_FLU - Body fixed frame of reference, Z-up (x: Forward,
                         // y: Left, z: Up).
 mavlink20.MAV_FRAME_RESERVED_14 = 14 // MAV_FRAME_MOCAP_NED - Odometry local coordinate frame of data given by
@@ -1506,15 +1704,6 @@ mavlink20.MAVLINK_DATA_STREAM_IMG_PGM = 4 //
 mavlink20.MAVLINK_DATA_STREAM_IMG_PNG = 5 // 
 mavlink20.MAVLINK_DATA_STREAM_TYPE_ENUM_END = 6 // 
 
-// FENCE_ACTION
-mavlink20.FENCE_ACTION_NONE = 0 // Disable fenced mode
-mavlink20.FENCE_ACTION_GUIDED = 1 // Switched to guided mode to return point (fence point 0)
-mavlink20.FENCE_ACTION_REPORT = 2 // Report fence breach, but don't take action
-mavlink20.FENCE_ACTION_GUIDED_THR_PASS = 3 // Switched to guided mode to return point (fence point 0) with manual
-                        // throttle control
-mavlink20.FENCE_ACTION_RTL = 4 // Switch to RTL (return to launch) mode and head for the return point.
-mavlink20.FENCE_ACTION_ENUM_END = 5 // 
-
 // FENCE_BREACH
 mavlink20.FENCE_BREACH_NONE = 0 // No last fence breach
 mavlink20.FENCE_BREACH_MINALT = 1 // Breached minimum altitude
@@ -1529,7 +1718,6 @@ mavlink20.FENCE_MITIGATE_VEL_LIMIT = 2 // Velocity limiting active to prevent br
 mavlink20.FENCE_MITIGATE_ENUM_END = 3 // 
 
 // FENCE_TYPE
-mavlink20.FENCE_TYPE_ALL = 0 // All fence types
 mavlink20.FENCE_TYPE_ALT_MAX = 1 // Maximum altitude fence
 mavlink20.FENCE_TYPE_CIRCLE = 2 // Circle fence
 mavlink20.FENCE_TYPE_POLYGON = 4 // Polygon fence
@@ -1537,7 +1725,7 @@ mavlink20.FENCE_TYPE_ALT_MIN = 8 // Minimum altitude fence
 mavlink20.FENCE_TYPE_ENUM_END = 9 // 
 
 // MAV_MOUNT_MODE
-mavlink20.MAV_MOUNT_MODE_RETRACT = 0 // Load and keep safe position (Roll,Pitch,Yaw) from permant memory and
+mavlink20.MAV_MOUNT_MODE_RETRACT = 0 // Load and keep safe position (Roll,Pitch,Yaw) from permanent memory and
                         // stop stabilization
 mavlink20.MAV_MOUNT_MODE_NEUTRAL = 1 // Load and keep neutral position (Roll,Pitch,Yaw) from permanent memory.
 mavlink20.MAV_MOUNT_MODE_MAVLINK_TARGETING = 2 // Load neutral position and start MAVLink Roll,Pitch,Yaw control with
@@ -1546,7 +1734,7 @@ mavlink20.MAV_MOUNT_MODE_RC_TARGETING = 3 // Load neutral position and start RC 
                         // stabilization
 mavlink20.MAV_MOUNT_MODE_GPS_POINT = 4 // Load neutral position and start to point to Lat,Lon,Alt
 mavlink20.MAV_MOUNT_MODE_SYSID_TARGET = 5 // Gimbal tracks system with specified system ID
-mavlink20.MAV_MOUNT_MODE_HOME_LOCATION = 6 // Gimbal tracks home location
+mavlink20.MAV_MOUNT_MODE_HOME_LOCATION = 6 // Gimbal tracks home position
 mavlink20.MAV_MOUNT_MODE_ENUM_END = 7 // 
 
 // GIMBAL_DEVICE_CAP_FLAGS
@@ -1568,7 +1756,7 @@ mavlink20.GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_FOLLOW = 512 // Gimbal device supports
 mavlink20.GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_LOCK = 1024 // Gimbal device supports locking to an absolute heading, i.e., yaw angle
                         // relative to North (earth frame, often this
                         // is an option available).
-mavlink20.GIMBAL_DEVICE_CAP_FLAGS_SUPPORTS_INFINITE_YAW = 2048 // Gimbal device supports yawing/panning infinetely (e.g. using slip
+mavlink20.GIMBAL_DEVICE_CAP_FLAGS_SUPPORTS_INFINITE_YAW = 2048 // Gimbal device supports yawing/panning infinitely (e.g. using slip
                         // disk).
 mavlink20.GIMBAL_DEVICE_CAP_FLAGS_SUPPORTS_YAW_IN_EARTH_FRAME = 4096 // Gimbal device supports yaw angles and angular velocities relative to
                         // North (earth frame). This usually requires
@@ -1602,7 +1790,7 @@ mavlink20.GIMBAL_MANAGER_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL = 131072 // Gimbal 
 mavlink20.GIMBAL_MANAGER_CAP_FLAGS_ENUM_END = 131073 // 
 
 // GIMBAL_DEVICE_FLAGS
-mavlink20.GIMBAL_DEVICE_FLAGS_RETRACT = 1 // Set to retracted safe position (no stabilization), takes presedence
+mavlink20.GIMBAL_DEVICE_FLAGS_RETRACT = 1 // Set to retracted safe position (no stabilization), takes precedence
                         // over all other flags.
 mavlink20.GIMBAL_DEVICE_FLAGS_NEUTRAL = 2 // Set to neutral/default position, taking precedence over all other
                         // flags except RETRACT. Neutral is commonly
@@ -1751,7 +1939,6 @@ mavlink20.STORAGE_USAGE_FLAG_LOGS = 8 // Storage for saving logs.
 mavlink20.STORAGE_USAGE_FLAG_ENUM_END = 9 // 
 
 // AUTOTUNE_AXIS
-mavlink20.AUTOTUNE_AXIS_DEFAULT = 0 // Flight stack tunes axis according to its default settings.
 mavlink20.AUTOTUNE_AXIS_ROLL = 1 // Autotune roll axis.
 mavlink20.AUTOTUNE_AXIS_PITCH = 2 // Autotune pitch axis.
 mavlink20.AUTOTUNE_AXIS_YAW = 4 // Autotune yaw axis.
@@ -1764,7 +1951,7 @@ mavlink20.MAV_DATA_STREAM_EXTENDED_STATUS = 2 // Enable GPS_STATUS, CONTROL_STAT
 mavlink20.MAV_DATA_STREAM_RC_CHANNELS = 3 // Enable RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW
 mavlink20.MAV_DATA_STREAM_RAW_CONTROLLER = 4 // Enable ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT,
                         // NAV_CONTROLLER_OUTPUT.
-mavlink20.MAV_DATA_STREAM_POSITION = 6 // Enable LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT messages.
+mavlink20.MAV_DATA_STREAM_POSITION = 6 // Enable LOCAL_POSITION, GLOBAL_POSITION_INT messages.
 mavlink20.MAV_DATA_STREAM_EXTRA1 = 10 // Dependent on the autopilot
 mavlink20.MAV_DATA_STREAM_EXTRA2 = 11 // Dependent on the autopilot
 mavlink20.MAV_DATA_STREAM_EXTRA3 = 12 // Dependent on the autopilot
@@ -1973,9 +2160,15 @@ mavlink20.MAV_SENSOR_ROTATION_CUSTOM = 100 // Custom orientation
 mavlink20.MAV_SENSOR_ORIENTATION_ENUM_END = 101 // 
 
 // MAV_PROTOCOL_CAPABILITY
-mavlink20.MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT = 1 // Autopilot supports MISSION float message type.
+mavlink20.MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT = 1 // Autopilot supports the MISSION_ITEM float message type.           Note
+                        // that MISSION_ITEM is deprecated, and
+                        // autopilots should use MISSION_INT instead.
 mavlink20.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT = 2 // Autopilot supports the new param float message type.
 mavlink20.MAV_PROTOCOL_CAPABILITY_MISSION_INT = 4 // Autopilot supports MISSION_ITEM_INT scaled integer message type.
+                        // Note that this flag must always be set if
+                        // missions are supported, because missions
+                        // must always use MISSION_ITEM_INT (rather
+                        // than MISSION_ITEM, which is deprecated).
 mavlink20.MAV_PROTOCOL_CAPABILITY_COMMAND_INT = 8 // Autopilot supports COMMAND_INT scaled integer message type.
 mavlink20.MAV_PROTOCOL_CAPABILITY_PARAM_UNION = 16 // Autopilot supports the new param union message type.
 mavlink20.MAV_PROTOCOL_CAPABILITY_FTP = 32 // Autopilot supports the File Transfer Protocol v1:
@@ -2167,7 +2360,13 @@ mavlink20.ADSB_FLAGS_ENUM_END = 32769 //
 // MAV_DO_REPOSITION_FLAGS
 mavlink20.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE = 1 // The aircraft should immediately transition into guided. This should
                         // not be set for follow me applications
-mavlink20.MAV_DO_REPOSITION_FLAGS_ENUM_END = 2 // 
+mavlink20.MAV_DO_REPOSITION_FLAGS_RELATIVE_YAW = 2 // Yaw relative to the vehicle current heading (if not set, relative to
+                        // North).
+mavlink20.MAV_DO_REPOSITION_FLAGS_VTOL_HOVER = 4 // If capable, the aircraft should enter a VTOL hover at the target
+                        // position
+mavlink20.MAV_DO_REPOSITION_FLAGS_FW_LOITER = 8 // If capable, the aircraft should enter a fixed wing loiter at the
+                        // target position
+mavlink20.MAV_DO_REPOSITION_FLAGS_ENUM_END = 9 // 
 
 // SPEED_TYPE
 mavlink20.SPEED_TYPE_AIRSPEED = 0 // Airspeed
@@ -2293,12 +2492,15 @@ mavlink20.CAMERA_CAP_FLAGS_HAS_VIDEO_STREAM = 256 // Camera has video streaming 
 mavlink20.CAMERA_CAP_FLAGS_HAS_TRACKING_POINT = 512 // Camera supports tracking of a point on the camera view.
 mavlink20.CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE = 1024 // Camera supports tracking of a selection rectangle on the camera view.
 mavlink20.CAMERA_CAP_FLAGS_HAS_TRACKING_GEO_STATUS = 2048 // Camera supports tracking geo status (CAMERA_TRACKING_GEO_STATUS).
-mavlink20.CAMERA_CAP_FLAGS_ENUM_END = 2049 // 
+mavlink20.CAMERA_CAP_FLAGS_HAS_THERMAL_RANGE = 4096 // Camera supports absolute thermal range (request CAMERA_THERMAL_RANGE
+                        // with MAV_CMD_REQUEST_MESSAGE).
+mavlink20.CAMERA_CAP_FLAGS_ENUM_END = 4097 // 
 
 // VIDEO_STREAM_STATUS_FLAGS
 mavlink20.VIDEO_STREAM_STATUS_FLAGS_RUNNING = 1 // Stream is active (running)
 mavlink20.VIDEO_STREAM_STATUS_FLAGS_THERMAL = 2 // Stream is thermal imaging
-mavlink20.VIDEO_STREAM_STATUS_FLAGS_ENUM_END = 3 // 
+mavlink20.VIDEO_STREAM_STATUS_FLAGS_THERMAL_RANGE_ENABLED = 4 // Stream can report absolute thermal range (see CAMERA_THERMAL_RANGE).
+mavlink20.VIDEO_STREAM_STATUS_FLAGS_ENUM_END = 5 // 
 
 // VIDEO_STREAM_TYPE
 mavlink20.VIDEO_STREAM_TYPE_RTSP = 0 // Stream is RTSP
@@ -2326,7 +2528,6 @@ mavlink20.CAMERA_TRACKING_MODE_RECTANGLE = 2 // Target is a rectangle
 mavlink20.CAMERA_TRACKING_MODE_ENUM_END = 3 // 
 
 // CAMERA_TRACKING_TARGET_DATA
-mavlink20.CAMERA_TRACKING_TARGET_DATA_NONE = 0 // No target data
 mavlink20.CAMERA_TRACKING_TARGET_DATA_EMBEDDED = 1 // Target data embedded in image data (proprietary)
 mavlink20.CAMERA_TRACKING_TARGET_DATA_RENDERED = 2 // Target data rendered in image
 mavlink20.CAMERA_TRACKING_TARGET_DATA_IN_STATUS = 4 // Target data within status message (Point or Rectangle)
@@ -2379,12 +2580,12 @@ mavlink20.PARAM_ACK_ACCEPTED = 0 // Parameter value ACCEPTED and SET
 mavlink20.PARAM_ACK_VALUE_UNSUPPORTED = 1 // Parameter value UNKNOWN/UNSUPPORTED
 mavlink20.PARAM_ACK_FAILED = 2 // Parameter failed to set
 mavlink20.PARAM_ACK_IN_PROGRESS = 3 // Parameter value received but not yet set/accepted. A subsequent
-                        // PARAM_ACK_TRANSACTION or PARAM_EXT_ACK with
-                        // the final result will follow once operation
-                        // is completed. This is returned immediately
-                        // for parameters that take longer to set,
-                        // indicating taht the the parameter was
-                        // recieved and does not need to be resent.
+                        // PARAM_EXT_ACK with the final result will
+                        // follow once operation is completed. This is
+                        // returned immediately for parameters that
+                        // take longer to set, indicating that the the
+                        // parameter was received and does not need to
+                        // be resent.
 mavlink20.PARAM_ACK_ENUM_END = 4 // 
 
 // CAMERA_MODE
@@ -2835,11 +3036,11 @@ mavlink20.SAFETY_SWITCH_STATE_DANGEROUS = 1 // Safety switch is NOT engaged and 
 mavlink20.SAFETY_SWITCH_STATE_ENUM_END = 2 // 
 
 // AIRSPEED_SENSOR_FLAGS
-mavlink20.AIRSPEED_SENSOR_UNHEALTHY = 0 // Airspeed sensor is unhealthy
-mavlink20.AIRSPEED_SENSOR_USING = 1 // True if the data from this sensor is being actively used by the flight
+mavlink20.AIRSPEED_SENSOR_UNHEALTHY = 1 // Airspeed sensor is unhealthy
+mavlink20.AIRSPEED_SENSOR_USING = 2 // True if the data from this sensor is being actively used by the flight
                         // controller for guidance, navigation or
                         // control.
-mavlink20.AIRSPEED_SENSOR_FLAGS_ENUM_END = 2 // 
+mavlink20.AIRSPEED_SENSOR_FLAGS_ENUM_END = 3 // 
 
 // RADIO_RC_CHANNELS_FLAGS
 mavlink20.RADIO_RC_CHANNELS_FLAGS_FAILSAFE = 1 // Failsafe is active. The content of the RC channels data in the
@@ -2850,6 +3051,159 @@ mavlink20.RADIO_RC_CHANNELS_FLAGS_OUTDATED = 2 // Channel data may be out of dat
                         // transmitter and has therefore resent the
                         // last valid data it received.
 mavlink20.RADIO_RC_CHANNELS_FLAGS_ENUM_END = 3 // 
+
+// MAV_STANDARD_MODE
+mavlink20.MAV_STANDARD_MODE_NON_STANDARD = 0 // Non standard mode.           This may be used when reporting the mode
+                        // if the current flight mode is not a
+                        // standard mode.
+mavlink20.MAV_STANDARD_MODE_POSITION_HOLD = 1 // Position mode (manual).           Position-controlled and stabilized
+                        // manual mode.           When sticks are
+                        // released vehicles return to their level-
+                        // flight orientation and hold both position
+                        // and altitude against wind and external
+                        // forces.           This mode can only be set
+                        // by vehicles that can hold a fixed position.
+                        // Multicopter (MC) vehicles actively brake
+                        // and hold both position and altitude against
+                        // wind and external forces.           Hybrid
+                        // MC/FW ("VTOL") vehicles first transition to
+                        // multicopter mode (if needed) but otherwise
+                        // behave in the same way as MC vehicles.
+                        // Fixed-wing (FW) vehicles must not support
+                        // this mode.           Other vehicle types
+                        // must not support this mode (this may be
+                        // revisited through the PR process).
+mavlink20.MAV_STANDARD_MODE_ORBIT = 2 // Orbit (manual).           Position-controlled and stabilized manual
+                        // mode.           The vehicle circles around
+                        // a fixed setpoint in the horizontal plane at
+                        // a particular radius, altitude, and
+                        // direction.           Flight stacks may
+                        // further allow manual control over the
+                        // setpoint position, radius, direction,
+                        // speed, and/or altitude of the circle, but
+                        // this is not mandated.           Flight
+                        // stacks may support the [MAV_CMD_DO_ORBIT](h
+                        // ttps://mavlink.io/en/messages/common.html#M
+                        // AV_CMD_DO_ORBIT) for changing the orbit
+                        // parameters.           MC and FW vehicles
+                        // may support this mode.           Hybrid
+                        // MC/FW ("VTOL") vehicles may support this
+                        // mode in MC/FW or both modes; if the mode is
+                        // not supported by the current configuration
+                        // the vehicle should transition to the
+                        // supported configuration.           Other
+                        // vehicle types must not support this mode
+                        // (this may be revisited through the PR
+                        // process).
+mavlink20.MAV_STANDARD_MODE_CRUISE = 3 // Cruise mode (manual).           Position-controlled and stabilized
+                        // manual mode.           When sticks are
+                        // released vehicles return to their level-
+                        // flight orientation and hold their original
+                        // track against wind and external forces.
+                        // Fixed-wing (FW) vehicles level orientation
+                        // and maintain current track and altitude
+                        // against wind and external forces.
+                        // Hybrid MC/FW ("VTOL") vehicles first
+                        // transition to FW mode (if needed) but
+                        // otherwise behave in the same way as MC
+                        // vehicles.           Multicopter (MC)
+                        // vehicles must not support this mode.
+                        // Other vehicle types must not support this
+                        // mode (this may be revisited through the PR
+                        // process).
+mavlink20.MAV_STANDARD_MODE_ALTITUDE_HOLD = 4 // Altitude hold (manual).           Altitude-controlled and stabilized
+                        // manual mode.           When sticks are
+                        // released vehicles return to their level-
+                        // flight orientation and hold their altitude.
+                        // MC vehicles continue with existing momentum
+                        // and may move with wind (or other external
+                        // forces).           FW vehicles continue
+                        // with current heading, but may be moved off-
+                        // track by wind.           Hybrid MC/FW
+                        // ("VTOL") vehicles behave according to their
+                        // current configuration/mode (FW or MC).
+                        // Other vehicle types must not support this
+                        // mode (this may be revisited through the PR
+                        // process).
+mavlink20.MAV_STANDARD_MODE_RETURN_HOME = 5 // Return home mode (auto).           Automatic mode that returns vehicle
+                        // to home via a safe flight path.
+                        // It may also automatically land the vehicle
+                        // (i.e. RTL).           The precise flight
+                        // path and landing behaviour depend on
+                        // vehicle configuration and type.
+mavlink20.MAV_STANDARD_MODE_SAFE_RECOVERY = 6 // Safe recovery mode (auto).           Automatic mode that takes vehicle
+                        // to a predefined safe location via a safe
+                        // flight path (rally point or mission defined
+                        // landing) .           It may also
+                        // automatically land the vehicle.
+                        // The precise return location, flight path,
+                        // and landing behaviour depend on vehicle
+                        // configuration and type.
+mavlink20.MAV_STANDARD_MODE_MISSION = 7 // Mission mode (automatic).           Automatic mode that executes
+                        // MAVLink missions.           Missions are
+                        // executed from the current waypoint as soon
+                        // as the mode is enabled.
+mavlink20.MAV_STANDARD_MODE_LAND = 8 // Land mode (auto).           Automatic mode that lands the vehicle at
+                        // the current location.           The precise
+                        // landing behaviour depends on vehicle
+                        // configuration and type.
+mavlink20.MAV_STANDARD_MODE_TAKEOFF = 9 // Takeoff mode (auto).           Automatic takeoff mode.           The
+                        // precise takeoff behaviour depends on
+                        // vehicle configuration and type.
+mavlink20.MAV_STANDARD_MODE_ENUM_END = 10 // 
+
+// MAV_MODE_PROPERTY
+mavlink20.MAV_MODE_PROPERTY_ADVANCED = 1 // If set, this mode is an advanced mode.           For example a rate-
+                        // controlled manual mode might be advanced,
+                        // whereas a position-controlled manual mode
+                        // is not.           A GCS can optionally use
+                        // this flag to configure the UI for its
+                        // intended users.
+mavlink20.MAV_MODE_PROPERTY_NOT_USER_SELECTABLE = 2 // If set, this mode should not be added to the list of selectable modes.
+                        // The mode might still be selected by the FC
+                        // directly (for example as part of a
+                        // failsafe).
+mavlink20.MAV_MODE_PROPERTY_ENUM_END = 3 // 
+
+// GPS_SYSTEM_ERROR_FLAGS
+mavlink20.GPS_SYSTEM_ERROR_INCOMING_CORRECTIONS = 1 // There are problems with incoming correction streams.
+mavlink20.GPS_SYSTEM_ERROR_CONFIGURATION = 2 // There are problems with the configuration.
+mavlink20.GPS_SYSTEM_ERROR_SOFTWARE = 4 // There are problems with the software on the GPS receiver.
+mavlink20.GPS_SYSTEM_ERROR_ANTENNA = 8 // There are problems with an antenna connected to the GPS receiver.
+mavlink20.GPS_SYSTEM_ERROR_EVENT_CONGESTION = 16 // There are problems handling all incoming events.
+mavlink20.GPS_SYSTEM_ERROR_CPU_OVERLOAD = 32 // The GPS receiver CPU is overloaded.
+mavlink20.GPS_SYSTEM_ERROR_OUTPUT_CONGESTION = 64 // The GPS receiver is experiencing output congestion.
+mavlink20.GPS_SYSTEM_ERROR_FLAGS_ENUM_END = 65 // 
+
+// GPS_AUTHENTICATION_STATE
+mavlink20.GPS_AUTHENTICATION_STATE_UNKNOWN = 0 // The GPS receiver does not provide GPS signal authentication info.
+mavlink20.GPS_AUTHENTICATION_STATE_INITIALIZING = 1 // The GPS receiver is initializing signal authentication.
+mavlink20.GPS_AUTHENTICATION_STATE_ERROR = 2 // The GPS receiver encountered an error while initializing signal
+                        // authentication.
+mavlink20.GPS_AUTHENTICATION_STATE_OK = 3 // The GPS receiver has correctly authenticated all signals.
+mavlink20.GPS_AUTHENTICATION_STATE_DISABLED = 4 // GPS signal authentication is disabled on the receiver.
+mavlink20.GPS_AUTHENTICATION_STATE_ENUM_END = 5 // 
+
+// GPS_JAMMING_STATE
+mavlink20.GPS_JAMMING_STATE_UNKNOWN = 0 // The GPS receiver does not provide GPS signal jamming info.
+mavlink20.GPS_JAMMING_STATE_OK = 1 // The GPS receiver detected no signal jamming.
+mavlink20.GPS_JAMMING_STATE_MITIGATED = 2 // The GPS receiver detected and mitigated signal jamming.
+mavlink20.GPS_JAMMING_STATE_DETECTED = 3 // The GPS receiver detected signal jamming.
+mavlink20.GPS_JAMMING_STATE_ENUM_END = 4 // 
+
+// GPS_SPOOFING_STATE
+mavlink20.GPS_SPOOFING_STATE_UNKNOWN = 0 // The GPS receiver does not provide GPS signal spoofing info.
+mavlink20.GPS_SPOOFING_STATE_OK = 1 // The GPS receiver detected no signal spoofing.
+mavlink20.GPS_SPOOFING_STATE_MITIGATED = 2 // The GPS receiver detected and mitigated signal spoofing.
+mavlink20.GPS_SPOOFING_STATE_DETECTED = 3 // The GPS receiver detected signal spoofing but still has a fix.
+mavlink20.GPS_SPOOFING_STATE_ENUM_END = 4 // 
+
+// GPS_RAIM_STATE
+mavlink20.GPS_RAIM_STATE_UNKNOWN = 0 // RAIM capability is unknown.
+mavlink20.GPS_RAIM_STATE_DISABLED = 1 // RAIM is disabled.
+mavlink20.GPS_RAIM_STATE_OK = 2 // RAIM integrity check was successful.
+mavlink20.GPS_RAIM_STATE_FAILED = 3 // RAIM integrity check failed.
+mavlink20.GPS_RAIM_STATE_ENUM_END = 4 // 
 
 // ICAROUS_TRACK_BAND_TYPES
 mavlink20.ICAROUS_TRACK_BAND_TYPE_NONE = 0 // 
@@ -3304,6 +3658,11 @@ mavlink20.MAV_COMP_ID_TUNNEL_NODE = 242 // Component handling TUNNEL messages (e
 mavlink20.MAV_COMP_ID_SYSTEM_CONTROL = 250 // Component for handling system messages (e.g. to ARM, takeoff, etc.).
 mavlink20.MAV_COMPONENT_ENUM_END = 251 // 
 
+// MAV_BOOL
+mavlink20.MAV_BOOL_FALSE = 0 // False.
+mavlink20.MAV_BOOL_TRUE = 1 // True.
+mavlink20.MAV_BOOL_ENUM_END = 2 // 
+
 // UALBERTA_AUTOPILOT_MODE
 mavlink20.MODE_MANUAL_DIRECT = 1 // Raw input pulse widts sent to output
 mavlink20.MODE_MANUAL_SCALED = 2 // Inputs are normalized using calibration, the converted back to raw
@@ -3335,7 +3694,6 @@ mavlink20.UAVIONIX_ADSB_OUT_DYNAMIC_STATE_IDENT = 16 //
 mavlink20.UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ENUM_END = 17 // 
 
 // UAVIONIX_ADSB_OUT_RF_SELECT
-mavlink20.UAVIONIX_ADSB_OUT_RF_SELECT_STANDBY = 0 // 
 mavlink20.UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED = 1 // 
 mavlink20.UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED = 2 // 
 mavlink20.UAVIONIX_ADSB_OUT_RF_SELECT_ENUM_END = 3 // 
@@ -3350,7 +3708,6 @@ mavlink20.UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_RTK = 5 //
 mavlink20.UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_ENUM_END = 6 // 
 
 // UAVIONIX_ADSB_RF_HEALTH
-mavlink20.UAVIONIX_ADSB_RF_HEALTH_INITIALIZING = 0 // 
 mavlink20.UAVIONIX_ADSB_RF_HEALTH_OK = 1 // 
 mavlink20.UAVIONIX_ADSB_RF_HEALTH_FAIL_TX = 2 // 
 mavlink20.UAVIONIX_ADSB_RF_HEALTH_FAIL_RX = 16 // 
@@ -3461,123 +3818,25 @@ mavlink20.UAVIONIX_ADSB_OUT_STATUS_FAULT_MAINT_REQ = 128 //
 mavlink20.UAVIONIX_ADSB_OUT_STATUS_FAULT_ENUM_END = 129 // 
 
 // MAV_STORM32_TUNNEL_PAYLOAD_TYPE
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH1_IN = 200 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH1_OUT = 201 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH2_IN = 202 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH2_OUT = 203 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH3_IN = 204 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH3_OUT = 205 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_RESERVED6 = 206 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_RESERVED7 = 207 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_RESERVED8 = 208 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_RESERVED9 = 209 // Registered for STorM32 gimbal controller.
-mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_ENUM_END = 210 // 
-
-// MAV_STORM32_GIMBAL_PREARM_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_IS_NORMAL = 1 // STorM32 gimbal is in normal state.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_IMUS_WORKING = 2 // The IMUs are healthy and working normally.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_MOTORS_WORKING = 4 // The motors are active and working normally.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_ENCODERS_WORKING = 8 // The encoders are healthy and working normally.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_VOLTAGE_OK = 16 // A battery voltage is applied and is in range.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_VIRTUALCHANNELS_RECEIVING = 32 // ???.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_MAVLINK_RECEIVING = 64 // Mavlink messages are being received.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_STORM32LINK_QFIX = 128 // The STorM32Link data indicates QFix.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_STORM32LINK_WORKING = 256 // The STorM32Link is working.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_CAMERA_CONNECTED = 512 // The camera has been found and is connected.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_AUX0_LOW = 1024 // The signal on the AUX0 input pin is low.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_AUX1_LOW = 2048 // The signal on the AUX1 input pin is low.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_NTLOGGER_WORKING = 4096 // The NTLogger is working normally.
-mavlink20.MAV_STORM32_GIMBAL_PREARM_FLAGS_ENUM_END = 4097 // 
-
-// MAV_STORM32_CAMERA_PREARM_FLAGS
-mavlink20.MAV_STORM32_CAMERA_PREARM_FLAGS_CONNECTED = 1 // The camera has been found and is connected.
-mavlink20.MAV_STORM32_CAMERA_PREARM_FLAGS_ENUM_END = 2 // 
-
-// MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_RETRACT = 1 // Gimbal device supports a retracted position.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_NEUTRAL = 2 // Gimbal device supports a horizontal, forward looking position,
-                        // stabilized. Can also be used to reset the
-                        // gimbal's orientation.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_ROLL_AXIS = 4 // Gimbal device supports rotating around roll axis.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_ROLL_FOLLOW = 8 // Gimbal device supports to follow a roll angle relative to the vehicle.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_ROLL_LOCK = 16 // Gimbal device supports locking to an roll angle (generally that's the
-                        // default).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_PITCH_AXIS = 32 // Gimbal device supports rotating around pitch axis.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_PITCH_FOLLOW = 64 // Gimbal device supports to follow a pitch angle relative to the
-                        // vehicle.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_PITCH_LOCK = 128 // Gimbal device supports locking to an pitch angle (generally that's the
-                        // default).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_AXIS = 256 // Gimbal device supports rotating around yaw axis.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_FOLLOW = 512 // Gimbal device supports to follow a yaw angle relative to the vehicle
-                        // (generally that's the default).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_LOCK = 1024 // Gimbal device supports locking to a heading angle.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_INFINITE_YAW = 2048 // Gimbal device supports yawing/panning infinitely (e.g. using a slip
-                        // ring).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_ABSOLUTE_YAW = 65536 // Gimbal device supports absolute yaw angles (this usually requires
-                        // support by an autopilot, and can be
-                        // dynamic, i.e., go on and off during
-                        // runtime).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_HAS_RC = 131072 // Gimbal device supports control via an RC input signal.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_CAP_FLAGS_ENUM_END = 131073 // 
-
-// MAV_STORM32_GIMBAL_DEVICE_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_RETRACT = 1 // Retracted safe position (no stabilization), takes presedence over
-                        // NEUTRAL flag. If supported by the gimbal,
-                        // the angles in the retracted position can be
-                        // set in addition.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_NEUTRAL = 2 // Neutral position (horizontal, forward looking, with stabiliziation).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_ROLL_LOCK = 4 // Lock roll angle to absolute angle relative to horizon (not relative to
-                        // drone). This is generally the default.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_PITCH_LOCK = 8 // Lock pitch angle to absolute angle relative to horizon (not relative
-                        // to drone). This is generally the default.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_YAW_LOCK = 16 // Lock yaw angle to absolute angle relative to earth (not relative to
-                        // drone). When the YAW_ABSOLUTE flag is set,
-                        // the quaternion is in the Earth frame with
-                        // the x-axis pointing North (yaw absolute),
-                        // else it is in the Earth frame rotated so
-                        // that the x-axis is pointing forward (yaw
-                        // relative to vehicle).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_CAN_ACCEPT_YAW_ABSOLUTE = 256 // Gimbal device can accept absolute yaw angle input. This flag cannot be
-                        // set, is only for reporting (attempts to set
-                        // it are rejected by the gimbal device).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE = 512 // Yaw angle is absolute (is only accepted if CAN_ACCEPT_YAW_ABSOLUTE is
-                        // set). If this flag is set, the quaternion
-                        // is in the Earth frame with the x-axis
-                        // pointing North (yaw absolute), else it is
-                        // in the Earth frame rotated so that the
-                        // x-axis is pointing forward (yaw relative to
-                        // vehicle).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_RC_EXCLUSIVE = 1024 // RC control. The RC input signal fed to the gimbal device exclusively
-                        // controls the gimbal's orientation.
-                        // Overrides RC_MIXED flag if that is also
-                        // set.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_RC_MIXED = 2048 // RC control. The RC input signal fed to the gimbal device is mixed into
-                        // the gimbal's orientation. Is overriden by
-                        // RC_EXCLUSIVE flag if that is also set.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_NONE = 65535 // UINT16_MAX = ignore.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_FLAGS_ENUM_END = 65536 // 
-
-// MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_AT_ROLL_LIMIT = 1 // Gimbal device is limited by hardware roll limit.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_AT_PITCH_LIMIT = 2 // Gimbal device is limited by hardware pitch limit.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_AT_YAW_LIMIT = 4 // Gimbal device is limited by hardware yaw limit.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_ENCODER_ERROR = 8 // There is an error with the gimbal device's encoders.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_POWER_ERROR = 16 // There is an error with the gimbal device's power source.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_MOTOR_ERROR = 32 // There is an error with the gimbal device's motors.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_SOFTWARE_ERROR = 64 // There is an error with the gimbal device's software.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_COMMS_ERROR = 128 // There is an error with the gimbal device's communication.
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_CALIBRATION_RUNNING = 256 // Gimbal device is currently calibrating (not an error).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_NO_MANAGER = 32768 // Gimbal device is not assigned to a gimbal manager (not an error).
-mavlink20.MAV_STORM32_GIMBAL_DEVICE_ERROR_FLAGS_ENUM_END = 32769 // 
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH1_IN = 200 // Registered for STorM32 gimbal controller. For communication with
+                        // gimbal or camera.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH1_OUT = 201 // Registered for STorM32 gimbal controller. For communication with
+                        // gimbal or camera.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH2_IN = 202 // Registered for STorM32 gimbal controller. For communication with
+                        // gimbal.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH2_OUT = 203 // Registered for STorM32 gimbal controller. For communication with
+                        // gimbal.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH3_IN = 204 // Registered for STorM32 gimbal controller. For communication with
+                        // camera.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_STORM32_CH3_OUT = 205 // Registered for STorM32 gimbal controller. For communication with
+                        // camera.
+mavlink20.MAV_STORM32_TUNNEL_PAYLOAD_TYPE_ENUM_END = 206 // 
 
 // MAV_STORM32_GIMBAL_MANAGER_CAP_FLAGS
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_CAP_FLAGS_HAS_PROFILES = 1 // The gimbal manager supports several profiles.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_CAP_FLAGS_SUPPORTS_CHANGE = 2 // The gimbal manager supports changing the gimbal manager during run
-                        // time, i.e. can be enabled/disabled.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_CAP_FLAGS_ENUM_END = 3 // 
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_CAP_FLAGS_ENUM_END = 2 // 
 
 // MAV_STORM32_GIMBAL_MANAGER_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_FLAGS_NONE = 0 // 0 = ignore.
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_FLAGS_RC_ACTIVE = 1 // Request to set RC input to active, or report RC input is active.
                         // Implies RC mixed. RC exclusive is achieved
                         // by setting all clients to inactive.
@@ -3613,42 +3872,19 @@ mavlink20.MAV_STORM32_GIMBAL_MANAGER_CLIENT_CUSTOM = 7 // This is the custom cli
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_CLIENT_CUSTOM2 = 8 // This is the custom2 client.
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_CLIENT_ENUM_END = 9 // 
 
-// MAV_STORM32_GIMBAL_MANAGER_SETUP_FLAGS
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_SETUP_FLAGS_ENABLE = 16384 // Enable gimbal manager. This flag is only for setting, is not reported.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_SETUP_FLAGS_DISABLE = 32768 // Disable gimbal manager. This flag is only for setting, is not
-                        // reported.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_SETUP_FLAGS_ENUM_END = 32769 // 
-
 // MAV_STORM32_GIMBAL_MANAGER_PROFILE
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_DEFAULT = 0 // Default profile. Implementation specific.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_CUSTOM = 1 // Custom profile. Configurable profile according to the STorM32
-                        // definition. Is configured with
-                        // STORM32_GIMBAL_MANAGER_PROFIL.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_COOPERATIVE = 2 // Default cooperative profile. Uses STorM32 custom profile with default
-                        // settings to achieve cooperative behavior.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_EXCLUSIVE = 3 // Default exclusive profile. Uses STorM32 custom profile with default
-                        // settings to achieve exclusive behavior.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_PRIORITY_COOPERATIVE = 4 // Default priority profile with cooperative behavior for equal priority.
-                        // Uses STorM32 custom profile with default
-                        // settings to achieve priority-based
-                        // behavior.
-mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_PRIORITY_EXCLUSIVE = 5 // Default priority profile with exclusive behavior for equal priority.
-                        // Uses STorM32 custom profile with default
-                        // settings to achieve priority-based
-                        // behavior.
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_CUSTOM = 1 // Not supported/deprecated.
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_COOPERATIVE = 2 // Profile with cooperative behavior.
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_EXCLUSIVE = 3 // Profile with exclusive behavior.
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_PRIORITY_COOPERATIVE = 4 // Profile with priority and cooperative behavior for equal priority.
+mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_PRIORITY_EXCLUSIVE = 5 // Profile with priority and exclusive behavior for equal priority.
 mavlink20.MAV_STORM32_GIMBAL_MANAGER_PROFILE_ENUM_END = 6 // 
-
-// MAV_STORM32_GIMBAL_ACTION
-mavlink20.MAV_STORM32_GIMBAL_ACTION_RECENTER = 1 // Trigger the gimbal device to recenter the gimbal.
-mavlink20.MAV_STORM32_GIMBAL_ACTION_CALIBRATION = 2 // Trigger the gimbal device to run a calibration.
-mavlink20.MAV_STORM32_GIMBAL_ACTION_DISCOVER_MANAGER = 3 // Trigger gimbal device to (re)discover the gimbal manager during run
-                        // time.
-mavlink20.MAV_STORM32_GIMBAL_ACTION_ENUM_END = 4 // 
 
 // MAV_QSHOT_MODE
 mavlink20.MAV_QSHOT_MODE_UNDEFINED = 0 // Undefined shot mode. Can be used to determine if qshots should be used
                         // or not.
-mavlink20.MAV_QSHOT_MODE_DEFAULT = 1 // Start normal gimbal operation. Is usally used to return back from a
+mavlink20.MAV_QSHOT_MODE_DEFAULT = 1 // Start normal gimbal operation. Is usually used to return back from a
                         // shot.
 mavlink20.MAV_QSHOT_MODE_GIMBAL_RETRACT = 2 // Load and keep safe gimbal position and stop stabilization.
 mavlink20.MAV_QSHOT_MODE_GIMBAL_NEUTRAL = 3 // Load neutral gimbal position and keep it while stabilizing.
@@ -3659,6 +3895,29 @@ mavlink20.MAV_QSHOT_MODE_SYSID_TARGETING = 7 // Start gimbal tracking the system
 mavlink20.MAV_QSHOT_MODE_CABLECAM_2POINT = 8 // Start 2-point cable cam quick shot.
 mavlink20.MAV_QSHOT_MODE_HOME_TARGETING = 9 // Start gimbal tracking the home location.
 mavlink20.MAV_QSHOT_MODE_ENUM_END = 10 // 
+
+// MLRS_RADIO_LINK_STATS_FLAGS
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_RSSI_DBM = 1 // Rssi values are in negative dBm. Values 1..254 corresponds to -1..-254
+                        // dBm. 0: no reception, UINT8_MAX: unknown.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_RX_RECEIVE_ANTENNA2 = 2 // Rx receive antenna. When set the data received on antenna 2 are taken,
+                        // else the data stems from antenna 1.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_RX_TRANSMIT_ANTENNA1 = 4 // Rx transmit antenna. Data are transmitted on antenna 1.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_RX_TRANSMIT_ANTENNA2 = 8 // Rx transmit antenna. Data are transmitted on antenna 2.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_TX_RECEIVE_ANTENNA2 = 16 // Tx receive antenna. When set the data received on antenna 2 are taken,
+                        // else the data stems from antenna 1.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_TX_TRANSMIT_ANTENNA1 = 32 // Tx transmit antenna. Data are transmitted on antenna 1.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_TX_TRANSMIT_ANTENNA2 = 64 // Tx transmit antenna. Data are transmitted on antenna 2.
+mavlink20.MLRS_RADIO_LINK_STATS_FLAGS_ENUM_END = 65 // 
+
+// MLRS_RADIO_LINK_TYPE
+mavlink20.MLRS_RADIO_LINK_TYPE_GENERIC = 0 // Unknown radio link type.
+mavlink20.MLRS_RADIO_LINK_TYPE_HERELINK = 1 // Radio link is HereLink.
+mavlink20.MLRS_RADIO_LINK_TYPE_DRAGONLINK = 2 // Radio link is Dragon Link.
+mavlink20.MLRS_RADIO_LINK_TYPE_RFD900 = 3 // Radio link is RFD900.
+mavlink20.MLRS_RADIO_LINK_TYPE_CROSSFIRE = 4 // Radio link is Crossfire.
+mavlink20.MLRS_RADIO_LINK_TYPE_EXPRESSLRS = 5 // Radio link is ExpressLRS.
+mavlink20.MLRS_RADIO_LINK_TYPE_MLRS = 6 // Radio link is mLRS.
+mavlink20.MLRS_RADIO_LINK_TYPE_ENUM_END = 7 // 
 
 // MAV_AVSS_COMMAND_FAILURE_REASON
 mavlink20.PRS_NOT_STEADY = 1 // AVSS defined command failure reason. PRS not steady.
@@ -3944,6 +4203,7 @@ mavlink20.MAVLINK_MSG_ID_VIDEO_STREAM_STATUS = 270
 mavlink20.MAVLINK_MSG_ID_CAMERA_FOV_STATUS = 271
 mavlink20.MAVLINK_MSG_ID_CAMERA_TRACKING_IMAGE_STATUS = 275
 mavlink20.MAVLINK_MSG_ID_CAMERA_TRACKING_GEO_STATUS = 276
+mavlink20.MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE = 277
 mavlink20.MAVLINK_MSG_ID_GIMBAL_MANAGER_INFORMATION = 280
 mavlink20.MAVLINK_MSG_ID_GIMBAL_MANAGER_STATUS = 281
 mavlink20.MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE = 282
@@ -3964,6 +4224,8 @@ mavlink20.MAVLINK_MSG_ID_PARAM_EXT_SET = 323
 mavlink20.MAVLINK_MSG_ID_PARAM_EXT_ACK = 324
 mavlink20.MAVLINK_MSG_ID_OBSTACLE_DISTANCE = 330
 mavlink20.MAVLINK_MSG_ID_ODOMETRY = 331
+mavlink20.MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_WAYPOINTS = 332
+mavlink20.MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_BEZIER = 333
 mavlink20.MAVLINK_MSG_ID_ISBD_LINK_STATUS = 335
 mavlink20.MAVLINK_MSG_ID_RAW_RPM = 339
 mavlink20.MAVLINK_MSG_ID_UTM_GLOBAL_POSITION = 340
@@ -3991,6 +4253,10 @@ mavlink20.MAVLINK_MSG_ID_HYGROMETER_SENSOR = 12920
 mavlink20.MAVLINK_MSG_ID_MISSION_CHECKSUM = 53
 mavlink20.MAVLINK_MSG_ID_AIRSPEED = 295
 mavlink20.MAVLINK_MSG_ID_RADIO_RC_CHANNELS = 420
+mavlink20.MAVLINK_MSG_ID_AVAILABLE_MODES = 435
+mavlink20.MAVLINK_MSG_ID_CURRENT_MODE = 436
+mavlink20.MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR = 437
+mavlink20.MAVLINK_MSG_ID_GNSS_INTEGRITY = 441
 mavlink20.MAVLINK_MSG_ID_ICAROUS_HEARTBEAT = 42000
 mavlink20.MAVLINK_MSG_ID_ICAROUS_KINEMATIC_BANDS = 42001
 mavlink20.MAVLINK_MSG_ID_HEARTBEAT = 0
@@ -4015,16 +4281,18 @@ mavlink20.MAVLINK_MSG_ID_UAVIONIX_ADSB_GET = 10006
 mavlink20.MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL = 10007
 mavlink20.MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS = 10008
 mavlink20.MAVLINK_MSG_ID_LOWEHEISER_GOV_EFI = 10151
-mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_DEVICE_STATUS = 60001
-mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_DEVICE_CONTROL = 60002
 mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_INFORMATION = 60010
 mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_STATUS = 60011
 mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_CONTROL = 60012
 mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_CONTROL_PITCHYAW = 60013
 mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_CORRECT_ROLL = 60014
-mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_PROFILE = 60015
 mavlink20.MAVLINK_MSG_ID_QSHOT_STATUS = 60020
-mavlink20.MAVLINK_MSG_ID_COMPONENT_PREARM_STATUS = 60025
+mavlink20.MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_EXT = 60000
+mavlink20.MAVLINK_MSG_ID_FRSKY_PASSTHROUGH_ARRAY = 60040
+mavlink20.MAVLINK_MSG_ID_PARAM_VALUE_ARRAY = 60041
+mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_STATS = 60045
+mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_INFORMATION = 60046
+mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_FLOW_CONTROL = 60047
 mavlink20.MAVLINK_MSG_ID_AVSS_PRS_SYS_STATUS = 60050
 mavlink20.MAVLINK_MSG_ID_AVSS_DRONE_POSITION = 60051
 mavlink20.MAVLINK_MSG_ID_AVSS_DRONE_IMU = 60052
@@ -7983,25 +8251,25 @@ mavlink20.messages.param_set.prototype.pack = function(mav) {
 /* 
 The global position, as returned by the Global Positioning System
 (GPS). This is                 NOT the global position estimate of the
-system, but rather a RAW sensor value. See message GLOBAL_POSITION for
-the global position estimate.
+system, but rather a RAW sensor value. See message GLOBAL_POSITION_INT
+for the global position estimate.
 
                 time_usec                 : Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number. (uint64_t)
                 fix_type                  : GPS fix type. (uint8_t)
                 lat                       : Latitude (WGS84, EGM96 ellipsoid) (int32_t)
                 lon                       : Longitude (WGS84, EGM96 ellipsoid) (int32_t)
                 alt                       : Altitude (MSL). Positive for up. Note that virtually all GPS modules provide the MSL altitude in addition to the WGS84 altitude. (int32_t)
-                eph                       : GPS HDOP horizontal dilution of position (unitless). If unknown, set to: UINT16_MAX (uint16_t)
-                epv                       : GPS VDOP vertical dilution of position (unitless). If unknown, set to: UINT16_MAX (uint16_t)
+                eph                       : GPS HDOP horizontal dilution of position (unitless * 100). If unknown, set to: UINT16_MAX (uint16_t)
+                epv                       : GPS VDOP vertical dilution of position (unitless * 100). If unknown, set to: UINT16_MAX (uint16_t)
                 vel                       : GPS ground speed. If unknown, set to: UINT16_MAX (uint16_t)
                 cog                       : Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX (uint16_t)
-                satellites_visible        : Number of satellites visible. If unknown, set to 255 (uint8_t)
+                satellites_visible        : Number of satellites visible. If unknown, set to UINT8_MAX (uint8_t)
                 alt_ellipsoid             : Altitude (above WGS84, EGM96 ellipsoid). Positive for up. (int32_t)
                 h_acc                     : Position uncertainty. (uint32_t)
                 v_acc                     : Altitude uncertainty. (uint32_t)
                 vel_acc                   : Speed uncertainty. (uint32_t)
                 hdg_acc                   : Heading / track uncertainty (uint32_t)
-                yaw                       : Yaw in earth frame from north. Use 0 if this GPS does not provide yaw. Use 65535 if this GPS is configured to provide yaw and is currently unable to provide it. Use 36000 for north. (uint16_t)
+                yaw                       : Yaw in earth frame from north. Use 0 if this GPS does not provide yaw. Use UINT16_MAX if this GPS is configured to provide yaw and is currently unable to provide it. Use 36000 for north. (uint16_t)
 
 */
     mavlink20.messages.gps_raw_int = function( ...moreargs ) {
@@ -8034,7 +8302,7 @@ mavlink20.messages.gps_raw_int.prototype.pack = function(mav) {
 /* 
 The positioning status, as reported by GPS. This message is intended
 to display status information about each satellite visible to the
-receiver. See message GLOBAL_POSITION for the global position
+receiver. See message GLOBAL_POSITION_INT for the global position
 estimate. This message can contain information for up to 20
 satellites.
 
@@ -8980,12 +9248,12 @@ mavlink20.messages.mission_ack.prototype.pack = function(mav) {
 
 
 /* 
-Sets the GPS co-ordinates of the vehicle local origin (0,0,0)
-position. Vehicle should emit GPS_GLOBAL_ORIGIN irrespective of
-whether the origin is changed. This enables transform between the
-local coordinate frame and the global (GPS) coordinate frame, which
-may be necessary when (for example) indoor and outdoor settings are
-connected and the MAV should move from in- to outdoor.
+Sets the GPS coordinates of the vehicle local origin (0,0,0) position.
+Vehicle should emit GPS_GLOBAL_ORIGIN irrespective of whether the
+origin is changed. This enables transform between the local coordinate
+frame and the global (GPS) coordinate frame, which may be necessary
+when (for example) indoor and outdoor settings are connected and the
+MAV should move from in- to outdoor.
 
                 target_system             : System ID (uint8_t)
                 latitude                  : Latitude (WGS84) (int32_t)
@@ -9022,7 +9290,7 @@ mavlink20.messages.set_gps_global_origin.prototype.pack = function(mav) {
 
 
 /* 
-Publishes the GPS co-ordinates of the vehicle local origin (0,0,0)
+Publishes the GPS coordinates of the vehicle local origin (0,0,0)
 position. Emitted whenever a new GPS-Local position mapping is
 requested or set - e.g. following SET_GPS_GLOBAL_ORIGIN message.
 
@@ -9263,7 +9531,7 @@ mavlink20.messages.attitude_quaternion_cov.prototype.pack = function(mav) {
 
 
 /* 
-The state of the fixed wing navigation and position controller.
+The state of the navigation and position controller.
 
                 nav_roll                  : Current desired roll (float)
                 nav_pitch                 : Current desired pitch (float)
@@ -9527,8 +9795,8 @@ mavlink20.messages.data_stream.prototype.pack = function(mav) {
 /* 
 This message provides an API for manually controlling the vehicle
 using standard joystick axes nomenclature, along with a joystick-like
-input device. Unused axes can be disabled an buttons are also transmit
-as boolean values of their
+input device. Unused axes can be disabled and buttons states are
+transmitted as individual on/off bits of a bitmask
 
                 target                    : The system to be controlled. (uint8_t)
                 x                         : X-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to forward(1000)-backward(-1000) movement on a joystick and the pitch of a vehicle. (int16_t)
@@ -10332,7 +10600,7 @@ receivers/transmitters might violate this specification.
                 chan10_raw                : RC channel 10 value (uint16_t)
                 chan11_raw                : RC channel 11 value (uint16_t)
                 chan12_raw                : RC channel 12 value (uint16_t)
-                rssi                      : Receive signal strength indicator in device-dependent units/scale. Values: [0-254], 255: invalid/unknown. (uint8_t)
+                rssi                      : Receive signal strength indicator in device-dependent units/scale. Values: [0-254], UINT8_MAX: invalid/unknown. (uint8_t)
 
 */
     mavlink20.messages.hil_rc_inputs_raw = function( ...moreargs ) {
@@ -10800,7 +11068,7 @@ mavlink20.messages.sim_state.prototype.pack = function(mav) {
 /* 
 Status generated by radio and injected into MAVLink stream.
 
-                rssi                      : Local (message sender) recieved signal strength indication in device-dependent units/scale. Values: [0-254], 255: invalid/unknown. (uint8_t)
+                rssi                      : Local (message sender) received signal strength indication in device-dependent units/scale. Values: [0-254], 255: invalid/unknown. (uint8_t)
                 remrssi                   : Remote (message receiver) signal strength indication in device-dependent units/scale. Values: [0-254], 255: invalid/unknown. (uint8_t)
                 txbuf                     : Remaining free transmitter buffer space. (uint8_t)
                 noise                     : Local background noise level. These are device dependent RSSI values (scale as approx 2x dB on SiK radios). Values: [0-254], 255: invalid/unknown. (uint8_t)
@@ -10837,7 +11105,8 @@ mavlink20.messages.radio_status.prototype.pack = function(mav) {
 
 
 /* 
-File transfer message
+File transfer protocol message:
+https://mavlink.io/en/services/ftp.html.
 
                 target_network            : Network ID (0 for broadcast) (uint8_t)
                 target_system             : System ID (0 for broadcast) (uint8_t)
@@ -10943,22 +11212,22 @@ mavlink20.messages.camera_trigger.prototype.pack = function(mav) {
 /* 
 The global position, as returned by the Global Positioning System
 (GPS). This is                  NOT the global position estimate of
-the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION
-for the global position estimate.
+the system, but rather a RAW sensor value. See message
+GLOBAL_POSITION_INT for the global position estimate.
 
                 time_usec                 : Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number. (uint64_t)
                 fix_type                  : 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix. (uint8_t)
                 lat                       : Latitude (WGS84) (int32_t)
                 lon                       : Longitude (WGS84) (int32_t)
                 alt                       : Altitude (MSL). Positive for up. (int32_t)
-                eph                       : GPS HDOP horizontal dilution of position (unitless). If unknown, set to: UINT16_MAX (uint16_t)
-                epv                       : GPS VDOP vertical dilution of position (unitless). If unknown, set to: UINT16_MAX (uint16_t)
-                vel                       : GPS ground speed. If unknown, set to: 65535 (uint16_t)
+                eph                       : GPS HDOP horizontal dilution of position (unitless * 100). If unknown, set to: UINT16_MAX (uint16_t)
+                epv                       : GPS VDOP vertical dilution of position (unitless * 100). If unknown, set to: UINT16_MAX (uint16_t)
+                vel                       : GPS ground speed. If unknown, set to: UINT16_MAX (uint16_t)
                 vn                        : GPS velocity in north direction in earth-fixed NED frame (int16_t)
                 ve                        : GPS velocity in east direction in earth-fixed NED frame (int16_t)
                 vd                        : GPS velocity in down direction in earth-fixed NED frame (int16_t)
-                cog                       : Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: 65535 (uint16_t)
-                satellites_visible        : Number of satellites visible. If unknown, set to 255 (uint8_t)
+                cog                       : Course over ground (NOT heading, but direction of movement), 0.0..359.99 degrees. If unknown, set to: UINT16_MAX (uint16_t)
+                satellites_visible        : Number of satellites visible. If unknown, set to UINT8_MAX (uint8_t)
                 id                        : GPS ID (zero indexed). Used for multiple GPS inputs (uint8_t)
                 yaw                       : Yaw of vehicle relative to Earth's North, zero means not available, use 36000 for north (uint16_t)
 
@@ -11397,7 +11666,7 @@ Second GPS data.
                 satellites_visible        : Number of satellites visible. If unknown, set to 255 (uint8_t)
                 dgps_numch                : Number of DGPS satellites (uint8_t)
                 dgps_age                  : Age of DGPS info (uint32_t)
-                yaw                       : Yaw in earth frame from north. Use 0 if this GPS does not provide yaw. Use 65535 if this GPS is configured to provide yaw and is currently unable to provide it. Use 36000 for north. (uint16_t)
+                yaw                       : Yaw in earth frame from north. Use 0 if this GPS does not provide yaw. Use UINT16_MAX if this GPS is configured to provide yaw and is currently unable to provide it. Use 36000 for north. (uint16_t)
                 alt_ellipsoid             : Altitude (above WGS84, EGM96 ellipsoid). Positive for up. (int32_t)
                 h_acc                     : Position uncertainty. (uint32_t)
                 v_acc                     : Altitude uncertainty. (uint32_t)
@@ -11731,7 +12000,7 @@ Distance sensor information for an onboard rangefinder.
                 type                      : Type of distance sensor. (uint8_t)
                 id                        : Onboard ID of the sensor (uint8_t)
                 orientation               : Direction the sensor faces. downward-facing: ROTATION_PITCH_270, upward-facing: ROTATION_PITCH_90, backward-facing: ROTATION_PITCH_180, forward-facing: ROTATION_NONE, left-facing: ROTATION_YAW_90, right-facing: ROTATION_YAW_270 (uint8_t)
-                covariance                : Measurement variance. Max standard deviation is 6cm. 255 if unknown. (uint8_t)
+                covariance                : Measurement variance. Max standard deviation is 6cm. UINT8_MAX if unknown. (uint8_t)
                 horizontal_fov            : Horizontal Field of View (angle) where the distance measurement is valid and the field of view is known. Otherwise this is set to 0. (float)
                 vertical_fov              : Vertical Field of View (angle) where the distance measurement is valid and the field of view is known. Otherwise this is set to 0. (float)
                 quaternion                : Quaternion of the sensor orientation in vehicle body frame (w, x, y, z order, zero-rotation is 1, 0, 0, 0). Zero-rotation is along the vehicle body x-axis. This field is required if the orientation is set to MAV_SENSOR_ROTATION_CUSTOM. Set it to 0 if invalid." (float)
@@ -12109,7 +12378,7 @@ mavlink20.messages.altitude.prototype.pack = function(mav) {
 The autopilot is requesting a resource (file, binary, other type of
 data)
 
-                request_id                : Request ID. This ID should be re-used when sending back URI contents (uint8_t)
+                request_id                : Request ID. This ID should be reused when sending back URI contents (uint8_t)
                 uri_type                  : The type of requested URI. 0 = a file via URL. 1 = a UAVCAN binary (uint8_t)
                 uri                       : The requested unique resource identifier (URI). It is not necessarily a straight domain name (depends on the URI type enum) (uint8_t)
                 transfer_type             : The way the autopilot wants to receive the URI. 0 = MAVLink FTP. 1 = binary stream. (uint8_t)
@@ -12381,7 +12650,7 @@ https://mavlink.io/en/services/landing_target.html
                 z                         : Z Position of the landing target in MAV_FRAME (float)
                 q                         : Quaternion of landing target orientation (w, x, y, z order, zero-rotation is 1, 0, 0, 0) (float)
                 type                      : Type of landing target (uint8_t)
-                position_valid            : Boolean indicating whether the position fields (x, y, z, q, type) contain valid target position information (valid: 1, invalid: 0). Default is 0 (invalid). (uint8_t)
+                position_valid            : Position fields (x, y, z, q, type) contain valid target position information (MAV_BOOL_FALSE: invalid values). Values not equal to 0 or 1 are invalid. (uint8_t)
 
 */
     mavlink20.messages.landing_target = function( ...moreargs ) {
@@ -12751,7 +13020,7 @@ Message appropriate for high latency connections like Iridium
                 airspeed_sp               : airspeed setpoint (uint8_t)
                 groundspeed               : groundspeed (uint8_t)
                 climb_rate                : climb rate (int8_t)
-                gps_nsat                  : Number of satellites visible. If unknown, set to 255 (uint8_t)
+                gps_nsat                  : Number of satellites visible. If unknown, set to UINT8_MAX (uint8_t)
                 gps_fix_type              : GPS Fix type. (uint8_t)
                 battery_remaining         : Remaining battery (percentage) (uint8_t)
                 temperature               : Autopilot temperature (degrees C) (int8_t)
@@ -12993,8 +13262,11 @@ mavlink20.messages.set_home_position.prototype.pack = function(mav) {
 
 /* 
 The interval between messages for a particular MAVLink message ID.
-This message is the response to the MAV_CMD_GET_MESSAGE_INTERVAL
-command. This interface replaces DATA_STREAM.
+This message is sent in response to the MAV_CMD_REQUEST_MESSAGE
+command with param1=244 (this message) and param2=message_id (the id
+of the message for which the interval is required).         It may
+also be sent in response to MAV_CMD_GET_MESSAGE_INTERVAL.         This
+interface replaces DATA_STREAM.
 
                 message_id                : The ID of the requested MAVLink message. v1.0 is limited to 254 messages. (uint16_t)
                 interval_us               : The interval between two messages. A value of -1 indicates this stream is disabled, 0 indicates it is not available, > 0 indicates the interval at which it is sent. (int32_t)
@@ -13702,7 +13974,7 @@ for the missing image.
                 relative_alt              : Altitude above ground (int32_t)
                 q                         : Quaternion of camera orientation (w, x, y, z order, zero-rotation is 1, 0, 0, 0) (float)
                 image_index               : Zero based index of this image (i.e. a new image will have index CAMERA_CAPTURE_STATUS.image count -1) (int32_t)
-                capture_result            : Boolean indicating success (1) or failure (0) while capturing this image. (int8_t)
+                capture_result            : Image was captured successfully (MAV_BOOL_TRUE). Values not equal to 0 or 1 are invalid. (int8_t)
                 file_url                  : URL of image taken. Either local storage or http://foo.jpg if camera provides an HTTP interface. (char)
 
 */
@@ -13813,7 +14085,7 @@ A message containing logged data (see also MAV_CMD_LOGGING_START)
                 target_component          : component ID of the target (uint8_t)
                 sequence                  : sequence number (can wrap) (uint16_t)
                 length                    : data length (uint8_t)
-                first_message_offset        : offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to 255 if no start exists). (uint8_t)
+                first_message_offset        : offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to UINT8_MAX if no start exists). (uint8_t)
                 data                      : logged data (uint8_t)
 
 */
@@ -13852,7 +14124,7 @@ sent back
                 target_component          : component ID of the target (uint8_t)
                 sequence                  : sequence number (can wrap) (uint16_t)
                 length                    : data length (uint8_t)
-                first_message_offset        : offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to 255 if no start exists). (uint8_t)
+                first_message_offset        : offset into data where first message starts. This can be used for recovery, when a previous message got lost (set to UINT8_MAX if no start exists). (uint8_t)
                 data                      : logged data (uint8_t)
 
 */
@@ -14132,6 +14404,54 @@ MAV_CMD_SET_MESSAGE_INTERVAL to define message interval.
 mavlink20.messages.camera_tracking_geo_status.prototype = new mavlink20.message;
 mavlink20.messages.camera_tracking_geo_status.prototype.pack = function(mav) {
     var orderedfields = [ this.lat, this.lon, this.alt, this.h_acc, this.v_acc, this.vel_n, this.vel_e, this.vel_d, this.vel_acc, this.dist, this.hdg, this.hdg_acc, this.tracking_status];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Camera absolute thermal range. This can be streamed when the
+associated `VIDEO_STREAM_STATUS.flag` bit
+`VIDEO_STREAM_STATUS_FLAGS_THERMAL_RANGE_ENABLED` is set, but a GCS
+may choose to only request it for the current active stream. Use
+MAV_CMD_SET_MESSAGE_INTERVAL to define message interval (param3
+indicates the stream id of the current camera, or 0 for all streams,
+param4 indicates the target camera_device_id for autopilot-attached
+cameras or 0 for MAVLink cameras).
+
+                time_boot_ms              : Timestamp (time since system boot). (uint32_t)
+                stream_id                 : Video Stream ID (1 for first, 2 for second, etc.) (uint8_t)
+                camera_device_id          : Camera id of a non-MAVLink camera attached to an autopilot (1-6).  0 if the component is a MAVLink camera (with its own component id). (uint8_t)
+                max                       : Temperature max. (float)
+                max_point_x               : Temperature max point x value (normalized 0..1, 0 is left, 1 is right), NAN if unknown. (float)
+                max_point_y               : Temperature max point y value (normalized 0..1, 0 is top, 1 is bottom), NAN if unknown. (float)
+                min                       : Temperature min. (float)
+                min_point_x               : Temperature min point x value (normalized 0..1, 0 is left, 1 is right), NAN if unknown. (float)
+                min_point_y               : Temperature min point y value (normalized 0..1, 0 is top, 1 is bottom), NAN if unknown. (float)
+
+*/
+    mavlink20.messages.camera_thermal_range = function( ...moreargs ) {
+    [ this.time_boot_ms , this.stream_id , this.camera_device_id , this.max , this.max_point_x , this.max_point_y , this.min , this.min_point_x , this.min_point_y ] = moreargs;
+
+    this._format = '<IffffffBB';
+    this._id = mavlink20.MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE;
+    this.order_map = [0, 7, 8, 1, 2, 3, 4, 5, 6];
+    this.len_map = [1, 1, 1, 1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.crc_extra = 62;
+    this._name = 'CAMERA_THERMAL_RANGE';
+
+    this._instance_field = 'stream_id';
+    this._instance_offset = 28;
+
+    this.fieldnames = ['time_boot_ms', 'stream_id', 'camera_device_id', 'max', 'max_point_x', 'max_point_y', 'min', 'min_point_x', 'min_point_y'];
+
+}
+
+mavlink20.messages.camera_thermal_range.prototype = new mavlink20.message;
+mavlink20.messages.camera_thermal_range.prototype.pack = function(mav) {
+    var orderedfields = [ this.time_boot_ms, this.max, this.max_point_x, this.max_point_y, this.min, this.min_point_x, this.min_point_y, this.stream_id, this.camera_device_id];
     var j = jspack.Pack(this._format, orderedfields);
     if (j === false ) throw new Error("jspack unable to handle this packet");
     return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
@@ -14722,7 +15042,7 @@ frequency. The UAVCAN specification is available at http://uavcan.org.
                 hw_unique_id              : Hardware unique 128-bit ID. (uint8_t)
                 sw_version_major          : Software major version number. (uint8_t)
                 sw_version_minor          : Software minor version number. (uint8_t)
-                sw_vcs_commit             : Version control system (VCS) revision identifier (e.g. git short commit hash). Zero if unknown. (uint32_t)
+                sw_vcs_commit             : Version control system (VCS) revision identifier (e.g. git short commit hash). 0 if unknown. (uint32_t)
 
 */
     mavlink20.messages.uavcan_node_info = function( ...moreargs ) {
@@ -15031,6 +15351,93 @@ interface. Fits ROS REP 147 standard for aerial vehicles
 mavlink20.messages.odometry.prototype = new mavlink20.message;
 mavlink20.messages.odometry.prototype.pack = function(mav) {
     var orderedfields = [ this.time_usec, this.x, this.y, this.z, this.q, this.vx, this.vy, this.vz, this.rollspeed, this.pitchspeed, this.yawspeed, this.pose_covariance, this.velocity_covariance, this.frame_id, this.child_frame_id, this.reset_counter, this.estimator_type, this.quality];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Describe a trajectory using an array of up-to 5 waypoints in the local
+frame (MAV_FRAME_LOCAL_NED).
+
+                time_usec                 : Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number. (uint64_t)
+                valid_points              : Number of valid points (up-to 5 waypoints are possible) (uint8_t)
+                pos_x                     : X-coordinate of waypoint, set to NaN if not being used (float)
+                pos_y                     : Y-coordinate of waypoint, set to NaN if not being used (float)
+                pos_z                     : Z-coordinate of waypoint, set to NaN if not being used (float)
+                vel_x                     : X-velocity of waypoint, set to NaN if not being used (float)
+                vel_y                     : Y-velocity of waypoint, set to NaN if not being used (float)
+                vel_z                     : Z-velocity of waypoint, set to NaN if not being used (float)
+                acc_x                     : X-acceleration of waypoint, set to NaN if not being used (float)
+                acc_y                     : Y-acceleration of waypoint, set to NaN if not being used (float)
+                acc_z                     : Z-acceleration of waypoint, set to NaN if not being used (float)
+                pos_yaw                   : Yaw angle, set to NaN if not being used (float)
+                vel_yaw                   : Yaw rate, set to NaN if not being used (float)
+                command                   : MAV_CMD command id of waypoint, set to UINT16_MAX if not being used. (uint16_t)
+
+*/
+    mavlink20.messages.trajectory_representation_waypoints = function( ...moreargs ) {
+    [ this.time_usec , this.valid_points , this.pos_x , this.pos_y , this.pos_z , this.vel_x , this.vel_y , this.vel_z , this.acc_x , this.acc_y , this.acc_z , this.pos_yaw , this.vel_yaw , this.command ] = moreargs;
+
+    this._format = '<Q5f5f5f5f5f5f5f5f5f5f5f5HB';
+    this._id = mavlink20.MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_WAYPOINTS;
+    this.order_map = [0, 13, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    this.len_map = [1, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1];
+    this.array_len_map = [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0];
+    this.crc_extra = 236;
+    this._name = 'TRAJECTORY_REPRESENTATION_WAYPOINTS';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['time_usec', 'valid_points', 'pos_x', 'pos_y', 'pos_z', 'vel_x', 'vel_y', 'vel_z', 'acc_x', 'acc_y', 'acc_z', 'pos_yaw', 'vel_yaw', 'command'];
+
+}
+
+mavlink20.messages.trajectory_representation_waypoints.prototype = new mavlink20.message;
+mavlink20.messages.trajectory_representation_waypoints.prototype.pack = function(mav) {
+    var orderedfields = [ this.time_usec, this.pos_x, this.pos_y, this.pos_z, this.vel_x, this.vel_y, this.vel_z, this.acc_x, this.acc_y, this.acc_z, this.pos_yaw, this.vel_yaw, this.command, this.valid_points];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Describe a trajectory using an array of up-to 5 bezier control points
+in the local frame (MAV_FRAME_LOCAL_NED).
+
+                time_usec                 : Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number. (uint64_t)
+                valid_points              : Number of valid control points (up-to 5 points are possible) (uint8_t)
+                pos_x                     : X-coordinate of bezier control points. Set to NaN if not being used (float)
+                pos_y                     : Y-coordinate of bezier control points. Set to NaN if not being used (float)
+                pos_z                     : Z-coordinate of bezier control points. Set to NaN if not being used (float)
+                delta                     : Bezier time horizon. Set to NaN if velocity/acceleration should not be incorporated (float)
+                pos_yaw                   : Yaw. Set to NaN for unchanged (float)
+
+*/
+    mavlink20.messages.trajectory_representation_bezier = function( ...moreargs ) {
+    [ this.time_usec , this.valid_points , this.pos_x , this.pos_y , this.pos_z , this.delta , this.pos_yaw ] = moreargs;
+
+    this._format = '<Q5f5f5f5f5fB';
+    this._id = mavlink20.MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_BEZIER;
+    this.order_map = [0, 6, 1, 2, 3, 4, 5];
+    this.len_map = [1, 5, 5, 5, 5, 5, 1];
+    this.array_len_map = [0, 5, 5, 5, 5, 5, 0];
+    this.crc_extra = 231;
+    this._name = 'TRAJECTORY_REPRESENTATION_BEZIER';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['time_usec', 'valid_points', 'pos_x', 'pos_y', 'pos_z', 'delta', 'pos_yaw'];
+
+}
+
+mavlink20.messages.trajectory_representation_bezier.prototype = new mavlink20.message;
+mavlink20.messages.trajectory_representation_bezier.prototype.pack = function(mav) {
+    var orderedfields = [ this.time_usec, this.pos_x, this.pos_y, this.pos_z, this.delta, this.pos_yaw, this.valid_points];
     var j = jspack.Pack(this._format, orderedfields);
     if (j === false ) throw new Error("jspack unable to handle this packet");
     return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
@@ -15413,7 +15820,7 @@ A forwarded CAN frame as requested by MAV_CMD_CAN_FORWARD.
 
                 target_system             : System ID. (uint8_t)
                 target_component          : Component ID. (uint8_t)
-                bus                       : bus number (uint8_t)
+                bus                       : Bus number (uint8_t)
                 len                       : Frame length (uint8_t)
                 id                        : Frame ID (uint32_t)
                 data                      : Frame data (uint8_t)
@@ -15488,7 +15895,7 @@ mavlink20.messages.canfd_frame.prototype.pack = function(mav) {
 
 /* 
 Modify the filter of what CAN messages to forward over the mavlink.
-This can be used to make CAN forwarding work well on low bandwith
+This can be used to make CAN forwarding work well on low bandwidth
 links. The filtering is applied on bits 8 to 24 of the CAN id (2nd and
 3rd bytes) which corresponds to the DroneCAN message ID for DroneCAN.
 Filters with more than 16 IDs can be constructed by sending multiple
@@ -15662,7 +16069,7 @@ altitude, direction and speed of the aircraft.
                 speed_vertical            : The vertical speed. Up is positive. If unknown: 6300 cm/s. If speed is larger than 6200 cm/s, use 6200 cm/s. If lower than -6200 cm/s, use -6200 cm/s. (int16_t)
                 latitude                  : Current latitude of the unmanned aircraft. If unknown: 0 (both Lat/Lon). (int32_t)
                 longitude                 : Current longitude of the unmanned aircraft. If unknown: 0 (both Lat/Lon). (int32_t)
-                altitude_barometric        : The altitude calculated from the barometric pressue. Reference is against 29.92inHg or 1013.2mb. If unknown: -1000 m. (float)
+                altitude_barometric        : The altitude calculated from the barometric pressure. Reference is against 29.92inHg or 1013.2mb. If unknown: -1000 m. (float)
                 altitude_geodetic         : The geodetic altitude as defined by WGS84. If unknown: -1000 m. (float)
                 height_reference          : Indicates the reference point for the height field. (uint8_t)
                 height                    : The current height of the unmanned aircraft above the take-off location or the ground as indicated by height_reference. If unknown: -1000 m. (float)
@@ -15926,7 +16333,7 @@ or on WiFi Beacon.
                 target_system             : System ID (0 for broadcast). (uint8_t)
                 target_component          : Component ID (0 for broadcast). (uint8_t)
                 id_or_mac                 : Only used for drone ID data received from other UAs. See detailed description at https://mavlink.io/en/services/opendroneid.html. (uint8_t)
-                single_message_size        : This field must currently always be equal to 25 (bytes), since all encoded OpenDroneID messages are specificed to have this length. (uint8_t)
+                single_message_size        : This field must currently always be equal to 25 (bytes), since all encoded OpenDroneID messages are specified to have this length. (uint8_t)
                 msg_pack_size             : Number of encoded messages in the pack (not the number of bytes). Allowed range is 1 - 9. (uint8_t)
                 messages                  : Concatenation of encoded OpenDroneID messages. Shall be filled with nulls in the unused portion of the field. (uint8_t)
 
@@ -16187,6 +16594,169 @@ serialized payload and subject to MAVLink's trailing-zero trimming.
 mavlink20.messages.radio_rc_channels.prototype = new mavlink20.message;
 mavlink20.messages.radio_rc_channels.prototype.pack = function(mav) {
     var orderedfields = [ this.time_last_update_ms, this.flags, this.target_system, this.target_component, this.count, this.channels];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Get information about a particular flight modes.         The message
+can be enumerated or requested for a particular mode using
+MAV_CMD_REQUEST_MESSAGE.         Specify 0 in param2 to request that
+the message is emitted for all available modes or the specific index
+for just one mode.         The modes must be available/settable for
+the current vehicle/frame type.         Each modes should only be
+emitted once (even if it is both standard and custom).
+
+                number_modes              : The total number of available modes for the current vehicle type. (uint8_t)
+                mode_index                : The current mode index within number_modes, indexed from 1. (uint8_t)
+                standard_mode             : Standard mode. (uint8_t)
+                custom_mode               : A bitfield for use for autopilot-specific flags (uint32_t)
+                properties                : Mode properties. (uint32_t)
+                mode_name                 : Name of custom mode, with null termination character. Should be omitted for standard modes. (char)
+
+*/
+    mavlink20.messages.available_modes = function( ...moreargs ) {
+    [ this.number_modes , this.mode_index , this.standard_mode , this.custom_mode , this.properties , this.mode_name ] = moreargs;
+
+    this._format = '<IIBBB35s';
+    this._id = mavlink20.MAVLINK_MSG_ID_AVAILABLE_MODES;
+    this.order_map = [2, 3, 4, 0, 1, 5];
+    this.len_map = [1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 35];
+    this.crc_extra = 134;
+    this._name = 'AVAILABLE_MODES';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['number_modes', 'mode_index', 'standard_mode', 'custom_mode', 'properties', 'mode_name'];
+
+}
+
+mavlink20.messages.available_modes.prototype = new mavlink20.message;
+mavlink20.messages.available_modes.prototype.pack = function(mav) {
+    var orderedfields = [ this.custom_mode, this.properties, this.number_modes, this.mode_index, this.standard_mode, this.mode_name];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Get the current mode.         This should be emitted on any mode
+change, and broadcast at low rate (nominally 0.5 Hz).         It may
+be requested using MAV_CMD_REQUEST_MESSAGE.
+
+                standard_mode             : Standard mode. (uint8_t)
+                custom_mode               : A bitfield for use for autopilot-specific flags (uint32_t)
+                intended_custom_mode        : The custom_mode of the mode that was last commanded by the user (for example, with MAV_CMD_DO_SET_STANDARD_MODE, MAV_CMD_DO_SET_MODE or via RC). This should usually be the same as custom_mode. It will be different if the vehicle is unable to enter the intended mode, or has left that mode due to a failsafe condition. 0 indicates the intended custom mode is unknown/not supplied (uint32_t)
+
+*/
+    mavlink20.messages.current_mode = function( ...moreargs ) {
+    [ this.standard_mode , this.custom_mode , this.intended_custom_mode ] = moreargs;
+
+    this._format = '<IIB';
+    this._id = mavlink20.MAVLINK_MSG_ID_CURRENT_MODE;
+    this.order_map = [2, 0, 1];
+    this.len_map = [1, 1, 1];
+    this.array_len_map = [0, 0, 0];
+    this.crc_extra = 193;
+    this._name = 'CURRENT_MODE';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['standard_mode', 'custom_mode', 'intended_custom_mode'];
+
+}
+
+mavlink20.messages.current_mode.prototype = new mavlink20.message;
+mavlink20.messages.current_mode.prototype.pack = function(mav) {
+    var orderedfields = [ this.custom_mode, this.intended_custom_mode, this.standard_mode];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+A change to the sequence number indicates that the set of
+AVAILABLE_MODES has changed.         A receiver must re-request all
+available modes whenever the sequence number changes.         This is
+only emitted after the first change and should then be broadcast at
+low rate (nominally 0.3 Hz) and on change.
+
+                seq                       : Sequence number. The value iterates sequentially whenever AVAILABLE_MODES changes (e.g. support for a new mode is added/removed dynamically). (uint8_t)
+
+*/
+    mavlink20.messages.available_modes_monitor = function( ...moreargs ) {
+    [ this.seq ] = moreargs;
+
+    this._format = '<B';
+    this._id = mavlink20.MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR;
+    this.order_map = [0];
+    this.len_map = [1];
+    this.array_len_map = [0];
+    this.crc_extra = 30;
+    this._name = 'AVAILABLE_MODES_MONITOR';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['seq'];
+
+}
+
+mavlink20.messages.available_modes_monitor.prototype = new mavlink20.message;
+mavlink20.messages.available_modes_monitor.prototype.pack = function(mav) {
+    var orderedfields = [ this.seq];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Information about key components of GNSS receivers, like signal
+authentication, interference and system errors.
+
+                id                        : GNSS receiver id. Must match instance ids of other messages from same receiver. (uint8_t)
+                system_errors             : Errors in the GPS system. (uint32_t)
+                authentication_state        : Signal authentication state of the GPS system. (uint8_t)
+                jamming_state             : Signal jamming state of the GPS system. (uint8_t)
+                spoofing_state            : Signal spoofing state of the GPS system. (uint8_t)
+                raim_state                : The state of the RAIM processing. (uint8_t)
+                raim_hfom                 : Horizontal expected accuracy using satellites successfully validated using RAIM. (uint16_t)
+                raim_vfom                 : Vertical expected accuracy using satellites successfully validated using RAIM. (uint16_t)
+                corrections_quality        : An abstract value representing the estimated quality of incoming corrections, or 255 if not available. (uint8_t)
+                system_status_summary        : An abstract value representing the overall status of the receiver, or 255 if not available. (uint8_t)
+                gnss_signal_quality        : An abstract value representing the quality of incoming GNSS signals, or 255 if not available. (uint8_t)
+                post_processing_quality        : An abstract value representing the estimated PPK quality, or 255 if not available. (uint8_t)
+
+*/
+    mavlink20.messages.gnss_integrity = function( ...moreargs ) {
+    [ this.id , this.system_errors , this.authentication_state , this.jamming_state , this.spoofing_state , this.raim_state , this.raim_hfom , this.raim_vfom , this.corrections_quality , this.system_status_summary , this.gnss_signal_quality , this.post_processing_quality ] = moreargs;
+
+    this._format = '<IHHBBBBBBBBB';
+    this._id = mavlink20.MAVLINK_MSG_ID_GNSS_INTEGRITY;
+    this.order_map = [3, 0, 4, 5, 6, 7, 1, 2, 8, 9, 10, 11];
+    this.len_map = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.crc_extra = 169;
+    this._name = 'GNSS_INTEGRITY';
+
+    this._instance_field = 'id';
+    this._instance_offset = 8;
+
+    this.fieldnames = ['id', 'system_errors', 'authentication_state', 'jamming_state', 'spoofing_state', 'raim_state', 'raim_hfom', 'raim_vfom', 'corrections_quality', 'system_status_summary', 'gnss_signal_quality', 'post_processing_quality'];
+
+}
+
+mavlink20.messages.gnss_integrity.prototype = new mavlink20.message;
+mavlink20.messages.gnss_integrity.prototype.pack = function(mav) {
+    var orderedfields = [ this.system_errors, this.raim_hfom, this.raim_vfom, this.id, this.authentication_state, this.jamming_state, this.spoofing_state, this.raim_state, this.corrections_quality, this.system_status_summary, this.gnss_signal_quality, this.post_processing_quality];
     var j = jspack.Pack(this._format, orderedfields);
     if (j === false ) throw new Error("jspack unable to handle this packet");
     return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
@@ -17131,106 +17701,21 @@ mavlink20.messages.loweheiser_gov_efi.prototype.pack = function(mav) {
 
 
 /* 
-Message reporting the current status of a gimbal device. This message
-should be broadcasted by a gimbal device component at a low regular
-rate (e.g. 4 Hz). For higher rates it should be emitted with a target.
-
-                target_system             : System ID (uint8_t)
-                target_component          : Component ID (uint8_t)
-                time_boot_ms              : Timestamp (time since system boot). (uint32_t)
-                flags                     : Gimbal device flags currently applied. (uint16_t)
-                q                         : Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation). The frame depends on the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag. (float)
-                angular_velocity_x        : X component of angular velocity (NaN if unknown). (float)
-                angular_velocity_y        : Y component of angular velocity (NaN if unknown). (float)
-                angular_velocity_z        : Z component of angular velocity (the frame depends on the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, NaN if unknown). (float)
-                yaw_absolute              : Yaw in absolute frame relative to Earth's North, north is 0 (NaN if unknown). (float)
-                failure_flags             : Failure flags (0 for no failure). (uint16_t)
-
-*/
-    mavlink20.messages.storm32_gimbal_device_status = function( ...moreargs ) {
-    [ this.target_system , this.target_component , this.time_boot_ms , this.flags , this.q , this.angular_velocity_x , this.angular_velocity_y , this.angular_velocity_z , this.yaw_absolute , this.failure_flags ] = moreargs;
-
-    this._format = '<I4fffffHHBB';
-    this._id = mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_DEVICE_STATUS;
-    this.order_map = [8, 9, 0, 6, 1, 2, 3, 4, 5, 7];
-    this.len_map = [1, 4, 1, 1, 1, 1, 1, 1, 1, 1];
-    this.array_len_map = [0, 4, 0, 0, 0, 0, 0, 0, 0, 0];
-    this.crc_extra = 186;
-    this._name = 'STORM32_GIMBAL_DEVICE_STATUS';
-
-    this._instance_field = undefined;
-    this._instance_offset = -1;
-
-    this.fieldnames = ['target_system', 'target_component', 'time_boot_ms', 'flags', 'q', 'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z', 'yaw_absolute', 'failure_flags'];
-
-}
-
-mavlink20.messages.storm32_gimbal_device_status.prototype = new mavlink20.message;
-mavlink20.messages.storm32_gimbal_device_status.prototype.pack = function(mav) {
-    var orderedfields = [ this.time_boot_ms, this.q, this.angular_velocity_x, this.angular_velocity_y, this.angular_velocity_z, this.yaw_absolute, this.flags, this.failure_flags, this.target_system, this.target_component];
-    var j = jspack.Pack(this._format, orderedfields);
-    if (j === false ) throw new Error("jspack unable to handle this packet");
-    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
-}
-
-
-/* 
-Message to a gimbal device to control its attitude. This message is to
-be sent from the gimbal manager to the gimbal device. Angles and rates
-can be set to NaN according to use case.
-
-                target_system             : System ID (uint8_t)
-                target_component          : Component ID (uint8_t)
-                flags                     : Gimbal device flags (UINT16_MAX to be ignored). (uint16_t)
-                q                         : Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation, the frame is determined by the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, set first element to NaN to be ignored). (float)
-                angular_velocity_x        : X component of angular velocity (positive: roll to the right, NaN to be ignored). (float)
-                angular_velocity_y        : Y component of angular velocity (positive: tilt up, NaN to be ignored). (float)
-                angular_velocity_z        : Z component of angular velocity (positive: pan to the right, the frame is determined by the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, NaN to be ignored). (float)
-
-*/
-    mavlink20.messages.storm32_gimbal_device_control = function( ...moreargs ) {
-    [ this.target_system , this.target_component , this.flags , this.q , this.angular_velocity_x , this.angular_velocity_y , this.angular_velocity_z ] = moreargs;
-
-    this._format = '<4ffffHBB';
-    this._id = mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_DEVICE_CONTROL;
-    this.order_map = [5, 6, 4, 0, 1, 2, 3];
-    this.len_map = [4, 1, 1, 1, 1, 1, 1];
-    this.array_len_map = [4, 0, 0, 0, 0, 0, 0];
-    this.crc_extra = 69;
-    this._name = 'STORM32_GIMBAL_DEVICE_CONTROL';
-
-    this._instance_field = undefined;
-    this._instance_offset = -1;
-
-    this.fieldnames = ['target_system', 'target_component', 'flags', 'q', 'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z'];
-
-}
-
-mavlink20.messages.storm32_gimbal_device_control.prototype = new mavlink20.message;
-mavlink20.messages.storm32_gimbal_device_control.prototype.pack = function(mav) {
-    var orderedfields = [ this.q, this.angular_velocity_x, this.angular_velocity_y, this.angular_velocity_z, this.flags, this.target_system, this.target_component];
-    var j = jspack.Pack(this._format, orderedfields);
-    if (j === false ) throw new Error("jspack unable to handle this packet");
-    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
-}
-
-
-/* 
 Information about a gimbal manager. This message should be requested
 by a ground station using MAV_CMD_REQUEST_MESSAGE. It mirrors some
-fields of the STORM32_GIMBAL_DEVICE_INFORMATION message, but not all.
-If the additional information is desired, also
-STORM32_GIMBAL_DEVICE_INFORMATION should be requested.
+fields of the GIMBAL_DEVICE_INFORMATION message, but not all. If the
+additional information is desired, also GIMBAL_DEVICE_INFORMATION
+should be requested.
 
                 gimbal_id                 : Gimbal ID (component ID or 1-6 for non-MAVLink gimbal) that this gimbal manager is responsible for. (uint8_t)
-                device_cap_flags          : Gimbal device capability flags. (uint32_t)
+                device_cap_flags          : Gimbal device capability flags. Same flags as reported by GIMBAL_DEVICE_INFORMATION. The flag is only 16 bit wide, but stored in 32 bit, for backwards compatibility (high word is zero). (uint32_t)
                 manager_cap_flags         : Gimbal manager capability flags. (uint32_t)
-                roll_min                  : Hardware minimum roll angle (positive: roll to the right, NaN if unknown). (float)
-                roll_max                  : Hardware maximum roll angle (positive: roll to the right, NaN if unknown). (float)
-                pitch_min                 : Hardware minimum pitch/tilt angle (positive: tilt up, NaN if unknown). (float)
-                pitch_max                 : Hardware maximum pitch/tilt angle (positive: tilt up, NaN if unknown). (float)
-                yaw_min                   : Hardware minimum yaw/pan angle (positive: pan to the right, relative to the vehicle/gimbal base, NaN if unknown). (float)
-                yaw_max                   : Hardware maximum yaw/pan angle (positive: pan to the right, relative to the vehicle/gimbal base, NaN if unknown). (float)
+                roll_min                  : Hardware minimum roll angle (positive: roll to the right). NaN if unknown. (float)
+                roll_max                  : Hardware maximum roll angle (positive: roll to the right). NaN if unknown. (float)
+                pitch_min                 : Hardware minimum pitch/tilt angle (positive: tilt up). NaN if unknown. (float)
+                pitch_max                 : Hardware maximum pitch/tilt angle (positive: tilt up). NaN if unknown. (float)
+                yaw_min                   : Hardware minimum yaw/pan angle (positive: pan to the right, relative to the vehicle/gimbal base). NaN if unknown. (float)
+                yaw_max                   : Hardware maximum yaw/pan angle (positive: pan to the right, relative to the vehicle/gimbal base). NaN if unknown. (float)
 
 */
     mavlink20.messages.storm32_gimbal_manager_information = function( ...moreargs ) {
@@ -17267,7 +17752,7 @@ momentarily to e.g. 5 Hz for a period of 1 sec after a change).
 
                 gimbal_id                 : Gimbal ID (component ID or 1-6 for non-MAVLink gimbal) that this gimbal manager is responsible for. (uint8_t)
                 supervisor                : Client who is currently supervisor (0 = none). (uint8_t)
-                device_flags              : Gimbal device flags currently applied. (uint16_t)
+                device_flags              : Gimbal device flags currently applied. Same flags as reported by GIMBAL_DEVICE_ATTITUDE_STATUS. (uint16_t)
                 manager_flags             : Gimbal manager flags currently applied. (uint16_t)
                 profile                   : Profile currently applied (0 = default). (uint8_t)
 
@@ -17306,14 +17791,14 @@ never to react to this message.
 
                 target_system             : System ID (uint8_t)
                 target_component          : Component ID (uint8_t)
-                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals, send command multiple times for more than one but not all gimbals). (uint8_t)
+                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals). Send command multiple times for more than one but not all gimbals. (uint8_t)
                 client                    : Client which is contacting the gimbal manager (must be set). (uint8_t)
-                device_flags              : Gimbal device flags (UINT16_MAX to be ignored). (uint16_t)
-                manager_flags             : Gimbal manager flags (0 to be ignored). (uint16_t)
-                q                         : Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation, the frame is determined by the GIMBAL_MANAGER_FLAGS_ABSOLUTE_YAW flag, set first element to NaN to be ignored). (float)
-                angular_velocity_x        : X component of angular velocity (positive: roll to the right, NaN to be ignored). (float)
-                angular_velocity_y        : Y component of angular velocity (positive: tilt up, NaN to be ignored). (float)
-                angular_velocity_z        : Z component of angular velocity (positive: pan to the right, the frame is determined by the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, NaN to be ignored). (float)
+                device_flags              : Gimbal device flags to be applied (UINT16_MAX to be ignored). Same flags as used in GIMBAL_DEVICE_SET_ATTITUDE. (uint16_t)
+                manager_flags             : Gimbal manager flags to be applied (0 to be ignored). (uint16_t)
+                q                         : Quaternion components, w, x, y, z (1 0 0 0 is the null-rotation). Set first element to NaN to be ignored. The frame is determined by the GIMBAL_DEVICE_FLAGS_YAW_IN_xxx_FRAME flags. (float)
+                angular_velocity_x        : X component of angular velocity (positive: roll to the right). NaN to be ignored. (float)
+                angular_velocity_y        : Y component of angular velocity (positive: tilt up). NaN to be ignored. (float)
+                angular_velocity_z        : Z component of angular velocity (positive: pan to the right). NaN to be ignored. The frame is determined by the GIMBAL_DEVICE_FLAGS_YAW_IN_xxx_FRAME flags. (float)
 
 */
     mavlink20.messages.storm32_gimbal_manager_control = function( ...moreargs ) {
@@ -17350,14 +17835,14 @@ device is never to react to this message.
 
                 target_system             : System ID (uint8_t)
                 target_component          : Component ID (uint8_t)
-                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals, send command multiple times for more than one but not all gimbals). (uint8_t)
+                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals). Send command multiple times for more than one but not all gimbals. (uint8_t)
                 client                    : Client which is contacting the gimbal manager (must be set). (uint8_t)
-                device_flags              : Gimbal device flags (UINT16_MAX to be ignored). (uint16_t)
-                manager_flags             : Gimbal manager flags (0 to be ignored). (uint16_t)
-                pitch                     : Pitch/tilt angle (positive: tilt up, NaN to be ignored). (float)
-                yaw                       : Yaw/pan angle (positive: pan the right, the frame is determined by the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, NaN to be ignored). (float)
-                pitch_rate                : Pitch/tilt angular rate (positive: tilt up, NaN to be ignored). (float)
-                yaw_rate                  : Yaw/pan angular rate (positive: pan to the right, the frame is determined by the STORM32_GIMBAL_DEVICE_FLAGS_YAW_ABSOLUTE flag, NaN to be ignored). (float)
+                device_flags              : Gimbal device flags to be applied (UINT16_MAX to be ignored). Same flags as used in GIMBAL_DEVICE_SET_ATTITUDE. (uint16_t)
+                manager_flags             : Gimbal manager flags to be applied (0 to be ignored). (uint16_t)
+                pitch                     : Pitch/tilt angle (positive: tilt up). NaN to be ignored. (float)
+                yaw                       : Yaw/pan angle (positive: pan the right). NaN to be ignored. The frame is determined by the GIMBAL_DEVICE_FLAGS_YAW_IN_xxx_FRAME flags. (float)
+                pitch_rate                : Pitch/tilt angular rate (positive: tilt up). NaN to be ignored. (float)
+                yaw_rate                  : Yaw/pan angular rate (positive: pan to the right). NaN to be ignored. The frame is determined by the GIMBAL_DEVICE_FLAGS_YAW_IN_xxx_FRAME flags. (float)
 
 */
     mavlink20.messages.storm32_gimbal_manager_control_pitchyaw = function( ...moreargs ) {
@@ -17394,7 +17879,7 @@ operation. A gimbal device is never to react to this message.
 
                 target_system             : System ID (uint8_t)
                 target_component          : Component ID (uint8_t)
-                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals, send command multiple times for more than one but not all gimbals). (uint8_t)
+                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals). Send command multiple times for more than one but not all gimbals. (uint8_t)
                 client                    : Client which is contacting the gimbal manager (must be set). (uint8_t)
                 roll                      : Roll angle (positive to roll to the right). (float)
 
@@ -17420,48 +17905,6 @@ operation. A gimbal device is never to react to this message.
 mavlink20.messages.storm32_gimbal_manager_correct_roll.prototype = new mavlink20.message;
 mavlink20.messages.storm32_gimbal_manager_correct_roll.prototype.pack = function(mav) {
     var orderedfields = [ this.roll, this.target_system, this.target_component, this.gimbal_id, this.client];
-    var j = jspack.Pack(this._format, orderedfields);
-    if (j === false ) throw new Error("jspack unable to handle this packet");
-    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
-}
-
-
-/* 
-Message to set a gimbal manager profile. A gimbal device is never to
-react to this command. The selected profile is reported in the
-STORM32_GIMBAL_MANAGER_STATUS message.
-
-                target_system             : System ID (uint8_t)
-                target_component          : Component ID (uint8_t)
-                gimbal_id                 : Gimbal ID of the gimbal manager to address (component ID or 1-6 for non-MAVLink gimbal, 0 for all gimbals, send command multiple times for more than one but not all gimbals). (uint8_t)
-                profile                   : Profile to be applied (0 = default). (uint8_t)
-                priorities                : Priorities for custom profile. (uint8_t)
-                profile_flags             : Profile flags for custom profile (0 = default). (uint8_t)
-                rc_timeout                : Rc timeouts for custom profile (0 = infinite, in uints of 100 ms). (uint8_t)
-                timeouts                  : Timeouts for custom profile (0 = infinite, in uints of 100 ms). (uint8_t)
-
-*/
-    mavlink20.messages.storm32_gimbal_manager_profile = function( ...moreargs ) {
-    [ this.target_system , this.target_component , this.gimbal_id , this.profile , this.priorities , this.profile_flags , this.rc_timeout , this.timeouts ] = moreargs;
-
-    this._format = '<BBBB8sBB8s';
-    this._id = mavlink20.MAVLINK_MSG_ID_STORM32_GIMBAL_MANAGER_PROFILE;
-    this.order_map = [0, 1, 2, 3, 4, 5, 6, 7];
-    this.len_map = [1, 1, 1, 1, 8, 1, 1, 8];
-    this.array_len_map = [0, 0, 0, 0, 8, 0, 0, 8];
-    this.crc_extra = 78;
-    this._name = 'STORM32_GIMBAL_MANAGER_PROFILE';
-
-    this._instance_field = 'gimbal_id';
-    this._instance_offset = 2;
-
-    this.fieldnames = ['target_system', 'target_component', 'gimbal_id', 'profile', 'priorities', 'profile_flags', 'rc_timeout', 'timeouts'];
-
-}
-
-mavlink20.messages.storm32_gimbal_manager_profile.prototype = new mavlink20.message;
-mavlink20.messages.storm32_gimbal_manager_profile.prototype.pack = function(mav) {
-    var orderedfields = [ this.target_system, this.target_component, this.gimbal_id, this.profile, this.priorities, this.profile_flags, this.rc_timeout, this.timeouts];
     var j = jspack.Pack(this._format, orderedfields);
     if (j === false ) throw new Error("jspack unable to handle this packet");
     return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
@@ -17503,36 +17946,268 @@ mavlink20.messages.qshot_status.prototype.pack = function(mav) {
 
 
 /* 
-Message reporting the status of the prearm checks. The flags are
-component specific.
+Addition to message AUTOPILOT_STATE_FOR_GIMBAL_DEVICE.
 
-                target_system             : System ID (uint8_t)
-                target_component          : Component ID (uint8_t)
-                enabled_flags             : Currently enabled prearm checks. 0 means no checks are being performed, UINT32_MAX means not known. (uint32_t)
-                fail_flags                : Currently not passed prearm checks. 0 means all checks have been passed. (uint32_t)
+                target_system             : System ID. (uint8_t)
+                target_component          : Component ID. (uint8_t)
+                time_boot_us              : Timestamp (time since system boot). (uint64_t)
+                wind_x                    : Wind X speed in NED (North,Est, Down). NAN if unknown. (float)
+                wind_y                    : Wind Y speed in NED (North, East, Down). NAN if unknown. (float)
+                wind_correction_angle        : Correction angle due to wind. NaN if unknown. (float)
 
 */
-    mavlink20.messages.component_prearm_status = function( ...moreargs ) {
-    [ this.target_system , this.target_component , this.enabled_flags , this.fail_flags ] = moreargs;
+    mavlink20.messages.autopilot_state_for_gimbal_device_ext = function( ...moreargs ) {
+    [ this.target_system , this.target_component , this.time_boot_us , this.wind_x , this.wind_y , this.wind_correction_angle ] = moreargs;
 
-    this._format = '<IIBB';
-    this._id = mavlink20.MAVLINK_MSG_ID_COMPONENT_PREARM_STATUS;
-    this.order_map = [2, 3, 0, 1];
-    this.len_map = [1, 1, 1, 1];
-    this.array_len_map = [0, 0, 0, 0];
-    this.crc_extra = 20;
-    this._name = 'COMPONENT_PREARM_STATUS';
+    this._format = '<QfffBB';
+    this._id = mavlink20.MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_EXT;
+    this.order_map = [4, 5, 0, 1, 2, 3];
+    this.len_map = [1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 0];
+    this.crc_extra = 4;
+    this._name = 'AUTOPILOT_STATE_FOR_GIMBAL_DEVICE_EXT';
 
     this._instance_field = undefined;
     this._instance_offset = -1;
 
-    this.fieldnames = ['target_system', 'target_component', 'enabled_flags', 'fail_flags'];
+    this.fieldnames = ['target_system', 'target_component', 'time_boot_us', 'wind_x', 'wind_y', 'wind_correction_angle'];
 
 }
 
-mavlink20.messages.component_prearm_status.prototype = new mavlink20.message;
-mavlink20.messages.component_prearm_status.prototype.pack = function(mav) {
-    var orderedfields = [ this.enabled_flags, this.fail_flags, this.target_system, this.target_component];
+mavlink20.messages.autopilot_state_for_gimbal_device_ext.prototype = new mavlink20.message;
+mavlink20.messages.autopilot_state_for_gimbal_device_ext.prototype.pack = function(mav) {
+    var orderedfields = [ this.time_boot_us, this.wind_x, this.wind_y, this.wind_correction_angle, this.target_system, this.target_component];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Frsky SPort passthrough multi packet container.
+
+                time_boot_ms              : Timestamp (time since system boot). (uint32_t)
+                count                     : Number of passthrough packets in this message. (uint8_t)
+                packet_buf                : Passthrough packet buffer. A packet has 6 bytes: uint16_t id + uint32_t data. The array has space for 40 packets. (uint8_t)
+
+*/
+    mavlink20.messages.frsky_passthrough_array = function( ...moreargs ) {
+    [ this.time_boot_ms , this.count , this.packet_buf ] = moreargs;
+
+    this._format = '<IB240s';
+    this._id = mavlink20.MAVLINK_MSG_ID_FRSKY_PASSTHROUGH_ARRAY;
+    this.order_map = [0, 1, 2];
+    this.len_map = [1, 1, 240];
+    this.array_len_map = [0, 0, 240];
+    this.crc_extra = 156;
+    this._name = 'FRSKY_PASSTHROUGH_ARRAY';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['time_boot_ms', 'count', 'packet_buf'];
+
+}
+
+mavlink20.messages.frsky_passthrough_array.prototype = new mavlink20.message;
+mavlink20.messages.frsky_passthrough_array.prototype.pack = function(mav) {
+    var orderedfields = [ this.time_boot_ms, this.count, this.packet_buf];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Parameter multi param value container.
+
+                param_count               : Total number of onboard parameters. (uint16_t)
+                param_index_first         : Index of the first onboard parameter in this array. (uint16_t)
+                param_array_len           : Number of onboard parameters in this array. (uint8_t)
+                flags                     : Flags. (uint16_t)
+                packet_buf                : Parameters buffer. Contains a series of variable length parameter blocks, one per parameter, with format as specified elsewhere. (uint8_t)
+
+*/
+    mavlink20.messages.param_value_array = function( ...moreargs ) {
+    [ this.param_count , this.param_index_first , this.param_array_len , this.flags , this.packet_buf ] = moreargs;
+
+    this._format = '<HHHB248s';
+    this._id = mavlink20.MAVLINK_MSG_ID_PARAM_VALUE_ARRAY;
+    this.order_map = [0, 1, 3, 2, 4];
+    this.len_map = [1, 1, 1, 1, 248];
+    this.array_len_map = [0, 0, 0, 0, 248];
+    this.crc_extra = 191;
+    this._name = 'PARAM_VALUE_ARRAY';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['param_count', 'param_index_first', 'param_array_len', 'flags', 'packet_buf'];
+
+}
+
+mavlink20.messages.param_value_array.prototype = new mavlink20.message;
+mavlink20.messages.param_value_array.prototype.pack = function(mav) {
+    var orderedfields = [ this.param_count, this.param_index_first, this.flags, this.param_array_len, this.packet_buf];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Radio link statistics for a MAVLink RC receiver or transmitter and
+other links. Tx: ground-side device, Rx: vehicle-side device.
+The message is normally emitted in regular time intervals upon each
+actual or expected reception of an over-the-air data packet on the
+link.         A MAVLink RC receiver should emit it shortly after it
+emits a RADIO_RC_CHANNELS message (if it is emitting that message).
+Per default, rssi values are in MAVLink units: 0 represents weakest
+signal, 254 represents maximum signal, UINT8_MAX represents unknown.
+The RADIO_LINK_STATS_FLAGS_RSSI_DBM flag is set if the rssi units are
+negative dBm: 1..254 correspond to -1..-254 dBm, 0 represents no
+reception, UINT8_MAX represents unknown.         The target_system
+field should normally be set to the system id of the system the link
+is connected to, typically the flight controller.         The
+target_component field can normally be set to 0, so that all
+components of the system can receive the message.         Note: The
+frequency fields are extensions to ensure that they are located at the
+end of the serialized payload and subject to MAVLink's trailing-zero
+trimming.
+
+                target_system             : System ID (ID of target system, normally flight controller). (uint8_t)
+                target_component          : Component ID (normally 0 for broadcast). (uint8_t)
+                flags                     : Radio link statistics flags. (uint16_t)
+                rx_LQ_rc                  : Link quality of RC data stream from Tx to Rx. Values: 1..100, 0: no link connection, UINT8_MAX: unknown. (uint8_t)
+                rx_LQ_ser                 : Link quality of serial MAVLink data stream from Tx to Rx. Values: 1..100, 0: no link connection, UINT8_MAX: unknown. (uint8_t)
+                rx_rssi1                  : Rssi of antenna 1. 0: no reception, UINT8_MAX: unknown. (uint8_t)
+                rx_snr1                   : Noise on antenna 1. Radio link dependent. INT8_MAX: unknown. (int8_t)
+                tx_LQ_ser                 : Link quality of serial MAVLink data stream from Rx to Tx. Values: 1..100, 0: no link connection, UINT8_MAX: unknown. (uint8_t)
+                tx_rssi1                  : Rssi of antenna 1. 0: no reception. UINT8_MAX: unknown. (uint8_t)
+                tx_snr1                   : Noise on antenna 1. Radio link dependent. INT8_MAX: unknown. (int8_t)
+                rx_rssi2                  : Rssi of antenna 2. 0: no reception, UINT8_MAX: use rx_rssi1 if it is known else unknown. (uint8_t)
+                rx_snr2                   : Noise on antenna 2. Radio link dependent. INT8_MAX: use rx_snr1 if it is known else unknown. (int8_t)
+                tx_rssi2                  : Rssi of antenna 2. 0: no reception. UINT8_MAX: use tx_rssi1 if it is known else unknown. (uint8_t)
+                tx_snr2                   : Noise on antenna 2. Radio link dependent. INT8_MAX: use tx_snr1 if it is known else unknown. (int8_t)
+                frequency1                : Frequency on antenna1 in Hz. 0: unknown. (float)
+                frequency2                : Frequency on antenna2 in Hz. 0: unknown. (float)
+
+*/
+    mavlink20.messages.mlrs_radio_link_stats = function( ...moreargs ) {
+    [ this.target_system , this.target_component , this.flags , this.rx_LQ_rc , this.rx_LQ_ser , this.rx_rssi1 , this.rx_snr1 , this.tx_LQ_ser , this.tx_rssi1 , this.tx_snr1 , this.rx_rssi2 , this.rx_snr2 , this.tx_rssi2 , this.tx_snr2 , this.frequency1 , this.frequency2 ] = moreargs;
+
+    this._format = '<HBBBBBbBBbBbBbff';
+    this._id = mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_STATS;
+    this.order_map = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    this.len_map = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.crc_extra = 14;
+    this._name = 'MLRS_RADIO_LINK_STATS';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['target_system', 'target_component', 'flags', 'rx_LQ_rc', 'rx_LQ_ser', 'rx_rssi1', 'rx_snr1', 'tx_LQ_ser', 'tx_rssi1', 'tx_snr1', 'rx_rssi2', 'rx_snr2', 'tx_rssi2', 'tx_snr2', 'frequency1', 'frequency2'];
+
+}
+
+mavlink20.messages.mlrs_radio_link_stats.prototype = new mavlink20.message;
+mavlink20.messages.mlrs_radio_link_stats.prototype.pack = function(mav) {
+    var orderedfields = [ this.flags, this.target_system, this.target_component, this.rx_LQ_rc, this.rx_LQ_ser, this.rx_rssi1, this.rx_snr1, this.tx_LQ_ser, this.tx_rssi1, this.tx_snr1, this.rx_rssi2, this.rx_snr2, this.tx_rssi2, this.tx_snr2, this.frequency1, this.frequency2];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Radio link information. Tx: ground-side device, Rx: vehicle-side
+device.         The values of the fields in this message do normally
+not or only slowly change with time, and for most times the message
+can be send at a low rate, like 0.2 Hz.         If values change then
+the message should temporarily be send more often to inform the system
+about the changes.         The target_system field should normally be
+set to the system id of the system the link is connected to, typically
+the flight controller.         The target_component field can normally
+be set to 0, so that all components of the system can receive the
+message.
+
+                target_system             : System ID (ID of target system, normally flight controller). (uint8_t)
+                target_component          : Component ID (normally 0 for broadcast). (uint8_t)
+                type                      : Radio link type. 0: unknown/generic type. (uint8_t)
+                mode                      : Operation mode. Radio link dependent. UINT8_MAX: ignore/unknown. (uint8_t)
+                tx_power                  : Tx transmit power in dBm. INT8_MAX: unknown. (int8_t)
+                rx_power                  : Rx transmit power in dBm. INT8_MAX: unknown. (int8_t)
+                tx_frame_rate             : Frame rate in Hz (frames per second) for Tx to Rx transmission. 0: unknown. (uint16_t)
+                rx_frame_rate             : Frame rate in Hz (frames per second) for Rx to Tx transmission. Normally equal to tx_packet_rate. 0: unknown. (uint16_t)
+                mode_str                  : Operation mode as human readable string. Radio link dependent. Terminated by NULL if the string length is less than 6 chars and WITHOUT NULL termination if the length is exactly 6 chars - applications have to provide 6+1 bytes storage if the mode is stored as string. Use a zero-length string if not known. (char)
+                band_str                  : Frequency band as human readable string. Radio link dependent. Terminated by NULL if the string length is less than 6 chars and WITHOUT NULL termination if the length is exactly 6 chars - applications have to provide 6+1 bytes storage if the mode is stored as string. Use a zero-length string if not known. (char)
+                tx_ser_data_rate          : Maximum data rate of serial stream in bytes/s for Tx to Rx transmission. 0: unknown. UINT16_MAX: data rate is 64 KBytes/s or larger. (uint16_t)
+                rx_ser_data_rate          : Maximum data rate of serial stream in bytes/s for Rx to Tx transmission. 0: unknown. UINT16_MAX: data rate is 64 KBytes/s or larger. (uint16_t)
+                tx_receive_sensitivity        : Receive sensitivity of Tx in inverted dBm. 1..255 represents -1..-255 dBm, 0: unknown. (uint8_t)
+                rx_receive_sensitivity        : Receive sensitivity of Rx in inverted dBm. 1..255 represents -1..-255 dBm, 0: unknown. (uint8_t)
+
+*/
+    mavlink20.messages.mlrs_radio_link_information = function( ...moreargs ) {
+    [ this.target_system , this.target_component , this.type , this.mode , this.tx_power , this.rx_power , this.tx_frame_rate , this.rx_frame_rate , this.mode_str , this.band_str , this.tx_ser_data_rate , this.rx_ser_data_rate , this.tx_receive_sensitivity , this.rx_receive_sensitivity ] = moreargs;
+
+    this._format = '<HHHHBBBBbb6s6sBB';
+    this._id = mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_INFORMATION;
+    this.order_map = [4, 5, 6, 7, 8, 9, 0, 1, 10, 11, 2, 3, 12, 13];
+    this.len_map = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 0, 0];
+    this.crc_extra = 171;
+    this._name = 'MLRS_RADIO_LINK_INFORMATION';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['target_system', 'target_component', 'type', 'mode', 'tx_power', 'rx_power', 'tx_frame_rate', 'rx_frame_rate', 'mode_str', 'band_str', 'tx_ser_data_rate', 'rx_ser_data_rate', 'tx_receive_sensitivity', 'rx_receive_sensitivity'];
+
+}
+
+mavlink20.messages.mlrs_radio_link_information.prototype = new mavlink20.message;
+mavlink20.messages.mlrs_radio_link_information.prototype.pack = function(mav) {
+    var orderedfields = [ this.tx_frame_rate, this.rx_frame_rate, this.tx_ser_data_rate, this.rx_ser_data_rate, this.target_system, this.target_component, this.type, this.mode, this.tx_power, this.rx_power, this.mode_str, this.band_str, this.tx_receive_sensitivity, this.rx_receive_sensitivity];
+    var j = jspack.Pack(this._format, orderedfields);
+    if (j === false ) throw new Error("jspack unable to handle this packet");
+    return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
+}
+
+
+/* 
+Injected by a radio link endpoint into the MAVLink stream for purposes
+of flow control. Should be emitted only by components with component
+id MAV_COMP_ID_TELEMETRY_RADIO.
+
+                tx_ser_rate               : Transmitted bytes per second, UINT16_MAX: invalid/unknown. (uint16_t)
+                rx_ser_rate               : Received bytes per second, UINT16_MAX: invalid/unknown. (uint16_t)
+                tx_used_ser_bandwidth        : Transmit bandwidth consumption. Values: 0..100, UINT8_MAX: invalid/unknown. (uint8_t)
+                rx_used_ser_bandwidth        : Receive bandwidth consumption. Values: 0..100, UINT8_MAX: invalid/unknown. (uint8_t)
+                txbuf                     : For compatibility with legacy method. UINT8_MAX: unknown. (uint8_t)
+
+*/
+    mavlink20.messages.mlrs_radio_link_flow_control = function( ...moreargs ) {
+    [ this.tx_ser_rate , this.rx_ser_rate , this.tx_used_ser_bandwidth , this.rx_used_ser_bandwidth , this.txbuf ] = moreargs;
+
+    this._format = '<HHBBB';
+    this._id = mavlink20.MAVLINK_MSG_ID_MLRS_RADIO_LINK_FLOW_CONTROL;
+    this.order_map = [0, 1, 2, 3, 4];
+    this.len_map = [1, 1, 1, 1, 1];
+    this.array_len_map = [0, 0, 0, 0, 0];
+    this.crc_extra = 55;
+    this._name = 'MLRS_RADIO_LINK_FLOW_CONTROL';
+
+    this._instance_field = undefined;
+    this._instance_offset = -1;
+
+    this.fieldnames = ['tx_ser_rate', 'rx_ser_rate', 'tx_used_ser_bandwidth', 'rx_used_ser_bandwidth', 'txbuf'];
+
+}
+
+mavlink20.messages.mlrs_radio_link_flow_control.prototype = new mavlink20.message;
+mavlink20.messages.mlrs_radio_link_flow_control.prototype.pack = function(mav) {
+    var orderedfields = [ this.tx_ser_rate, this.rx_ser_rate, this.tx_used_ser_bandwidth, this.rx_used_ser_bandwidth, this.txbuf];
     var j = jspack.Pack(this._format, orderedfields);
     if (j === false ) throw new Error("jspack unable to handle this packet");
     return mavlink20.message.prototype.pack.call(this, mav, this.crc_extra, j );
@@ -17916,7 +18591,7 @@ Response to the authorization request
                 resp_type                 : Response type (uint8_t)
 
 */
-mavlink20.messages.airlink_auth_response = function( ...moreargs ) {
+    mavlink20.messages.airlink_auth_response = function( ...moreargs ) {
     [ this.resp_type ] = moreargs;
 
     this._format = '<B';
@@ -18190,6 +18865,7 @@ mavlink20.map = {
         271: { format: '<Iiiiiii4fff', type: mavlink20.messages.camera_fov_status, order_map: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], crc_extra: 22 },
         275: { format: '<fffffffBBB', type: mavlink20.messages.camera_tracking_image_status, order_map: [7, 8, 9, 0, 1, 2, 3, 4, 5, 6], crc_extra: 126 },
         276: { format: '<iiffffffffffB', type: mavlink20.messages.camera_tracking_geo_status, order_map: [12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], crc_extra: 18 },
+        277: { format: '<IffffffBB', type: mavlink20.messages.camera_thermal_range, order_map: [0, 7, 8, 1, 2, 3, 4, 5, 6], crc_extra: 62 },
         280: { format: '<IIffffffB', type: mavlink20.messages.gimbal_manager_information, order_map: [0, 1, 8, 2, 3, 4, 5, 6, 7], crc_extra: 70 },
         281: { format: '<IIBBBBB', type: mavlink20.messages.gimbal_manager_status, order_map: [0, 1, 2, 3, 4, 5, 6], crc_extra: 48 },
         282: { format: '<I4ffffBBB', type: mavlink20.messages.gimbal_manager_set_attitude, order_map: [5, 6, 0, 7, 1, 2, 3, 4], crc_extra: 123 },
@@ -18210,6 +18886,8 @@ mavlink20.map = {
         324: { format: '<16s128sBB', type: mavlink20.messages.param_ext_ack, order_map: [0, 1, 2, 3], crc_extra: 132 },
         330: { format: '<Q72HHHBBffB', type: mavlink20.messages.obstacle_distance, order_map: [0, 4, 1, 5, 2, 3, 6, 7, 8], crc_extra: 23 },
         331: { format: '<Qfff4fffffff21f21fBBBBb', type: mavlink20.messages.odometry, order_map: [0, 13, 14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17], crc_extra: 91 },
+        332: { format: '<Q5f5f5f5f5f5f5f5f5f5f5f5HB', type: mavlink20.messages.trajectory_representation_waypoints, order_map: [0, 13, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], crc_extra: 236 },
+        333: { format: '<Q5f5f5f5f5fB', type: mavlink20.messages.trajectory_representation_bezier, order_map: [0, 6, 1, 2, 3, 4, 5], crc_extra: 231 },
         335: { format: '<QQHHBBBB', type: mavlink20.messages.isbd_link_status, order_map: [0, 1, 2, 3, 4, 5, 6, 7], crc_extra: 225 },
         339: { format: '<fB', type: mavlink20.messages.raw_rpm, order_map: [1, 0], crc_extra: 199 },
         340: { format: '<QiiiiiiihhhHHHH18sBB', type: mavlink20.messages.utm_global_position, order_map: [0, 15, 1, 2, 3, 4, 8, 9, 10, 11, 12, 13, 5, 6, 7, 14, 16, 17], crc_extra: 99 },
@@ -18237,6 +18915,10 @@ mavlink20.map = {
         53: { format: '<IB', type: mavlink20.messages.mission_checksum, order_map: [1, 0], crc_extra: 3 },
         295: { format: '<ffhBB', type: mavlink20.messages.airspeed, order_map: [3, 0, 2, 1, 4], crc_extra: 234 },
         420: { format: '<IHBBB32h', type: mavlink20.messages.radio_rc_channels, order_map: [2, 3, 0, 1, 4, 5], crc_extra: 20 },
+        435: { format: '<IIBBB35s', type: mavlink20.messages.available_modes, order_map: [2, 3, 4, 0, 1, 5], crc_extra: 134 },
+        436: { format: '<IIB', type: mavlink20.messages.current_mode, order_map: [2, 0, 1], crc_extra: 193 },
+        437: { format: '<B', type: mavlink20.messages.available_modes_monitor, order_map: [0], crc_extra: 30 },
+        441: { format: '<IHHBBBBBBBBB', type: mavlink20.messages.gnss_integrity, order_map: [3, 0, 4, 5, 6, 7, 1, 2, 8, 9, 10, 11], crc_extra: 169 },
         42000: { format: '<B', type: mavlink20.messages.icarous_heartbeat, order_map: [0], crc_extra: 227 },
         42001: { format: '<ffffffffffbBBBBB', type: mavlink20.messages.icarous_kinematic_bands, order_map: [10, 11, 0, 1, 12, 2, 3, 13, 4, 5, 14, 6, 7, 15, 8, 9], crc_extra: 239 },
         0: { format: '<IBBBBB', type: mavlink20.messages.heartbeat, order_map: [1, 2, 3, 0, 4, 5], crc_extra: 50 },
@@ -18261,16 +18943,18 @@ mavlink20.map = {
         10007: { format: '<iHBB8sB', type: mavlink20.messages.uavionix_adsb_out_control, order_map: [2, 0, 1, 3, 4, 5], crc_extra: 71 },
         10008: { format: '<HBBBB8s', type: mavlink20.messages.uavionix_adsb_out_status, order_map: [1, 0, 2, 3, 4, 5], crc_extra: 240 },
         10151: { format: '<ffffffIiffffffffffffHHB', type: mavlink20.messages.loweheiser_gov_efi, order_map: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 20, 21], crc_extra: 195 },
-        60001: { format: '<I4fffffHHBB', type: mavlink20.messages.storm32_gimbal_device_status, order_map: [8, 9, 0, 6, 1, 2, 3, 4, 5, 7], crc_extra: 186 },
-        60002: { format: '<4ffffHBB', type: mavlink20.messages.storm32_gimbal_device_control, order_map: [5, 6, 4, 0, 1, 2, 3], crc_extra: 69 },
         60010: { format: '<IIffffffB', type: mavlink20.messages.storm32_gimbal_manager_information, order_map: [8, 0, 1, 2, 3, 4, 5, 6, 7], crc_extra: 208 },
         60011: { format: '<HHBBB', type: mavlink20.messages.storm32_gimbal_manager_status, order_map: [2, 3, 0, 1, 4], crc_extra: 183 },
         60012: { format: '<4ffffHHBBBB', type: mavlink20.messages.storm32_gimbal_manager_control, order_map: [6, 7, 8, 9, 4, 5, 0, 1, 2, 3], crc_extra: 99 },
         60013: { format: '<ffffHHBBBB', type: mavlink20.messages.storm32_gimbal_manager_control_pitchyaw, order_map: [6, 7, 8, 9, 4, 5, 0, 1, 2, 3], crc_extra: 129 },
         60014: { format: '<fBBBB', type: mavlink20.messages.storm32_gimbal_manager_correct_roll, order_map: [1, 2, 3, 4, 0], crc_extra: 134 },
-        60015: { format: '<BBBB8sBB8s', type: mavlink20.messages.storm32_gimbal_manager_profile, order_map: [0, 1, 2, 3, 4, 5, 6, 7], crc_extra: 78 },
         60020: { format: '<HH', type: mavlink20.messages.qshot_status, order_map: [0, 1], crc_extra: 202 },
-        60025: { format: '<IIBB', type: mavlink20.messages.component_prearm_status, order_map: [2, 3, 0, 1], crc_extra: 20 },
+        60000: { format: '<QfffBB', type: mavlink20.messages.autopilot_state_for_gimbal_device_ext, order_map: [4, 5, 0, 1, 2, 3], crc_extra: 4 },
+        60040: { format: '<IB240s', type: mavlink20.messages.frsky_passthrough_array, order_map: [0, 1, 2], crc_extra: 156 },
+        60041: { format: '<HHHB248s', type: mavlink20.messages.param_value_array, order_map: [0, 1, 3, 2, 4], crc_extra: 191 },
+        60045: { format: '<HBBBBBbBBbBbBbff', type: mavlink20.messages.mlrs_radio_link_stats, order_map: [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], crc_extra: 14 },
+        60046: { format: '<HHHHBBBBbb6s6sBB', type: mavlink20.messages.mlrs_radio_link_information, order_map: [4, 5, 6, 7, 8, 9, 0, 1, 10, 11, 2, 3, 12, 13], crc_extra: 171 },
+        60047: { format: '<HHBBB', type: mavlink20.messages.mlrs_radio_link_flow_control, order_map: [0, 1, 2, 3, 4], crc_extra: 55 },
         60050: { format: '<IIIBB', type: mavlink20.messages.avss_prs_sys_status, order_map: [0, 1, 2, 3, 4], crc_extra: 220 },
         60051: { format: '<Iiiiff', type: mavlink20.messages.avss_drone_position, order_map: [0, 1, 2, 3, 4, 5], crc_extra: 245 },
         60052: { format: '<Iffffffffff', type: mavlink20.messages.avss_drone_imu, order_map: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], crc_extra: 101 },
@@ -18295,19 +18979,19 @@ mavlink20.messages.bad_data = function(data, reason) {
 mavlink20.messages.bad_data.prototype = new mavlink20.message;
 
 //  MAVLink signing state class
-MAVLinkSigning = function MAVLinkSigning(object){ 
+MAVLinkSigning = function MAVLinkSigning(object){
         this.secret_key = new Uint8Array();
-        this.timestamp = 1 
-        this.link_id = 0 
-        this.sign_outgoing = false // todo false this 
-        this.allow_unsigned_callback = undefined 
-        this.stream_timestamps = {} 
-        this.sig_count = 0 
-        this.badsig_count = 0 
-        this.goodsig_count = 0 
-        this.unsigned_count = 0 
-        this.reject_count = 0 
-} 
+        this.timestamp = 1;
+        this.link_id = 0;
+        this.sign_outgoing = false; // todo false this
+        this.allow_unsigned_callback = undefined;
+        this.stream_timestamps = {};
+        this.sig_count = 0;
+        this.badsig_count = 0;
+        this.goodsig_count = 0;
+        this.unsigned_count = 0;
+        this.reject_count = 0;
+}
 
 /* MAVLink protocol handling class */
 MAVLink20Processor = function(logger, srcSystem, srcComponent) {
@@ -18317,14 +19001,14 @@ MAVLink20Processor = function(logger, srcSystem, srcComponent) {
     this.seq = 0;
     this.buf = new Uint8Array();
     this.bufInError = new Uint8Array();
-   
+
     this.srcSystem = (typeof srcSystem === 'undefined') ? 0 : srcSystem;
     this.srcComponent =  (typeof srcComponent === 'undefined') ? 0 : srcComponent;
 
     this.have_prefix_error = false;
 
     // The first packet we expect is a valid header, 6 bytes.
-    this.protocol_marker = 253;   
+    this.protocol_marker = 253;
     this.expected_length = mavlink20.HEADER_LEN;
     this.little_endian = true;
 
@@ -18337,8 +19021,17 @@ MAVLink20Processor = function(logger, srcSystem, srcComponent) {
     this.total_receive_errors = 0;
     this.startup_time = Date.now();
 
-    // optional , but when used we store signing state in this object: 
+    // optional , but when used we store signing state in this object:
     this.signing = new MAVLinkSigning();
+}
+
+if (!isNode) {
+    // Browser-compatible util.inherits replacement
+    MAVLink20Processor.prototype = Object.create(events.EventEmitter.prototype);
+    MAVLink20Processor.prototype.constructor = MAVLink20Processor;
+} else {
+    // Implements EventEmitter
+    util.inherits(MAVLink20Processor, events.EventEmitter);
 }
 
 // If the logger exists, this function will add a message to it.
@@ -18369,29 +19062,45 @@ MAVLink20Processor.prototype.bytes_needed = function() {
     return ( ret <= 0 ) ? 1 : ret;
 }
 
+// Combine two buffers into one
 MAVLink20Processor.prototype.concat_buffer = function(A, B) {
     const out = new Uint8Array(A.length + B.length)
     out.set(A, 0)
     out.set(B, A.length)
     return out
-} 
+}
 
 // add data to the local buffer
 MAVLink20Processor.prototype.pushBuffer = function(data) {
-    this.buf = this.concat_buffer(this.buf, new Uint8Array([data]));
-    this.total_bytes_received += 1;
+    if (typeof data.length === 'undefined') {
+       data = [data];
+    }
+    this.buf = this.concat_buffer(this.buf, data);
+    this.total_bytes_received += data.length;
 }
 
 // Decode prefix.  Elides the prefix.
 MAVLink20Processor.prototype.parsePrefix = function() {
 
     // Test for a message prefix.
-    if( this.buf.length >= 1 && this.buf[0] != this.protocol_marker ) {
+    if( this.buf.length >= 1 &&
+        this.buf[0] != mavlink20.PROTOCOL_MARKER_V2 &&
+        this.buf[0] != mavlink20.PROTOCOL_MARKER_V1) {
 
-        // Strip the offending initial byte and throw an error.
+        // Strip the offending initial bytes and throw an error.
         var badPrefix = this.buf[0];
-        this.bufInError = this.buf.slice(0,1);
-        this.buf = this.buf.slice(1);
+        var idx1 = this.buf.indexOf(mavlink20.PROTOCOL_MARKER_V1);
+        var idx2 = this.buf.indexOf(mavlink20.PROTOCOL_MARKER_V2);
+        if (idx1 == -1) {
+            idx1 = idx2;
+        }
+        if (idx1 == -1 && idx2 == -1) {
+            this.bufInError = this.buf;
+            this.buf = new Uint8Array();
+        } else {
+            this.bufInError = this.buf.slice(0,idx1);
+            this.buf = this.buf.slice(idx1);
+        }
         this.expected_length = mavlink20.HEADER_LEN; //initially we 'expect' at least the length of the header, later parseLength corrects for this. 
         throw new Error("Bad prefix ("+badPrefix+")");
     }
@@ -18403,31 +19112,30 @@ MAVLink20Processor.prototype.parsePrefix = function() {
 //  us know if we have signing enabled, which affects the real-world length by the signature-block length of 13 bytes.
 // once successful, 'this.expected_length' is correctly set for the whole packet.
 MAVLink20Processor.prototype.parseLength = function() {
-    
-    if( this.buf.length >= 3 ) { 
-        var unpacked = jspack.Unpack('BBB', this.buf.slice(0, 3)); 
-        var magic = unpacked[0]; // stx ie fd or fe etc 
-        this.expected_length = unpacked[1] + mavlink20.HEADER_LEN + 2 // length of message + header + CRC (ie non-signed length) 
-        this.incompat_flags = unpacked[2];  
-        // mavlink2 only..  in mavlink1, incompat_flags var above is actually the 'seq', but for this test its ok. 
-        if ((magic == mavlink20.PROTOCOL_MARKER_V2 ) && ( this.incompat_flags & mavlink20.MAVLINK_IFLAG_SIGNED )){ 
-            this.expected_length += mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN; 
-        } 
+
+    if( this.buf.length >= 3 ) {
+        var unpacked = jspack.Unpack('BBB', this.buf.slice(0, 3));
+        var magic = unpacked[0]; // stx ie fd or fe etc
+        this.expected_length = unpacked[1] + mavlink20.HEADER_LEN + 2 // length of message + header + CRC (ie non-signed length)
+        this.incompat_flags = unpacked[2];
+        // mavlink2 only..  in mavlink1, incompat_flags var above is actually the 'seq', but for this test its ok.
+        if ((magic == mavlink20.PROTOCOL_MARKER_V2 ) && ( this.incompat_flags & mavlink20.MAVLINK_IFLAG_SIGNED )){
+            this.expected_length += mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN;
+        }
     }
 
 }
 
-// input some data bytes, possibly returning a new message - python equiv function is called parse_char / __parse_char_legacy 
+// input some data bytes, possibly returning a new message - python equiv function is called parse_char / __parse_char_legacy
+// c can be null to process any remaining data in the input buffer from a previous call
 MAVLink20Processor.prototype.parseChar = function(c) {
-
-    if (c == null) {
-        return
-    }
 
     var m = null;
 
     try {
-        this.pushBuffer(c);
+        if (c != null) {
+            this.pushBuffer(c);
+        }
         this.parsePrefix();
         this.parseLength();
         m = this.parsePayload();
@@ -18441,10 +19149,10 @@ MAVLink20Processor.prototype.parseChar = function(c) {
     }
 
     // emit a packet-specific message as well as a generic message, user/s can choose to use either or both of these.
-    //if(null != m) {
-    //    this.emit(m._name, m);
-    //    this.emit('message', m);
-    //}
+    if (isNode && null != m) {
+        this.emit(m._name, m);
+        this.emit('message', m);
+    }
 
     return m;
 
@@ -18488,7 +19196,7 @@ MAVLink20Processor.prototype.parsePayload = function() {
 
 // input some data bytes, possibly returning an array of new messages
 MAVLink20Processor.prototype.parseBuffer = function(s) {
-    
+
     // Get a message, if one is available in the stream.
     var m = this.parseChar(s);
 
@@ -18496,12 +19204,13 @@ MAVLink20Processor.prototype.parseBuffer = function(s) {
     if ( null === m ) {
         return null;
     }
-    
+
     // While more valid messages can be read from the existing buffer, add
     // them to the array of new messages and return them.
-    var ret = [m];
+    var ret = [];
+    ret.push(m);
     while(true) {
-        m = this.parseChar();
+        m = this.parseChar(null);
         if ( null === m ) {
             // No more messages left.
             return ret;
@@ -18513,94 +19222,84 @@ MAVLink20Processor.prototype.parseBuffer = function(s) {
 
 //check signature on incoming message , many of the comments in this file come from the python impl
 MAVLink20Processor.prototype.check_signature = function(msgbuf, srcSystem, srcComponent) {
+    var timestamp_buf = msgbuf.slice(-12,-6);
+ 
+    var link_id;
+    if (isNode) {
+        var link_id_buf = Buffer.from ? Buffer.from(msgbuf.slice(-13,-12)) : new Buffer(msgbuf.slice(-13,-12));
+        link_id = link_id_buf[0]; // get the first byte.
+    } else {
+        // Browser-compatible buffer handling
+        link_id = msgbuf.slice(-13,-12)[0];
+    }
 
-        //timestamp_buf = msgbuf[-12:-6] 
-        var timestamp_buf= msgbuf.slice(-12,-6);
- 
-        //link_id = msgbuf[-13] 
-        var link_id= new Buffer.from(msgbuf.slice(-13,-12)); // just a single byte really, but returned as a buffer 
-        link_id = link_id[0]; // get the first byte.
- 
-        //self.mav_sign_unpacker = jspack.Unpack('<IH') 
-        // (tlow, thigh) = self.mav_sign_unpacker.unpack(timestamp_buf) 
+    function unpackUint48LE(bytes) {
+        let value = 0n;
+        for (let i = 5; i >= 0; i--) {
+            value = (value << 8n) | BigInt(bytes[i]);
+        }
+        return value;
+    }
+    var timestamp = Number(unpackUint48LE(timestamp_buf));
 
-        // I means unsigned 4bytes, H means unsigned 2 bytes
-        var t = jspack.Unpack('<IH',new Uint8Array.from(timestamp_buf))
-        const [tlow, thigh]  = t; 
- 
-        // due to js not being able to shift numbers  more than 32, we'll use this instead.. 
-        // js stores all its numbers as a 64bit float with 53 bits of mantissa, so have room for 48 ok. 
-        function shift(number, shift) { 
-            return number * Math.pow(2, shift); 
-        } 
-        var thigh_shifted = shift(thigh,32);  
-        var timestamp = tlow + thigh_shifted 
- 
-        // see if the timestamp is acceptable 
- 
-         // we'll use a STRING containing these three things in it as a unique key eg: '0,1,1' 
-        stream_key = new Array(link_id,srcSystem,srcComponent).toString(); 
- 
-        if (stream_key in this.signing.stream_timestamps){ 
-            if (timestamp <= this.signing.stream_timestamps[stream_key]){ 
-                //# reject old timestamp 
-                //console.log('old timestamp')  
-                return false 
-            } 
-        }else{ 
-            //# a new stream has appeared. Accept the timestamp if it is at most 
-            //# one minute behind our current timestamp 
-            if (timestamp + 6000*1000 < this.signing.timestamp){ 
-                //console.log('bad new stream ', timestamp/(100.0*1000*60*60*24*365), this.signing.timestamp/(100.0*1000*60*60*24*365))  
-                return false 
-            } 
-            this.signing.stream_timestamps[stream_key] = timestamp; 
-            //console.log('new stream',this.signing.stream_timestamps)  
-        } 
- 
-         //   h = hashlib.new('sha256') 
-         //   h.update(this.signing.secret_key) 
-         //   h.update(msgbuf[:-6]) 
-        var crypto= require('crypto'); 
-        var h =  crypto.createHash('sha256'); 
- 
-        // just the last 6 of 13 available are the actual sig . ie excluding the linkid(1) and timestamp(6) 
-        var sigpart = msgbuf.slice(-6); 
-        sigpart = new Uint8Array.from(sigpart); 
-        // not sig part 0- end-minus-6 
-        var notsigpart = msgbuf.slice(0,-6);  
-        notsigpart = new Uint8Array.from(notsigpart); 
+    // see if the timestamp is acceptable
 
-        h.update(this.signing.secret_key); // secret is already a Buffer 
-        //var tmp = h.copy().digest(); 
-        h.update(notsigpart);  
-        //var tmp2 = h.copy().digest() 
-        var hashDigest = h.digest(); 
-        sig1 = hashDigest.slice(0,6) 
- 
-        //sig1 = str(h.digest())[:6] 
-        //sig2 = str(msgbuf)[-6:] 
+    // we'll use a STRING containing these three things in it as a unique key eg: '0,1,1'
+    stream_key = new Array(link_id,srcSystem,srcComponent).toString();
 
-        // can't just compare sigs, need a full buffer compare like this... 
-        //if (sig1 != sigpart){  
-        if (Uint8Array.compare(sig1,sigpart)){  
-            //console.log('sig mismatch',sig1,sigpart)  
-            return false 
-        } 
-        //# the timestamp we next send with is the max of the received timestamp and 
-        //# our current timestamp 
-        this.signing.timestamp = Math.max(this.signing.timestamp, timestamp) 
-        return true
-} 
+    if (stream_key in this.signing.stream_timestamps){
+	if (timestamp <= this.signing.stream_timestamps[stream_key]){
+	    //# reject old timestamp
+	    //console.log('old timestamp')
+	    return false
+	}
+    }else{
+	//# a new stream has appeared. Accept the timestamp if it is at most
+	//# one minute behind our current timestamp
+    if (timestamp + 6000*1000 < this.signing.timestamp){
+	    //console.log('bad new stream ', timestamp/(100.0*1000*60*60*24*365), this.signing.timestamp/(100.0*1000*60*60*24*365))
+	    return false
+	}
+	this.signing.stream_timestamps[stream_key] = timestamp;
+	//console.log('new stream',this.signing.stream_timestamps)
+    }
+
+    // just the last 6 of 13 available are the actual sig . ie excluding the linkid(1) and timestamp(6)
+    var sigpart = msgbuf.slice(-6);
+    sigpart = Uint8Array.from(sigpart);
+    // not sig part 0- end-minus-6
+    var notsigpart = msgbuf.slice(0,-6);
+    notsigpart = Uint8Array.from(notsigpart);
+
+    var sig1 = mavlink20.create_signature(this.signing.secret_key, notsigpart);
+
+    // Browser-compatible buffer comparison
+    var signaturesMatch;
+    if (isNode) {
+        signaturesMatch = Buffer.from(sig1).equals(Buffer.from(sigpart));
+    } else {
+        // Compare arrays element by element in browser
+        signaturesMatch = sig1.length === sigpart.length && 
+                         sig1.every((val, index) => val === sigpart[index]);
+    }
+    if (!signaturesMatch) {
+        return false;
+    }
+    //# the timestamp we next send with is the max of the received timestamp and
+    //# our current timestamp
+    this.signing.timestamp = Math.max(this.signing.timestamp, timestamp+1);
+    return true
+}
 
 /* decode a buffer as a MAVLink message */
 MAVLink20Processor.prototype.decode = function(msgbuf) {
 
-    var magic, incompat_flags, compat_flags, mlen, seq, srcSystem, srcComponent, unpacked, msgId, signature_len; 
+    var magic, incompat_flags, compat_flags, mlen, seq, srcSystem, srcComponent, unpacked, msgId, signature_len, header_len;
 
     // decode the header
     try {
-        unpacked = jspack.Unpack('BBBBBBBHB', msgbuf.slice(0, 10));  // the H in here causes msgIDlow to takeup 2 bytes, the rest 1 
+        if (msgbuf[0] == 253) {
+    var unpacked = jspack.Unpack('BBBBBBBHB', msgbuf.slice(0, 10));  // the H in here causes msgIDlow to takeup 2 bytes, the rest 1
         magic = unpacked[0];
         mlen = unpacked[1];
         incompat_flags = unpacked[2];
@@ -18610,64 +19309,51 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
         srcComponent = unpacked[6];
         var msgIDlow = ((unpacked[7] & 0xFF) << 8) | ((unpacked[7] >> 8) & 0xFF); // first-two msgid bytes 
         var msgIDhigh = unpacked[8];   // the 3rd msgid byte 
-        msgId = msgIDlow | (msgIDhigh<<16);  // combined result. 0 - 16777215  24bit number 
+        msgId = msgIDlow | (msgIDhigh<<16);  // combined result. 0 - 16777215  24bit number
+        header_len = 10;
+} else {
+    var unpacked = jspack.Unpack('BBBBBB', msgbuf.slice(0, 6));
+        magic = unpacked[0];
+        mlen = unpacked[1];
+        seq = unpacked[2];
+        srcSystem = unpacked[3];
+        srcComponent = unpacked[4];
+        msgID = unpacked[5];
+        incompat_flags = 0;
+        compat_flags = 0;
+        header_len = 6;
+}
         }
     catch(e) {
         throw new Error('Unable to unpack MAVLink header: ' + e.message);
-    }
-
-    //  TODO allow full parsing of 1.0 inside the 2.0 parser, this is just a start
-    if (magic == mavlink20.PROTOCOL_MARKER_V1){ 
-            //headerlen = 6;
-
-            // these two are in the same place in both v1 and v2 so no change needed:
-            //magic = magic;
-            //mlen = mlen;
- 
-            // grab mavlink-v1 header position info from v2 unpacked position
-            seq1 = incompat_flags;
-            srcSystem1 = compat_flags;
-            srcComponent1 = seq;
-            msgId1 = srcSystem;
-            // override the v1 vs v2 offsets so we get the correct data either way...
-            seq = seq1;
-            srcSystem = srcSystem1;
-            srcComponent = srcComponent1;
-            msgId = msgId1;
-            // don't exist in mavlink1, so zero-them
-            incompat_flags = 0;
-            compat_flags = 0;
-            signature_len = 0;
-            // todo add more v1 here and don't just return
-            return;
     }
 
     if (magic != this.protocol_marker) {
         throw new Error("Invalid MAVLink prefix ("+magic+")");
     }
 
-    // is packet supposed to be signed? 
-    if ( incompat_flags & mavlink20.MAVLINK_IFLAG_SIGNED ){  
-        signature_len = mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN; 
-    } else { 
-        signature_len = 0; 
-    } 
- 
-    // header's declared len compared to packets actual len 
-    var actual_len = (msgbuf.length - (mavlink20.HEADER_LEN + 2 + signature_len)); 
-    var actual_len_nosign = (msgbuf.length - (mavlink20.HEADER_LEN + 2 )); 
- 
-    if ((mlen == actual_len) && (signature_len > 0)){ 
-        var len_if_signed = mlen+signature_len; 
-        //console.log("Packet appears signed && labeled as signed, OK. msgId=" + msgId);     
- 
-    } else  if ((mlen == actual_len_nosign) && (signature_len > 0)){ 
- 
-        var len_if_signed = mlen+signature_len; 
+    // is packet supposed to be signed?
+    if ( incompat_flags & mavlink20.MAVLINK_IFLAG_SIGNED ){
+        signature_len = mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN;
+    } else {
+        signature_len = 0;
+    }
+
+    // header's declared len compared to packets actual len
+    var actual_len = (msgbuf.length - (header_len + 2 + signature_len));
+    var actual_len_nosign = (msgbuf.length - (header_len + 2 ));
+
+    if ((mlen == actual_len) && (signature_len > 0)){
+        var len_if_signed = mlen+signature_len;
+        //console.log("Packet appears signed && labeled as signed, OK. msgId=" + msgId);
+
+    } else  if ((mlen == actual_len_nosign) && (signature_len > 0)){
+
+        var len_if_signed = mlen+signature_len;
         throw new Error("Packet appears unsigned when labeled as signed. Got actual_len "+actual_len_nosign+" expected " + len_if_signed + ", msgId=" + msgId);     
- 
-    } else if( mlen != actual_len) {  
-          throw new Error("Invalid MAVLink message length.  Got " + (msgbuf.length - (mavlink20.HEADER_LEN + 2)) + " expected " + mlen + ", msgId=" + msgId); 
+
+    } else if( mlen != actual_len) {
+          throw new Error("Invalid MAVLink message length.  Got " + (msgbuf.length - (header_len + 2)) + " expected " + mlen + ", msgId=" + msgId);
 
     }
 
@@ -18675,83 +19361,81 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
         throw new Error("Unknown MAVLink message ID (" + msgId + ")");
     }
 
-    // here's the common chunks of packet we want to work with below.. 
-    var headerBuf= msgbuf.slice(mavlink20.HEADER_LEN); // first10 
-    var sigBuf = msgbuf.slice(-signature_len); // last 13 or nothing 
-    var crcBuf1 = msgbuf.slice(-2); // either last-2 or last-2-prior-to-signature 
-    var crcBuf2 = msgbuf.slice(-15,-13); // either last-2 or last-2-prior-to-signature 
-    var payloadBuf = msgbuf.slice(mavlink20.HEADER_LEN, -(signature_len+2)); // the remaining bit between the header and the crc 
-    var crcCheckBuf = msgbuf.slice(1, -(signature_len+2)); // the part uses to calculate the crc - ie between the magic and signature, 
+    // here's the common chunks of packet we want to work with below..
+    var payloadBuf = msgbuf.slice(mavlink20.HEADER_LEN, -(signature_len+2)); // the remaining bit between the header and the crc
+    var crcCheckBuf = msgbuf.slice(1, -(signature_len+2)); // the part uses to calculate the crc - ie between the magic and signature,
 
     // decode the payload
     // refs: (fmt, type, order_map, crc_extra) = mavlink20.map[msgId]
     var decoder = mavlink20.map[msgId];
 
     // decode the checksum
-    var receivedChecksum = undefined; 
-    if ( signature_len == 0 ) { // unsigned 
-        try { 
-            receivedChecksum = jspack.Unpack('<H', crcBuf1); 
-        } catch (e) { 
-            throw new Error("Unable to unpack MAVLink unsigned CRC: " + e.message); 
-        } 
-    } else { // signed 
-        try { 
-            receivedChecksum = jspack.Unpack('<H', crcBuf2); 
-        } catch (e) { 
-            throw new Error("Unable to unpack MAVLink signed CRC: " + e.message); 
-        } 
+    var receivedChecksum = undefined;
+    if ( signature_len == 0 ) { // unsigned
+        try {
+            var crcBuf1 = msgbuf.slice(-2);
+            receivedChecksum = jspack.Unpack('<H', crcBuf1);
+        } catch (e) {
+            throw new Error("Unable to unpack MAVLink unsigned CRC: " + e.message);
+        }
+    } else { // signed
+        try {
+            var crcBuf2 = msgbuf.slice(-15,-13);
+            receivedChecksum = jspack.Unpack('<H', crcBuf2);
+        } catch (e) {
+            throw new Error("Unable to unpack MAVLink signed CRC: " + e.message);
+        }
     }
-    receivedChecksum = receivedChecksum[0]; 
+    receivedChecksum = receivedChecksum[0];
 
-    // make our own chksum of the relevant part of the packet... 
-    var messageChecksum = mavlink20.x25Crc(crcCheckBuf);  
-    var messageChecksum2 = mavlink20.x25Crc([decoder.crc_extra], messageChecksum); 
- 
-    if ( receivedChecksum != messageChecksum2 ) { 
+    // make our own chksum of the relevant part of the packet...
+    var messageChecksum = mavlink20.x25Crc(crcCheckBuf);
+    var messageChecksum2 = mavlink20.x25Crc([decoder.crc_extra], messageChecksum);
+
+    if ( receivedChecksum != messageChecksum2 ) {
         throw new Error('invalid MAVLink CRC in msgID ' +msgId+ ', got ' + receivedChecksum + ' checksum, calculated payload checksum as '+messageChecksum2 );
     }
- 
-    // now check the signature... 
+
+    // now check the signature...
     var sig_ok = false 
-    if (signature_len == mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN){ 
-        this.signing.sig_count += 1  
-    } 
+    if (signature_len == mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN){
+        this.signing.sig_count += 1
+    }
 
-    // it's a Buffer, zero-length means unused 
-    if (this.signing.secret_key.length != 0 ){ 
-        var accept_signature = false; 
-        if (signature_len == mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN){  
-            sig_ok = this.check_signature(msgbuf, srcSystem, srcComponent); 
-            accept_signature = sig_ok; 
-            if (sig_ok){ 
-                this.signing.goodsig_count += 1 
-            }else{ 
-                this.signing.badsig_count += 1 
-            } 
-            if ( (! accept_signature) && (this.signing.allow_unsigned_callback != undefined) ){ 
-                accept_signature = this.signing.allow_unsigned_callback(this, msgId); 
-                if (accept_signature){ 
-                    this.signing.unsigned_count += 1 
-                }else{ 
-                    this.signing.reject_count += 1 
-                } 
-            } 
-        }else if (this.signing.allow_unsigned_callback != undefined){ 
-            accept_signature = this.signing.allow_unsigned_callback(this, msgId); 
-            if (accept_signature){ 
-                this.signing.unsigned_count += 1 
-            }else{ 
-                this.signing.reject_count += 1 
-            } 
-        } 
-        if (!accept_signature) throw new Error('Invalid signature'); 
-    } 
+    // it's a Buffer, zero-length means unused
+    if (this.signing.secret_key.length != 0 ){
+        var accept_signature = false;
+        if (signature_len == mavlink20.MAVLINK_SIGNATURE_BLOCK_LEN){
+            sig_ok = this.check_signature(msgbuf, srcSystem, srcComponent);
+            accept_signature = sig_ok;
+            if (sig_ok){
+                this.signing.goodsig_count += 1;
+            }else{
+                this.signing.badsig_count += 1;
+            }
+            if ( (! accept_signature) && (this.signing.allow_unsigned_callback != undefined) ){
+                accept_signature = this.signing.allow_unsigned_callback(this, msgId);
+                if (accept_signature){
+                    this.signing.unsigned_count += 1;
+                }else{
+                    this.signing.reject_count += 1;
+                }
+            }
+        }else if (this.signing.allow_unsigned_callback != undefined){
+            accept_signature = this.signing.allow_unsigned_callback(this, msgId);
+            if (accept_signature){
+                this.signing.unsigned_count += 1;
+            }else{
+                this.signing.reject_count += 1;
+            }
+        }
+        if (!accept_signature) throw new Error('Invalid signature');
+    }
 
-    // now look at the specifics of the payload... 
+    // now look at the specifics of the payload...
     var paylen = jspack.CalcLength(decoder.format);
 
-    //put any truncated 0's back in (ie zero-pad ) 
+    //put any truncated 0's back in (ie zero-pad )
     if (paylen > payloadBuf.length) {
         payloadBuf = this.concat_buffer(payloadBuf, new Uint8Array(paylen - payloadBuf.length).fill(0));
     }
@@ -18822,18 +19506,18 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
     // construct the message object
     try {
         // args at this point might look like:  { '0': 6, '1': 8, '2': 0, '3': 0, '4': 3, '5': 3 }
-        var m = new decoder.type;   // make a new 'empty' instance of the right class,
+        var m = new decoder.type();   // make a new 'empty' instance of the right class,
         m.set(args,false); // associate ordered-field-numbers to names, after construction not during.
     }
     catch (e) {
         throw new Error('Unable to instantiate MAVLink message of type '+decoder.type+' : ' + e.message);
     }
 
-    m._signed = sig_ok; 
-    if (m._signed) { m._link_id = msgbuf[-13]; } 
+    m._signed = sig_ok;
+    if (m._signed) { m._link_id = msgbuf[-13]; }
  
     m._msgbuf = msgbuf;
-    m._payload = payloadBuf 
+    m._payload = payloadBuf;
     m.crc = receivedChecksum;
     m._header = new mavlink20.header(msgId, mlen, seq, srcSystem, srcComponent, incompat_flags, compat_flags);
     this.log(m);
@@ -18841,8 +19525,22 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
 }
 
 
-// allow loading as both common.js (Node), and/or vanilla javascript in-browser
-if(typeof module === "object" && module.exports) {
-    module.exports = {mavlink20, MAVLink20Processor};
+// Browser and Node.js compatible module exports
+if (!isNode) {
+    // For browsers, attach to window or use global namespace
+    if (typeof window !== 'undefined') {
+        window.mavlink20 = mavlink20;
+        window.MAVLink20Processor = MAVLink20Processor;
+    }
+    // Also support global assignment
+    if (typeof global !== 'undefined') {
+        global.mavlink20 = mavlink20;
+        global.MAVLink20Processor = MAVLink20Processor;
+    }
+} else {
+    // For Node.js, use module.exports
+    if (typeof module === "object" && module.exports) {
+        module.exports = {mavlink20, MAVLink20Processor};
+    }
 }
 
