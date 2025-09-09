@@ -42,7 +42,9 @@ class LoggedNotch extends NotchTarget {
                 this.data.freq = new Array(num_notches)
                 for (let i = 0; i<num_notches; i++) {
                     const name = "NF" + (i + 1)
-                    this.data.freq[i] = Array.from(log.get_instance(dynamic_msg, inst, name))
+                    if (log.messageTypes[dynamic_msg].expressions.includes(name)) {
+                        this.data.freq[i] = Array.from(log.get_instance(dynamic_msg, inst, name))
+                    }
                 }
                 return
             }

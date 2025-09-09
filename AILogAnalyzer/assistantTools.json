@@ -1,0 +1,23 @@
+[
+  { "type": "code_interpreter" },
+  { "type": "file_search" },
+  {
+    "type": "function",
+    "function": {
+      "name": "get",
+      "description": "Retrieve information related to the specified message type.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message_type": {
+            "type": "string",
+            "description": "The type of message to retrieve information for (e.g., GPS, CTUN, VIBE)."
+          }
+        },
+        "required": ["message_type"],
+        "additionalProperties": false
+      }
+    }
+  }
+]
