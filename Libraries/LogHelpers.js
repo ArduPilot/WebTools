@@ -38,20 +38,19 @@ function get_version_and_board(log) {
         if ("FV" in VER) {
             filter_version = VER.FV[0]
         }
+
+        if ((build_names[build_type] != null) && !fw_string.startsWith(build_names[build_type])) {
+            // If the log is from OEM-customized firmware with an
+            // AP_CUSTOM_FIRMWARE_STRING, append the base firmware info.
+            // This also means it will match how it appears in the MSGs,
+            // so os_string and fight_controller will not be returned undefined.
+            const { Maj = ['?'], Min = ['?'], Pat = ['?'] } = VER
+            fw_string += ` [${build_names[build_type]} V${Maj[0]}.${Min[0]}.${Pat[0]}]`
+        }
     }
 
     if ('MSG' in log.messageTypes) {
         const MSG = log.get("MSG")
-
-        if (build_names[build_type] && !fw_string.startsWith(build_names[build_type])) {
-            // If the log is from OEM-customized firmware with an
-            // AP_CUSTOM_FIRMWARE_STRING, append the base firmware info to match
-            // how it will appear in the MSGs. Otherwise, os_string and
-            // flight_controller will be returned undefined.
-            const { Maj = [0], Min = [0], Pat = [0] } = log.get("VER")
-            fw_string += ` [${build_names[build_type]} V${Maj[0]}.${Min[0]}.${Pat[0]}]`
-        }
-
         // Look for firmware string in MSGs, this marks the start of the log start msgs
         // The subsequent messages give more info, this is a bad way of doing it
         const len = MSG.Message.length
