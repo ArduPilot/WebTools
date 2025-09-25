@@ -1187,7 +1187,7 @@ function get_airspeed_param_names(index) {
 let airspeed
 function load_airspeed(log) {
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 6; i++) {
         const names = get_airspeed_param_names(i)
         if (names.id in params) {
             const id = params[names.id]
