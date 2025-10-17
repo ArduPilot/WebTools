@@ -35,8 +35,8 @@
 
 <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Hardware Report</a></h1>
 
-<body onload="initial_load(); reset();">
-<input id="fileItem" type="file" accept=".param,.parm,.bin" onchange="load(this)">
+<body onload="initial_load().then(() => load());">
+<input id="fileItem" type="file" accept=".param,.parm,.bin" onchange="load()">
 
 <input id="OpenIn" type="button" value="Open In" disabled>
 

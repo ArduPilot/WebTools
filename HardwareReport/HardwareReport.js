@@ -3114,10 +3114,11 @@ async function load_log(log_file) {
     console.log(`Load took: ${end - start} ms`)
 }
 
-async function load(e) {
+async function load() {
     reset()
 
-    const file = e.files[0]
+    const button = document.getElementById("fileItem")
+    const file = button.files[0]
     if (file == null) {
         return
     }
@@ -3648,11 +3649,15 @@ async function initial_load() {
         }
     }
 
-
-    fetch("board_types.txt")
-        .then((res) => {
-        return res.text();
-    }).then((data) => load_board_types(data));
+    return new Promise((resolve) => {
+        fetch("board_types.txt")
+            .then((res) => {
+            return res.text()
+        }).then((data) => {
+            load_board_types(data)
+            resolve()
+        });
+    })
 }
 
 function save_text(text, file_postfix) {
