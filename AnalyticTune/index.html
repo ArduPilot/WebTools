@@ -6,6 +6,7 @@
 <link rel="icon" href="../images/AP_favicon.png">
 <script type="text/javascript" src="AnalyticTune.js"></script>
 <script type="text/javascript" src="DiscreteFilter.js"></script>
+<script type="text/javascript" src="FormBuilder.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
@@ -198,260 +199,9 @@
 <table>
         <tr>
         <td>
-        <fieldset style="width:580px">
-                <legend>Attitude Controller Parameters</legend>
-                        <div id="RollPitchTC" style="display:block">
-                                <p>
-                                        <input id="ATC_INPUT_TC" name="ATC_INPUT_TC" type="number" step="0.01" value="0.15" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="QRollPitchTC" style="display:none">
-                                <p>
-                                        <input id="Q_A_INPUT_TC" name="Q_A_INPUT_TC" type="number" step="0.01" value="0.15" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="YawTC" style="display:None">
-                                <p>
-                                        <input id="PILOT_Y_RATE_TC" name="PILOT_Y_RATE_TC" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="QYawTC" style="display:None">
-                                <p>
-                                        <input id="Q_PLT_Y_RATE_TC" name="Q_PLT_Y_RATE_TC" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="RollPIDS" style="display:block">
-                                <p>
-                                        <input id="ATC_ANG_RLL_P" name="ATC_ANG_RLL_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_FF" name="ATC_RAT_RLL_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_P" name="ATC_RAT_RLL_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_I" name="ATC_RAT_RLL_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_D" name="ATC_RAT_RLL_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_D_FF" name="ATC_RAT_RLL_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>       
-                                <p>
-                                        <input id="ATC_RAT_RLL_FLTT" name="ATC_RAT_RLL_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_RLL_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_RLL_FLTD" name="ATC_RAT_RLL_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="QRollPIDS" style="display:none">
-                                <p>
-                                        <input id="Q_A_ANG_RLL_P" name="Q_A_ANG_RLL_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_FF" name="Q_A_RAT_RLL_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_P" name="Q_A_RAT_RLL_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_I" name="Q_A_RAT_RLL_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_D" name="Q_A_RAT_RLL_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_D_FF" name="Q_A_RAT_RLL_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>       
-                                <p>
-                                        <input id="Q_A_RAT_RLL_FLTT" name="Q_A_RAT_RLL_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_FLTE" name="Q_A_RAT_RLL_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_RLL_FLTD" name="Q_A_RAT_RLL_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="FWRollPIDS" style="display:none">
-                                <p>
-                                        <input id="RLL2SRV_TCONST" name="RLL2SRV_TCONST" type="number" step="0.01" value="0.25" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_FF" name="RLL_RATE_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_P" name="RLL_RATE_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_I" name="RLL_RATE_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_D" name="RLL_RATE_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_D_FF" name="RLL_RATE_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>       
-                                <p>
-                                        <input id="RLL_RATE_FLTT" name="RLL_RATE_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_FLTE" name="RLL_RATE_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="RLL_RATE_FLTD" name="RLL_RATE_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="PitchPIDS" style="display:none">
-                                <p>
-                                        <input id="ATC_ANG_PIT_P" name="ATC_ANG_PIT_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_FF" name="ATC_RAT_PIT_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_P" name="ATC_RAT_PIT_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_I" name="ATC_RAT_PIT_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_D" name="ATC_RAT_PIT_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_D_FF" name="ATC_RAT_PIT_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>        
-                                <p>
-                                        <input id="ATC_RAT_PIT_FLTT" name="ATC_RAT_PIT_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_FLTE" name="ATC_RAT_PIT_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_PIT_FLTD" name="ATC_RAT_PIT_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="QPitchPIDS" style="display:none">
-                                <p>
-                                        <input id="Q_A_ANG_PIT_P" name="Q_A_ANG_PIT_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_FF" name="Q_A_RAT_PIT_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_P" name="Q_A_RAT_PIT_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_I" name="Q_A_RAT_PIT_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_D" name="Q_A_RAT_PIT_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_D_FF" name="Q_A_RAT_PIT_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>        
-                                <p>
-                                        <input id="Q_A_RAT_PIT_FLTT" name="Q_A_RAT_PIT_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_FLTE" name="Q_A_RAT_PIT_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_PIT_FLTD" name="Q_A_RAT_PIT_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="FWPitchPIDS" style="display:none">
-                                <p>
-                                        <input id="PTCH2SRV_TCONST" name="PTCH2SRV_TCONST" type="number" step="0.01" value="0.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_FF" name="PTCH_RATE_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_P" name="PTCH_RATE_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_I" name="PTCH_RATE_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_D" name="PTCH_RATE_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_D_FF" name="PTCH_RATE_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>       
-                                <p>
-                                        <input id="PTCH_RATE_FLTT" name="PTCH_RATE_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_FLTE" name="PTCH_RATE_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="PTCH_RATE_FLTD" name="PTCH_RATE_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="YawPIDS" style="display:none">
-                                <p>
-                                        <input id="ATC_ANG_YAW_P" name="ATC_ANG_YAW_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_FF" name="ATC_RAT_YAW_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_P" name="ATC_RAT_YAW_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_I" name="ATC_RAT_YAW_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_D" name="ATC_RAT_YAW_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_D_FF" name="ATC_RAT_YAW_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>        
-                                <p>
-                                        <input id="ATC_RAT_YAW_FLTT" name="ATC_RAT_YAW_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_FLTE" name="ATC_RAT_YAW_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="ATC_RAT_YAW_FLTD" name="ATC_RAT_YAW_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
-                        <div id="QYawPIDS" style="display:none">
-                                <p>
-                                        <input id="Q_A_ANG_YAW_P" name="Q_A_ANG_YAW_P" type="number" step="0.1" value="4.5" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_FF" name="Q_A_RAT_YAW_FF" type="number" step="0.01" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_P" name="Q_A_RAT_YAW_P" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_I" name="Q_A_RAT_YAW_I" type="number" step="0.01" value="0.288" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_D" name="Q_A_RAT_YAW_D" type="number" step="0.0001" value="0.0117" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_D_FF" name="Q_A_RAT_YAW_D_FF" type="number" step="0.0001" value="0.0" onchange = "calculate_freq_resp()"/>
-                                </p>        
-                                <p>
-                                        <input id="Q_A_RAT_YAW_FLTT" name="Q_A_RAT_YAW_FLTT" type="number" step="0.01" value="1.77" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_FLTE" name="Q_A_RAT_YAW_FLTE" type="number" step="0.01" value="0" onchange = "calculate_freq_resp()"/>
-                                </p>
-                                <p>
-                                        <input id="Q_A_RAT_YAW_FLTD" name="Q_A_RAT_YAW_FLTD" type="number" step="0.01" value="20" onchange = "calculate_freq_resp()"/>
-                                </p>
-                        </div>
+                <fieldset style="width:580px">
+                        <legend>Attitude Controller Parameters</legend>
+                        <div id="tables-container"></div>
                 </fieldset>
         </td>
         <td>
@@ -782,7 +532,10 @@
       calculate_freq_resp();
   }
 
-  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"]
+  // Initial build of the tables when the page loads
+  buildAllTables();
+
+  let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"];
   var inputs = document.getElementsByTagName("input");
   for (param of inputs) {
       if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT")) {

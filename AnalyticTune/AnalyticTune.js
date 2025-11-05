@@ -782,7 +782,7 @@ function update_PID_filters() {
         }
         document.getElementById(ele_prefix + 'PitchPIDS').style.display = 'block';
         document.getElementById(ele_prefix + 'PitchNOTCH').style.display = 'block';
-        console.log(ele_prefix + 'PitchPIDS')
+
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
@@ -814,6 +814,7 @@ var calc_freq_resp
 var pred_freq_resp
 function calculate_freq_resp() {
     const start = performance.now()
+    console.log(params)
 
     // Window size from user
     const window_size = parseInt(document.getElementById("FFTWindow_size").value)
