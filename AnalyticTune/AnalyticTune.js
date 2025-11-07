@@ -78,7 +78,7 @@ function link_plots() {
 
 }
 
-function setup_plots() {
+function setup_time_history_plots() {
 
     const time_scale_label = "Time (s)"
 
@@ -154,6 +154,9 @@ function setup_plots() {
 
     })
 
+}
+
+function setup_freq_response_plots() {
 
     amplitude_scale = get_amplitude_scale()
     frequency_scale = get_frequency_scale()
@@ -436,6 +439,7 @@ var use_ANG_message
 var vehicle_type = "ArduCopter"
 var aspeed = 1.0
 var eas2tas = 1.0
+var PARM
 function load_log(log_file) {
 
     log = new DataflashParser()
@@ -463,7 +467,7 @@ function load_log(log_file) {
         alert("No params in log")
         return
     }
-    const PARM = log.get("PARM")
+    PARM = log.get("PARM")
     function get_param(name, allow_change) {
         return get_param_value(PARM, name, allow_change)
     }
@@ -568,6 +572,18 @@ function load_log(log_file) {
             }
         }
     }
+    
+    Plotly.redraw("FlightData")
+
+    // Populate start and end time
+    if ((start_time != null) && (end_time != null)) {
+        document.getElementById("starttime").value = start_time
+        document.getElementById("endtime").value = end_time
+    }
+
+}
+
+function setup_FFT_data() {
 
     if (vehicle_type == "ArduPlane_FW") {
         document.getElementById("type_Att_Ctrlr").disabled = true
@@ -578,6 +594,9 @@ function load_log(log_file) {
     }
 
     const pid_params = get_PID_param_names(vehicle_type)
+    function get_param(name, allow_change) {
+        return get_param_value(PARM, name, allow_change)
+    }
 
     for (let i = 0; i < pid_params.length; i++) {
         for (const param of Object.values(pid_params[i])) {
@@ -639,18 +658,6 @@ function load_log(log_file) {
             parameter_set_value("SCHED_LOOP_RATE", loop_rate)
         }
     }
-    Plotly.redraw("FlightData")
-
-    // Populate start and end time
-    if ((start_time != null) && (end_time != null)) {
-        document.getElementById("starttime").value = start_time
-        document.getElementById("endtime").value = end_time
-    }
-
-    setup_FFT_data()
-}
-
-function setup_FFT_data() {
 
     // Clear existing data
     fft_plot.data = []
@@ -1281,7 +1288,7 @@ function load() {
 
     // populate from query's
     var params = new URL(url_string).searchParams;
-    var sections = ["params", "PID_params"];
+    var sections = ["params", "plot_options"];
     for (var j = 0; j<sections.length; j++) {
         var items = document.forms[sections[j]].getElementsByTagName("input");
         for (var i=-0;i<items.length;i++) {
@@ -1846,7 +1853,6 @@ function set_sid_axis(axis) {
         page_axis = "Yaw"
     }
     sid_axis = axis
-    axis_changed()
 }
 
 function get_vehicle_atc_prefix() {
