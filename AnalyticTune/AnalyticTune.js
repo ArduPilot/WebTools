@@ -739,42 +739,23 @@ function axis_changed() {
 
 function update_PID_filters() {
     document.getElementById('RollPitchTC').style.display = 'none';
-    document.getElementById('QRollPitchTC').style.display = 'none';
     document.getElementById('YawTC').style.display = 'none';
-    document.getElementById('QYawTC').style.display = 'none';
     document.getElementById('RollPIDS').style.display = 'none';
-    document.getElementById('QRollPIDS').style.display = 'none';
-    document.getElementById('FWRollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
-    document.getElementById('QPitchPIDS').style.display = 'none';
-    document.getElementById('FWPitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
-    document.getElementById('QYawPIDS').style.display = 'none';
     document.getElementById('RollNOTCH').style.display = 'none';
-    document.getElementById('QRollNOTCH').style.display = 'none';
-    document.getElementById('FWRollNOTCH').style.display = 'none';
     document.getElementById('PitchNOTCH').style.display = 'none';
-    document.getElementById('QPitchNOTCH').style.display = 'none';
-    document.getElementById('FWPitchNOTCH').style.display = 'none';
     document.getElementById('YawNOTCH').style.display = 'none';
-    document.getElementById('QYawNOTCH').style.display = 'none';
-    document.getElementById('FWYawNOTCH').style.display = 'none';
-    if (vehicle_type == "ArduCopter") {
-        var ele_prefix = "";
-    } else if (vehicle_type == "ArduPlane_VTOL") {
-        var ele_prefix = "Q";
-    } else if (vehicle_type == "ArduPlane_FW") {
-        var ele_prefix = "FW";
-    }
+    
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
     }
     if (page_axis == "Roll") {
         if (vehicle_type != "ArduPlane_FW") {
-            document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+            document.getElementById('RollPitchTC').style.display = 'block';
         }
-        document.getElementById(ele_prefix + 'RollPIDS').style.display = 'block';
-        document.getElementById(ele_prefix + 'RollNOTCH').style.display = 'block';
+        document.getElementById('RollPIDS').style.display = 'block';
+        document.getElementById('RollNOTCH').style.display = 'block';
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
@@ -785,10 +766,10 @@ function update_PID_filters() {
         }
     } else if (page_axis == "Pitch") {
         if (vehicle_type != "ArduPlane_FW") {
-            document.getElementById(ele_prefix + 'RollPitchTC').style.display = 'block';
+            document.getElementById('RollPitchTC').style.display = 'block';
         }
-        document.getElementById(ele_prefix + 'PitchPIDS').style.display = 'block';
-        document.getElementById(ele_prefix + 'PitchNOTCH').style.display = 'block';
+        document.getElementById('PitchPIDS').style.display = 'block';
+        document.getElementById('PitchNOTCH').style.display = 'block';
 
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
@@ -800,10 +781,10 @@ function update_PID_filters() {
         }
     } else if (page_axis == "Yaw") {
         if (vehicle_type != "ArduPlane_FW") {
-            document.getElementById(ele_prefix + 'YawTC').style.display = 'block';
+            document.getElementById('YawTC').style.display = 'block';
         }
-        document.getElementById(ele_prefix + 'YawPIDS').style.display = 'block';
-        document.getElementById(ele_prefix + 'YawNOTCH').style.display = 'block';
+        document.getElementById('YawPIDS').style.display = 'block';
+        document.getElementById('YawNOTCH').style.display = 'block';
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
@@ -1871,6 +1852,10 @@ function get_vehicle_plt_prefix() {
         return "Q_PLT_"
     }
     return ""
+}
+
+function get_vehicle_type() {
+   return vehicle_type
 }
 
 function get_rate_param_prefix() {

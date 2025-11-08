@@ -134,43 +134,55 @@ const pageSections = [
                 style: 'max-width:1200px',
                 legend: 'INS Settings',
                 elements: [
-                    { type: 'p', content: [ { tag: 'label', for: 'GyroSampleRate', text: 'Gyro Sample Rate' }, { tag: 'input', id: 'GyroSampleRate', name: 'GyroSampleRate', type: 'number', step: '1', value: '2000', onchange: 'calculate_freq_resp()' } ] },
-                    { type: 'p', content: [ { tag: 'input', id: 'INS_GYRO_FILTER', name: 'INS_GYRO_FILTER', type: 'number', step: '0.1', value: '20.0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] }
+                    { type: 'p', content: [ { tag: 'label', for: 'GyroSampleRate', text: 'Gyro Sample Rate' }, { tag: 'input', id: 'GyroSampleRate', name: 'GyroSampleRate', type: 'number', step: '1', value: '2000' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'INS_GYRO_FILTER', name: 'INS_GYRO_FILTER', type: 'number', step: '0.1', value: '20.0', style: 'width: 100px' } ] }
                 ]
             },
             {
                 type: 'table',
                 content: [
                     {
-                        type: 'fieldset',
-                        style: 'width:580px',
-                        legend: 'First Notch Filter',
-                        elements: [
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_ENABLE', name: 'INS_HNTCH_ENABLE', type: 'number', step: '1', value: '1', style: 'width: 100px', onchange: 'update_hidden(this.id); calculate_freq_resp();' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_MODE', name: 'INS_HNTCH_MODE', type: 'number', step: '1', value: '1', style: 'width: 100px', onchange: 'update_hidden_mode(); calculate_freq_resp();' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_FREQ', name: 'INS_HNTCH_FREQ', type: 'number', step: '0.1', value: '150', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_BW', name: 'INS_HNTCH_BW', type: 'number', step: '0.1', value: '75', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_ATT', name: 'INS_HNTCH_ATT', type: 'number', step: '0.1', value: '40', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_REF', name: 'INS_HNTCH_REF', type: 'number', step: '0.01', value: '0.29', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_FM_RAT', name: 'INS_HNTCH_FM_RAT', type: 'number', step: '0.01', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_HMNCS', name: 'INS_HNTCH_HMNCS', type: 'number', step: '1', value: '3', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_OPTS', name: 'INS_HNTCH_OPTS', type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] }
-                        ]
-                    },
-                    {
-                        type: 'fieldset',
-                        style: 'width:580px',
-                        legend: 'Second Notch Filter',
-                        elements: [
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_ENABLE', name: 'INS_HNTC2_ENABLE', type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'update_hidden(this.id); calculate_freq_resp();' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_MODE', name: 'INS_HNTC2_MODE', type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'update_hidden_mode(); calculate_freq_resp();' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_FREQ', name: 'INS_HNTC2_FREQ', type: 'number', step: '0.1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_BW', name: 'INS_HNTC2_BW', type: 'number', step: '0.1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_ATT', name: 'INS_HNTC2_ATT', type: 'number', step: '0.1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_REF', name: 'INS_HNTC2_REF', type: 'number', step: '0.01', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_FM_RAT', name: 'INS_HNTC2_FM_RAT', type: 'number', step: '0.01', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_HMNCS', name: 'INS_HNTC2_HMNCS', type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                            { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_OPTS', name: 'INS_HNTC2_OPTS', type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] }
+                        type: 'tr',
+                        id: 'INS-settings-row',
+                        content: [
+                           {
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'First Notch Filter',
+                                    elements: [
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_ENABLE', name: 'INS_HNTCH_ENABLE', type: 'number', step: '1', value: '1', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_MODE', name: 'INS_HNTCH_MODE', type: 'number', step: '1', value: '1', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_FREQ', name: 'INS_HNTCH_FREQ', type: 'number', step: '0.1', value: '150', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_BW', name: 'INS_HNTCH_BW', type: 'number', step: '0.1', value: '75', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_ATT', name: 'INS_HNTCH_ATT', type: 'number', step: '0.1', value: '40', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_REF', name: 'INS_HNTCH_REF', type: 'number', step: '0.01', value: '0.29', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_FM_RAT', name: 'INS_HNTCH_FM_RAT', type: 'number', step: '0.01', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_HMNCS', name: 'INS_HNTCH_HMNCS', type: 'number', step: '1', value: '3', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTCH_OPTS', name: 'INS_HNTCH_OPTS', type: 'number', step: '1', value: '0', style: 'width: 100px' } ] }
+                                    ]
+                                }
+                           },
+                           {
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'Second Notch Filter',
+                                    elements: [
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_ENABLE', name: 'INS_HNTC2_ENABLE', type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_MODE', name: 'INS_HNTC2_MODE', type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_FREQ', name: 'INS_HNTC2_FREQ', type: 'number', step: '0.1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_BW', name: 'INS_HNTC2_BW', type: 'number', step: '0.1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_ATT', name: 'INS_HNTC2_ATT', type: 'number', step: '0.1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_REF', name: 'INS_HNTC2_REF', type: 'number', step: '0.01', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_FM_RAT', name: 'INS_HNTC2_FM_RAT', type: 'number', step: '0.01', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_HMNCS', name: 'INS_HNTC2_HMNCS', type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                                        { type: 'p', content: [ { tag: 'input', id: 'INS_HNTC2_OPTS', name: 'INS_HNTC2_OPTS', type: 'number', step: '1', value: '0', style: 'width: 100px' } ] }
+                                    ]
+                                }
+                           }
                         ]
                     }
                 ]
@@ -180,129 +192,70 @@ const pageSections = [
                 style: 'max-width:1200px',
                 legend: 'Loop Rate',
                 elements: [
-                    { type: 'p', content: [ { tag: 'input', id: 'SCHED_LOOP_RATE', name: 'SCHED_LOOP_RATE', type: 'number', step: '1', value: '400', 'data-paramValues': 'false', onchange: 'calculate_freq_resp()' } ] }
+                    { type: 'p', content: [ { tag: 'input', id: 'SCHED_LOOP_RATE', name: 'SCHED_LOOP_RATE', type: 'number', step: '1', value: '400', 'data-paramValues': 'false' } ] }
                 ]
             }
         ]
     }
 ];
 
-
-const pageSections_param = [
+const pageSections_param_RW = [
     {
         type: 'form',
         id: 'params',
-        action: '',
+        isFragment: true,
         content: [
             {
                 type: 'table',
                 content: [
                     {
-                        tag: 'tr',
+                        type: 'tr',
+                        id: 'attitude-controller-row',
                         content: [
                             {
-                                tag: 'td',
-                                content: [
-                                    {
-                                        type: 'fieldset',
-                                        style: 'width:580px',
-                                        legend: 'Attitude Controller Parameters',
-                                        groups: [
-                                            { divId: 'RollPitchTC', style: 'display:block', elements: [ { type: 'p', content: [ { tag: 'input', id: 'ATC_INPUT_TC', name: 'ATC_INPUT_TC', type: 'number', step: '0.01', value: '0.15', onchange: 'calculate_freq_resp()' } ] } ] },
-                                            { divId: 'QRollPitchTC', style: 'display:none', elements: [ { type: 'p', content: [ { tag: 'input', id: 'Q_A_INPUT_TC', name: 'Q_A_INPUT_TC', type: 'number', step: '0.01', value: '0.15', onchange: 'calculate_freq_resp()' } ] } ] },
-                                            { divId: 'YawTC', style: 'display:None', elements: [ { type: 'p', content: [ { tag: 'input', id: 'PILOT_Y_RATE_TC', name: 'PILOT_Y_RATE_TC', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] } ] },
-                                            { divId: 'QYawTC', style: 'display:None', elements: [ { type: 'p', content: [ { tag: 'input', id: 'Q_PLT_Y_RATE_TC', name: 'Q_PLT_Y_RATE_TC', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] } ] },
-                                            { divId: 'RollPIDS', style: 'display:block', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_RLL_P', name: 'ATC_ANG_RLL_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FF', name: 'ATC_RAT_RLL_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_P', name: 'ATC_RAT_RLL_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_I', name: 'ATC_RAT_RLL_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_D', name: 'ATC_RAT_RLL_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_D_FF', name: 'ATC_RAT_RLL_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTT', name: 'ATC_RAT_RLL_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTE', name: 'ATC_RAT_RLL_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTD', name: 'ATC_RAT_RLL_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'QRollPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_RLL_P', name: 'Q_A_ANG_RLL_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FF', name: 'Q_A_RAT_RLL_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_P', name: 'Q_A_RAT_RLL_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_I', name: 'Q_A_RAT_RLL_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_D', name: 'Q_A_RAT_RLL_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_D_FF', name: 'Q_A_RAT_RLL_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTT', name: 'Q_A_RAT_RLL_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTE', name: 'Q_A_RAT_RLL_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTD', name: 'Q_A_RAT_RLL_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'FWRollPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL2SRV_TCONST', name: 'RLL2SRV_TCONST', type: 'number', step: '0.01', value: '0.25', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FF', name: 'RLL_RATE_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_P', name: 'RLL_RATE_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_I', name: 'RLL_RATE_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_D', name: 'RLL_RATE_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_D_FF', name: 'RLL_RATE_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTT', name: 'RLL_RATE_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTE', name: 'RLL_RATE_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTD', name: 'RLL_RATE_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'PitchPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_PIT_P', name: 'ATC_ANG_PIT_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FF', name: 'ATC_RAT_PIT_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_P', name: 'ATC_RAT_PIT_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_I', name: 'ATC_RAT_PIT_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_D', name: 'ATC_RAT_PIT_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_D_FF', name: 'ATC_RAT_PIT_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTT', name: 'ATC_RAT_PIT_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTE', name: 'ATC_RAT_PIT_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTD', name: 'ATC_RAT_PIT_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'QPitchPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_PIT_P', name: 'Q_A_ANG_PIT_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FF', name: 'Q_A_RAT_PIT_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_P', name: 'Q_A_RAT_PIT_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_I', name: 'Q_A_RAT_PIT_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_D', name: 'Q_A_RAT_PIT_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_D_FF', name: 'Q_A_RAT_PIT_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTT', name: 'Q_A_RAT_PIT_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTE', name: 'Q_A_RAT_PIT_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTD', name: 'Q_A_RAT_PIT_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'FWPitchPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH2SRV_TCONST', name: 'PTCH2SRV_TCONST', type: 'number', step: '0.01', value: '0.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FF', name: 'PTCH_RATE_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_P', name: 'PTCH_RATE_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_I', name: 'PTCH_RATE_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_D', name: 'PTCH_RATE_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_D_FF', name: 'PTCH_RATE_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTT', name: 'PTCH_RATE_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTE', name: 'PTCH_RATE_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTD', name: 'PTCH_RATE_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'YawPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_YAW_P', name: 'ATC_ANG_YAW_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FF', name: 'ATC_RAT_YAW_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_P', name: 'ATC_RAT_YAW_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_I', name: 'ATC_RAT_YAW_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_D', name: 'ATC_RAT_YAW_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_D_FF', name: 'ATC_RAT_YAW_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTT', name: 'ATC_RAT_YAW_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTE', name: 'ATC_RAT_YAW_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTD', name: 'ATC_RAT_YAW_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]},
-                                            { divId: 'QYawPIDS', style: 'display:none', elements: [
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_YAW_P', name: 'Q_A_ANG_YAW_P', type: 'number', step: '0.1', value: '4.5', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FF', name: 'Q_A_RAT_YAW_FF', type: 'number', step: '0.01', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_P', name: 'Q_A_RAT_YAW_P', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_I', name: 'Q_A_RAT_YAW_I', type: 'number', step: '0.01', value: '0.288', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_D', name: 'Q_A_RAT_YAW_D', type: 'number', step: '0.0001', value: '0.0117', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_D_FF', name: 'Q_A_RAT_YAW_D_FF', type: 'number', step: '0.0001', value: '0.0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTT', name: 'Q_A_RAT_YAW_FLTT', type: 'number', step: '0.01', value: '1.77', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTE', name: 'Q_A_RAT_YAW_FLTE', type: 'number', step: '0.01', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                                { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTD', name: 'Q_A_RAT_YAW_FLTD', type: 'number', step: '0.01', value: '20', onchange: 'calculate_freq_resp()' } ] }
-                                            ]}
-                                        ]
-                                    }
-                                ]
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'Attitude Controller Parameters',
+                                    groups: [
+                                        { divId: 'RollPitchTC', style: 'display:block', elements: [ { type: 'p', content: [ { tag: 'input', id: 'ATC_INPUT_TC', name: 'ATC_INPUT_TC', type: 'number', step: '0.01', value: '0.15' } ] } ] },
+                                        { divId: 'YawTC', style: 'display:None', elements: [ { type: 'p', content: [ { tag: 'input', id: 'PILOT_Y_RATE_TC', name: 'PILOT_Y_RATE_TC', type: 'number', step: '0.01', value: '0.0' } ] } ] },
+                                        { divId: 'RollPIDS', style: 'display:block', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_RLL_P', name: 'ATC_ANG_RLL_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FF', name: 'ATC_RAT_RLL_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_P', name: 'ATC_RAT_RLL_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_I', name: 'ATC_RAT_RLL_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_D', name: 'ATC_RAT_RLL_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_D_FF', name: 'ATC_RAT_RLL_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTT', name: 'ATC_RAT_RLL_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTE', name: 'ATC_RAT_RLL_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_FLTD', name: 'ATC_RAT_RLL_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'PitchPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_PIT_P', name: 'ATC_ANG_PIT_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FF', name: 'ATC_RAT_PIT_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_P', name: 'ATC_RAT_PIT_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_I', name: 'ATC_RAT_PIT_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_D', name: 'ATC_RAT_PIT_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_D_FF', name: 'ATC_RAT_PIT_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTT', name: 'ATC_RAT_PIT_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTE', name: 'ATC_RAT_PIT_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_FLTD', name: 'ATC_RAT_PIT_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_ANG_YAW_P', name: 'ATC_ANG_YAW_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FF', name: 'ATC_RAT_YAW_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_P', name: 'ATC_RAT_YAW_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_I', name: 'ATC_RAT_YAW_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_D', name: 'ATC_RAT_YAW_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_D_FF', name: 'ATC_RAT_YAW_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTT', name: 'ATC_RAT_YAW_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTE', name: 'ATC_RAT_YAW_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_FLTD', name: 'ATC_RAT_YAW_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]}
+                                    ]
+                                }
                             }
                         ]
                     }
@@ -312,73 +265,131 @@ const pageSections_param = [
     }
 ];
 
-const pageSections_notch_param = [
+const pageSections_param_QP = [
     {
         type: 'form',
         id: 'params',
-        action: '',
+        isFragment: true,
         content: [
             {
                 type: 'table',
                 content: [
                     {
-                        tag: 'td',
+                        type: 'tr',
+                        id: 'attitude-controller-row',
                         content: [
                             {
-                                type: 'fieldset',
-                                style: 'width:580px',
-                                legend: 'Attitude Controller Notch Parameters',
-                                groups: [
-                                    { divId: 'RollNOTCH', style: 'display:block', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_NTF', name: 'ATC_RAT_RLL_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_NEF', name: 'ATC_RAT_RLL_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'QRollNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NTF', name: 'Q_A_RAT_RLL_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NEF', name: 'Q_A_RAT_RLL_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'FWRollNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NTF', name: 'RLL_RATE_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NEF', name: 'RLL_RATE_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'PitchNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_NTF', name: 'ATC_RAT_PIT_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_NEF', name: 'ATC_RAT_PIT_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'QPitchNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NTF', name: 'Q_A_RAT_PIT_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NEF', name: 'Q_A_RAT_PIT_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'FWPitchNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NTF', name: 'PTCH_RATE_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NEF', name: 'PTCH_RATE_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'YawNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_NTF', name: 'ATC_RAT_YAW_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_NEF', name: 'ATC_RAT_YAW_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'QYawNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NTF', name: 'Q_A_RAT_YAW_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NEF', name: 'Q_A_RAT_YAW_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    { divId: 'FWYawNOTCH', style: 'display:none', elements: [
-                                        { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NTF', name: 'YAW_RATE_NTF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] },
-                                        { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NEF', name: 'YAW_RATE_NEF', type: 'number', step: '1', value: '0', onchange: 'calculate_freq_resp()' } ] }
-                                    ]},
-                                    ...[...Array(8).keys()].map(i => ({
-                                        divId: `FILT${i + 1}`, style: 'display:none', elements: [
-                                            { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_TYPE`, name: `FILT${i + 1}_TYPE`, type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_FREQ`, name: `FILT${i + 1}_NOTCH_FREQ`, type: 'number', step: '1', value: '0', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_Q`, name: `FILT${i + 1}_NOTCH_Q`, type: 'number', step: '0.1', value: '2', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_ATT`, name: `FILT${i + 1}_NOTCH_ATT`, type: 'number', step: '1', value: '40', style: 'width: 100px', onchange: 'calculate_freq_resp()' } ] }
-                                        ]
-                                    }))
-                                ]
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'Attitude Controller Parameters',
+                                    groups: [
+                                        { divId: 'RollPitchTC', style: 'display:none', elements: [ { type: 'p', content: [ { tag: 'input', id: 'Q_A_INPUT_TC', name: 'Q_A_INPUT_TC', type: 'number', step: '0.01', value: '0.15' } ] } ] },
+                                        { divId: 'YawTC', style: 'display:None', elements: [ { type: 'p', content: [ { tag: 'input', id: 'Q_PLT_Y_RATE_TC', name: 'Q_PLT_Y_RATE_TC', type: 'number', step: '0.01', value: '0.0' } ] } ] },
+                                        { divId: 'RollPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_RLL_P', name: 'Q_A_ANG_RLL_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FF', name: 'Q_A_RAT_RLL_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_P', name: 'Q_A_RAT_RLL_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_I', name: 'Q_A_RAT_RLL_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_D', name: 'Q_A_RAT_RLL_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_D_FF', name: 'Q_A_RAT_RLL_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTT', name: 'Q_A_RAT_RLL_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTE', name: 'Q_A_RAT_RLL_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_FLTD', name: 'Q_A_RAT_RLL_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'PitchPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_PIT_P', name: 'Q_A_ANG_PIT_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FF', name: 'Q_A_RAT_PIT_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_P', name: 'Q_A_RAT_PIT_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_I', name: 'Q_A_RAT_PIT_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_D', name: 'Q_A_RAT_PIT_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_D_FF', name: 'Q_A_RAT_PIT_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTT', name: 'Q_A_RAT_PIT_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTE', name: 'Q_A_RAT_PIT_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_FLTD', name: 'Q_A_RAT_PIT_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_ANG_YAW_P', name: 'Q_A_ANG_YAW_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FF', name: 'Q_A_RAT_YAW_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_P', name: 'Q_A_RAT_YAW_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_I', name: 'Q_A_RAT_YAW_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_D', name: 'Q_A_RAT_YAW_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_D_FF', name: 'Q_A_RAT_YAW_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTT', name: 'Q_A_RAT_YAW_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTE', name: 'Q_A_RAT_YAW_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_FLTD', name: 'Q_A_RAT_YAW_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]}
+                                    ]
+                                }
                             }
                         ]
                     }
                 ]
-            },
+            }
+        ]
+    }
+];
+
+const pageSections_param_FW = [
+    {
+        type: 'form',
+        id: 'params',
+        isFragment: true,
+        content: [
+            {
+                type: 'table',
+                content: [
+                    {
+                        type: 'tr',
+                        id: 'attitude-controller-row',
+                        content: [
+                            {
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'Attitude Controller Parameters',
+                                    groups: [
+                                        { divId: 'RollPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL2SRV_TCONST', name: 'RLL2SRV_TCONST', type: 'number', step: '0.01', value: '0.25' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FF', name: 'RLL_RATE_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_P', name: 'RLL_RATE_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_I', name: 'RLL_RATE_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_D', name: 'RLL_RATE_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_D_FF', name: 'RLL_RATE_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTT', name: 'RLL_RATE_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTE', name: 'RLL_RATE_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_FLTD', name: 'RLL_RATE_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'PitchPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH2SRV_TCONST', name: 'PTCH2SRV_TCONST', type: 'number', step: '0.01', value: '0.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FF', name: 'PTCH_RATE_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_P', name: 'PTCH_RATE_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_I', name: 'PTCH_RATE_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_D', name: 'PTCH_RATE_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_D_FF', name: 'PTCH_RATE_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTT', name: 'PTCH_RATE_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTE', name: 'PTCH_RATE_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTD', name: 'PTCH_RATE_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]}
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+];
+
+const pageSections_param_notch_mode = [
+    {
+        type: 'form',
+        id: 'params',
+        isFragment: true,
+        content: [
             {
                 type: 'fieldset',
                 style: 'max-width:1200px',
@@ -412,6 +423,105 @@ const pageSections_notch_param = [
     }
 ];
 
+const pageSections_notch_param_RW = [
+    {
+        type: 'tableCell',
+        targetId: 'attitude-controller-row',
+        content: {
+            type: 'fieldset',
+            style: 'width:580px',
+            legend: 'Attitude Controller Notch Parameters',
+            groups: [
+                { divId: 'RollNOTCH', style: 'display:block', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_NTF', name: 'ATC_RAT_RLL_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_RLL_NEF', name: 'ATC_RAT_RLL_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'PitchNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_NTF', name: 'ATC_RAT_PIT_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_PIT_NEF', name: 'ATC_RAT_PIT_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'YawNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_NTF', name: 'ATC_RAT_YAW_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'ATC_RAT_YAW_NEF', name: 'ATC_RAT_YAW_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                ...[...Array(8).keys()].map(i => ({
+                    divId: `FILT${i + 1}`, style: 'display:none', elements: [
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_TYPE`, name: `FILT${i + 1}_TYPE`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_FREQ`, name: `FILT${i + 1}_NOTCH_FREQ`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_Q`, name: `FILT${i + 1}_NOTCH_Q`, type: 'number', step: '0.1', value: '2', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_ATT`, name: `FILT${i + 1}_NOTCH_ATT`, type: 'number', step: '1', value: '40', style: 'width: 100px' } ] }
+                    ]
+                }))
+            ]
+        }
+    }
+];
+const pageSections_notch_param_QP = [
+    {
+        type: 'tableCell',
+        targetId: 'attitude-controller-row',
+        content: {
+            type: 'fieldset',
+            style: 'width:580px',
+            legend: 'Attitude Controller Notch Parameters',
+            groups: [
+                { divId: 'QRollNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NTF', name: 'Q_A_RAT_RLL_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NEF', name: 'Q_A_RAT_RLL_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'QPitchNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NTF', name: 'Q_A_RAT_PIT_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NEF', name: 'Q_A_RAT_PIT_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'QYawNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NTF', name: 'Q_A_RAT_YAW_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NEF', name: 'Q_A_RAT_YAW_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                ...[...Array(8).keys()].map(i => ({
+                    divId: `FILT${i + 1}`, style: 'display:none', elements: [
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_TYPE`, name: `FILT${i + 1}_TYPE`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_FREQ`, name: `FILT${i + 1}_NOTCH_FREQ`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_Q`, name: `FILT${i + 1}_NOTCH_Q`, type: 'number', step: '0.1', value: '2', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_ATT`, name: `FILT${i + 1}_NOTCH_ATT`, type: 'number', step: '1', value: '40', style: 'width: 100px' } ] }
+                    ]
+                }))
+            ]
+        }
+    }
+];
+const pageSections_notch_param_FW = [
+    {
+        type: 'tableCell',
+        targetId: 'attitude-controller-row',
+        content: {
+            type: 'fieldset',
+            style: 'width:580px',
+            legend: 'Attitude Controller Notch Parameters',
+            groups: [
+                { divId: 'FWRollNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NTF', name: 'RLL_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NEF', name: 'RLL_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'FWPitchNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NTF', name: 'PTCH_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NEF', name: 'PTCH_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'FWYawNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NTF', name: 'YAW_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NEF', name: 'YAW_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                ...[...Array(8).keys()].map(i => ({
+                    divId: `FILT${i + 1}`, style: 'display:none', elements: [
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_TYPE`, name: `FILT${i + 1}_TYPE`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_FREQ`, name: `FILT${i + 1}_NOTCH_FREQ`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_Q`, name: `FILT${i + 1}_NOTCH_Q`, type: 'number', step: '0.1', value: '2', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_ATT`, name: `FILT${i + 1}_NOTCH_ATT`, type: 'number', step: '1', value: '40', style: 'width: 100px' } ] }
+                    ]
+                }))
+            ]
+        }
+    }
+];
 
 const pageSections_freq_resp_plots = [
     {
@@ -440,8 +550,6 @@ const pageSections_freq_resp_plots = [
                 type: 'fieldset',
                 style: 'max-width:1200px',
                 legend: 'Graph Settings',
-                // The complex table structure is now a direct element.
-                // This allows the `buildComplexElement` function to be correctly triggered.
                 elements: [
                     {
                         tag: 'table',
@@ -457,33 +565,33 @@ const pageSections_freq_resp_plots = [
                                                 style: 'width:400px;height:200px',
                                                 legend: 'Control Loop',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC' },
                                                     { tag: 'label', for: 'type_Bare_AC', text: 'Bare Aircraft' },
-                                                    { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude', onclick: 'calculate_freq_resp();' },
+                                                    { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude' },
                                                     { tag: 'label', for: 'UseAttitude', text: 'Use Attitude to Improve Coherence' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr', onchange: 'redraw_freq_resp();', checked: true },
+                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr', checked: true },
                                                     { tag: 'label', for: 'type_Rate_Ctrlr', text: 'Rate Controller' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr' },
                                                     { tag: 'label', for: 'type_Att_Ctrlr', text: 'Attitude Controller with Feedforward' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
                                                     { tag: 'label', for: 'type_Att_Ctrlr_nff', text: 'Attitude Controller without feedforward' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
                                                     { tag: 'label', for: 'type_Pilot_Ctrlr', text: 'Input Shaping' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB' },
                                                     { tag: 'label', for: 'type_Att_DRB', text: 'Attitude Disturbance Rejection' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab' },
                                                     { tag: 'label', for: 'type_Rate_Stab', text: 'Rate Stability' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab' },
                                                     { tag: 'label', for: 'type_Att_Stab', text: 'Attitude Stability' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab' },
                                                     { tag: 'label', for: 'type_Sys_Stab', text: 'Entire System Stability' }
                                                 ]
                                             }
@@ -497,10 +605,10 @@ const pageSections_freq_resp_plots = [
                                                 style: 'width:150px; height:70px',
                                                 legend: 'Gain scale',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLog', name: 'PID_Scale', value: 'Log', onchange: 'redraw_freq_resp();', checked: true },
+                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLog', name: 'PID_Scale', value: 'Log', checked: true },
                                                     { tag: 'label', for: 'PID_ScaleLog', text: 'dB' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLinear', name: 'PID_Scale', value: 'Linear', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLinear', name: 'PID_Scale', value: 'Linear' },
                                                     { tag: 'label', for: 'PID_ScaleLinear', text: 'Linear' }
                                                 ]
                                             }
@@ -514,10 +622,10 @@ const pageSections_freq_resp_plots = [
                                                 style: 'width:150px; height:70px',
                                                 legend: 'Phase scale',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleUnWrap', name: 'PID_PhaseScale', value: 'unwrap', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleUnWrap', name: 'PID_PhaseScale', value: 'unwrap' },
                                                     { tag: 'label', for: 'PID_ScaleUnWrap', text: 'un-wrapped' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleWrap', name: 'PID_PhaseScale', value: 'wrap', onchange: 'redraw_freq_resp();', checked: true },
+                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleWrap', name: 'PID_PhaseScale', value: 'wrap', checked: true },
                                                     { tag: 'label', for: 'PID_ScaleWrap', text: '±180' }
                                                 ]
                                             }
@@ -531,10 +639,10 @@ const pageSections_freq_resp_plots = [
                                                 style: 'width:150px; height:70px',
                                                 legend: 'Frequency scale',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLog', name: 'PID_feq_scale', value: 'Log', onchange: 'redraw_freq_resp();', checked: true },
+                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLog', name: 'PID_feq_scale', value: 'Log', checked: true },
                                                     { tag: 'label', for: 'PID_freq_ScaleLog', text: 'Log' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLinear', name: 'PID_feq_scale', value: 'Linear', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLinear', name: 'PID_feq_scale', value: 'Linear' },
                                                     { tag: 'label', for: 'PID_freq_ScaleLinear', text: 'Linear' }
                                                 ]
                                             }
@@ -548,10 +656,10 @@ const pageSections_freq_resp_plots = [
                                                 style: 'width:150px; height:70px',
                                                 legend: 'Frequency Units',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_Hz', name: 'PID_feq_unit', value: 'Hz', onchange: 'redraw_freq_resp();', checked: true },
+                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_Hz', name: 'PID_feq_unit', value: 'Hz', checked: true },
                                                     { tag: 'label', for: 'PID_freq_Scale_Hz', text: 'Hz' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_RPS', name: 'PID_feq_unit', value: 'RPS', onchange: 'redraw_freq_resp();' },
+                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_RPS', name: 'PID_feq_unit', value: 'RPS' },
                                                     { tag: 'label', for: 'PID_freq_Scale_RPS', text: 'Rad/s' }
                                                 ]
                                             }
@@ -571,13 +679,6 @@ const pageSections_freq_resp_plots = [
 // DYNAMIC PAGE BUILDER FUNCTIONS
 // =====================================================================================
 
-/**
- * Creates and returns a DOM element with specified attributes.
- * @param {string} tag - The HTML tag name.
- * @param {object} attributes - An object of attributes to set.
- * @param {string|Node|Array<Node>} [children] - Child content.
- * @returns {HTMLElement} The created DOM element.
- */
 function createElement(tag, attributes = {}, children = null) {
     const el = document.createElement(tag);
     for (const key in attributes) {
@@ -601,17 +702,11 @@ function createElement(tag, attributes = {}, children = null) {
     return el;
 }
 
-/**
- * Creates a complete fieldset element from a data object.
- * @param {object} data - The fieldset definition.
- * @returns {HTMLFieldSetElement} The created fieldset element.
- */
 function createFieldset(data) {
     const fieldset = createElement('fieldset', { style: data.style || '', id: data.id || '' });
     if (data.legend) {
         fieldset.appendChild(createElement('legend', {}, data.legend));
     }
-
     const appendElements = (container, elements) => {
         elements.forEach(elementDef => {
             if (elementDef.type === 'p') {
@@ -622,13 +717,12 @@ function createFieldset(data) {
                     p.appendChild(createElement(item.tag, attrs));
                 });
                 container.appendChild(p);
-            } else if (elementDef.tag) { // Handle complex fieldsets like Graph Settings
+            } else if (elementDef.tag) {
                  const complexEl = buildComplexElement(elementDef);
                  container.appendChild(complexEl);
             }
         });
     };
-
     if (data.elements) {
         appendElements(fieldset, data.elements);
     }
@@ -642,31 +736,23 @@ function createFieldset(data) {
     return fieldset;
 }
 
-/**
- * Recursively builds complex, nested elements like tables.
- * @param {object} data - The element definition.
- * @returns {HTMLElement} The created element.
- */
 function buildComplexElement(data) {
-    const attrs = { ...data };
-    delete attrs.tag;
-    delete attrs.content;
-    delete attrs.elements;
-    delete attrs.legend;
-
-    const el = createElement(data.tag, attrs);
-
-    if (data.legend) { // For nested fieldsets
+    const el = createElement(data.tag || data.type, {id: data.id});
+    if (data.legend) {
         el.appendChild(createElement('legend', {}, data.legend));
     }
-
     if (data.content) {
         data.content.forEach(childData => {
-            el.appendChild(buildComplexElement(childData));
+            if (childData.type === 'td') {
+                const td = createElement('td');
+                td.appendChild(createFieldset(childData.content));
+                el.appendChild(td);
+            } else {
+                 el.appendChild(buildComplexElement(childData));
+            }
         });
     }
-
-    if (data.elements) { // For elements inside fieldsets
+    if (data.elements) {
          data.elements.forEach(item => {
             const itemAttrs = { ...item };
             delete itemAttrs.tag;
@@ -676,232 +762,137 @@ function buildComplexElement(data) {
     return el;
 }
 
+function buildDynamicContent(sectionsToBuild) {
+    const defaultContainer = document.getElementById('dynamic-content-container');
 
-/**
- * Main function to build all dynamic content on the page.
- */
-function buildDynamicContent() {
-    const container = document.getElementById('dynamic-content-container');
-    if (!container) {
-        console.error('Dynamic content container not found!');
-        return;
-    }
+    sectionsToBuild.forEach(section => {
+        const parentElement = section.targetId ? document.getElementById(section.targetId) : defaultContainer;
+        if (!parentElement) {
+            console.error(`Target element with ID "${section.targetId}" not found.`);
+            return;
+        }
 
-    pageSections.forEach(section => {
         if (section.type === 'heading') {
             const label = createElement(section.content.tag, { id: section.content.id, textContent: section.content.text });
             const heading = createElement(`h${section.level}`, {}, [label]);
-            container.appendChild(heading);
+            parentElement.appendChild(heading);
         }
         else if (section.type === 'form') {
-            const form = createElement('form', { id: section.id, action: section.action || '' });
+            let form = section.isFragment ? document.getElementById(section.id) : createElement('form', { id: section.id, action: section.action || '' });
+            if (!form) {
+                console.error(`Form with ID "${section.id}" to append to not found.`);
+                return;
+            }
             section.content.forEach(item => {
                  if (item.type === 'fieldset') {
                     form.appendChild(createFieldset(item));
                  } else if (item.type === 'table') {
-                    const table = createElement('table');
-                    const tr = createElement('tr');
-                    item.content.forEach(cellData => {
-                        const td = createElement('td');
-                        td.appendChild(createFieldset(cellData));
-                        tr.appendChild(td);
+                    item.content.forEach(tableContent => {
+                        form.appendChild(buildComplexElement(tableContent));
                     });
-                    table.appendChild(tr);
-                    form.appendChild(table);
                  }
             });
-            container.appendChild(form);
+            if (!section.isFragment) parentElement.appendChild(form);
         }
         else if (section.type === 'plot_divs') {
             section.divs.forEach(divData => {
-                container.appendChild(createElement('div', divData));
+                parentElement.appendChild(createElement('div', divData));
             });
+        }
+        else if (section.type === 'tableCell') {
+             if (parentElement.tagName !== 'TR') {
+                console.error(`Target for tableCell must be a <tr>, but found a <${parentElement.tagName}>.`);
+                return;
+             }
+             const td = createElement('td');
+             td.appendChild(createFieldset(section.content));
+             parentElement.appendChild(td);
         }
     });
-
-    pageSections_param.forEach(section => {
-        if (section.type === 'heading') {
-            const label = createElement(section.content.tag, { id: section.content.id, textContent: section.content.text });
-            const heading = createElement(`h${section.level}`, {}, [label]);
-            container.appendChild(heading);
-        }
-        else if (section.type === 'form') {
-            const form = createElement('form', { id: section.id, action: section.action || '' });
-            section.content.forEach(item => {
-                 if (item.type === 'fieldset') {
-                    form.appendChild(createFieldset(item));
-                 } else if (item.type === 'table') {
-                    const table = createElement('table');
-                    const tr = createElement('tr');
-                    item.content.forEach(cellData => {
-                        const td = createElement('td');
-                        td.appendChild(createFieldset(cellData));
-                        tr.appendChild(td);
-                    });
-                    table.appendChild(tr);
-                    form.appendChild(table);
-                 }
-            });
-            container.appendChild(form);
-        }
-        else if (section.type === 'plot_divs') {
-            section.divs.forEach(divData => {
-                container.appendChild(createElement('div', divData));
-            });
-        }
-    });
-
-    pageSections_notch_param.forEach(section => {
-        if (section.type === 'heading') {
-            const label = createElement(section.content.tag, { id: section.content.id, textContent: section.content.text });
-            const heading = createElement(`h${section.level}`, {}, [label]);
-            container.appendChild(heading);
-        }
-        else if (section.type === 'form') {
-            const form = createElement('form', { id: section.id, action: section.action || '' });
-            section.content.forEach(item => {
-                 if (item.type === 'fieldset') {
-                    form.appendChild(createFieldset(item));
-                 } else if (item.type === 'table') {
-                    const table = createElement('table');
-                    const tr = createElement('tr');
-                    item.content.forEach(cellData => {
-                        const td = createElement('td');
-                        td.appendChild(createFieldset(cellData));
-                        tr.appendChild(td);
-                    });
-                    table.appendChild(tr);
-                    form.appendChild(table);
-                 }
-            });
-            container.appendChild(form);
-        }
-        else if (section.type === 'plot_divs') {
-            section.divs.forEach(divData => {
-                container.appendChild(createElement('div', divData));
-            });
-        }
-    });
-
-    pageSections_freq_resp_plots.forEach(section => {
-        if (section.type === 'heading') {
-            const label = createElement(section.content.tag, { id: section.content.id, textContent: section.content.text });
-            const heading = createElement(`h${section.level}`, {}, [label]);
-            container.appendChild(heading);
-        }
-        else if (section.type === 'form') {
-            const form = createElement('form', { id: section.id, action: section.action || '' });
-            section.content.forEach(item => {
-                 if (item.type === 'fieldset') {
-                    form.appendChild(createFieldset(item));
-                 } else if (item.type === 'table') {
-                    const table = createElement('table');
-                    const tr = createElement('tr');
-                    item.content.forEach(cellData => {
-                        const td = createElement('td');
-                        td.appendChild(createFieldset(cellData));
-                        tr.appendChild(td);
-                    });
-                    table.appendChild(tr);
-                    form.appendChild(table);
-                 }
-            });
-            container.appendChild(form);
-        }
-        else if (section.type === 'plot_divs') {
-            section.divs.forEach(divData => {
-                container.appendChild(createElement('div', divData));
-            });
-        }
-    });
-
 }
 
 
-// --- Original Script Content ---
+// --- Event Handling and Initialization ---
 
-  window.onerror = function(msg, url, linenumber) {
-      alert('Sorry, something went wrong.\n\n' +
-            'Please try a hard reload of this page to clear its cache.\n\n' +
-            'If the error persists open an issue on the GitHub repo.\n' +
-            'Include a copy of the log and the following error message:\n\n' +
-             msg + '\n' +
-            'URL: '+ url +'\n' +
-            'Line Number: '+ linenumber)
-      return false
-  }
-  window.addEventListener('unhandledrejection', function (e) {
-        throw new Error(e.reason.stack)
-  })
+window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + msg);
+      return false;
+}
+window.addEventListener('unhandledrejection', function (e) {
+      throw new Error(e.reason.stack);
+})
 
-// Attach one master listener to the static parent container.
 const dynamicContainer = document.getElementById('dynamic-content-container');
 if (dynamicContainer) {
     dynamicContainer.addEventListener('change', function(event) {
         const target = event.target;
         const id = target.id;
+        if (target.tagName !== 'INPUT') return;
 
-        // Check if the element that changed is an input or a radio button we care about
-        if (target.tagName === 'INPUT') {
-            // --- Special Handlers ---
-            if (id === 'INS_HNTCH_ENABLE' || id === 'INS_HNTC2_ENABLE') {
-                if (typeof update_hidden === 'function') update_hidden(id);
-                if (typeof calculate_freq_resp === 'function') calculate_freq_resp();
-            }
-            else if (id === 'INS_HNTCH_MODE' || id === 'INS_HNTC2_MODE') {
-                if (typeof update_hidden_mode === 'function') update_hidden_mode();
-                if (typeof calculate_freq_resp === 'function') calculate_freq_resp();
-            }
-            // --- Handlers for Graph Settings Radio Buttons ---
-            else if (target.name === 'Control_Loop' || target.name === 'PID_Scale' || target.name === 'PID_PhaseScale' || target.name === 'PID_feq_scale' || target.name === 'PID_feq_unit') {
-                 if (typeof redraw_freq_resp === 'function') redraw_freq_resp();
-            }
-            // --- Default Handler for most other parameter inputs ---
-            else {
-                 if (typeof calculate_freq_resp === 'function') calculate_freq_resp();
-            }
+        if (id === 'INS_HNTCH_ENABLE' || id === 'INS_HNTC2_ENABLE') {
+            if (typeof update_hidden === 'function') update_hidden(id);
+        } else if (id === 'INS_HNTCH_MODE' || id === 'INS_HNTC2_MODE') {
+            if (typeof update_hidden_mode === 'function') update_hidden_mode();
+        }
+
+        if (target.name === 'Control_Loop' || target.name === 'PID_Scale' || target.name === 'PID_PhaseScale' || target.name === 'PID_feq_scale' || target.name === 'PID_feq_unit') {
+             if (typeof redraw_freq_resp === 'function') redraw_freq_resp();
+        } else {
+             if (typeof calculate_freq_resp === 'function') calculate_freq_resp();
         }
     });
 }
 
-  // We must wait until the dynamic content is created to attach the event listener
-  document.addEventListener('DOMContentLoaded', () => {
-    // Re-select the calculate button after it's been created
+document.addEventListener('DOMContentLoaded', () => {
     var calc_btn = document.getElementById('calculate');
     if (calc_btn) {
         calc_btn.onclick = function() {
-            buildDynamicContent();
-            let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"]
+            document.getElementById('dynamic-content-container').innerHTML = '';
+            buildDynamicContent(pageSections);
+            if (get_vehicle_type() === 'ArduPlane_FW') {
+                buildDynamicContent(pageSections_param_FW);
+                buildDynamicContent(pageSections_notch_param_FW);
+            } else if (get_vehicle_type() === 'ArduPlane_VTOL') {
+                buildDynamicContent(pageSections_param_QP);
+                buildDynamicContent(pageSections_notch_param_QP);
+            } else {
+                buildDynamicContent(pageSections_param_RW);
+                buildDynamicContent(pageSections_notch_param_RW);
+            }
+            buildDynamicContent(pageSections_param_notch_mode);
+            buildDynamicContent(pageSections_freq_resp_plots);
+
+            let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"];
             var inputs = document.getElementsByTagName("input");
             for (param of inputs) {
-                if (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT")) {
-                    params.push(param.id)
+                if (param.id && (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT"))) {
+                    params.push(param.id);
                 }
             }
-            console.log(params)
-            load_param_inputs("params.json", params)
-            load();
-            update_all_hidden();
-            setup_freq_response_plots();
-            setup_FFT_data();
-            axis_changed();
-            calculate_freq_resp();
+            console.log("Parameters identified for loading:", params);
+
+            if(typeof load_param_inputs === 'function') load_param_inputs("params.json", params);
+            if(typeof load === 'function') load();
+            if(typeof update_all_hidden === 'function') update_all_hidden();
+            if(typeof setup_freq_response_plots === 'function') setup_freq_response_plots();
+            if(typeof setup_FFT_data === 'function') setup_FFT_data();
+            if(typeof axis_changed === 'function') axis_changed();
+            if(typeof calculate_freq_resp === 'function') calculate_freq_resp();
         }
     }
-  });
+});
 
-// Handler for file select
 function readFile(e) {
-        const file = e.files[0]
-        if (file == null) {
-                return
-        }
-        let reader = new FileReader()
-        reader.onload = function (e) {
-                load_log(reader.result)
-                document.title = "SysID: " + file.name
-        }
-        reader.readAsArrayBuffer(file)
+    const file = e.files[0];
+    if (file == null) {
+        return;
+    }
+    let reader = new FileReader();
+    reader.onload = function (e) {
+        if(typeof load_log === 'function') load_log(reader.result);
+        document.title = "SysID: " + file.name;
+    }
+    reader.readAsArrayBuffer(file);
 }
 </script>
 
