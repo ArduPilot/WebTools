@@ -384,6 +384,70 @@ const pageSections_param_FW = [
     }
 ];
 
+const pageSections_param_POS = [
+    {
+        type: 'form',
+        id: 'params',
+        isFragment: true,
+        content: [
+            {
+                type: 'table',
+                content: [
+                    {
+                        type: 'tr',
+                        id: 'attitude-controller-row',
+                        content: [
+                            {
+                                type: 'td',
+                                content: {
+                                    type: 'fieldset',
+                                    style: 'width:580px',
+                                    legend: 'Position Controller Parameters',
+                                    groups: [
+                                        { divId: 'RollPIDS', style: 'display:block', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSXY_P', name: 'PSC_POSXY_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FF', name: 'PSC_VELXY_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_P', name: 'PSC_VELXY_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_I', name: 'PSC_VELXY_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D', name: 'PSC_VELXY_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D_FF', name: 'PSC_VELXY_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTT', name: 'PSC_VELXY_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTE', name: 'PSC_VELXY_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTD', name: 'PSC_VELXY_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'PitchPIDS', style: 'display:none', elements: [
+/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSXY_P', name: 'PSC_POSXY_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FF', name: 'PSC_VELXY_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_P', name: 'PSC_VELXY_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_I', name: 'PSC_VELXY_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D', name: 'PSC_VELXY_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D_FF', name: 'PSC_VELXY_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTT', name: 'PSC_VELXY_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTE', name: 'PSC_VELXY_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTD', name: 'PSC_VELXY_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+*/                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSZ_P', name: 'PSC_POSZ_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FF', name: 'PSC_VELZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_P', name: 'PSC_VELZ_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_I', name: 'PSC_VELZ_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_D', name: 'PSC_VELZ_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_D_FF', name: 'PSC_VELZ_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTT', name: 'PSC_VELZ_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTE', name: 'PSC_VELZ_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTD', name: 'PSC_VELZ_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]}
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+];
+
 const pageSections_param_notch_mode = [
     {
         type: 'form',
@@ -509,6 +573,40 @@ const pageSections_notch_param_FW = [
                 { divId: 'FWYawNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NTF', name: 'YAW_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NEF', name: 'YAW_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                ...[...Array(8).keys()].map(i => ({
+                    divId: `FILT${i + 1}`, style: 'display:none', elements: [
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_TYPE`, name: `FILT${i + 1}_TYPE`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_FREQ`, name: `FILT${i + 1}_NOTCH_FREQ`, type: 'number', step: '1', value: '0', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_Q`, name: `FILT${i + 1}_NOTCH_Q`, type: 'number', step: '0.1', value: '2', style: 'width: 100px' } ] },
+                        { type: 'p', content: [ { tag: 'input', id: `FILT${i + 1}_NOTCH_ATT`, name: `FILT${i + 1}_NOTCH_ATT`, type: 'number', step: '1', value: '40', style: 'width: 100px' } ] }
+                    ]
+                }))
+            ]
+        }
+    }
+];
+
+const pageSections_notch_param_POS = [
+    {
+        type: 'tableCell',
+        targetId: 'attitude-controller-row',
+        content: {
+            type: 'fieldset',
+            style: 'width:580px',
+            legend: 'Attitude Controller Notch Parameters',
+            groups: [
+                { divId: 'RollNOTCH', style: 'display:block', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NTF', name: 'PSC_VELXY_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NEF', name: 'PSC_VELXY_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'PitchNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NTF', name: 'PSC_VELXY_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NEF', name: 'PSC_VELXY_NEF', type: 'number', step: '1', value: '0' } ] }
+                ]},
+                { divId: 'YawNOTCH', style: 'display:none', elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_NTF', name: 'PSC_VELZ_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_NEF', name: 'PSC_VELZ_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
                 ...[...Array(8).keys()].map(i => ({
                     divId: `FILT${i + 1}`, style: 'display:none', elements: [
@@ -855,6 +953,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (get_vehicle_type() === 'ArduPlane_VTOL') {
                 buildDynamicContent(pageSections_param_QP);
                 buildDynamicContent(pageSections_notch_param_QP);
+            } else if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
+                buildDynamicContent(pageSections_param_POS);
+                buildDynamicContent(pageSections_notch_param_POS);
             } else {
                 buildDynamicContent(pageSections_param_RW);
                 buildDynamicContent(pageSections_notch_param_RW);
@@ -865,13 +966,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"];
             var inputs = document.getElementsByTagName("input");
             for (param of inputs) {
-                if (param.id && (param.id.startsWith("INS_") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT"))) {
+                if (param.id && (param.id.startsWith("INS_") || param.id.startsWith("PSC") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT"))) {
                     params.push(param.id);
                 }
             }
             console.log("Parameters identified for loading:", params);
 
-            if(typeof load_param_inputs === 'function') load_param_inputs("params.json", params);
+            if(typeof load_param_inputs === 'function') load_param_inputs("/AnalyticTune/params.json", params);
+            console.log("Parameters loaded.");
             if(typeof load === 'function') load();
             if(typeof update_all_hidden === 'function') update_all_hidden();
             if(typeof setup_freq_response_plots === 'function') setup_freq_response_plots();

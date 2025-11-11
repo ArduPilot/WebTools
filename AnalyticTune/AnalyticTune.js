@@ -5,9 +5,9 @@ import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser
 function get_PID_param_names(vehicle) {
     var prefix = []
     if (vehicle == "ArduCopter") {
-        prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_"]
+        prefix = ["ATC_RAT_RLL_", "ATC_RAT_PIT_", "ATC_RAT_YAW_", "PSC_VELXY_", "PSC_VELZ_", "PSC_ACCZ_"]
     } else if (vehicle == "ArduPlane_VTOL") {
-        prefix = ["Q_A_RAT_RLL_", "Q_A_RAT_PIT_", "Q_A_RAT_YAW_"]
+        prefix = ["Q_A_RAT_RLL_", "Q_A_RAT_PIT_", "Q_A_RAT_YAW_", "Q_P_VELXY_", "Q_P_VELZ_", "Q_P_ACCZ_"]
     } else if (vehicle == "ArduPlane_FW") {
         prefix = ["RLL_RATE_", "PTCH_RATE_", "YAW_RATE_"]
     }
@@ -217,7 +217,7 @@ function get_axis_prefix() {
     return ""
 }
 
-function calculate_predicted_TF(H_acft, sample_rate, window_size) {
+function calculate_attctrl_predicted_TF(H_acft, sample_rate, window_size) {
 
     //this will have to be the sample rate of time history data
     var freq_max = sample_rate * 0.5
@@ -353,6 +353,132 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     var bl_temp = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var bl_temp1 = complex_mul(Ang_P_H.H_total, FLTT_FFPID_Acft)
     var bl_temp2 = complex_mul(INS_H.H_total, PID_Acft)
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        bl_temp[0][k] = bl_temp1[0][k] + bl_temp2[0][k]
+        bl_temp[1][k] = bl_temp1[1][k] + bl_temp2[1][k]
+    }
+    const Ret_sys_bl = bl_temp
+
+
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
+
+}
+
+function calculate_posctrl_predicted_TF(H_acft, sample_rate, window_size) {
+
+    //this will have to be the sample rate of time history data
+    var freq_max = sample_rate * 0.5
+    var freq_step = sample_rate / window_size;
+    var use_dB = false
+    var unwrap_phase = false
+
+    var PID_rate = get_form("SCHED_LOOP_RATE")
+
+    // Calculate transfer function for Rate PID
+    var PID_filter = []
+    var param_prefix = get_rate_param_prefix();
+    PID_filter.push(new PID(PID_rate,
+        get_form(param_prefix + "P"),
+        get_form(param_prefix + "I"),
+        get_form(param_prefix + "D"),
+        get_form(param_prefix + "FLTE"),
+        get_form(param_prefix + "FLTD")));
+
+    const PID_H = evaluate_transfer_functions([PID_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    // calculate transfer funciton for the PID Error Notch filter
+    const nef_num = get_form(param_prefix + "NEF")
+    var nef_freq = 0.0
+    if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
+    if (nef_num > 0 && nef_freq > 0.0) {
+        var E_notch_filter = []
+        E_notch_filter.push(new NotchFilterusingQ(PID_rate, nef_freq, get_form("FILT" + nef_num + "_NOTCH_Q"), get_form("FILT" + nef_num + "_NOTCH_ATT")))
+        const NEF_H = evaluate_transfer_functions([E_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
+        PID_H_TOT = complex_mul(NEF_H.H_total, PID_H.H_total)
+    } else {
+        PID_H_TOT = PID_H.H_total
+    }
+
+    // calculate transfer function for FF and DFF
+    var FF_filter = []
+    FF_filter.push(new feedforward(PID_rate, get_form(param_prefix + "FF"), get_form(param_prefix + "D_FF")))
+    const FF_H = evaluate_transfer_functions([FF_filter], freq_max, freq_step, use_dB, unwrap_phase)
+    var FFPID_H = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        FFPID_H[0][k] = PID_H_TOT[0][k] + FF_H.H_total[0][k]
+        FFPID_H[1][k] = PID_H_TOT[1][k] + FF_H.H_total[1][k]
+    }
+
+    // calculate transfer function for target LPF
+    var T_filter = []
+    T_filter.push(new LPF_1P(PID_rate, get_form(param_prefix + "FLTT")))
+    const FLTT_H = evaluate_transfer_functions([T_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    // calculate transfer function for target PID notch and the target LPF combined, if the notch is defined.  Otherwise just 
+    // provide the target LPF as the combined transfer function.
+    const ntf_num = get_form(param_prefix + "NTF")
+    var ntf_freq = 0.0
+    if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
+    if (ntf_num > 0 && ntf_freq > 0.0) {
+        var T_notch_filter = []
+        T_notch_filter.push(new NotchFilterusingQ(PID_rate, ntf_freq, get_form("FILT" + ntf_num + "_NOTCH_Q"), get_form("FILT" + ntf_num + "_NOTCH_ATT")))
+        const NTF_H = evaluate_transfer_functions([T_notch_filter], freq_max, freq_step, use_dB, unwrap_phase)
+        TGT_FILT_H = complex_mul(NTF_H.H_total, FLTT_H.H_total)
+    } else {
+        TGT_FILT_H = FLTT_H.H_total
+    }
+
+    // calculation of transfer function for the rate controller (includes serveral intermediate steps)
+    var H_PID_Acft_plus_one = [new Array(PID_H_TOT[0].length).fill(0), new Array(PID_H_TOT[0].length).fill(0)]
+
+    const PID_Acft = complex_mul(H_acft, PID_H_TOT)
+
+    const FFPID_Acft = complex_mul(H_acft, FFPID_H)
+    const FLTT_FFPID_Acft = complex_mul(FFPID_Acft, TGT_FILT_H)
+
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        H_PID_Acft_plus_one[0][k] = PID_Acft[0][k] + 1
+        H_PID_Acft_plus_one[1][k] = PID_Acft[1][k]
+    }
+    const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
+
+    // calculate transfer function for the angle P in prep for attitude controller calculation
+    var Ang_P_filter = []
+    var Angle_P = get_form(get_angle_param_prefix() + "P")
+    Ang_P_filter.push(new Ang_P(PID_rate, Angle_P))
+    const Ang_P_H = evaluate_transfer_functions([Ang_P_filter], freq_max, freq_step, use_dB, unwrap_phase)
+
+    // calculate transfer function for attitude controller with feedforward enabled (includes intermediate steps)
+    const rate_ANGP = complex_mul(Ret_rate, Ang_P_H.H_total)
+    var rate_ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var ANGP_plus_one = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    for (let k=0;k<H_acft[0].length+1;k++) {
+        rate_ANGP_plus_one[0][k] = rate_ANGP[0][k] + 1
+        rate_ANGP_plus_one[1][k] = rate_ANGP[1][k]
+        ANGP_plus_one[0][k] = Ang_P_H.H_total[0][k] + 1
+        ANGP_plus_one[1][k] = Ang_P_H.H_total[1][k]
+    }
+
+    // transfer function of attitude controller without feedforward
+    const Ret_att_nff = complex_div(complex_mul(Ang_P_H.H_total, Ret_rate), rate_ANGP_plus_one)
+
+    // no feedforward in position controller
+    const len = H_acft[0].length-1
+    const Ret_att_ff = [new Array(len).fill(1), new Array(len).fill(0)]
+    // no pilot feel in position controller
+    const Ret_pilot = [new Array(len).fill(1), new Array(len).fill(0)]
+
+    // calculate transfer function for attitude Distrubance Rejection
+    var minus_one = [new Array(H_acft[0].length).fill(-1), new Array(H_acft[0].length).fill(0)]
+    const Ret_DRB = complex_div(minus_one, rate_ANGP_plus_one)
+   
+    const Ret_att_bl = rate_ANGP
+
+    const Ret_rate_bl = PID_Acft
+
+    var bl_temp = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var bl_temp1 = complex_mul(Ang_P_H.H_total, FLTT_FFPID_Acft)
+    var bl_temp2 = PID_Acft
     for (let k=0;k<H_acft[0].length+1;k++) {
         bl_temp[0][k] = bl_temp1[0][k] + bl_temp2[0][k]
         bl_temp[1][k] = bl_temp1[1][k] + bl_temp2[1][k]
@@ -624,11 +750,15 @@ function setup_FFT_data() {
         "ATC_ANG_RLL_P",
         "ATC_ANG_PIT_P",
         "ATC_ANG_YAW_P",
+        "PSC_POSXY_P",
+        "PSC_POSZ_P",
         "Q_A_INPUT_TC",
         "Q_PLT_Y_RATE_TC",
         "Q_A_ANG_RLL_P",
         "Q_A_ANG_PIT_P",
         "Q_A_ANG_YAW_P",
+        "Q_P_POSXY_P",
+        "Q_P_POSZ_P",
         "RLL2SRV_TCONST",
         "PTCH2SRV_TCONST",
         "YAW2SRV_TCONST"
@@ -738,8 +868,10 @@ function axis_changed() {
 }
 
 function update_PID_filters() {
-    document.getElementById('RollPitchTC').style.display = 'none';
-    document.getElementById('YawTC').style.display = 'none';
+    if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical") {
+        document.getElementById('RollPitchTC').style.display = 'none';
+        document.getElementById('YawTC').style.display = 'none';
+    }
     document.getElementById('RollPIDS').style.display = 'none';
     document.getElementById('PitchPIDS').style.display = 'none';
     document.getElementById('YawPIDS').style.display = 'none';
@@ -751,7 +883,7 @@ function update_PID_filters() {
         document.getElementById('FILT' + i).style.display = 'none';
     }
     if (page_axis == "Roll") {
-        if (vehicle_type != "ArduPlane_FW") {
+        if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical") {
             document.getElementById('RollPitchTC').style.display = 'block';
         }
         document.getElementById('RollPIDS').style.display = 'block';
@@ -765,7 +897,7 @@ function update_PID_filters() {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (page_axis == "Pitch") {
-        if (vehicle_type != "ArduPlane_FW") {
+        if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical") {
             document.getElementById('RollPitchTC').style.display = 'block';
         }
         document.getElementById('PitchPIDS').style.display = 'block';
@@ -780,7 +912,7 @@ function update_PID_filters() {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
     } else if (page_axis == "Yaw") {
-        if (vehicle_type != "ArduPlane_FW") {
+        if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical") {
             document.getElementById('YawTC').style.display = 'block';
         }
         document.getElementById('YawPIDS').style.display = 'block';
@@ -828,6 +960,8 @@ function calculate_freq_resp() {
     var sample_rate
     if (vehicle_type == "ArduPlane_FW") {
         [data_set, sample_rate] = load_fw_time_history_data(t_start, t_end, page_axis)
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+        [data_set, sample_rate] = load_posctrl_time_history_data(t_start, t_end, page_axis)
     } else {
         [data_set, sample_rate] = load_vtol_time_history_data(t_start, t_end, page_axis)
     }
@@ -945,7 +1079,12 @@ function calculate_freq_resp() {
     var H_att_bl_pred
     var H_rate_bl_pred
     var H_sys_bl_pred
-    [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_predicted_TF(H_acft_tf, sample_rate, window_size)
+    console.log("page_axis: ", page_axis)
+    if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+        [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
+    } else {
+        [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_attctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
+    }
 
     calc_freq_resp = {
         pilotctrl_H: H_pilot_tf,
@@ -1091,6 +1230,149 @@ function load_vtol_time_history_data(t_start, t_end, axis) {
 
     SysBLInputData = ActInputData
     SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
+
+
+    var data = {
+        PilotInput: PilotInputData,
+        ActInput:   ActInputData,
+        GyroRaw:    GyroRawData,
+        RateTgt:    RateTgtData,
+        Rate:       RateData,
+        AttTgt:     AttTgtData,
+        Att:        AttData,
+        DRBin:      DRBInputData,
+        DRBresp:    DRBRespData,
+        SysBLInput: SysBLInputData,
+        SysBLOutput: SysBLOutputData
+    }
+    return [data, samplerate]
+
+}
+
+function load_posctrl_time_history_data(t_start, t_end, axis) {
+
+
+    let timePSCN_arr = log.get("PSCN", "TimeUS")
+    const ind1_n = nearestIndex(timePSCN_arr, t_start*1000000)
+    const ind2_n = nearestIndex(timePSCN_arr, t_end*1000000)
+
+    let timePSCN = Array.from(timePSCN_arr)
+
+    timePSCN = timePSCN.slice(ind1_n, ind2_n)
+
+    // Determine average sample rate
+    const trecord = (timePSCN[timePSCN.length - 1] - timePSCN[0]) / 1000000
+    const samplerate = (timePSCN.length)/ trecord
+
+    var timePSCE
+    var ind1_e
+    var ind2_e
+    timePSCE = log.get("PSCE", "TimeUS")
+    ind1_e = nearestIndex(timePSCE, t_start*1000000)
+    ind2_e = nearestIndex(timePSCE, t_end*1000000)
+
+    var timePSCD
+    var ind1_d
+    var ind2_d
+    timePSCD = log.get("PSCD", "TimeUS")
+    ind1_d = nearestIndex(timePSCD, t_start*1000000)
+    ind2_d = nearestIndex(timePSCD, t_end*1000000)
+
+    var timeATT
+    var ind1_a
+    var ind2_a
+    var heading
+    if (use_ANG_message) {
+        timeATT = log.get("ANG", "TimeUS")
+        ind1_a = nearestIndex(timeATT, t_start*1000000)
+        ind2_a = nearestIndex(timeATT, t_end*1000000)
+        heading = Array.from(log.get("ANG", "DesYaw"))
+    } else {
+        timeATT = log.get("ATT", "TimeUS")
+        ind1_a = nearestIndex(timeATT, t_start*1000000)
+        ind2_a = nearestIndex(timeATT, t_end*1000000)
+        heading = Array.from(log.get("ATT", "DesYaw"))
+    }
+    heading = heading.slice(ind1_a, ind2_a)
+    const sinhdg = Math.sin(array_mean(heading)*Math.PI/180)
+    const coshdg = Math.cos(array_mean(heading)*Math.PI/180)
+
+    const timeSIDD = log.get("SIDD", "TimeUS")
+    const ind1_s = nearestIndex(timeSIDD, t_start*1000000)
+    const ind2_s = nearestIndex(timeSIDD, t_end*1000000)
+
+    var ActInputData
+    var RateTgtData
+    var RateData
+    var AttTgtData
+    var AttData
+    var GyroRawData
+
+    if (axis != "vertical") {
+        // Rotate North/East to body frame for lateral and longitudinal axes
+        let PSCN_TAN = Array.from(log.get("PSCN", "TAN"))
+        PSCN_TAN = PSCN_TAN.slice(ind1_d, ind2_d)
+        let PSCN_TVN = Array.from(log.get("PSCN", "TVN"))
+        PSCN_TVN = PSCN_TVN.slice(ind1_d, ind2_d)
+        let PSCN_VN = Array.from(log.get("PSCN", "VN"))
+        PSCN_VN = PSCN_VN.slice(ind1_d, ind2_d)
+        let PSCN_TPN = Array.from(log.get("PSCN", "TPN"))
+        PSCN_TPN = PSCN_TPN.slice(ind1_d, ind2_d)
+        let PSCN_PN = Array.from(log.get("PSCN", "PN"))
+        PSCN_PN = PSCN_PN.slice(ind1_d, ind2_d)
+
+        let PSCE_TAE = Array.from(log.get("PSCE", "TAE"))
+        PSCE_TAE = PSCE_TAE.slice(ind1_d, ind2_d)
+        let PSCE_TVE = Array.from(log.get("PSCE", "TVE"))
+        PSCE_TVE = PSCE_TVE.slice(ind1_d, ind2_d)
+        let PSCE_VE = Array.from(log.get("PSCE", "VE"))
+        PSCE_VE = PSCE_VE.slice(ind1_d, ind2_d)
+        let PSCE_TPE = Array.from(log.get("PSCE", "TPE"))
+        PSCE_TPE = PSCE_TPE.slice(ind1_d, ind2_d)
+        let PSCE_PE = Array.from(log.get("PSCE", "PE"))
+        PSCE_PE = PSCE_PE.slice(ind1_d, ind2_d)
+
+        if (axis == "lateral") {
+            // Lateral axis
+            ActInputData = array_sub(array_scale(PSCE_TAE, coshdg), array_scale(PSCN_TAN, sinhdg))
+            RateTgtData = array_sub(array_scale(PSCE_TVE, coshdg), array_scale(PSCN_TVN, sinhdg))
+            RateData = array_sub(array_scale(PSCE_VE, coshdg), array_scale(PSCN_VN, sinhdg))
+            AttTgtData = array_sub(array_scale(PSCE_TPE, coshdg), array_scale(PSCN_TPN, sinhdg))
+            AttData = array_sub(array_scale(PSCE_PE, coshdg), array_scale(PSCN_PN, sinhdg))
+            GyroRawData = array_sub(array_scale(PSCE_VE, coshdg), array_scale(PSCN_VN, sinhdg))
+        } else {
+            // Longitudinal axis
+            ActInputData = array_add(array_scale(PSCN_TAN, coshdg), array_scale(PSCE_TAE, sinhdg))
+            RateTgtData = array_add(array_scale(PSCN_TVN, coshdg), array_scale(PSCE_TVE, sinhdg))
+            RateData = array_add(array_scale(PSCN_VN, coshdg), array_scale(PSCE_VE, sinhdg))
+            AttTgtData = array_add(array_scale(PSCN_TPN, coshdg), array_scale(PSCE_TPE, sinhdg))
+            AttData = array_add(array_scale(PSCN_PN, coshdg), array_scale(PSCE_PE, sinhdg))
+            GyroRawData = array_add(array_scale(PSCN_VN, coshdg), array_scale(PSCE_VE, sinhdg))
+        }
+    } else if (axis == "vertical") {
+        ActInputData = Array.from(log.get("PSCD", "TAD"))
+        ActInputData = ActInputData.slice(ind1_d, ind2_d)
+        RateTgtData = Array.from(log.get("PSCD", "TVD"))
+        RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
+        RateData = Array.from(log.get("PSCD", "VD"))
+        RateData = RateData.slice(ind1_d, ind2_d)
+        AttTgtData = Array.from(log.get("PSCD", "TPD"))
+        AttTgtData = AttTgtData.slice(ind1_d, ind2_d)
+        AttData = Array.from(log.get("PSCD", "PD"))
+        AttData = AttData.slice(ind1_d, ind2_d)
+        GyroRawData = Array.from(log.get("PSCD", "VD"))
+        GyroRawData = GyroRawData.slice(ind1_d, ind2_d)
+    }
+
+    let PilotInputData = Array.from(log.get("SIDD", "Targ"))
+    PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
+
+    // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
+    DRBInputData = PilotInputData
+    DRBRespData = array_sub(AttData, DRBInputData)
+
+    SysBLInputData = ActInputData
+    SysBLOutputData = array_sub(PilotInputData, ActInputData)
 
 
     var data = {
@@ -1505,87 +1787,14 @@ function redraw_freq_resp() {
     unwrap_ph = false
      // Set scaled x data
     const scaled_bins = frequency_scale.fun(calc_freq_resp.freq)
-    var show_set_calc = true
-    var show_set_pred = true
+    var show_set_calc
+    var show_set_pred
     var calc_data
     var calc_data_coh
     var pred_data
     var pred_data_coh
-    if (document.getElementById("type_Pilot_Ctrlr").checked) {
-        calc_data = calc_freq_resp.pilotctrl_H
-        calc_data_coh = calc_freq_resp.pilotctrl_coh
-        if (sid_axis > 3) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.pilotctrl_H
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Sys_Stab").checked) {
-        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
-        calc_data_coh = calc_freq_resp.sysbl_coh
-        if (sid_axis < 10 || sid_axis > 12) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.sysbl_H  // attitude stability
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Att_Stab").checked) {
-        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
-        calc_data_coh = calc_freq_resp.sysbl_coh
-        show_set_calc = false
-        pred_data = pred_freq_resp.attbl_H  // attitude stability
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Rate_Stab").checked) {
-        calc_data = calc_freq_resp.sysbl_H  // entire control system stability
-        calc_data_coh = calc_freq_resp.sysbl_coh
-        show_set_calc = false
-        pred_data = pred_freq_resp.ratebl_H  // attitude stability
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Att_DRB").checked) {
-        calc_data = calc_freq_resp.DRB_H  // calculated disturbance rejection
-        calc_data_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
-        if (sid_axis < 4 || sid_axis > 6) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.DRB_H  // predicted disturbance rejection
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Att_Ctrlr_nff").checked) {
-        calc_data = calc_freq_resp.attctrl_H
-        calc_data_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 20) || sid_axis > 22) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Att_Ctrlr").checked) {
-        calc_data = calc_freq_resp.attctrl_H
-        calc_data_coh = calc_freq_resp.attctrl_coh
-        if ((sid_axis > 3 && sid_axis < 7) || (sid_axis > 9 && sid_axis < 20) ) { //|| sid_axis > 22) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else if (document.getElementById("type_Rate_Ctrlr").checked) {
-        calc_data = calc_freq_resp.ratectrl_H
-        calc_data_coh = calc_freq_resp.ratectrl_coh
-        if (sid_axis > 9 && sid_axis < 20) {
-            show_set_calc = false
-        }
-        pred_data = pred_freq_resp.ratectrl_H
-        pred_data_coh = calc_freq_resp.bareAC_coh
-        show_set_pred = true
-    } else {
-        calc_data = calc_freq_resp.bareAC_H
-        calc_data_coh = calc_freq_resp.bareAC_coh
-        show_set_calc = true
-        pred_data = pred_freq_resp.ratectrl_H
-        show_set_pred = false
-    }
+
+    [calc_data, calc_data_coh, pred_data, pred_data_coh, show_set_calc, show_set_pred] = get_plotted_frequency_response()
 
     // Apply selected scale, set to y axis
     fft_plot.data[0].y = amplitude_scale.scale(complex_abs(calc_data))
@@ -1661,6 +1870,93 @@ function redraw_freq_resp() {
 
     const end = performance.now();
     console.log(`freq response redraw took: ${end - start} ms`);
+}
+
+function get_plotted_frequency_response() {
+    var calc_fr
+    var calc_fr_coh
+    var pred_fr
+    var pred_fr_coh
+    var show_calc = true
+    var show_pred = true
+
+    if (document.getElementById("type_Pilot_Ctrlr").checked) {
+        calc_fr = calc_freq_resp.pilotctrl_H
+        calc_fr_coh = calc_freq_resp.pilotctrl_coh
+        if (sid_axis > 3) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.pilotctrl_H
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Sys_Stab").checked) {
+        calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
+        calc_fr_coh = calc_freq_resp.sysbl_coh
+        if (sid_axis < 10 || sid_axis > 12) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.sysbl_H  // attitude stability
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Att_Stab").checked) {
+        calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
+        calc_fr_coh = calc_freq_resp.sysbl_coh
+        show_calc = false
+        pred_fr = pred_freq_resp.attbl_H  // attitude stability
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Rate_Stab").checked) {
+        calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
+        calc_fr_coh = calc_freq_resp.sysbl_coh
+        show_calc = false
+        pred_fr = pred_freq_resp.ratebl_H  // attitude stability
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Att_DRB").checked) {
+        calc_fr = calc_freq_resp.DRB_H  // calculated disturbance rejection
+        calc_fr_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
+        if (sid_axis < 4 || sid_axis > 6) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.DRB_H  // predicted disturbance rejection
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Att_Ctrlr_nff").checked) {
+        calc_fr = calc_freq_resp.attctrl_H
+        calc_fr_coh = calc_freq_resp.attctrl_coh
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 20) || sid_axis > 22) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Att_Ctrlr").checked) {
+        calc_fr = calc_freq_resp.attctrl_H
+        calc_fr_coh = calc_freq_resp.attctrl_coh
+        if ((sid_axis > 3 && sid_axis < 7) || (sid_axis > 9 && sid_axis < 20) ) { //|| sid_axis > 22) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else if (document.getElementById("type_Rate_Ctrlr").checked) {
+        calc_fr = calc_freq_resp.ratectrl_H
+        calc_fr_coh = calc_freq_resp.ratectrl_coh
+        if (sid_axis > 9 && sid_axis < 14) {
+            show_calc = false
+        }
+        pred_fr = pred_freq_resp.ratectrl_H
+        pred_fr_coh = calc_freq_resp.bareAC_coh
+        show_pred = true
+    } else {
+        calc_fr = calc_freq_resp.bareAC_H
+        calc_fr_coh = calc_freq_resp.bareAC_coh
+        show_calc = true
+        pred_fr = pred_freq_resp.ratectrl_H
+        show_pred = false
+    }
+    return [calc_fr, calc_fr_coh, pred_fr, pred_fr_coh, show_calc, show_pred]
+
 }
 
 function add_sid_sets() {
@@ -1832,6 +2128,12 @@ function set_sid_axis(axis) {
         page_axis = "Pitch"
     } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12 || axis == 22 || axis == 25) {
         page_axis = "Yaw"
+    } else if (axis == 13) {
+        page_axis = "Vertical"
+    } else if (axis == 14 || axis == 16 || axis == 18) {
+        page_axis = "Lateral"
+    } else if (axis == 15 || axis == 17 || axis == 19) {
+        page_axis = "Longitudinal"
     }
     sid_axis = axis
 }
@@ -1858,10 +2160,18 @@ function get_vehicle_type() {
    return vehicle_type
 }
 
+function get_page_axis() {
+   return page_axis
+}
+
 function get_rate_param_prefix() {
     var prefix = ""
     if (vehicle_type == "ArduPlane_FW") {
         prefix = get_axis_prefix()  + "_RATE_";
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal") {
+        prefix = "PSC_VELXY_";
+    } else if (page_axis == "Vertical") {
+        prefix = "PSC_VELZ_";
     } else {
         prefix = get_vehicle_atc_prefix() + "RAT_" + get_axis_prefix() + "_";
     }
@@ -1872,6 +2182,10 @@ function get_angle_param_prefix() {
     var prefix = ""
     if (vehicle_type == "ArduPlane_FW") {
         prefix = get_axis_prefix()  + "2SRV_";
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal") {
+        prefix = "PSC_POSXY_";
+    } else if (page_axis == "Vertical") {
+        prefix = "PSC_POSZ_";
     } else {
         prefix = get_vehicle_atc_prefix() + "ANG_" + get_axis_prefix() + "_";
     }
