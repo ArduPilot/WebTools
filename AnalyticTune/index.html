@@ -132,6 +132,24 @@ const pageSections = [
             {
                 type: 'fieldset',
                 style: 'max-width:1200px',
+                legend: 'Loop Rate',
+                elements: [
+                    { type: 'p', content: [ { tag: 'input', id: 'SCHED_LOOP_RATE', name: 'SCHED_LOOP_RATE', type: 'number', step: '1', value: '400', 'data-paramValues': 'false' } ] }
+                ]
+            }
+        ]
+    }
+];
+
+const pageSections_param_notch_mode = [
+    {
+        type: 'form',
+        id: 'params',
+        isFragment: true,
+        content: [
+            {
+                type: 'fieldset',
+                style: 'max-width:1200px',
                 legend: 'INS Settings',
                 elements: [
                     { type: 'p', content: [ { tag: 'label', for: 'GyroSampleRate', text: 'Gyro Sample Rate' }, { tag: 'input', id: 'GyroSampleRate', name: 'GyroSampleRate', type: 'number', step: '1', value: '2000' } ] },
@@ -190,9 +208,30 @@ const pageSections = [
             {
                 type: 'fieldset',
                 style: 'max-width:1200px',
-                legend: 'Loop Rate',
+                id: 'Throttle_input',
+                legend: 'Throttle Based',
                 elements: [
-                    { type: 'p', content: [ { tag: 'input', id: 'SCHED_LOOP_RATE', name: 'SCHED_LOOP_RATE', type: 'number', step: '1', value: '400', 'data-paramValues': 'false' } ] }
+                    { type: 'p', content: [ { tag: 'label', for: 'Throttle', text: 'Throttle' }, { tag: 'input', id: 'Throttle', name: 'Throttle', type: 'number', step: '0.01', value: '0.3' } ] }
+                ]
+            },
+            {
+                type: 'fieldset',
+                style: 'max-width:1200px',
+                id: 'ESC_input',
+                legend: 'ESC Telemetry',
+                elements: [
+                    { type: 'p', content: [ { tag: 'label', for: 'NUM_MOTORS', text: 'Number of Motors' }, { tag: 'input', id: 'NUM_MOTORS', name: 'NUM_MOTORS', type: 'number', step: '1', value: '1' } ] },
+                    { type: 'p', content: [ { tag: 'label', for: 'ESC_RPM', text: 'ESC RPM' }, { tag: 'input', id: 'ESC_RPM', name: 'ESC_RPM', type: 'number', step: '1', value: '2500' } ] }
+                ]
+            },
+            {
+                type: 'fieldset',
+                style: 'max-width:1200px',
+                id: 'RPM_input',
+                legend: 'RPM/EFI Based',
+                elements: [
+                    { type: 'p', content: [ { tag: 'label', for: 'RPM1', text: 'RPM1' }, { tag: 'input', id: 'RPM1', name: 'RPM1', type: 'number', step: '1', value: '2500' } ] },
+                    { type: 'p', content: [ { tag: 'label', for: 'RPM2', text: 'RPM2' }, { tag: 'input', id: 'RPM2', name: 'RPM2', type: 'number', step: '1', value: '2500' } ] }
                 ]
             }
         ]
@@ -410,77 +449,33 @@ const pageSections_param_POS = [
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_P', name: 'PSC_VELXY_P', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_I', name: 'PSC_VELXY_I', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D', name: 'PSC_VELXY_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D_FF', name: 'PSC_VELXY_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTT', name: 'PSC_VELXY_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTE', name: 'PSC_VELXY_FLTE', type: 'number', step: '0.01', value: '0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTD', name: 'PSC_VELXY_FLTD', type: 'number', step: '0.01', value: '20' } ] }
                                         ]},
                                         { divId: 'PitchPIDS', style: 'display:none', elements: [
-/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSXY_P', name: 'PSC_POSXY_P', type: 'number', step: '0.1', value: '4.5' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FF', name: 'PSC_VELXY_FF', type: 'number', step: '0.01', value: '0.0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_P', name: 'PSC_VELXY_P', type: 'number', step: '0.01', value: '0.288' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_I', name: 'PSC_VELXY_I', type: 'number', step: '0.01', value: '0.288' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D', name: 'PSC_VELXY_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_D_FF', name: 'PSC_VELXY_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTT', name: 'PSC_VELXY_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTE', name: 'PSC_VELXY_FLTE', type: 'number', step: '0.01', value: '0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTD', name: 'PSC_VELXY_FLTD', type: 'number', step: '0.01', value: '20' } ] }
-*/                                        ]},
-                                        { divId: 'YawPIDS', style: 'display:none', elements: [
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSZ_P', name: 'PSC_POSZ_P', type: 'number', step: '0.1', value: '4.5' } ] },
+/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSZ_P', name: 'PSC_POSZ_P', type: 'number', step: '0.1', value: '4.5' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FF', name: 'PSC_VELZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_P', name: 'PSC_VELZ_P', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_I', name: 'PSC_VELZ_I', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_D', name: 'PSC_VELZ_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_D_FF', name: 'PSC_VELZ_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTT', name: 'PSC_VELZ_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTE', name: 'PSC_VELZ_FLTE', type: 'number', step: '0.01', value: '0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTD', name: 'PSC_VELZ_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTD', name: 'PSC_VELZ_FLTD', type: 'number', step: '0.01', value: '20' } ] } */
+                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
+/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FF', name: 'PSC_ACCZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_P', name: 'PSC_ACCZ_P', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_I', name: 'PSC_ACCZ_I', type: 'number', step: '0.01', value: '0.288' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_D', name: 'PSC_ACCZ_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_D_FF', name: 'PSC_ACCZ_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTT', name: 'PSC_ACCZ_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTE', name: 'PSC_ACCZ_FLTE', type: 'number', step: '0.01', value: '0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTD', name: 'PSC_ACCZ_FLTD', type: 'number', step: '0.01', value: '20' } ] }  */
                                         ]}
                                     ]
                                 }
                             }
                         ]
                     }
-                ]
-            }
-        ]
-    }
-];
-
-const pageSections_param_notch_mode = [
-    {
-        type: 'form',
-        id: 'params',
-        isFragment: true,
-        content: [
-            {
-                type: 'fieldset',
-                style: 'max-width:1200px',
-                id: 'Throttle_input',
-                legend: 'Throttle Based',
-                elements: [
-                    { type: 'p', content: [ { tag: 'label', for: 'Throttle', text: 'Throttle' }, { tag: 'input', id: 'Throttle', name: 'Throttle', type: 'number', step: '0.01', value: '0.3' } ] }
-                ]
-            },
-            {
-                type: 'fieldset',
-                style: 'max-width:1200px',
-                id: 'ESC_input',
-                legend: 'ESC Telemetry',
-                elements: [
-                    { type: 'p', content: [ { tag: 'label', for: 'NUM_MOTORS', text: 'Number of Motors' }, { tag: 'input', id: 'NUM_MOTORS', name: 'NUM_MOTORS', type: 'number', step: '1', value: '1' } ] },
-                    { type: 'p', content: [ { tag: 'label', for: 'ESC_RPM', text: 'ESC RPM' }, { tag: 'input', id: 'ESC_RPM', name: 'ESC_RPM', type: 'number', step: '1', value: '2500' } ] }
-                ]
-            },
-            {
-                type: 'fieldset',
-                style: 'max-width:1200px',
-                id: 'RPM_input',
-                legend: 'RPM/EFI Based',
-                elements: [
-                    { type: 'p', content: [ { tag: 'label', for: 'RPM1', text: 'RPM1' }, { tag: 'input', id: 'RPM1', name: 'RPM1', type: 'number', step: '1', value: '2500' } ] },
-                    { type: 'p', content: [ { tag: 'label', for: 'RPM2', text: 'RPM2' }, { tag: 'input', id: 'RPM2', name: 'RPM2', type: 'number', step: '1', value: '2500' } ] }
                 ]
             }
         ]
@@ -587,26 +582,22 @@ const pageSections_notch_param_FW = [
     }
 ];
 
-const pageSections_notch_param_POS = [
+/* const pageSections_notch_param_POS = [
     {
         type: 'tableCell',
         targetId: 'attitude-controller-row',
         content: {
             type: 'fieldset',
             style: 'width:580px',
-            legend: 'Attitude Controller Notch Parameters',
+            legend: 'Position Controller Notch Parameters',
             groups: [
                 { divId: 'RollNOTCH', style: 'display:block', elements: [
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NTF', name: 'PSC_VELXY_NTF', type: 'number', step: '1', value: '0' } ] },
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NEF', name: 'PSC_VELXY_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
                 { divId: 'PitchNOTCH', style: 'display:none', elements: [
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NTF', name: 'PSC_VELXY_NTF', type: 'number', step: '1', value: '0' } ] },
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_NEF', name: 'PSC_VELXY_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
                 { divId: 'YawNOTCH', style: 'display:none', elements: [
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_NTF', name: 'PSC_VELZ_NTF', type: 'number', step: '1', value: '0' } ] },
-                    { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_NEF', name: 'PSC_VELZ_NEF', type: 'number', step: '1', value: '0' } ] }
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_NTF', name: 'PSC_ACCZ_NTF', type: 'number', step: '1', value: '0' } ] },
+                    { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_NEF', name: 'PSC_ACCZ_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
                 ...[...Array(8).keys()].map(i => ({
                     divId: `FILT${i + 1}`, style: 'display:none', elements: [
@@ -619,7 +610,7 @@ const pageSections_notch_param_POS = [
             ]
         }
     }
-];
+]; */
 
 const pageSections_freq_resp_plots = [
     {
@@ -947,6 +938,9 @@ document.addEventListener('DOMContentLoaded', () => {
         calc_btn.onclick = function() {
             document.getElementById('dynamic-content-container').innerHTML = '';
             buildDynamicContent(pageSections);
+            if (get_page_axis() != 'Lateral' && get_page_axis() != 'Longitudinal' && get_page_axis() != 'Vertical') {
+                buildDynamicContent(pageSections_param_notch_mode);
+            }
             if (get_vehicle_type() === 'ArduPlane_FW') {
                 buildDynamicContent(pageSections_param_FW);
                 buildDynamicContent(pageSections_notch_param_FW);
@@ -955,24 +949,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 buildDynamicContent(pageSections_notch_param_QP);
             } else if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
                 buildDynamicContent(pageSections_param_POS);
-                buildDynamicContent(pageSections_notch_param_POS);
+//                buildDynamicContent(pageSections_notch_param_POS);
             } else {
                 buildDynamicContent(pageSections_param_RW);
                 buildDynamicContent(pageSections_notch_param_RW);
             }
-            buildDynamicContent(pageSections_param_notch_mode);
             buildDynamicContent(pageSections_freq_resp_plots);
 
-            let params = ["SCHED_LOOP_RATE", "PILOT_Y_RATE_TC", "Q_PLT_Y_RATE_TC"];
+            let params = ["SCHED_LOOP_RATE"];
             var inputs = document.getElementsByTagName("input");
             for (param of inputs) {
-                if (param.id && (param.id.startsWith("INS_") || param.id.startsWith("PSC") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT"))) {
+                if (param.id && (param.id.startsWith("INS_") || param.id.startsWith("PSC") || param.id.startsWith("ATC_") || param.id.startsWith("Q_A_") || param.id.startsWith("RLL_") || param.id.startsWith("PTCH_") || param.id.startsWith("YAW_") || param.id.startsWith("RLL2SRV_") || param.id.startsWith("PTCH2SRV_") || param.id.startsWith("YAW2SRV_") || param.id.startsWith("FILT") || param.id.startsWith("PILOT") || param.id.startsWith("Q_PLT"))) {
                     params.push(param.id);
                 }
             }
             console.log("Parameters identified for loading:", params);
 
-            if(typeof load_param_inputs === 'function') load_param_inputs("/AnalyticTune/params.json", params);
+            if(typeof load_param_inputs === 'function') load_param_inputs("params.json", params);
             console.log("Parameters loaded.");
             if(typeof load === 'function') load();
             if(typeof update_all_hidden === 'function') update_all_hidden();
