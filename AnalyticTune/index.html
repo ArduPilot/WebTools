@@ -629,11 +629,24 @@ const pageSections_freq_resp_plots = [
             { id: 'FFTPlotPhase', style: 'width:1200px;height:350px' },
             { id: 'FFTPlotCoh', style: 'width:1200px;height:250px' }
         ]
-    },
+    }
+]
+
+const pageSections_freq_resp_plot_options_start = [
     {
         type: 'form',
         id: 'plot_options',
         action: '',
+        content: [
+        ]
+    }
+];
+
+const pageSections_freq_resp_plot_options_RW = [
+    {
+        type: 'form',
+        id: 'plot_options',
+        isFragment: true,
         content: [
             {
                 type: 'fieldset',
@@ -645,6 +658,7 @@ const pageSections_freq_resp_plots = [
                         content: [
                             {
                                 tag: 'tr',
+                                id: 'plot-options-row',
                                 content: [
                                     {
                                         tag: 'td',
@@ -685,71 +699,71 @@ const pageSections_freq_resp_plots = [
                                                 ]
                                             }
                                         ]
-                                    },
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+];
+
+const pageSections_freq_resp_plot_options_POS = [
+    {
+        type: 'form',
+        id: 'plot_options',
+        isFragment: true,
+        content: [
+            {
+                type: 'fieldset',
+                style: 'max-width:1200px',
+                legend: 'Graph Settings',
+                elements: [
+                    {
+                        tag: 'table',
+                        content: [
+                            {
+                                tag: 'tr',
+                                id: 'plot-options-row',
+                                content: [
                                     {
                                         tag: 'td',
                                         content: [
                                             {
                                                 tag: 'fieldset',
-                                                style: 'width:150px; height:70px',
-                                                legend: 'Gain scale',
+                                                style: 'width:400px;height:200px',
+                                                legend: 'Control Loop',
                                                 elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLog', name: 'PID_Scale', value: 'Log', checked: true },
-                                                    { tag: 'label', for: 'PID_ScaleLog', text: 'dB' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC' },
+                                                    { tag: 'label', for: 'type_Bare_AC', text: 'Bare Aircraft' },
+                                                    { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude' },
+                                                    { tag: 'label', for: 'UseAttitude', text: 'Use Attitude to Improve Coherence' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleLinear', name: 'PID_Scale', value: 'Linear' },
-                                                    { tag: 'label', for: 'PID_ScaleLinear', text: 'Linear' }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        tag: 'td',
-                                        content: [
-                                            {
-                                                tag: 'fieldset',
-                                                style: 'width:150px; height:70px',
-                                                legend: 'Phase scale',
-                                                elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleUnWrap', name: 'PID_PhaseScale', value: 'unwrap' },
-                                                    { tag: 'label', for: 'PID_ScaleUnWrap', text: 'un-wrapped' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr', checked: true },
+                                                    { tag: 'label', for: 'type_Rate_Ctrlr', text: 'Rate Controller' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_ScaleWrap', name: 'PID_PhaseScale', value: 'wrap', checked: true },
-                                                    { tag: 'label', for: 'PID_ScaleWrap', text: '±180' }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        tag: 'td',
-                                        content: [
-                                            {
-                                                tag: 'fieldset',
-                                                style: 'width:150px; height:70px',
-                                                legend: 'Frequency scale',
-                                                elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLog', name: 'PID_feq_scale', value: 'Log', checked: true },
-                                                    { tag: 'label', for: 'PID_freq_ScaleLog', text: 'Log' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr' },
+                                                    { tag: 'label', for: 'type_Att_Ctrlr', text: 'Attitude Controller with Feedforward' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLinear', name: 'PID_feq_scale', value: 'Linear' },
-                                                    { tag: 'label', for: 'PID_freq_ScaleLinear', text: 'Linear' }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        tag: 'td',
-                                        content: [
-                                            {
-                                                tag: 'fieldset',
-                                                style: 'width:150px; height:70px',
-                                                legend: 'Frequency Units',
-                                                elements: [
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_Hz', name: 'PID_feq_unit', value: 'Hz', checked: true },
-                                                    { tag: 'label', for: 'PID_freq_Scale_Hz', text: 'Hz' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
+                                                    { tag: 'label', for: 'type_Att_Ctrlr_nff', text: 'Attitude Controller without feedforward' },
                                                     { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'PID_freq_Scale_RPS', name: 'PID_feq_unit', value: 'RPS' },
-                                                    { tag: 'label', for: 'PID_freq_Scale_RPS', text: 'Rad/s' }
+                                                    { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
+                                                    { tag: 'label', for: 'type_Pilot_Ctrlr', text: 'Input Shaping' },
+                                                    { tag: 'br' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB' },
+                                                    { tag: 'label', for: 'type_Att_DRB', text: 'Attitude Disturbance Rejection' },
+                                                    { tag: 'br' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab' },
+                                                    { tag: 'label', for: 'type_Rate_Stab', text: 'Rate Stability' },
+                                                    { tag: 'br' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab' },
+                                                    { tag: 'label', for: 'type_Att_Stab', text: 'Attitude Stability' },
+                                                    { tag: 'br' },
+                                                    { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab' },
+                                                    { tag: 'label', for: 'type_Sys_Stab', text: 'Entire System Stability' }
                                                 ]
                                             }
                                         ]
@@ -763,6 +777,74 @@ const pageSections_freq_resp_plots = [
         ]
     }
 ];
+
+const pageSections_freq_resp_plot_options_end = [
+    {
+        type: 'tableCell',
+        targetId: 'plot-options-row',
+        content: {
+            tag: 'fieldset',
+            style: 'width:150px; height:70px',
+            legend: 'Gain scale',
+            elements: [
+                { tag: 'input', type: 'radio', id: 'PID_ScaleLog', name: 'PID_Scale', value: 'Log', checked: true },
+                { tag: 'label', for: 'PID_ScaleLog', text: 'dB' },
+                { tag: 'br' },
+                { tag: 'input', type: 'radio', id: 'PID_ScaleLinear', name: 'PID_Scale', value: 'Linear' },
+                { tag: 'label', for: 'PID_ScaleLinear', text: 'Linear' }
+            ]
+        }
+    },
+    {
+        type: 'tableCell',
+        targetId: 'plot-options-row',
+        content: {
+            tag: 'fieldset',
+            style: 'width:150px; height:70px',
+            legend: 'Phase scale',
+            elements: [
+                { tag: 'input', type: 'radio', id: 'PID_ScaleUnWrap', name: 'PID_PhaseScale', value: 'unwrap' },
+                { tag: 'label', for: 'PID_ScaleUnWrap', text: 'un-wrapped' },
+                { tag: 'br' },
+                { tag: 'input', type: 'radio', id: 'PID_ScaleWrap', name: 'PID_PhaseScale', value: 'wrap', checked: true },
+                { tag: 'label', for: 'PID_ScaleWrap', text: '±180' }
+            ]
+        }
+    },
+    {
+        type: 'tableCell',
+        targetId: 'plot-options-row',
+        content: {
+            tag: 'fieldset',
+            style: 'width:150px; height:70px',
+            legend: 'Frequency scale',
+            elements: [
+                { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLog', name: 'PID_feq_scale', value: 'Log', checked: true },
+                { tag: 'label', for: 'PID_freq_ScaleLog', text: 'Log' },
+                { tag: 'br' },
+                { tag: 'input', type: 'radio', id: 'PID_freq_ScaleLinear', name: 'PID_feq_scale', value: 'Linear' },
+                { tag: 'label', for: 'PID_freq_ScaleLinear', text: 'Linear' }
+            ]
+        }
+    },
+    {
+        type: 'tableCell',
+        targetId: 'plot-options-row',
+        content: {
+            tag: 'fieldset',
+            style: 'width:150px; height:70px',
+            legend: 'Frequency Units',
+            elements: [
+                { tag: 'input', type: 'radio', id: 'PID_freq_Scale_Hz', name: 'PID_feq_unit', value: 'Hz', checked: true },
+                { tag: 'label', for: 'PID_freq_Scale_Hz', text: 'Hz' },
+                { tag: 'br' },
+                { tag: 'input', type: 'radio', id: 'PID_freq_Scale_RPS', name: 'PID_feq_unit', value: 'RPS' },
+                { tag: 'label', for: 'PID_freq_Scale_RPS', text: 'Rad/s' }
+            ]
+        }
+    }
+];
+
 
 // =====================================================================================
 // DYNAMIC PAGE BUILDER FUNCTIONS
@@ -807,8 +889,17 @@ function createFieldset(data) {
                 });
                 container.appendChild(p);
             } else if (elementDef.tag) {
-                 const complexEl = buildComplexElement(elementDef);
-                 container.appendChild(complexEl);
+                // **FIX:** Check if the element is complex (has children) or simple.
+                if (elementDef.content || elementDef.elements) {
+                    // It's a complex element like a table; use the builder function.
+                    const complexEl = buildComplexElement(elementDef);
+                    container.appendChild(complexEl);
+                } else {
+                    // It's a simple element like <input> or <label>; create it directly with all attributes.
+                    const attrs = { ...elementDef };
+                    delete attrs.tag;
+                    container.appendChild(createElement(elementDef.tag, attrs));
+                }
             }
         });
     };
@@ -826,28 +917,38 @@ function createFieldset(data) {
 }
 
 function buildComplexElement(data) {
-    const el = createElement(data.tag || data.type, {id: data.id});
-    if (data.legend) {
-        el.appendChild(createElement('legend', {}, data.legend));
-    }
+    // 1. Prepare attributes, excluding structural properties used for building
+    const attrs = { ...data };
+    delete attrs.tag;
+    delete attrs.type;
+    delete attrs.content;
+    delete attrs.elements;
+    delete attrs.legend;
+    delete attrs.groups;
+
+    // 2. Create the element itself (e.g., <table>, <tr>, <td>)
+    const el = createElement(data.tag || data.type, attrs);
+
+    // 3. Recursively build children from the 'content' property
     if (data.content) {
-        data.content.forEach(childData => {
-            if (childData.type === 'td') {
-                const td = createElement('td');
-                td.appendChild(createFieldset(childData.content));
-                el.appendChild(td);
+        // **THE FIX:** Normalize the 'content' property to always be an array.
+        // This handles cases where 'content' is a single object instead of an array of objects.
+        const contentArray = Array.isArray(data.content) ? data.content : [data.content];
+
+        contentArray.forEach(childDef => {
+            let childEl;
+            // Decide which builder function to use for the child element
+            if (childDef.type === 'fieldset' || childDef.tag === 'fieldset') {
+                // If the child is a fieldset, use the specialized createFieldset function
+                childEl = createFieldset(childDef);
             } else {
-                 el.appendChild(buildComplexElement(childData));
+                // For any other element (like a <tr> or <td>), recurse
+                childEl = buildComplexElement(childDef);
             }
+            el.appendChild(childEl);
         });
     }
-    if (data.elements) {
-         data.elements.forEach(item => {
-            const itemAttrs = { ...item };
-            delete itemAttrs.tag;
-            el.appendChild(createElement(item.tag, itemAttrs));
-         });
-    }
+
     return el;
 }
 
@@ -949,12 +1050,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 buildDynamicContent(pageSections_notch_param_QP);
             } else if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
                 buildDynamicContent(pageSections_param_POS);
-//                buildDynamicContent(pageSections_notch_param_POS);
             } else {
                 buildDynamicContent(pageSections_param_RW);
                 buildDynamicContent(pageSections_notch_param_RW);
             }
             buildDynamicContent(pageSections_freq_resp_plots);
+            buildDynamicContent(pageSections_freq_resp_plot_options_start);
+            if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
+                buildDynamicContent(pageSections_freq_resp_plot_options_POS);
+            } else {
+                buildDynamicContent(pageSections_freq_resp_plot_options_RW);
+            }
+            buildDynamicContent(pageSections_freq_resp_plot_options_end);
 
             let params = ["SCHED_LOOP_RATE"];
             var inputs = document.getElementsByTagName("input");
