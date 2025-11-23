@@ -40,7 +40,7 @@ handle_msg = function (msg) {
 
         // Sandboxed iframe for user content
         this.iframe = document.createElement("iframe")
-        this.iframe.sandbox = 'allow-scripts'
+        this.iframe.sandbox = 'allow-scripts allow-same-origin'
         this.iframe.src = 'Widgets/SandBox.html'
         this.iframe.scrolling="no"
         this.iframe.style.border = "none"
@@ -68,13 +68,6 @@ handle_msg = function (msg) {
             options: this.get_form_content()
         }
         this.iframe.contentWindow.postMessage(data, '*')
-    }
-
-    MAVLink_msg_handler(msg) {
-        if (this.iframe.contentWindow == null) {
-            return
-        }
-        this.iframe.contentWindow.postMessage( { MAVLink: msg }, '*')
     }
 
     set_edit(b) {

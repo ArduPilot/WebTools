@@ -166,9 +166,6 @@ class WidgetBase extends HTMLElement {
 
     }
 
-    // Handle incoming MAVLink message
-    MAVLink_msg_handler(msg) {}
-
     // Enable or disable editing
     set_edit(b) {
         this.edit_enabled = b

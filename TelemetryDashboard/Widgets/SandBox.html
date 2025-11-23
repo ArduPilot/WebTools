@@ -176,11 +176,15 @@
             load_user_script()
         }
 
-        // Incoming MAVLink message
-        if ("MAVLink" in data) {
-            handle_MAVLink(data.MAVLink)
-        }
-
     })
+
+    // Incoming MAVLink messages
+    const broadcast = new BroadcastChannel("MAVLinkMSG")
+    broadcast.onmessage = (e) => {
+        if (e?.data?.MAVLink) {
+            handle_MAVLink(e.data.MAVLink)
+        }
+    }
+
 </script>
 </html>
