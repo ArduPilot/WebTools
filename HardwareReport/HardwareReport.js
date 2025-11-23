@@ -11,6 +11,15 @@ import_done[1] = import('https://esm.sh/@octokit/request')
     .then((mod) => { octokitRequest = mod.request })
     .catch(error => console.log(error))
 
+// Make sure whole page is loaded
+import_done[2] = new Promise((resolve) => {
+    window.addEventListener('load', () => {
+        initial_load().then(() => {
+            load()
+            resolve()
+        })
+    })
+})
 
 function configurePlotlyCanvas() {
   const originalGetContext = HTMLCanvasElement.prototype.getContext;
@@ -3114,7 +3123,7 @@ async function load_log(log_file) {
     console.log(`Load took: ${end - start} ms`)
 }
 
-async function load() {
+function load() {
     reset()
 
     const button = document.getElementById("fileItem")
@@ -3133,7 +3142,7 @@ async function load() {
         reader.readAsArrayBuffer(file)
 
     } else {
-        load_param_file(await file.text())
+        load_param_file(file.text())
     }
 
 }
