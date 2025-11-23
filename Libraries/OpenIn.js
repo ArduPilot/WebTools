@@ -110,7 +110,7 @@ function get_open_in(get_file_fun) {
 
 }
 
-function setup_open_in(button_id, file_id, load_fun, placement) {
+function setup_open_in(button_id, file_id, load_fun, pageLoadDone, placement) {
 
     const button = document.getElementById(button_id)
     const input = document.getElementById(file_id)
@@ -141,7 +141,11 @@ function setup_open_in(button_id, file_id, load_fun, placement) {
     })
 
     // Load from "open in" button on other pages
-    window.addEventListener('message', (event) => {
+    window.addEventListener('message', async (event) => {
+        if (pageLoadDone != null) {
+            await pageLoadDone()
+        }
+
         if (event.data.type === 'arrayBuffer') {
             load_fun(event.data.data)
 
