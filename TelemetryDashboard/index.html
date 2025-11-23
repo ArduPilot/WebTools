@@ -193,6 +193,9 @@
         throw new Error(e.reason.stack)
     })
 
+    // Channel for forwarding MAVLink messages
+    const broadcast = new BroadcastChannel("MAVLinkMSG");
+
     // Load grid
     let grid
     let grid_changed = false

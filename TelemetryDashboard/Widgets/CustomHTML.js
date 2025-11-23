@@ -48,12 +48,15 @@ class WidgetCustomHTML extends WidgetBase {
             options = data.options
         }
 
-        // Incoming MAVLink message
-        if ("MAVLink" in data) {
-            handle_MAVLink(data.MAVLink)
-        }
-
     })
+
+    // Incoming MAVLink messages
+    const broadcast = new BroadcastChannel("MAVLinkMSG")
+    broadcast.onmessage = (e) => {
+        if (e?.data?.MAVLink) {
+            handle_MAVLink(e.data.MAVLink)
+        }
+    }
 </script>
 </html>
 `
@@ -64,7 +67,7 @@ class WidgetCustomHTML extends WidgetBase {
 
         // Sandboxed iframe for user content
         this.iframe = document.createElement("iframe")
-        this.iframe.sandbox = 'allow-scripts'
+        this.iframe.sandbox = 'allow-scripts allow-same-origin'
         this.iframe.srcdoc = src
         this.iframe.scrolling="no"
         this.iframe.style.border = "none"
@@ -91,13 +94,6 @@ class WidgetCustomHTML extends WidgetBase {
             options: this.get_form_content()
         }
         this.iframe.contentWindow.postMessage(data, '*')
-    }
-
-    MAVLink_msg_handler(msg) {
-        if (this.iframe.contentWindow == null) {
-            return
-        }
-        this.iframe.contentWindow.postMessage( { MAVLink: msg }, '*')
     }
 
     set_edit(b) {

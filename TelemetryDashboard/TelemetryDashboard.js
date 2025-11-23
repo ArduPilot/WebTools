@@ -30,6 +30,10 @@ function setup_connect(button_svg, button_color) {
     })
     button_svg.onclick = () => { tip.show() }
 
+
+    // Fix html examples, add stats example to pallet.
+
+
     // Connection tool tip
     tippy(tip_div.querySelector('img[id="TT"]'), {
         appendTo: () => document.body,
@@ -119,14 +123,8 @@ function setup_connect(button_svg, button_color) {
             for (const char of new Uint8Array(msg.data)) {
                 const m = MAVLink.parseChar(char)
                 if ((m != null) && (m._id != -1)) {
-                    // Got message with known ID
-                    // Sent to each Widget
-                    for (const widget of grid.getGridItems()) {
-                        widget.MAVLink_msg_handler(m)
-                    }
-                    for (const widget of test_grid.getGridItems()) {
-                        widget.MAVLink_msg_handler(m)
-                    }
+                    m._timeStamp = Date.now()
+                    broadcast.postMessage({ MAVLink: m })
                 }
             }
         }

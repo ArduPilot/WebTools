@@ -262,17 +262,6 @@ class WidgetSubGrid extends WidgetBase {
         }
     }
 
-    MAVLink_msg_handler(msg) {
-        if (this.grid == null) {
-            return
-        }
-
-        // Forward message on to sub widgets
-        for (const widget of this.grid.getGridItems()) {
-            widget.MAVLink_msg_handler(msg)
-        }
-    }
-
     load_grid() {
 
         // Stash widgets for reload after resize
