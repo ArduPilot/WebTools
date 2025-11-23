@@ -35,7 +35,6 @@
 
 <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Hardware Report</a></h1>
 
-<body onload="initial_load().then(() => load());">
 <input id="fileItem" type="file" accept=".param,.parm,.bin" onchange="load()">
 
 <input id="OpenIn" type="button" value="Open In" disabled>
@@ -323,7 +322,7 @@
     throw new Error(e.reason.stack)
   })
 
-  const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { reset(); load_log(data) }) }, "right")
+  const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(async () => { load_log(data) }) }, async () => { await Promise.allSettled(import_done) }, "right")
 
   init_loading_overlay()
 
