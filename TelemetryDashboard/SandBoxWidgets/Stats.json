@@ -1,0 +1,23 @@
+{
+  "header": {
+    "version": 1
+  },
+  "widget": {
+    "x": "3",
+    "y": "3",
+    "w": "2",
+    "h": "2",
+    "type": "WidgetSandBox",
+    "options": {
+      "form": {
+        "components": []
+      },
+      "form_content": {},
+      "about": {
+        "name": "Stats",
+        "info": "MAVLink message stats, shows the rate of messages and bytes being processed by the dashboard and the latency between the message being decoded and it being displayed on widgets."
+      },
+      "sandbox": "div.appendChild(document.createTextNode(\"Stats:\"))\ndiv.appendChild(document.createElement(\"br\"))\n\nmessage_report = document.createTextNode(\"\")\ndiv.appendChild(message_report)\ndiv.appendChild(document.createElement(\"br\"))\n\nbytes_report = document.createTextNode(\"\")\ndiv.appendChild(bytes_report)\ndiv.appendChild(document.createElement(\"br\"))\n\nlatency_report = document.createTextNode(\"\")\ndiv.appendChild(latency_report)\ndiv.appendChild(document.createElement(\"br\"))\n\nconst average = {\n    messages: 0,\n    latency: 0,\n    bytes: 0,\n}\nvar lastPrint = Date.now()\n\nhandle_msg = function (msg) {\n    const now = Date.now()\n\n    average.latency += (now - msg._timeStamp) * 0.001\n    average.messages += 1\n    average.bytes += msg._header.mlen + 12\n\n    const dt = (now - lastPrint) * 0.001\n    if (dt > 1.0) {\n        lastPrint = now;\n        const messages = average.messages / dt\n        const latency = average.latency / average.messages\n        const bytes = average.bytes / dt\n\n        average.messages = 0\n        average.latency = 0\n        average.bytes = 0\n\n        message_report.nodeValue = `Messages per second: ${messages.toFixed(2)}`\n        bytes_report.nodeValue = `Bytes per second: ${bytes.toFixed(2)}`\n        latency_report.nodeValue = `Latency (seconds): ${latency.toFixed(4)}`\n    }\n\n}\n"
+    }
+  }
+}
