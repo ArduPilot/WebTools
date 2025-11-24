@@ -520,6 +520,7 @@ function init_pallet() {
             { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },
+            { path: "SandBoxWidgets/Stats.json", pos: { x: 3, y: 5, w: 1, h: 1 } },
         ]
 
         let import_done = []
