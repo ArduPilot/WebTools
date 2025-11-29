@@ -539,6 +539,7 @@ function unwrap(phase) {
 
 function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB, unwrap_phase) {
 
+    console.log("Evaluating transfer functions",freq_step,freq_max)
     // Not sure why range does not return expected array, _data gets us the array
     const freq = array_from_range(freq_step, freq_max, freq_step)
 

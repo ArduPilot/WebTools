@@ -453,23 +453,23 @@ const pageSections_param_POS = [
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELXY_FLTD', name: 'PSC_VELXY_FLTD', type: 'number', step: '0.01', value: '20' } ] }
                                         ]},
                                         { divId: 'PitchPIDS', style: 'display:none', elements: [
-/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSZ_P', name: 'PSC_POSZ_P', type: 'number', step: '0.1', value: '4.5' } ] },
+                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_POSZ_P', name: 'PSC_POSZ_P', type: 'number', step: '0.1', value: '4.5' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FF', name: 'PSC_VELZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_P', name: 'PSC_VELZ_P', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_I', name: 'PSC_VELZ_I', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_D', name: 'PSC_VELZ_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTE', name: 'PSC_VELZ_FLTE', type: 'number', step: '0.01', value: '0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTD', name: 'PSC_VELZ_FLTD', type: 'number', step: '0.01', value: '20' } ] } */
-                                        ]},
-                                        { divId: 'YawPIDS', style: 'display:none', elements: [
-/*                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FF', name: 'PSC_ACCZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_VELZ_FLTD', name: 'PSC_VELZ_FLTD', type: 'number', step: '0.01', value: '20' } ] },
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FF', name: 'PSC_ACCZ_FF', type: 'number', step: '0.01', value: '0.0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_P', name: 'PSC_ACCZ_P', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_I', name: 'PSC_ACCZ_I', type: 'number', step: '0.01', value: '0.288' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_D', name: 'PSC_ACCZ_D', type: 'number', step: '0.0001', value: '0.0117' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_D_FF', name: 'PSC_ACCZ_D_FF', type: 'number', step: '0.0001', value: '0.0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTT', name: 'PSC_ACCZ_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTE', name: 'PSC_ACCZ_FLTE', type: 'number', step: '0.01', value: '0' } ] },
-                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTD', name: 'PSC_ACCZ_FLTD', type: 'number', step: '0.01', value: '20' } ] }  */
+                                            { type: 'p', content: [ { tag: 'input', id: 'PSC_ACCZ_FLTD', name: 'PSC_ACCZ_FLTD', type: 'number', step: '0.01', value: '20' } ] }
                                         ]}
                                     ]
                                 }
@@ -582,7 +582,7 @@ const pageSections_notch_param_FW = [
     }
 ];
 
-/* const pageSections_notch_param_POS = [
+ const pageSections_notch_param_POS = [
     {
         type: 'tableCell',
         targetId: 'attitude-controller-row',
@@ -610,7 +610,7 @@ const pageSections_notch_param_FW = [
             ]
         }
     }
-]; */
+];
 
 const pageSections_freq_resp_plots = [
     {
@@ -642,7 +642,7 @@ const pageSections_freq_resp_plot_options_start = [
     }
 ];
 
-const pageSections_freq_resp_plot_options_RW = [
+const pageSections_freq_resp_plot_options = [
     {
         type: 'form',
         id: 'plot_options',
@@ -667,103 +667,89 @@ const pageSections_freq_resp_plot_options_RW = [
                                                 tag: 'fieldset',
                                                 style: 'width:400px;height:200px',
                                                 legend: 'Control Loop',
-                                                elements: [
-                                                    { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC' },
-                                                    { tag: 'label', for: 'type_Bare_AC', text: 'Bare Aircraft' },
-                                                    { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude' },
-                                                    { tag: 'label', for: 'UseAttitude', text: 'Use Attitude to Improve Coherence' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr', checked: true },
-                                                    { tag: 'label', for: 'type_Rate_Ctrlr', text: 'Rate Controller' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr' },
-                                                    { tag: 'label', for: 'type_Att_Ctrlr', text: 'Attitude Controller with Feedforward' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
-                                                    { tag: 'label', for: 'type_Att_Ctrlr_nff', text: 'Attitude Controller without feedforward' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
-                                                    { tag: 'label', for: 'type_Pilot_Ctrlr', text: 'Input Shaping' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB' },
-                                                    { tag: 'label', for: 'type_Att_DRB', text: 'Attitude Disturbance Rejection' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab' },
-                                                    { tag: 'label', for: 'type_Rate_Stab', text: 'Rate Stability' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab' },
-                                                    { tag: 'label', for: 'type_Att_Stab', text: 'Attitude Stability' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab' },
-                                                    { tag: 'label', for: 'type_Sys_Stab', text: 'Entire System Stability' }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    }
-];
-
-const pageSections_freq_resp_plot_options_POS = [
-    {
-        type: 'form',
-        id: 'plot_options',
-        isFragment: true,
-        content: [
-            {
-                type: 'fieldset',
-                style: 'max-width:1200px',
-                legend: 'Graph Settings',
-                elements: [
-                    {
-                        tag: 'table',
-                        content: [
-                            {
-                                tag: 'tr',
-                                id: 'plot-options-row',
-                                content: [
-                                    {
-                                        tag: 'td',
-                                        content: [
-                                            {
-                                                tag: 'fieldset',
-                                                style: 'width:400px;height:200px',
-                                                legend: 'Control Loop',
-                                                elements: [
-                                                    { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC' },
-                                                    { tag: 'label', for: 'type_Bare_AC', text: 'Bare Aircraft' },
-                                                    { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude' },
-                                                    { tag: 'label', for: 'UseAttitude', text: 'Use Attitude to Improve Coherence' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr', checked: true },
-                                                    { tag: 'label', for: 'type_Rate_Ctrlr', text: 'Rate Controller' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr' },
-                                                    { tag: 'label', for: 'type_Att_Ctrlr', text: 'Attitude Controller with Feedforward' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
-                                                    { tag: 'label', for: 'type_Att_Ctrlr_nff', text: 'Attitude Controller without feedforward' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
-                                                    { tag: 'label', for: 'type_Pilot_Ctrlr', text: 'Input Shaping' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB' },
-                                                    { tag: 'label', for: 'type_Att_DRB', text: 'Attitude Disturbance Rejection' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab' },
-                                                    { tag: 'label', for: 'type_Rate_Stab', text: 'Rate Stability' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab' },
-                                                    { tag: 'label', for: 'type_Att_Stab', text: 'Attitude Stability' },
-                                                    { tag: 'br' },
-                                                    { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab' },
-                                                    { tag: 'label', for: 'type_Sys_Stab', text: 'Entire System Stability' }
+                                                groups: [
+                                                    { divId: 'Options_RW', style: 'display:none', elements: [
+                                                        { tag: 'input', type: 'radio', id: 'type_Bare_AC', name: 'Control_Loop', value: 'Bare_AC' },
+                                                        { tag: 'label', for: 'type_Bare_AC', text: 'Bare Aircraft' },
+                                                        { tag: 'input', type: 'checkbox', id: 'UseAttitude', name: 'UseAttitude' },
+                                                        { tag: 'label', for: 'UseAttitude', text: 'Use Attitude to Improve Coherence' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr', name: 'Control_Loop', value: 'Rate_Ctrlr'},
+                                                        { tag: 'label', for: 'type_Rate_Ctrlr', text: 'Rate Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr', name: 'Control_Loop', value: 'Att_Ctrlr' },
+                                                        { tag: 'label', for: 'type_Att_Ctrlr', text: 'Attitude Controller with Feedforward' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
+                                                        { tag: 'label', for: 'type_Att_Ctrlr_nff', text: 'Attitude Controller without feedforward' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
+                                                        { tag: 'label', for: 'type_Pilot_Ctrlr', text: 'Input Shaping' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_DRB', name: 'Control_Loop', value: 'Att_DRB' },
+                                                        { tag: 'label', for: 'type_Att_DRB', text: 'Attitude Disturbance Rejection' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Stab', name: 'Control_Loop', value: 'Rate_Stab' },
+                                                        { tag: 'label', for: 'type_Rate_Stab', text: 'Rate Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Stab', name: 'Control_Loop', value: 'Att_Stab' },
+                                                        { tag: 'label', for: 'type_Att_Stab', text: 'Attitude Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Sys_Stab', name: 'Control_Loop', value: 'Sys_Stab' },
+                                                        { tag: 'label', for: 'type_Sys_Stab', text: 'Entire System Stability' }
+                                                    ]},
+                                                    { divId: 'Options_FW', style: 'display:none', elements: [
+                                                        { tag: 'input', type: 'radio', id: 'type_Bare_AC_FW', name: 'Control_Loop', value: 'Bare_AC' },
+                                                        { tag: 'label', for: 'type_Bare_AC_FW', text: 'Bare Aircraft' },
+                                                        { tag: 'input', type: 'checkbox', id: 'UseAttitude_FW', name: 'UseAttitude' },
+                                                        { tag: 'label', for: 'UseAttitude_FW', text: 'Use Attitude to Improve Coherence' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr_FW', name: 'Control_Loop', value: 'Rate_Ctrlr'},
+                                                        { tag: 'label', for: 'type_Rate_Ctrlr_FW', text: 'Rate Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff_FW', name: 'Control_Loop', value: 'Att_Ctrlr_nff' },
+                                                        { tag: 'label', for: 'type_Att_Ctrlr_nff_FW', text: 'Attitude Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_DRB_FW', name: 'Control_Loop', value: 'Att_DRB' },
+                                                        { tag: 'label', for: 'type_Att_DRB_FW', text: 'Attitude Disturbance Rejection' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Stab_FW', name: 'Control_Loop', value: 'Rate_Stab' },
+                                                        { tag: 'label', for: 'type_Rate_Stab_FW', text: 'Rate Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Stab_FW', name: 'Control_Loop', value: 'Att_Stab' },
+                                                        { tag: 'label', for: 'type_Att_Stab_FW', text: 'Attitude Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Sys_Stab_FW', name: 'Control_Loop', value: 'Sys_Stab' },
+                                                        { tag: 'label', for: 'type_Sys_Stab_FW', text: 'Entire System Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_FW', name: 'Control_Loop', value: 'Att_Ctrlr' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr_FW', name: 'Control_Loop', value: 'Pilot_Ctrlr' }
+                                                    ]},
+                                                    { divId: 'Options_POS', style: 'display:none', elements: [
+                                                        { tag: 'input', type: 'radio', id: 'type_Bare_AC_POS', name: 'Control_Loop', value: 'Bare_AC' },
+                                                        { tag: 'label', for: 'type_Bare_AC_POS', text: 'Attitude Controller Response' },
+                                                        { tag: 'input', type: 'checkbox', id: 'UseAttitude_POS', name: 'UseAttitude' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff_POS', name: 'Control_Loop', value: 'Att_Ctrlr_nff'},
+                                                        { tag: 'label', for: 'type_Att_Ctrlr_nff_POS', text: 'Position Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_DRB_POS', name: 'Control_Loop', value: 'Att_DRB' },
+                                                        { tag: 'label', for: 'type_Att_DRB_POS', text: 'Position Disturbance Rejection' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Sys_Stab_POS', name: 'Control_Loop', value: 'Sys_Stab' },
+                                                        { tag: 'label', for: 'type_Sys_Stab_POS', text: 'Entire System Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr_POS', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Stab_POS', name: 'Control_Loop', value: 'Rate_Stab' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Stab_POS', name: 'Control_Loop', value: 'Att_Stab' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr_POS', name: 'Control_Loop', value: 'Rate_Ctrlr'},
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_POS', name: 'Control_Loop', value: 'Att_Ctrlr' }
+                                                    ]}
                                                 ]
                                             }
                                         ]
@@ -889,7 +875,6 @@ function createFieldset(data) {
                 });
                 container.appendChild(p);
             } else if (elementDef.tag) {
-                // **FIX:** Check if the element is complex (has children) or simple.
                 if (elementDef.content || elementDef.elements) {
                     // It's a complex element like a table; use the builder function.
                     const complexEl = buildComplexElement(elementDef);
@@ -931,8 +916,6 @@ function buildComplexElement(data) {
 
     // 3. Recursively build children from the 'content' property
     if (data.content) {
-        // **THE FIX:** Normalize the 'content' property to always be an array.
-        // This handles cases where 'content' is a single object instead of an array of objects.
         const contentArray = Array.isArray(data.content) ? data.content : [data.content];
 
         contentArray.forEach(childDef => {
@@ -1050,16 +1033,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 buildDynamicContent(pageSections_notch_param_QP);
             } else if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
                 buildDynamicContent(pageSections_param_POS);
+                if (get_page_axis() === 'Vertical') {
+                    buildDynamicContent(pageSections_notch_param_POS);
+                }
             } else {
                 buildDynamicContent(pageSections_param_RW);
                 buildDynamicContent(pageSections_notch_param_RW);
             }
             buildDynamicContent(pageSections_freq_resp_plots);
             buildDynamicContent(pageSections_freq_resp_plot_options_start);
+            buildDynamicContent(pageSections_freq_resp_plot_options);
             if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
-                buildDynamicContent(pageSections_freq_resp_plot_options_POS);
+                document.getElementById('Options_POS').style.display = 'block';
+                document.getElementById('type_Att_Ctrlr_nff_POS').checked = true;
+                document.getElementById('UseAttitude_POS').style.display = 'none';
+                document.getElementById('type_Att_Ctrlr_POS').style.display = 'none';
+                document.getElementById('type_Rate_Ctrlr_POS').style.display = 'none';
+                document.getElementById('type_Pilot_Ctrlr_POS').style.display = 'none';
+                document.getElementById('type_Rate_Stab_POS').style.display = 'none';
+                document.getElementById('type_Att_Stab_POS').style.display = 'none';
+            } else if (get_vehicle_type() === 'ArduPlane_FW') {
+                document.getElementById('Options_FW').style.display = 'block';
+                document.getElementById('type_Rate_Ctrlr_FW').checked = true;
+                document.getElementById('type_Att_Ctrlr_FW').style.display = 'none';
+                document.getElementById('type_Pilot_Ctrlr_FW').style.display = 'none';
             } else {
-                buildDynamicContent(pageSections_freq_resp_plot_options_RW);
+                document.getElementById('Options_RW').style.display = 'block';
+                document.getElementById('type_Rate_Ctrlr').checked = true;
             }
             buildDynamicContent(pageSections_freq_resp_plot_options_end);
 
@@ -1070,7 +1070,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     params.push(param.id);
                 }
             }
-            console.log("Parameters identified for loading:", params);
 
             if(typeof load_param_inputs === 'function') load_param_inputs("params.json", params);
             console.log("Parameters loaded.");
