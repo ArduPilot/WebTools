@@ -1404,26 +1404,26 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     if (axis != "Vertical") {
         // Rotate North/East to body frame for lateral and longitudinal axes
         let PSCN_TAN = Array.from(log.get("PSCN", "TAN"))
-        PSCN_TAN = PSCN_TAN.slice(ind1_d, ind2_d)
+        PSCN_TAN = PSCN_TAN.slice(ind1_n, ind2_n)
         let PSCN_TVN = Array.from(log.get("PSCN", "DVN"))
-        PSCN_TVN = PSCN_TVN.slice(ind1_d, ind2_d)
+        PSCN_TVN = PSCN_TVN.slice(ind1_n, ind2_n)
         let PSCN_VN = Array.from(log.get("PSCN", "VN"))
-        PSCN_VN = PSCN_VN.slice(ind1_d, ind2_d)
+        PSCN_VN = PSCN_VN.slice(ind1_n, ind2_n)
         let PSCN_TPN = Array.from(log.get("PSCN", "DVN"))
-        PSCN_TPN = PSCN_TPN.slice(ind1_d, ind2_d)
+        PSCN_TPN = PSCN_TPN.slice(ind1_n, ind2_n)
         let PSCN_PN = Array.from(log.get("PSCN", "VN"))
-        PSCN_PN = PSCN_PN.slice(ind1_d, ind2_d)
+        PSCN_PN = PSCN_PN.slice(ind1_n, ind2_n)
 
         let PSCE_TAE = Array.from(log.get("PSCE", "TAE"))
-        PSCE_TAE = PSCE_TAE.slice(ind1_d, ind2_d)
+        PSCE_TAE = PSCE_TAE.slice(ind1_e, ind2_e)
         let PSCE_TVE = Array.from(log.get("PSCE", "DVE"))
-        PSCE_TVE = PSCE_TVE.slice(ind1_d, ind2_d)
+        PSCE_TVE = PSCE_TVE.slice(ind1_e, ind2_e)
         let PSCE_VE = Array.from(log.get("PSCE", "VE"))
-        PSCE_VE = PSCE_VE.slice(ind1_d, ind2_d)
+        PSCE_VE = PSCE_VE.slice(ind1_e, ind2_e)
         let PSCE_TPE = Array.from(log.get("PSCE", "DVE"))
-        PSCE_TPE = PSCE_TPE.slice(ind1_d, ind2_d)
+        PSCE_TPE = PSCE_TPE.slice(ind1_e, ind2_e)
         let PSCE_PE = Array.from(log.get("PSCE", "VE"))
-        PSCE_PE = PSCE_PE.slice(ind1_d, ind2_d)
+        PSCE_PE = PSCE_PE.slice(ind1_e, ind2_e)
 
         if (axis == "Lateral") {
             // Lateral axis
@@ -1446,14 +1446,14 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
         ActInputData = Array.from(log.get("RATE", "AOut"))
         ActInputData = ActInputData.slice(ind1_r, ind2_r)
         ActInputData = array_scale(ActInputData, 1000)
-        RateTgtData = Array.from(log.get("RATE", "ADes"))
-        RateTgtData = RateTgtData.slice(ind1_r, ind2_r)
-        RateData = Array.from(log.get("RATE", "A"))
-        RateData = RateData.slice(ind1_r, ind2_r)
-        AttTgtData = Array.from(log.get("RATE", "ADes"))
-        AttTgtData = AttTgtData.slice(ind1_r, ind2_r)
-        AttData = Array.from(log.get("RATE", "A"))
-        AttData = AttData.slice(ind1_r, ind2_r)
+        RateTgtData = Array.from(log.get("PSCD", "TAD"))
+        RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
+        RateData = Array.from(log.get("PSCD", "VD"))
+        RateData = RateData.slice(ind1_d, ind2_d)
+        AttTgtData = Array.from(log.get("PSCD", "TPD"))
+        AttTgtData = AttTgtData.slice(ind1_d, ind2_d)
+        AttData = Array.from(log.get("PSCD", "PD"))
+        AttData = AttData.slice(ind1_d, ind2_d)
         GyroRawData = Array.from(log.get("RATE", "A"))
         GyroRawData = GyroRawData.slice(ind1_r, ind2_r)
     }
@@ -2051,7 +2051,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Att_Ctrlr_nff" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 13) || sid_axis > 22) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 13) || (sid_axis > 22 && sid_axis < 24)) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
@@ -2145,11 +2145,9 @@ function add_sid_sets() {
        19: "Input Longitudinal Velocity",
        20: "FW Input Roll Angle",
        21: "FW Input Pitch Angle",
-       22: "FW Input Yaw Angle",
-       23: "FW Mixer Roll",
-       24: "FW Mixer Pitch",
-       25: "FW Mixer Yaw",
-       26: "FW Mixer Thrust"
+       22: "FW Mixer Roll",
+       23: "FW Mixer Pitch",
+       24: "Input Vertical Velocity"
     }
 
     const num_sets = sid_sets.axis.length
@@ -2231,13 +2229,13 @@ function update_time_range() {
 
 function set_sid_axis(axis) {
 
-    if (axis == 1 || axis == 4 || axis == 7 || axis == 10 || axis == 20 || axis == 23) {
+    if (axis == 1 || axis == 4 || axis == 7 || axis == 10 || axis == 20 || axis == 22) {
         page_axis = "Roll"
-    } else if (axis == 2 || axis == 5 || axis == 8 || axis == 11 || axis == 21 || axis == 24) {
+    } else if (axis == 2 || axis == 5 || axis == 8 || axis == 11 || axis == 21 || axis == 23) {
         page_axis = "Pitch"
-    } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12 || axis == 22 || axis == 25) {
+    } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12) {
         page_axis = "Yaw"
-    } else if (axis == 13) {
+    } else if (axis == 13 || axis == 24) {
         page_axis = "Vertical"
     } else if (axis == 14 || axis == 16 || axis == 18) {
         page_axis = "Lateral"
