@@ -1001,6 +1001,7 @@ function update_PID_filters() {
         }
         document.getElementById('YawPIDS').style.display = 'block';
         document.getElementById('YawNOTCH').style.display = 'block';
+        console.log(get_rate_param_prefix() + 'NTF')
         const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
@@ -2276,9 +2277,17 @@ function get_rate_param_prefix() {
     if (vehicle_type == "ArduPlane_FW") {
         prefix = get_axis_prefix()  + "_RATE_";
     } else if (page_axis == "Lateral" || page_axis == "Longitudinal") {
-        prefix = "PSC_VELXY_";
+        if (vehicle_type == "ArduPlane_VTOL") {
+            prefix = "Q_P_VELXY_"
+        } else {
+            prefix = "PSC_VELXY_"
+        }
     } else if (page_axis == "Vertical") {
-        prefix = "PSC_ACCZ_";
+        if (vehicle_type == "ArduPlane_VTOL") {
+            prefix = "Q_P_ACCZ_"
+        } else {
+            prefix = "PSC_ACCZ_"
+        }
     } else {
         prefix = get_vehicle_atc_prefix() + "RAT_" + get_axis_prefix() + "_";
     }
@@ -2290,9 +2299,17 @@ function get_angle_param_prefix() {
     if (vehicle_type == "ArduPlane_FW") {
         prefix = get_axis_prefix()  + "2SRV_";
     } else if (page_axis == "Lateral" || page_axis == "Longitudinal") {
-        prefix = "PSC_POSXY_";
+        if (vehicle_type == "ArduPlane_VTOL") {
+            prefix = "Q_P_POSXY_"
+        } else {
+            prefix = "PSC_POSXY_";
+        }
     } else if (page_axis == "Vertical") {
-        prefix = "PSC_POSZ_";
+        if (vehicle_type == "ArduPlane_VTOL") {
+            prefix = "Q_P_POSZ_"
+        } else {
+            prefix = "PSC_POSZ_";
+        }
     } else {
         prefix = get_vehicle_atc_prefix() + "ANG_" + get_axis_prefix() + "_";
     }

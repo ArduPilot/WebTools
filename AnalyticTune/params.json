@@ -319,6 +319,326 @@
       "User": "Standard"
     }
   },
+  "Q_P": {
+    "Q_P_ACCZ_D": {
+      "Description": "Acceleration (vertical) controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration",
+      "DisplayName": "Acceleration (vertical) controller D gain",
+      "Range": {
+        "high": "0.400",
+        "low": "0.000"
+      },
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Accel (vertical) Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_ACCZ_FF": {
+      "Description": "Acceleration (vertical) controller feed forward",
+      "DisplayName": "Acceleration (vertical) controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.5",
+        "low": "0"
+      },
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_FLTD": {
+      "Description": "Acceleration (vertical) controller derivative frequency in Hz",
+      "DisplayName": "Acceleration (vertical) controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_FLTE": {
+      "Description": "Acceleration (vertical) controller error frequency in Hz",
+      "DisplayName": "Acceleration (vertical) controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_FLTT": {
+      "Description": "Acceleration (vertical) controller target frequency in Hz",
+      "DisplayName": "Acceleration (vertical) controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_I": {
+      "Description": "Acceleration (vertical) controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration",
+      "DisplayName": "Acceleration (vertical) controller I gain",
+      "Range": {
+        "high": "3.000",
+        "low": "0.000"
+      },
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_IMAX": {
+      "Description": "Acceleration (vertical) controller I gain maximum.  Constrains the maximum pwm that the I term will generate",
+      "DisplayName": "Acceleration (vertical) controller I gain maximum",
+      "Range": {
+        "high": "1000",
+        "low": "0"
+      },
+      "Units": "d%",
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_NEF": {
+      "Description": "Accel (vertical) Error notch filter index",
+      "DisplayName": "Accel (vertical) Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_ACCZ_NTF": {
+      "Description": "Accel (vertical) Target notch filter index",
+      "DisplayName": "Accel (vertical) Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_ACCZ_P": {
+      "Description": "Acceleration (vertical) controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output",
+      "DisplayName": "Acceleration (vertical) controller P gain",
+      "Increment": "0.05",
+      "Range": {
+        "high": "1.500",
+        "low": "0.200"
+      },
+      "User": "Standard"
+    },
+    "Q_P_ACCZ_PDMX": {
+      "Description": "Acceleration (vertical) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Acceleration (vertical) controller PD sum maximum",
+      "Range": {
+        "high": "1000",
+        "low": "0"
+      },
+      "Units": "d%"
+    },
+    "Q_P_ACCZ_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Accel (vertical) slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_ANGLE_MAX": {
+      "Description": "Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value",
+      "DisplayName": "Position Control Angle Max",
+      "Increment": "1",
+      "Range": {
+        "high": "45",
+        "low": "0"
+      },
+      "Units": "deg",
+      "User": "Advanced"
+    },
+    "Q_P_JERK_XY": {
+      "Description": "Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target",
+      "DisplayName": "Jerk limit for the horizontal kinematic input shaping",
+      "Increment": "1",
+      "Range": {
+        "high": "20",
+        "low": "1"
+      },
+      "Units": "m/s/s/s",
+      "User": "Advanced"
+    },
+    "Q_P_JERK_Z": {
+      "Description": "Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target",
+      "DisplayName": "Jerk limit for the vertical kinematic input shaping",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "5"
+      },
+      "Units": "m/s/s/s",
+      "User": "Advanced"
+    },
+    "Q_P_POSXY_P": {
+      "Description": "Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller",
+      "DisplayName": "Position (horizontal) controller P gain",
+      "Range": {
+        "high": "2.000",
+        "low": "0.500"
+      },
+      "User": "Standard"
+    },
+    "Q_P_POSZ_P": {
+      "Description": "Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller",
+      "DisplayName": "Position (vertical) controller P gain",
+      "Range": {
+        "high": "3.000",
+        "low": "1.000"
+      },
+      "User": "Standard"
+    },
+    "Q_P_VELXY_D": {
+      "Description": "Velocity (horizontal) D gain.  Corrects short-term changes in velocity",
+      "DisplayName": "Velocity (horizontal) D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "1.00",
+        "low": "0.00"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_FF": {
+      "Description": "Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration",
+      "DisplayName": "Velocity (horizontal) feed forward gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "6",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_FLTD": {
+      "Description": "Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term",
+      "DisplayName": "Velocity (horizontal) input filter",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_FLTE": {
+      "Description": "Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms",
+      "DisplayName": "Velocity (horizontal) input filter",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_I": {
+      "Description": "Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration",
+      "DisplayName": "Velocity (horizontal) I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1.00",
+        "low": "0.02"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_IMAX": {
+      "Description": "Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output",
+      "DisplayName": "Velocity (horizontal) integrator maximum",
+      "Increment": "10",
+      "Range": {
+        "high": "4500",
+        "low": "0"
+      },
+      "Units": "cm/s/s",
+      "User": "Advanced"
+    },
+    "Q_P_VELXY_P": {
+      "Description": "Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration",
+      "DisplayName": "Velocity (horizontal) P gain",
+      "Increment": "0.1",
+      "Range": {
+        "high": "6.0",
+        "low": "0.1"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_D": {
+      "Description": "Velocity (vertical) controller D gain.  Corrects short-term changes in velocity",
+      "DisplayName": "Velocity (vertical) controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "1.00",
+        "low": "0.00"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_FF": {
+      "Description": "Velocity (vertical) controller Feed Forward gain.  Produces an output that is proportional to the magnitude of the target",
+      "DisplayName": "Velocity (vertical) controller Feed Forward gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_FLTD": {
+      "Description": "Velocity (vertical) input filter for D term.  This filter (in Hz) is applied to the input for D terms",
+      "DisplayName": "Velocity (vertical) input filter for D term",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_FLTE": {
+      "Description": "Velocity (vertical) error filter.  This filter (in Hz) is applied to the input for P and I terms",
+      "DisplayName": "Velocity (vertical) error filter",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_I": {
+      "Description": "Velocity (vertical) controller I gain.  Corrects long-term difference in desired velocity to a target acceleration",
+      "DisplayName": "Velocity (vertical) controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1.00",
+        "low": "0.02"
+      },
+      "User": "Advanced"
+    },
+    "Q_P_VELZ_IMAX": {
+      "Description": "Velocity (vertical) controller I gain maximum.  Constrains the target acceleration that the I gain will output",
+      "DisplayName": "Velocity (vertical) controller I gain maximum",
+      "Range": {
+        "high": "8.000",
+        "low": "1.000"
+      },
+      "User": "Standard"
+    },
+    "Q_P_VELZ_P": {
+      "Description": "Velocity (vertical) controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller",
+      "DisplayName": "Velocity (vertical) controller P gain",
+      "Range": {
+        "high": "8.000",
+        "low": "1.000"
+      },
+      "User": "Standard"
+    }
+  },
   "ATC_": {
     "ATC_ACCEL_P_MAX": {
       "Description": "Maximum acceleration in pitch axis",
