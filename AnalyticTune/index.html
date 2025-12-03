@@ -411,6 +411,8 @@ const pageSections_param_FW = [
                                             { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTT', name: 'PTCH_RATE_FLTT', type: 'number', step: '0.01', value: '1.77' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTE', name: 'PTCH_RATE_FLTE', type: 'number', step: '0.01', value: '0' } ] },
                                             { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_FLTD', name: 'PTCH_RATE_FLTD', type: 'number', step: '0.01', value: '20' } ] }
+                                        ]},
+                                        { divId: 'YawPIDS', style: 'display:none', elements: [
                                         ]}
                                     ]
                                 }
@@ -524,15 +526,15 @@ const pageSections_notch_param_QP = [
             style: 'width:580px',
             legend: 'Attitude Controller Notch Parameters',
             groups: [
-                { divId: 'QRollNOTCH', style: 'display:none', elements: [
+                { divId: 'RollNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NTF', name: 'Q_A_RAT_RLL_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_RLL_NEF', name: 'Q_A_RAT_RLL_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
-                { divId: 'QPitchNOTCH', style: 'display:none', elements: [
+                { divId: 'PitchNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NTF', name: 'Q_A_RAT_PIT_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_PIT_NEF', name: 'Q_A_RAT_PIT_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
-                { divId: 'QYawNOTCH', style: 'display:none', elements: [
+                { divId: 'YawNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NTF', name: 'Q_A_RAT_YAW_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'Q_A_RAT_YAW_NEF', name: 'Q_A_RAT_YAW_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
@@ -557,15 +559,15 @@ const pageSections_notch_param_FW = [
             style: 'width:580px',
             legend: 'Attitude Controller Notch Parameters',
             groups: [
-                { divId: 'FWRollNOTCH', style: 'display:none', elements: [
+                { divId: 'RollNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NTF', name: 'RLL_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'RLL_RATE_NEF', name: 'RLL_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
-                { divId: 'FWPitchNOTCH', style: 'display:none', elements: [
+                { divId: 'PitchNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NTF', name: 'PTCH_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'PTCH_RATE_NEF', name: 'PTCH_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
-                { divId: 'FWYawNOTCH', style: 'display:none', elements: [
+                { divId: 'YawNOTCH', style: 'display:none', elements: [
                     { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NTF', name: 'YAW_RATE_NTF', type: 'number', step: '1', value: '0' } ] },
                     { type: 'p', content: [ { tag: 'input', id: 'YAW_RATE_NEF', name: 'YAW_RATE_NEF', type: 'number', step: '1', value: '0' } ] }
                 ]},
