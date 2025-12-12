@@ -1694,7 +1694,7 @@ function load_params(log) {
     update_pos_plot()
 
     // Add warning if arming checks are disabled
-    if (("ARMING_SKIP" in params && params.ARMING_SKIP > 0)) {
+    if ((("ARMING_SKIP" in params) && params.ARMING_SKIP > 0) || (("ARMING_CHECK" in params) && params.ARMING_CHECK === 0)) {
         add_warning("exclamation-triangle-orange", document.createTextNode("Arming checks disabled"))
     }
 
