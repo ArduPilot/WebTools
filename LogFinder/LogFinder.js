@@ -235,7 +235,7 @@ function setup_table(logs) {
         // Formatter to add custom buttons
         function check_warnings(cell, formatterParams, onRendered) {
             const log = cell.getRow().getData()
-            const arming_checks_disabled = ("ARMING_CHECK" in log.info.params) && (log.info.params["ARMING_CHECK"] == 0)
+            const arming_checks_disabled = (("ARMING_SKIPCHK" in log.info.params) && log.info.params.ARMING_SKIPCHK > 0) ||(("ARMING_CHECK" in log.info.params) && log.info.params.ARMING_CHECK === 0)
             if (!arming_checks_disabled && !log.info.watchdog && !log.info.crash_dump) {
                 // Nothing to warn about
                 return
