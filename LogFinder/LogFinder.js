@@ -5,7 +5,7 @@ import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser
 var dirHandle
 async function get_dir_then_load() {
 
-    if (typeof(window.showDirectoryPicker) != "function") {
+    if (typeof (window.showDirectoryPicker) != "function") {
         alert("This browser does not support directory opening.")
         return
     }
@@ -93,7 +93,7 @@ async function load_from_dir() {
                         } else {
                             info.name = fileHandle.name
                             info.rel_path = fileHandle.relativePath
-                            logs[fileHandle.relativePath] = { info, fileHandle}
+                            logs[fileHandle.relativePath] = { info, fileHandle }
                         }
                         resolve()
                     }
@@ -235,7 +235,7 @@ function setup_table(logs) {
         // Formatter to add custom buttons
         function check_warnings(cell, formatterParams, onRendered) {
             const log = cell.getRow().getData()
-            const arming_checks_disabled = ("ARMING_SKIP" in log.info.params) && (log.info.params["ARMING_SKIP"] > 0)
+            const arming_checks_disabled = (("ARMING_SKIP" in log.info.params) && (log.info.params["ARMING_SKIP"] > 0)) || (("ARMING_CHECK" in log.info.params) && (log.info.params["ARMING_CHECK"] == 0));
             if (!arming_checks_disabled && !log.info.watchdog && !log.info.crash_dump) {
                 // Nothing to warn about
                 return
@@ -266,7 +266,7 @@ function setup_table(logs) {
                 const link = document.createElement("a")
                 link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#crash-dump"
                 link.appendChild(document.createTextNode("documentation"))
-                link.style="color:red;"
+                link.style = "color:red;"
 
                 para.appendChild(link)
                 para.appendChild(document.createTextNode("."))
@@ -278,11 +278,11 @@ function setup_table(logs) {
                 para.appendChild(document.createTextNode("Watchdog reboot detected."))
                 para.appendChild(document.createElement("br"))
                 para.appendChild(document.createTextNode("For more information see ArduPilot "))
-            
+
                 const link = document.createElement("a")
                 link.href = "https://ardupilot.org/copter/docs/common-watchdog.html#independent-watchdog-and-crash-dump"
                 link.appendChild(document.createTextNode("documentation"))
-                link.style="color:red;"
+                link.style = "color:red;"
 
                 para.appendChild(link)
                 para.appendChild(document.createTextNode("."))
@@ -358,7 +358,7 @@ function setup_table(logs) {
                 return "-"
             }
             const dur = luxon.Duration.fromMillis(flight_time * 1000)
-            return dur.rescale().toHuman({listStyle: 'narrow', unitDisplay: 'short'})
+            return dur.rescale().toHuman({ listStyle: 'narrow', unitDisplay: 'short' })
 
             // Might like this better, not sure
             //return dur.toFormat("hh:mm:ss")
@@ -460,7 +460,7 @@ function setup_table(logs) {
             if (len <= 1) {
                 return null
             }
-            return get_param_diff(data[len-1].info.params, data[0].info.params)
+            return get_param_diff(data[len - 1].info.params, data[0].info.params)
         }
 
         function get_dist_string(cell) {
@@ -518,7 +518,7 @@ function setup_table(logs) {
 
                     const len = lat.length
                     const latlngs = new Array(len)
-                    for (let i = 0; i<len; i++) {
+                    for (let i = 0; i < len; i++) {
                         latlngs[i] = [lat[i] * 1e-7, lng[i] * 1e-7]
                     }
 
@@ -564,23 +564,23 @@ function setup_table(logs) {
                     title: "Date",
                     field: "info.time_stamp",
                     width: 160,
-                    formatter:"datetime",
+                    formatter: "datetime",
                     formatterParams: {
                         outputFormat: "dd/MM/yyyy hh:mm:ss a",
                         invalidPlaceholder: "No GPS",
                     },
-                    sorter:"datetime",
+                    sorter: "datetime",
                 },
-                { title: "Name", field: "info.name", formatter:name_format },
-                { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format, width: 90 },
-                { title: "Firmware Version", field:"info.fw_string" },
-                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format, width: 105 },
-                { title: "Flight distance", field:"info.distance_traveled", formatter:distance_format, bottomCalc:flight_distance_bottom_calc, bottomCalcFormatter:get_dist_string, width: 125 },
-                { title: "Param Changes", field:"param_diff", formatter:param_diff_format, headerSort:false, width: 110, bottomCalc:param_diff_bottom_calc, bottomCalcFormatter:param_diff_format },
-                { title: "" , headerSort:false, formatter:buttons, width: 185 },
+                { title: "Name", field: "info.name", formatter: name_format },
+                { title: "Size", field: "info.size", formatter: size_format, bottomCalc: size_bottom_calc, bottomCalcFormatter: size_format, width: 90 },
+                { title: "Firmware Version", field: "info.fw_string" },
+                { title: "Flight Time", field: "info.flight_time", formatter: flight_time_format, bottomCalc: flight_time_bottom_calc, bottomCalcFormatter: flight_time_format, width: 105 },
+                { title: "Flight distance", field: "info.distance_traveled", formatter: distance_format, bottomCalc: flight_distance_bottom_calc, bottomCalcFormatter: get_dist_string, width: 125 },
+                { title: "Param Changes", field: "param_diff", formatter: param_diff_format, headerSort: false, width: 110, bottomCalc: param_diff_bottom_calc, bottomCalcFormatter: param_diff_format },
+                { title: "", headerSort: false, formatter: buttons, width: 185 },
             ],
             initialSort: [
-                { column:"info.time_stamp", dir:"asc"},
+                { column: "info.time_stamp", dir: "asc" },
             ]
         })
 
@@ -624,7 +624,7 @@ function get_param_diff(params, prev_params) {
             }
 
             if (show_change) {
-                changed[name] = { from: prev_params[name], to: params[name]}
+                changed[name] = { from: prev_params[name], to: params[name] }
             }
         }
     }
@@ -637,8 +637,8 @@ function update_param_diff(table, rows) {
     rows[0].getData().param_diff = null
 
     // Calculate diff for each row
-    for (let i = 1; i<rows.length; i++) {
-        const param_diff = get_param_diff(rows[i].getData().info.params, rows[i-1].getData().info.params)
+    for (let i = 1; i < rows.length; i++) {
+        const param_diff = get_param_diff(rows[i].getData().info.params, rows[i - 1].getData().info.params)
         rows[i].getData().param_diff = param_diff
     }
 
@@ -705,7 +705,7 @@ function load_log(log_file) {
         crash_dump = false
         const names = log.get('FILE', 'FileName')
         const len = names.length
-        for (let i = 0; i<len; i++) {
+        for (let i = 0; i < len; i++) {
             if (names[i].endsWith("crash_dump.bin")) {
                 crash_dump = true
                 break
@@ -723,7 +723,7 @@ function load_log(log_file) {
         const alt = log.get('POS', 'Alt')
 
         function diff_longitude(lon1, lon2) {
-            let dlon = lon1-lon2
+            let dlon = lon1 - lon2
             if (dlon > 1800000000) {
                 dlon -= 3600000000
             } else if (dlon < -1800000000) {
@@ -740,12 +740,12 @@ function load_log(log_file) {
         const LATLON_TO_M = 0.011131884502145034
 
         const len = lat.length
-        for (let i = 1; i<len; i++) {
+        for (let i = 1; i < len; i++) {
             const x = (lat[i - 1] - lat[i]) * LATLON_TO_M
-            const y = diff_longitude(lng[i - 1], lng[i]) * LATLON_TO_M * longitude_scale((lat[i - 1]+lat[i])/2)
+            const y = diff_longitude(lng[i - 1], lng[i]) * LATLON_TO_M * longitude_scale((lat[i - 1] + lat[i]) / 2)
             const z = alt[i - 1] - alt[i]
 
-            distance_traveled += Math.sqrt(x**2 + y**2 + z**2)
+            distance_traveled += Math.sqrt(x ** 2 + y ** 2 + z ** 2)
         }
     }
 
@@ -786,22 +786,23 @@ function reset() {
 
 let param_diff_ignore = [
     { name: "Statistics (STAT_)", fun: (name) => { return name.startsWith("STAT_") || (name == "SYS_NUM_RESETS") } },
-    { name: "Gyro offsets", fun: (name) => { return /(:?(INS)[45]?_(GYR)[23]?(OFFS_)[XYZ])/gm.test(name)} },
-    { name: "Gyro cal temperature", fun: (name) => { return /(:?(INS)[45]?(_GYR)[123]?(_CALTEMP))/gm.test(name)} },
-    { name: "Baro ground pressure", fun: (name) => { return /(:?(BARO)[123]?(_GND_PRESS))/gm.test(name)} },
-    { name: "Compass declination", fun: (name) => { return name == "COMPASS_DEC"} },
-    { name: "Airspeed offset", fun: (name) => { return /(:?(ARSPD)[123]?(_OFFSET))/gm.test(name)} },
-    { name: "Stream rates", fun: (name) => {
-        return /(:?(SR)[0123456]_(RAW_SENS))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXT_STAT))/gm.test(name) ||
-            /(:?(SR)[0123456]_(RC_CHAN))/gm.test(name) ||
-            /(:?(SR)[0123456]_(RAW_CTRL))/gm.test(name) ||
-            /(:?(SR)[0123456]_(POSITION))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA1))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA2))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA3))/gm.test(name) ||
-            /(:?(SR)[0123456]_(PARAMS))/gm.test(name) ||
-            /(:?(SR)[0123456]_(ADSB))/gm.test(name)
+    { name: "Gyro offsets", fun: (name) => { return /(:?(INS)[45]?_(GYR)[23]?(OFFS_)[XYZ])/gm.test(name) } },
+    { name: "Gyro cal temperature", fun: (name) => { return /(:?(INS)[45]?(_GYR)[123]?(_CALTEMP))/gm.test(name) } },
+    { name: "Baro ground pressure", fun: (name) => { return /(:?(BARO)[123]?(_GND_PRESS))/gm.test(name) } },
+    { name: "Compass declination", fun: (name) => { return name == "COMPASS_DEC" } },
+    { name: "Airspeed offset", fun: (name) => { return /(:?(ARSPD)[123]?(_OFFSET))/gm.test(name) } },
+    {
+        name: "Stream rates", fun: (name) => {
+            return /(:?(SR)[0123456]_(RAW_SENS))/gm.test(name) ||
+                /(:?(SR)[0123456]_(EXT_STAT))/gm.test(name) ||
+                /(:?(SR)[0123456]_(RC_CHAN))/gm.test(name) ||
+                /(:?(SR)[0123456]_(RAW_CTRL))/gm.test(name) ||
+                /(:?(SR)[0123456]_(POSITION))/gm.test(name) ||
+                /(:?(SR)[0123456]_(EXTRA1))/gm.test(name) ||
+                /(:?(SR)[0123456]_(EXTRA2))/gm.test(name) ||
+                /(:?(SR)[0123456]_(EXTRA3))/gm.test(name) ||
+                /(:?(SR)[0123456]_(PARAMS))/gm.test(name) ||
+                /(:?(SR)[0123456]_(ADSB))/gm.test(name)
         }
     },
 ]
@@ -812,7 +813,7 @@ async function initial_load() {
     document.getElementById("reload").disabled = true
 
     const fieldset = document.getElementById("param_diff_ignore")
-    for (let i=0; i<param_diff_ignore.length; i++) {
+    for (let i = 0; i < param_diff_ignore.length; i++) {
         if (i > 0) {
             fieldset.appendChild(document.createTextNode(", "))
         }
@@ -862,10 +863,10 @@ async function initial_load() {
 
     fetch("board_types.txt")
         .then((res) => {
-        return res.text();
-    }).then((data) => load_board_types(data));
+            return res.text();
+        }).then((data) => load_board_types(data));
 
-    if (typeof(window.showDirectoryPicker) != "function") {
+    if (typeof (window.showDirectoryPicker) != "function") {
         alert("This browser does not support directory opening.")
     }
 

@@ -22,14 +22,14 @@ import_done[2] = new Promise((resolve) => {
 })
 
 function configurePlotlyCanvas() {
-  const originalGetContext = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
-    if (contextType === '2d') {
-      contextAttributes = contextAttributes || {};
-      contextAttributes.willReadFrequently = true;
-    }
-    return originalGetContext.call(this, contextType, contextAttributes);
-  };
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextType, contextAttributes) {
+        if (contextType === '2d') {
+            contextAttributes = contextAttributes || {};
+            contextAttributes.willReadFrequently = true;
+        }
+        return originalGetContext.call(this, contextType, contextAttributes);
+    };
 }
 configurePlotlyCanvas()
 
@@ -48,7 +48,7 @@ async function check_release(hash, paragraph) {
         const wait = octokitRequest_ratelimit_reset - now
         const wait_m = Math.floor(wait / 60)
         const wait_s = Math.floor(wait % 60)
-        console.log("GitHub API rate limit exceeded, try again in " + wait_m + "m " + wait_s + "s" )
+        console.log("GitHub API rate limit exceeded, try again in " + wait_m + "m " + wait_s + "s")
     }
 
     if (octokitRequest_ratelimit_reset) {
@@ -78,11 +78,11 @@ async function check_release(hash, paragraph) {
                 owner: 'ArduPilot',
                 repo: 'ardupilot',
                 headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
+                    'X-GitHub-Api-Version': '2022-11-28'
                 }
             })
         }
-        catch(err) {
+        catch (err) {
             paragraph.appendChild(document.createTextNode("Version check failed to get whitelist (" + hash + ")"))
             api_error(err)
             return
@@ -103,7 +103,7 @@ async function check_release(hash, paragraph) {
             }
             found_tag = true
 
-            const tag_name = tag.ref.replace(/^(refs\/tags\/)/gm,"")
+            const tag_name = tag.ref.replace(/^(refs\/tags\/)/gm, "")
 
             let link = document.createElement("a")
             link.href = "https://github.com/ArduPilot/ardupilot/tree/" + tag_name
@@ -128,11 +128,11 @@ async function check_release(hash, paragraph) {
             owner: 'ArduPilot',
             repo: 'ardupilot',
             headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
+                'X-GitHub-Api-Version': '2022-11-28'
             }
         })
     }
-    catch(err) {
+    catch (err) {
         paragraph.appendChild(document.createTextNode("Version check failed to get commit (" + hash + ")"))
         api_error(err)
         return
@@ -154,11 +154,11 @@ async function check_release(hash, paragraph) {
             repo: 'ardupilot',
             commit_sha: sha,
             headers: {
-              'X-GitHub-Api-Version': '2022-11-28'
+                'X-GitHub-Api-Version': '2022-11-28'
             }
-          })
+        })
     }
-    catch(err) {
+    catch (err) {
         paragraph.appendChild(document.createElement("br"))
         paragraph.appendChild(document.createTextNode("Version check failed to get branches."))
         api_error(err)
@@ -217,7 +217,7 @@ function show_watchdog(log) {
 
     let watchdogs = []
     for (let i = 0; i < WDOG.TimeUS.length; i++) {
-        let watchdog = { 
+        let watchdog = {
             scheduler_task: WDOG.Tsk[i],
             internal_errors: WDOG.IE[i],
             internal_error_count: WDOG.IEC[i],
@@ -255,7 +255,7 @@ function show_watchdog(log) {
         }
 
         // Check if this has been seen before
-        if (item_compare(watchdogs[watchdogs.length-1], watchdog)) {
+        if (item_compare(watchdogs[watchdogs.length - 1], watchdog)) {
             continue
         }
 
@@ -278,7 +278,7 @@ function show_watchdog(log) {
 
         if (num_watchdogs > 1) {
             let heading = document.createElement("h4")
-            heading.appendChild(document.createTextNode("Watchdog " + (i+1)))
+            heading.appendChild(document.createTextNode("Watchdog " + (i + 1)))
             para.appendChild(heading)
         }
 
@@ -479,11 +479,11 @@ function show_watchdog(log) {
                     stop_bit = parseInt(bits)
                 }
                 let mask = 0
-                for (let i = start_bit; i < stop_bit+1; i++) {
+                for (let i = start_bit; i < stop_bit + 1; i++) {
                     mask |= (1 << i)
                 }
                 let value = (ICSR & mask) >> start_bit
-                let text  = name + ": 0x" + value.toString(16)
+                let text = name + ": 0x" + value.toString(16)
                 if (decoder != null) {
                     text += " " + decoder(value)
                 }
@@ -539,13 +539,13 @@ function show_internal_errors(log) {
 
     // Add from PM
     if ('PM' in log.messageTypes) {
-        const errorField = 
+        const errorField =
             log.messageTypes.PM.expressions.includes("IntE") ? "IntE" :
-            log.messageTypes.PM.expressions.includes("InE") ? "InE" : undefined
+                log.messageTypes.PM.expressions.includes("InE") ? "InE" : undefined
 
-        const errorCount = 
+        const errorCount =
             log.messageTypes.PM.expressions.includes("ErrC") ? "ErrC" :
-            log.messageTypes.PM.expressions.includes("ErC") ? "ErC" : undefined
+                log.messageTypes.PM.expressions.includes("ErC") ? "ErC" : undefined
 
         if (log.messageTypes.PM.expressions.includes("ErrL") && (errorField != undefined) && (errorCount != undefined)) {
             const PM = log.get("PM")
@@ -607,8 +607,8 @@ function show_internal_errors(log) {
     unique_errors[0].mask_change = unique_errors[0].mask
     unique_errors[0].count_change = unique_errors[0].count
     for (let i = 1; i < unique_errors.length; i++) {
-        unique_errors[i].mask_change = unique_errors[i].mask & (~unique_errors[i-1].mask)
-        unique_errors[i].count_change = unique_errors[i].count - unique_errors[i-1].count
+        unique_errors[i].mask_change = unique_errors[i].mask & (~unique_errors[i - 1].mask)
+        unique_errors[i].count_change = unique_errors[i].count - unique_errors[i - 1].count
     }
 
 
@@ -710,7 +710,7 @@ function show_internal_errors(log) {
         } else {
             // Got the same number of changes in mask as errors, must be 1 to 1
             if (have_line) {
-                para.appendChild(document.createTextNode(" (line " + error.line + ")" ))
+                para.appendChild(document.createTextNode(" (line " + error.line + ")"))
             }
         }
         lines++
@@ -787,31 +787,38 @@ function get_ins_param_names(index) {
     }
 
     const gyro_prefix = prefix + "_GYR" + num
-    let gyro = { offset: get_param_name_vector3(gyro_prefix + "OFFS_"),
-                 id: gyro_prefix + "_ID",
-                 cal_temp: prefix + "_GYR" + full_num + "_CALTEMP" }
+    let gyro = {
+        offset: get_param_name_vector3(gyro_prefix + "OFFS_"),
+        id: gyro_prefix + "_ID",
+        cal_temp: prefix + "_GYR" + full_num + "_CALTEMP"
+    }
 
     const acc_prefix = prefix + "_ACC" + num
-    let accel = { offset: get_param_name_vector3(acc_prefix + "OFFS_"),
-                  scale: get_param_name_vector3(acc_prefix + "SCAL_"),
-                  id: acc_prefix + "_ID",
-                  cal_temp: prefix + "_ACC" + full_num + "_CALTEMP" }
+    let accel = {
+        offset: get_param_name_vector3(acc_prefix + "OFFS_"),
+        scale: get_param_name_vector3(acc_prefix + "SCAL_"),
+        id: acc_prefix + "_ID",
+        cal_temp: prefix + "_ACC" + full_num + "_CALTEMP"
+    }
 
     const tcal_prefix = prefix + "_TCAL" + full_num + "_"
-    let tcal = { enabled: tcal_prefix + "ENABLE",
-                 t_min: tcal_prefix + "TMIN",
-                 t_max: tcal_prefix + "TMAN",
-                 accel: [ get_param_name_vector3(tcal_prefix + "ACC1_"), 
-                          get_param_name_vector3(tcal_prefix + "ACC2_"),
-                          get_param_name_vector3(tcal_prefix + "ACC3_")],
-                 gyro: [ get_param_name_vector3(tcal_prefix + "ACC1_"), 
-                         get_param_name_vector3(tcal_prefix + "ACC2_"),
-                         get_param_name_vector3(tcal_prefix + "ACC3_")],
-                }
+    let tcal = {
+        enabled: tcal_prefix + "ENABLE",
+        t_min: tcal_prefix + "TMIN",
+        t_max: tcal_prefix + "TMAN",
+        accel: [get_param_name_vector3(tcal_prefix + "ACC1_"),
+        get_param_name_vector3(tcal_prefix + "ACC2_"),
+        get_param_name_vector3(tcal_prefix + "ACC3_")],
+        gyro: [get_param_name_vector3(tcal_prefix + "ACC1_"),
+        get_param_name_vector3(tcal_prefix + "ACC2_"),
+        get_param_name_vector3(tcal_prefix + "ACC3_")],
+    }
 
-    return { gyro: gyro, accel: accel, tcal: tcal,
-             pos: get_param_name_vector3(prefix + "_POS" + full_num + "_"),
-             use: prefix + "_USE" + num }
+    return {
+        gyro: gyro, accel: accel, tcal: tcal,
+        pos: get_param_name_vector3(prefix + "_POS" + full_num + "_"),
+        use: prefix + "_USE" + num
+    }
 
 }
 
@@ -846,14 +853,16 @@ function load_ins(log) {
             }
         }
 
-        return { gyro_id: params[names.gyro.id],
-                 acc_id: params[names.accel.id],
-                 pos: get_param_array(params, names.pos),
-                 use: params[names.use],
-                 acc_cal: param_array_configured(accel_offsets, 0.0) | param_array_configured(accel_scale, 1.0),
-                 gyro_cal: param_array_configured(gyro_offsets, 0.0),
-                 acc_temp_cal: accel_temp_cal,
-                 gyro_temp_cal: gyro_temp_cal  }
+        return {
+            gyro_id: params[names.gyro.id],
+            acc_id: params[names.accel.id],
+            pos: get_param_array(params, names.pos),
+            use: params[names.use],
+            acc_cal: param_array_configured(accel_offsets, 0.0) | param_array_configured(accel_scale, 1.0),
+            gyro_cal: param_array_configured(gyro_offsets, 0.0),
+            acc_temp_cal: accel_temp_cal,
+            gyro_temp_cal: gyro_temp_cal
+        }
     }
 
     for (let i = 0; i < max_num_ins; i++) {
@@ -935,7 +944,7 @@ function load_ins(log) {
             ins_section.previousElementSibling.hidden = false
             let colum = document.createElement("td")
 
-            colum.appendChild(print_ins(i+1, ins[i]))
+            colum.appendChild(print_ins(i + 1, ins[i]))
             table.appendChild(colum)
         }
     }
@@ -974,25 +983,27 @@ function load_compass(log) {
         const off_diagonals = get_param_array(params, names.off_diagonals)
         const motor = get_param_array(params, names.motor)
 
-        return { id: id,
-                 use: params[names.use],
-                 external: params[names.external],
-                 offsets_set: param_array_configured(offsets, 0.0),
-                 matrix_set: param_array_configured(diagonals, 1.0) | param_array_configured(off_diagonals, 0.0),
-                 motor_set: param_array_configured(motor, 0.0),
-                 full_inst: true }
+        return {
+            id: id,
+            use: params[names.use],
+            external: params[names.external],
+            offsets_set: param_array_configured(offsets, 0.0),
+            matrix_set: param_array_configured(diagonals, 1.0) | param_array_configured(off_diagonals, 0.0),
+            motor_set: param_array_configured(motor, 0.0),
+            full_inst: true
+        }
     }
 
     let dev_id_start = 0
     for (let i = 0; i < 3; i++) {
-        const prio = get_instance(params, "COMPASS_PRIO" + (i+1) + "_ID")
+        const prio = get_instance(params, "COMPASS_PRIO" + (i + 1) + "_ID")
         if (prio != null) {
             compass[i] = prio
             dev_id_start = i + 1
         }
     }
     for (let i = dev_id_start; i < 7; i++) {
-        const inst_num = (i == 0) ? "" : String(i+1)
+        const inst_num = (i == 0) ? "" : String(i + 1)
         const dev_id_name = "COMPASS_DEV_ID" + inst_num
         if (dev_id_name in params) {
             const id = params[dev_id_name]
@@ -1063,7 +1074,7 @@ function load_compass(log) {
             section.previousElementSibling.hidden = false
             let colum = document.createElement("td")
 
-            colum.appendChild(print_compass(i+1, compass[i]))
+            colum.appendChild(print_compass(i + 1, compass[i]))
             table.appendChild(colum)
         }
     }
@@ -1071,18 +1082,22 @@ function load_compass(log) {
 
 // Load baro params
 function get_baro_param_names(index) {
-    const prefix = "BARO" + (index+1) + "_"
-    const wind_cmp =  prefix + "WCF_"
+    const prefix = "BARO" + (index + 1) + "_"
+    const wind_cmp = prefix + "WCF_"
 
-    return { id: prefix + "DEVID", 
-             gnd_press: prefix + "GND_PRESS",
-             wind_comp: { enabled: wind_cmp + "ENABLE", 
-                          coefficients: [ wind_cmp + "FWD",
-                                          wind_cmp + "BCK",
-                                          wind_cmp + "RGT",
-                                          wind_cmp + "LFT",
-                                          wind_cmp + "UP",
-                                          wind_cmp + "DN"], } }
+    return {
+        id: prefix + "DEVID",
+        gnd_press: prefix + "GND_PRESS",
+        wind_comp: {
+            enabled: wind_cmp + "ENABLE",
+            coefficients: [wind_cmp + "FWD",
+            wind_cmp + "BCK",
+            wind_cmp + "RGT",
+            wind_cmp + "LFT",
+            wind_cmp + "UP",
+            wind_cmp + "DN"],
+        }
+    }
 }
 
 let baro
@@ -1147,7 +1162,7 @@ function load_baro(log) {
     let section = document.getElementById("BARO")
 
     let primary = params["BARO_PRIMARY"]
-    section.appendChild(document.createTextNode("Primary: " + (primary+1)))
+    section.appendChild(document.createTextNode("Primary: " + (primary + 1)))
     section.appendChild(document.createElement("br"))
     section.appendChild(document.createElement("br"))
 
@@ -1160,7 +1175,7 @@ function load_baro(log) {
             have_section = true
             let colum = document.createElement("td")
 
-            colum.appendChild(print_baro(i+1, baro[i]))
+            colum.appendChild(print_baro(i + 1, baro[i]))
             table.appendChild(colum)
         }
     }
@@ -1179,17 +1194,19 @@ function get_airspeed_param_names(index) {
     }
     const prefix = "ARSPD" + num + "_"
 
-    return { id: prefix + "DEVID", 
-             type: prefix + "TYPE",
-             bus: prefix + "BUS",
-             pin: prefix + "PIN",
-             psi_range: prefix + "PSI_RANGE",
-             tube_order: prefix + tube_order_postfix,
-             skip_cal: prefix + "SKIP_CAL",
-             use: prefix + "USE",
-             offset: prefix + "OFFSET",
-             ratio: prefix + "RATIO",
-             auto_cal: prefix + "AUTOCAL"}
+    return {
+        id: prefix + "DEVID",
+        type: prefix + "TYPE",
+        bus: prefix + "BUS",
+        pin: prefix + "PIN",
+        psi_range: prefix + "PSI_RANGE",
+        tube_order: prefix + tube_order_postfix,
+        skip_cal: prefix + "SKIP_CAL",
+        use: prefix + "USE",
+        offset: prefix + "OFFSET",
+        ratio: prefix + "RATIO",
+        auto_cal: prefix + "AUTOCAL"
+    }
 
 }
 
@@ -1241,7 +1258,7 @@ function load_airspeed(log) {
     let section = document.getElementById("ARSPD")
 
     let primary = params["ARSPD_PRIMARY"]
-    section.appendChild(document.createTextNode("Primary: " + (primary+1)))
+    section.appendChild(document.createTextNode("Primary: " + (primary + 1)))
     section.appendChild(document.createElement("br"))
     section.appendChild(document.createElement("br"))
 
@@ -1255,7 +1272,7 @@ function load_airspeed(log) {
 
             let colum = document.createElement("td")
 
-            colum.appendChild(print_airspeed(i+1, airspeed[i]))
+            colum.appendChild(print_airspeed(i + 1, airspeed[i]))
             table.appendChild(colum)
         }
     }
@@ -1286,7 +1303,7 @@ function load_gps(log) {
     }
 
     for (let i = 0; i < max_num_gps; i++) {
-        let index = String(i+1)
+        let index = String(i + 1)
         if (i == 0) {
             index = ""
         }
@@ -1294,25 +1311,29 @@ function load_gps(log) {
         if (type_name in params) {
             const type = params[type_name]
             if (type != 0) {
-                const pos_names = get_param_name_vector3("GPS_POS" + (i+1) + "_")
-                gps[i] = { type: type,
-                           pos: get_param_array(params, pos_names),
-                           node_id: params["GPS_CAN_NODEID" + (i+1)],
-                           moving_base: get_moving_base("GPS_MB" + (i+1) + "_" ) }
+                const pos_names = get_param_name_vector3("GPS_POS" + (i + 1) + "_")
+                gps[i] = {
+                    type: type,
+                    pos: get_param_array(params, pos_names),
+                    node_id: params["GPS_CAN_NODEID" + (i + 1)],
+                    moving_base: get_moving_base("GPS_MB" + (i + 1) + "_")
+                }
             }
             continue
         }
-        const new_prefix = "GPS" + (i+1)
+        const new_prefix = "GPS" + (i + 1)
         const new_type_name = new_prefix + "_TYPE"
         if (new_type_name in params) {
             // New per-instance params for 4.6+
             const type = params[new_type_name]
             if (type != 0) {
                 const pos_names = get_param_name_vector3(new_prefix + "_POS_")
-                gps[i] = { type: type,
-                           pos: get_param_array(params, pos_names),
-                           node_id: params[new_prefix + "_CAN_NODEID"],
-                           moving_base: get_moving_base(new_prefix + "_MB_") }
+                gps[i] = {
+                    type: type,
+                    pos: get_param_array(params, pos_names),
+                    node_id: params[new_prefix + "_CAN_NODEID"],
+                    moving_base: get_moving_base(new_prefix + "_MB_")
+                }
             }
         }
     }
@@ -1340,7 +1361,7 @@ function load_gps(log) {
         let fieldset = document.createElement("fieldset")
 
         let heading = document.createElement("legend")
-        heading.innerHTML = "GPS " + (inst+1)
+        heading.innerHTML = "GPS " + (inst + 1)
         fieldset.appendChild(heading)
 
         // Try and decode the type param
@@ -1425,7 +1446,7 @@ const max_num_rangefinder = 10
 function load_rangefinder() {
 
     for (let i = 0; i < max_num_rangefinder; i++) {
-        let index = String(i+1)
+        let index = String(i + 1)
         if (i == 9) {
             index = "A"
         }
@@ -1435,8 +1456,10 @@ function load_rangefinder() {
             const type = params[type_name]
             if (type != 0) {
                 const pos_prefix = prefix + "POS_"
-                rangefinder[i] = { type: type,
-                                   pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
+                rangefinder[i] = {
+                    type: type,
+                    pos: get_param_array(params, get_param_name_vector3(pos_prefix))
+                }
             }
         }
     }
@@ -1454,8 +1477,10 @@ function load_flow() {
         const type = params[type_name]
         if (type != 0) {
             const pos_prefix = prefix + "POS_"
-            flow[0] = { type: type,
-                        pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
+            flow[0] = {
+                type: type,
+                pos: get_param_array(params, get_param_name_vector3(pos_prefix))
+            }
         }
     }
 
@@ -1472,8 +1497,10 @@ function load_viso() {
         const type = params[type_name]
         if (type != 0) {
             const pos_prefix = prefix + "POS_"
-            viso[0] = { type: type,
-                        pos: get_param_array(params, get_param_name_vector3(pos_prefix)) }
+            viso[0] = {
+                type: type,
+                pos: get_param_array(params, get_param_name_vector3(pos_prefix))
+            }
         }
     }
 
@@ -1541,9 +1568,9 @@ function update_pos_plot() {
     let plot = document.getElementById("POS_OFFSETS")
     const have_plot = max_offset > 0
     if (have_plot) {
-        Sensor_Offset.layout.scene.xaxis.range = [ -max_offset,  max_offset ]
-        Sensor_Offset.layout.scene.yaxis.range = [  max_offset, -max_offset ]
-        Sensor_Offset.layout.scene.zaxis.range = [  max_offset, -max_offset ]
+        Sensor_Offset.layout.scene.xaxis.range = [-max_offset, max_offset]
+        Sensor_Offset.layout.scene.yaxis.range = [max_offset, -max_offset]
+        Sensor_Offset.layout.scene.zaxis.range = [max_offset, -max_offset]
 
         Plotly.redraw(plot)
 
@@ -1694,7 +1721,7 @@ function load_params(log) {
     update_pos_plot()
 
     // Add warning if arming checks are disabled
-    if (("ARMING_SKIP" in params && params.ARMING_SKIP > 0)) {
+    if ((("ARMING_SKIP" in params) && params.ARMING_SKIP > 0) || (("ARMING_CHECK" in params) && params.ARMING_CHECK == 0)) {
         add_warning("exclamation-triangle-orange", document.createTextNode("Arming checks disabled"))
     }
 
@@ -1743,7 +1770,7 @@ function load_can(log) {
             }
 
             // New obj
-            let can_obj = { 
+            let can_obj = {
                 name: CAND.Name[i],
                 version: CAND.Major[i] + "." + CAND.Minor[i],
                 UID1: CAND.UID1[i],
@@ -1754,7 +1781,7 @@ function load_can(log) {
             // Check for duplicates
             let found = false
             for (const existing of can[driver][node_id]) {
-                if ((existing.name == can_obj.name) && 
+                if ((existing.name == can_obj.name) &&
                     (existing.version == can_obj.version) &&
                     (existing.UID1 == can_obj.UID1) &&
                     (existing.UID2 == can_obj.UID2) &&
@@ -1854,7 +1881,7 @@ function load_waypoints(log) {
         link.title = "download file"
         link.innerHTML = mission_name
         link.href = "#"
-        link.addEventListener('click', function() {
+        link.addEventListener('click', function () {
             let text = "QGC WPL 110\n"
 
             let count = 0
@@ -1863,7 +1890,7 @@ function load_waypoints(log) {
                     continue
                 }
                 count++
-    
+
                 text += mission[j].sequence + "\t"
                 text += "0\t"
                 text += mission[j].frame + "\t"
@@ -1872,16 +1899,16 @@ function load_waypoints(log) {
                 text += mission[j].param2.toFixed(8) + "\t"
                 text += mission[j].param3.toFixed(8) + "\t"
                 text += mission[j].param4.toFixed(8) + "\t"
-                text += (mission[j].latitude / 10**7).toFixed(8) + "\t"
-                text += (mission[j].longitude / 10**7).toFixed(8) + "\t"
+                text += (mission[j].latitude / 10 ** 7).toFixed(8) + "\t"
+                text += (mission[j].longitude / 10 ** 7).toFixed(8) + "\t"
                 text += (mission[j].altitude).toFixed(6) + "\t"
                 text += "1\n"
             }
-    
+
             if (mission.command_total != count) {
                 alert("Mission incomplete")
             }
-    
+
             var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
             saveAs(blob, mission_name)
         })
@@ -1895,22 +1922,22 @@ function load_waypoints(log) {
         let missions = []
         let mission_inst = 0
         for (let i = 0; i < CMD.CTot.length; i++) {
-            const item = { 
-                command_total : CMD.CTot[i],
-                sequence      : CMD.CNum[i],
-                command       : CMD.CId[i],
-                param1        : CMD.Prm1[i],
-                param2        : CMD.Prm2[i],
-                param3        : CMD.Prm3[i],
-                param4        : CMD.Prm4[i],
-                latitude      : CMD.Lat[i],
-                longitude     : CMD.Lng[i],
-                altitude      : CMD.Alt[i],
-                frame         : CMD.Frame[i]
+            const item = {
+                command_total: CMD.CTot[i],
+                sequence: CMD.CNum[i],
+                command: CMD.CId[i],
+                param1: CMD.Prm1[i],
+                param2: CMD.Prm2[i],
+                param3: CMD.Prm3[i],
+                param4: CMD.Prm4[i],
+                latitude: CMD.Lat[i],
+                longitude: CMD.Lng[i],
+                altitude: CMD.Alt[i],
+                frame: CMD.Frame[i]
             }
 
             const index = item.sequence
-            if ((missions[mission_inst] != null) && 
+            if ((missions[mission_inst] != null) &&
                 ((item.command_total != missions[mission_inst].command_total) || !item_compare(item, missions[mission_inst][index]))) {
                 // Item does not match existing mission, start a new one
                 mission_inst++
@@ -1983,23 +2010,23 @@ function load_waypoints(log) {
                     continue
             }
 
-            const item = { 
-                command_total : FNCE.Tot[i],
-                sequence      : FNCE.Seq[i] + 1, // Offset by 1 since home it not included
-                command       : command,
-                param1        : p1,
-                param2        : 0,
-                param3        : 0,
-                param4        : 0,
-                latitude      : FNCE.Lat[i],
-                longitude     : FNCE.Lng[i],
-                altitude      : 0,
-                frame         : 0
+            const item = {
+                command_total: FNCE.Tot[i],
+                sequence: FNCE.Seq[i] + 1, // Offset by 1 since home it not included
+                command: command,
+                param1: p1,
+                param2: 0,
+                param3: 0,
+                param4: 0,
+                latitude: FNCE.Lat[i],
+                longitude: FNCE.Lng[i],
+                altitude: 0,
+                frame: 0
             }
 
             const index = item.sequence
-            if ((fences[fence_inst] != null) && 
-                ((item.command_total != fences[fence_inst].command_total) || !item_compare(item,fences[fence_inst][index]))) {
+            if ((fences[fence_inst] != null) &&
+                ((item.command_total != fences[fence_inst].command_total) || !item_compare(item, fences[fence_inst][index]))) {
                 // Item does not match existing fence, start a new one
                 fence_inst++
             }
@@ -2047,7 +2074,7 @@ function load_waypoints(log) {
                 const AP_alt_frame = (flags & 0b00011000) >> 3
 
                 if (alt_frame_valid) {
-                    switch(AP_alt_frame) {
+                    switch (AP_alt_frame) {
                         case 0: // Location::AltFrame::ABSOLUTE
                             alt_frame = 0 // MAV_FRAME_GLOBAL
                             break
@@ -2067,22 +2094,22 @@ function load_waypoints(log) {
                 }
             }
 
-            const item = { 
-                command_total : RALY.Tot[i],
-                sequence      : RALY.Seq[i] + 1, // Offset by 1 since home it not included
-                command       : 5100, // MAV_CMD_NAV_RALLY_POINT
-                param1        : 0,
-                param2        : 0,
-                param3        : 0,
-                param4        : 0,
-                latitude      : RALY.Lat[i],
-                longitude     : RALY.Lng[i],
-                altitude      : RALY.Alt[i],
-                frame         : alt_frame
+            const item = {
+                command_total: RALY.Tot[i],
+                sequence: RALY.Seq[i] + 1, // Offset by 1 since home it not included
+                command: 5100, // MAV_CMD_NAV_RALLY_POINT
+                param1: 0,
+                param2: 0,
+                param3: 0,
+                param4: 0,
+                latitude: RALY.Lat[i],
+                longitude: RALY.Lng[i],
+                altitude: RALY.Alt[i],
+                frame: alt_frame
             }
 
             const index = item.sequence
-            if ((rallypoints[rallyinst] != null) && 
+            if ((rallypoints[rallyinst] != null) &&
                 ((item.command_total != rallypoints[rallyinst].command_total) || !item_compare(item, rallypoints[rallyinst][index]))) {
                 // Item does not match existing points, start a new set
                 rallyinst++
@@ -2149,8 +2176,7 @@ function plot_data_rate(log) {
         for (const inst of Object.keys(log.messageTypes.UART.instances)) {
 
             // convert baud rate param value into baudrate
-            function map_baudrate(rate)
-            {
+            function map_baudrate(rate) {
                 if (rate == null) {
                     return
                 }
@@ -2160,47 +2186,47 @@ function plot_data_rate(log) {
                     rate = 57
                 }
                 switch (rate) {
-                    case 1:    return 1200
-                    case 2:    return 2400
-                    case 4:    return 4800
-                    case 9:    return 9600
-                    case 19:   return 19200
-                    case 38:   return 38400
-                    case 57:   return 57600
-                    case 100:  return 100000
-                    case 111:  return 111100
-                    case 115:  return 115200
-                    case 230:  return 230400
-                    case 256:  return 256000
-                    case 460:  return 460800
-                    case 500:  return 500000
-                    case 921:  return 921600
-                    case 1500:  return 1500000
-                    case 2000:  return 2000000
+                    case 1: return 1200
+                    case 2: return 2400
+                    case 4: return 4800
+                    case 9: return 9600
+                    case 19: return 19200
+                    case 38: return 38400
+                    case 57: return 57600
+                    case 100: return 100000
+                    case 111: return 111100
+                    case 115: return 115200
+                    case 230: return 230400
+                    case 256: return 256000
+                    case 460: return 460800
+                    case 500: return 500000
+                    case 921: return 921600
+                    case 1500: return 1500000
+                    case 2000: return 2000000
                 }
-            
+
                 if (rate > 2000) {
                     // assume it is a direct baudrate. This allows for users to
                     // set an exact baudrate as long as it is over 2000 baud
                     return rate
                 }
-            
+
                 // otherwise allow any other kbaud rate
                 return rate * 1000
             }
 
             const serial_protocols = {
                 "-1": "None",
-                 "0": "None",
-                 "1": "MAVLink1",
-                 "2": "MAVLink2",
-                 "3": "Frsky D",
-                 "4": "Frsky SPort",
-                 "5": "GPS",
-                 // SerialProtocol_GPS2
-                 "7": "Alexmos Gimbal Serial",
-                 "8": "Gimbal",
-                 "9": "Rangefinder",
+                "0": "None",
+                "1": "MAVLink1",
+                "2": "MAVLink2",
+                "3": "Frsky D",
+                "4": "Frsky SPort",
+                "5": "GPS",
+                // SerialProtocol_GPS2
+                "7": "Alexmos Gimbal Serial",
+                "8": "Gimbal",
+                "9": "Rangefinder",
                 "10": "FrSky SPort Passthrough (OpenTX)",
                 "11": "Lidar360",
                 // SerialProtocol_Aerotenna_USD1
@@ -2376,21 +2402,21 @@ function plot_data_rate(log) {
                 const bytes_per_sec = baud / 10
 
                 const limit_name = "Baud limit"
-                const limit_x = [time[0], time[time.length-1]]
+                const limit_x = [time[0], time[time.length - 1]]
                 const limit_y = [bytes_per_sec, bytes_per_sec]
 
-                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B/s", line: { dash: "dot", color: "#000000" },})
+                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} B/s", line: { dash: "dot", color: "#000000" }, })
             }
 
-            const layout = { 
-                legend: {itemclick: false, itemdoubleclick: false }, 
+            const layout = {
+                legend: { itemclick: false, itemdoubleclick: false },
                 margin: { b: 50, l: 60, r: 50, t: 20 },
-                xaxis: { title: {text: "Time (s)" } },
-                yaxis: { title: {text: "Data rate (bytes/second)"}}
+                xaxis: { title: { text: "Time (s)" } },
+                yaxis: { title: { text: "Data rate (bytes/second)" } }
             }
 
             const plot_div = add_datarate(title)
-            Plotly.newPlot(plot_div, data, layout, {displaylogo: false});
+            Plotly.newPlot(plot_div, data, layout, { displaylogo: false });
 
         }
     }
@@ -2404,7 +2430,7 @@ function plot_data_rate(log) {
 
             const options = params["CAN_D" + driver_inst + "_UC_OPTION"]
             let FD = false
-            if ((options != null) && ((options & (1<<2)) != 0)) {
+            if ((options != null) && ((options & (1 << 2)) != 0)) {
                 FD = true
             }
 
@@ -2412,7 +2438,7 @@ function plot_data_rate(log) {
             for (let i = 1; i < 10; i++) {
                 const driver = params["CAN_P" + i + "_DRIVER"]
                 if (driver == driver_inst) {
-                    if (!FD) { 
+                    if (!FD) {
                         bitrate = parseInt(params["CAN_P" + i + "_BITRATE"])
                     } else {
                         bitrate = parseInt(params["CAN_P" + i + "_FDBITRATE"]) * 1000000
@@ -2423,7 +2449,7 @@ function plot_data_rate(log) {
 
             let title = "DroneCAN " + inst
             if (bitrate != null) {
-                title += ": " + (bitrate/1000000) + "Mbit/s"
+                title += ": " + (bitrate / 1000000) + "Mbit/s"
             }
 
             // Converting bitrate into a frame rate is a bit complicated.
@@ -2449,10 +2475,10 @@ function plot_data_rate(log) {
             let tx = new Array(len - 1)
             let rx = new Array(len - 1)
             let total = new Array(len - 1)
-            for (let i = 0; i<(len - 1); i++) {
-                const dt = time[i+1] - time[i]
-                tx[i] = (CANS_inst.T[i+1] - CANS_inst.T[i]) / dt
-                rx[i] = (CANS_inst.R[i+1] - CANS_inst.R[i]) / dt
+            for (let i = 0; i < (len - 1); i++) {
+                const dt = time[i + 1] - time[i]
+                tx[i] = (CANS_inst.T[i + 1] - CANS_inst.T[i]) / dt
+                rx[i] = (CANS_inst.R[i + 1] - CANS_inst.R[i]) / dt
                 total[i] = tx[i] + rx[i]
             }
 
@@ -2470,21 +2496,21 @@ function plot_data_rate(log) {
 
             if (max_frame_limit != null) {
                 const limit_name = "Worst case limit"
-                const limit_x = [time[0], time[time.length-1]]
+                const limit_x = [time[0], time[time.length - 1]]
                 const limit_y = [max_frame_limit, max_frame_limit]
 
-                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s", line: { dash: "dot", color: "#000000" },})
+                data.push({ x: limit_x, y: limit_y, name: limit_name, meta: limit_name, mode: 'lines', hovertemplate: "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} f/s", line: { dash: "dot", color: "#000000" }, })
             }
 
-            const layout = { 
-                legend: {itemclick: false, itemdoubleclick: false }, 
+            const layout = {
+                legend: { itemclick: false, itemdoubleclick: false },
                 margin: { b: 50, l: 60, r: 50, t: 20 },
-                xaxis: { title: {text: "Time (s)" } },
-                yaxis: { title: {text: "Data rate (CAN frames/second)"}}
+                xaxis: { title: { text: "Time (s)" } },
+                yaxis: { title: { text: "Data rate (CAN frames/second)" } }
             }
 
             const plot_div = add_datarate(title)
-            Plotly.newPlot(plot_div, data, layout, {displaylogo: false});
+            Plotly.newPlot(plot_div, data, layout, { displaylogo: false });
 
             if (max_frame_limit != null) {
                 // Add a note to make the limit less scary
@@ -2567,9 +2593,9 @@ async function load_log(log_file) {
             // Already seen this param with a different value record change
             if (!(name in param_changes)) {
                 // Add original value
-                param_changes[name] = [{time: param_time[name], value: params[name]}]
+                param_changes[name] = [{ time: param_time[name], value: params[name] }]
             }
-            param_changes[name].push({time, value})
+            param_changes[name].push({ time, value })
         }
 
         params[name] = value
@@ -2654,15 +2680,15 @@ async function load_log(log_file) {
             para.appendChild(document.createElement("br"))
         }
 
-        const total_errors =  Math.max(...IOMC.Nerr)
+        const total_errors = Math.max(...IOMC.Nerr)
         para.appendChild(document.createTextNode("Flight Controller errors: " + total_errors + " " + (total_errors == 0 ? "\u2705" : "\u274C")))
         para.appendChild(document.createElement("br"))
 
-        const IOMCU_total_errors =  Math.max(...IOMC.Nerr2)
+        const IOMCU_total_errors = Math.max(...IOMC.Nerr2)
         para.appendChild(document.createTextNode("IOMCU errors: " + IOMCU_total_errors + " " + (IOMCU_total_errors == 0 ? "\u2705" : "\u274C")))
         para.appendChild(document.createElement("br"))
 
-        const delayed_packets =  Math.max(...IOMC.NDel)
+        const delayed_packets = Math.max(...IOMC.NDel)
         para.appendChild(document.createTextNode("Delayed packets: " + delayed_packets + " " + (delayed_packets == 0 ? "\u2705" : "\u274C")))
     }
 
@@ -2699,8 +2725,8 @@ async function load_log(log_file) {
             if ("instances" in log.messageTypes.IMU) {
                 for (const inst of Object.keys(log.messageTypes.IMU.instances)) {
                     const i = parseFloat(inst)
-                    Temperature.data[3+i].x = TimeUS_to_seconds(log.get_instance("IMU", inst, "TimeUS"))
-                    Temperature.data[3+i].y = log.get_instance("IMU", inst, "T")
+                    Temperature.data[3 + i].x = TimeUS_to_seconds(log.get_instance("IMU", inst, "TimeUS"))
+                    Temperature.data[3 + i].y = log.get_instance("IMU", inst, "T")
                 }
             }
         }
@@ -2778,7 +2804,7 @@ async function load_log(log_file) {
         function array_bit_set(A, val) {
             const len = A.length
             let ret = new Array(len)
-            for (let i = 0; i<len; i++) {
+            for (let i = 0; i < len; i++) {
                 ret[i] = ((A[i] & val) != 0) ? 1 : 0
             }
             return ret
@@ -2845,7 +2871,7 @@ async function load_log(log_file) {
 
         performance_load.data[0].x = time
         performance_load.data[0].y = array_scale(PM.Load, 1 / 10)
-        
+
         Plotly.redraw(plot)
 
         // Memory
@@ -2880,12 +2906,14 @@ async function load_log(log_file) {
         for (const inst of Object.keys(log.messageTypes.STAK.instances)) {
             // Assume id, priority and name do not change
             const STAK_inst = log.get_instance("STAK", inst)
-            stack.push({ id: parseFloat(inst), 
-                         priority: STAK_inst.Pri[0],
-                         name: STAK_inst.Name[0],
-                         time: TimeUS_to_seconds(STAK_inst.TimeUS),
-                         total_size: STAK_inst.Total,
-                         free: STAK_inst.Free})
+            stack.push({
+                id: parseFloat(inst),
+                priority: STAK_inst.Pri[0],
+                name: STAK_inst.Name[0],
+                time: TimeUS_to_seconds(STAK_inst.TimeUS),
+                total_size: STAK_inst.Total,
+                free: STAK_inst.Free
+            })
         }
 
         // Sort by priority, most important first
@@ -2906,12 +2934,12 @@ async function load_log(log_file) {
         plot = document.getElementById("stack_mem")
         plot_visibility(plot, false)
         Plotly.purge(plot)
-        Plotly.newPlot(plot, stack_mem.data, stack_mem.layout, {displaylogo: false});
+        Plotly.newPlot(plot, stack_mem.data, stack_mem.layout, { displaylogo: false });
 
         plot = document.getElementById("stack_pct")
         plot_visibility(plot, false)
         Plotly.purge(plot)
-        Plotly.newPlot(plot, stack_pct.data, stack_pct.layout, {displaylogo: false});
+        Plotly.newPlot(plot, stack_pct.data, stack_pct.layout, { displaylogo: false });
 
     }
 
@@ -2939,7 +2967,7 @@ async function load_log(log_file) {
                 link.title = "download file"
                 link.innerHTML = name
                 link.href = "#"
-                link.addEventListener('click', function() { saveAs(new Blob([contents]), name) })
+                link.addEventListener('click', function () { saveAs(new Blob([contents]), name) })
 
                 para.appendChild(link)
 
@@ -3033,7 +3061,7 @@ async function load_log(log_file) {
             if (inst == 2) {
                 // Ignore blended instance
                 continue
-            } 
+            }
 
             const time_us = log.get_instance("GPS", inst, "TimeUS")
             const status = log.get_instance("GPS", inst, "Status")
@@ -3044,7 +3072,7 @@ async function load_log(log_file) {
             const drift_ms = new Array(len).fill(NaN)
             let first
             let have_drift = false
-            for (let i = 0; i<len; i++) {
+            for (let i = 0; i < len; i++) {
                 if (status[i] < 3) {
                     // Fix not good enough for valid time
                     continue
@@ -3108,9 +3136,9 @@ async function load_log(log_file) {
             const time_range_ms = (end_us - start_us) * 0.001
 
             // Set full scale to +-1000ppm so expected jitter does not look bad
-            const min_drift = time_range_ms * 1000 * 10**-6
+            const min_drift = time_range_ms * 1000 * 10 ** -6
             if (max_drift < min_drift) {
-                plot.layout.yaxis.range = [ -min_drift,  min_drift ]
+                plot.layout.yaxis.range = [-min_drift, min_drift]
                 plot.layout.yaxis.autorange = false
             }
 
@@ -3325,16 +3353,16 @@ function reset() {
             continue
         }
         const SR_prefix = "SR" + i + "_"
-        const SR_names = [ SR_prefix + "RAW_SENS", 
-                           SR_prefix + "EXT_STAT",
-                           SR_prefix + "RC_CHAN",
-                           SR_prefix + "RAW_CTRL",
-                           SR_prefix + "POSITION",
-                           SR_prefix + "EXTRA1",
-                           SR_prefix + "EXTRA2",
-                           SR_prefix + "EXTRA3",
-                           SR_prefix + "PARAMS",
-                           SR_prefix + "ADSB"]
+        const SR_names = [SR_prefix + "RAW_SENS",
+        SR_prefix + "EXT_STAT",
+        SR_prefix + "RC_CHAN",
+        SR_prefix + "RAW_CTRL",
+        SR_prefix + "POSITION",
+        SR_prefix + "EXTRA1",
+        SR_prefix + "EXTRA2",
+        SR_prefix + "EXTRA3",
+        SR_prefix + "PARAMS",
+        SR_prefix + "ADSB"]
         setup_minimal_param("param_stream_" + i, SR_names)
     }
 
@@ -3344,32 +3372,32 @@ function reset() {
     const offset_hover = "<extra></extra>%{meta}<br>X: %{x:.2f} m<br>Y: %{y:.2f} m<br>Z: %{z:.2f} m"
 
     let name = "GC"
-    Sensor_Offset.data[0] = { x: [0], y: [0], z: [0], mode: "markers", type: 'scatter3d', name: name, meta: name, marker: {color: 'rgb(0,0,0)'}, showlegend: false, hovertemplate: "<extra></extra>CG"}
+    Sensor_Offset.data[0] = { x: [0], y: [0], z: [0], mode: "markers", type: 'scatter3d', name: name, meta: name, marker: { color: 'rgb(0,0,0)' }, showlegend: false, hovertemplate: "<extra></extra>CG" }
 
     for (let i = 0; i < max_num_ins; i++) {
-        name = "IMU " + (i+1)
+        name = "IMU " + (i + 1)
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_gps; i++) {
         // Push two point for each GPS to allow ploting of master and slave
-        name = "GPS " + (i+1)
+        name = "GPS " + (i + 1)
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_rangefinder; i++) {
-        name = "Rangefinder " + (i+1)
+        name = "Rangefinder " + (i + 1)
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_flow; i++) {
-        name = "FLOW " + (i+1)
+        name = "FLOW " + (i + 1)
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
     for (let i = 0; i < max_num_viso; i++) {
-        name = "VISO " + (i+1)
+        name = "VISO " + (i + 1)
         Sensor_Offset.data.push({ mode: "markers", type: 'scatter3d', name: name, meta: name, visible: false, hovertemplate: offset_hover })
     }
 
@@ -3378,33 +3406,35 @@ function reset() {
 
     // X
     const x_color = 'rgb(0,0,255)'
-    Sensor_Offset.data.push({type: "cone", x: [origin_size], y: [0], z: [0], u: [origin_size], v: [0], w: [0], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale:[[0, x_color], [1, x_color]]})
-    Sensor_Offset.data.push({type: 'scatter3d', mode: 'lines', x: [0,origin_size], y: [0,0], z: [0,0], showlegend: false, hoverinfo: "none", line: {color: x_color, width: 10 }})
+    Sensor_Offset.data.push({ type: "cone", x: [origin_size], y: [0], z: [0], u: [origin_size], v: [0], w: [0], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale: [[0, x_color], [1, x_color]] })
+    Sensor_Offset.data.push({ type: 'scatter3d', mode: 'lines', x: [0, origin_size], y: [0, 0], z: [0, 0], showlegend: false, hoverinfo: "none", line: { color: x_color, width: 10 } })
 
     // Y
     const y_color = 'rgb(255,0,0)'
-    Sensor_Offset.data.push({type: "cone", x: [0], y: [origin_size], z: [0], u: [0], v: [origin_size], w: [0], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale:[[0, y_color], [1, y_color]]})
-    Sensor_Offset.data.push({type: 'scatter3d', mode: 'lines', x: [0,0], y: [0,origin_size], z: [0,0], showlegend: false, hoverinfo: "none", line: {color: y_color, width: 10 }})
+    Sensor_Offset.data.push({ type: "cone", x: [0], y: [origin_size], z: [0], u: [0], v: [origin_size], w: [0], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale: [[0, y_color], [1, y_color]] })
+    Sensor_Offset.data.push({ type: 'scatter3d', mode: 'lines', x: [0, 0], y: [0, origin_size], z: [0, 0], showlegend: false, hoverinfo: "none", line: { color: y_color, width: 10 } })
 
     // Z
     const z_color = 'rgb(0,255,0)'
-    Sensor_Offset.data.push({type: "cone", x: [0], y: [0], z: [origin_size], u: [0], v: [0], w: [origin_size], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale:[[0, z_color], [1, z_color]]})
-    Sensor_Offset.data.push({type: 'scatter3d', mode: 'lines', x: [0,0], y: [0,0], z: [0,origin_size], showlegend: false, hoverinfo: "none", line: {color: z_color, width: 10 }})
+    Sensor_Offset.data.push({ type: "cone", x: [0], y: [0], z: [origin_size], u: [0], v: [0], w: [origin_size], sizemode: "raw", sizeref: cone_size, showscale: false, hoverinfo: "none", colorscale: [[0, z_color], [1, z_color]] })
+    Sensor_Offset.data.push({ type: 'scatter3d', mode: 'lines', x: [0, 0], y: [0, 0], z: [0, origin_size], showlegend: false, hoverinfo: "none", line: { color: z_color, width: 10 } })
 
     Sensor_Offset.layout = {
-        scene: { xaxis: {title: { text: "X offset, forward (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
-                 yaxis: {title: { text: "Y offset, right (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
-                 zaxis: {title: { text: "Z offset, down (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
-                 aspectratio: { x:0.75, y:0.75, z:0.75 },
-                 camera: {eye: { x:-1.25, y:1.25, z:1.25 }}},
+        scene: {
+            xaxis: { title: { text: "X offset, forward (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+            yaxis: { title: { text: "Y offset, right (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+            zaxis: { title: { text: "Z offset, down (m)" }, zeroline: false, showline: true, mirror: true, showspikes: false },
+            aspectratio: { x: 0.75, y: 0.75, z: 0.75 },
+            camera: { eye: { x: -1.25, y: 1.25, z: 1.25 } }
+        },
         showlegend: true,
-        legend: {itemclick: false, itemdoubleclick: false },
+        legend: { itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 },
     }
 
     let plot = document.getElementById("POS_OFFSETS")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Sensor_Offset.data, Sensor_Offset.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Sensor_Offset.data, Sensor_Offset.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Temperature plot
@@ -3421,19 +3451,20 @@ function reset() {
     name = "MCU"
     Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
     for (let i = 0; i < max_num_ins; i++) {
-        name = "IMU " + (i+1)
+        name = "IMU " + (i + 1)
         Temperature.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: temp_hover_tmmplate })
     }
 
-    Temperature.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Temperature (°C)" } }
-                         }
+    Temperature.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Temperature (°C)" } }
+    }
 
     plot = document.getElementById("Temperature")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Temperature.data, Temperature.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Temperature.data, Temperature.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
 
@@ -3441,7 +3472,7 @@ function reset() {
     const voltage_hover_tmmplate = "<extra></extra>%{meta}<br>%{x:.2f} s<br>%{y:.2f} V"
     Board_Voltage.data = []
 
-    Board_Voltage.data.push({ line: {color: "transparent"}, fill: "toself", type: "scatter", showlegend: false, hoverinfo: 'none' })
+    Board_Voltage.data.push({ line: { color: "transparent" }, fill: "toself", type: "scatter", showlegend: false, hoverinfo: 'none' })
 
     name = "servo"
     Board_Voltage.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: voltage_hover_tmmplate })
@@ -3452,14 +3483,16 @@ function reset() {
     name = "MCU"
     Board_Voltage.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: voltage_hover_tmmplate })
 
-    Board_Voltage.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                             margin: { b: 50, l: 50, r: 50, t: 20 },
-                             xaxis: { title: {text: time_scale_label } },
-                             yaxis: { title: {text: "Voltage" }, rangemode: "tozero" } }
+    Board_Voltage.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Voltage" }, rangemode: "tozero" }
+    }
 
     plot = document.getElementById("Board_Voltage")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, Board_Voltage.data, Board_Voltage.layout, {displaylogo: false});
+    Plotly.newPlot(plot, Board_Voltage.data, Board_Voltage.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Power flags
@@ -3481,14 +3514,16 @@ function reset() {
     name = "Peripheral<br>high power<br>overcurrent"
     power_flags.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: power_flags_hover_tmmplate })
 
-    power_flags.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                                margin: { b: 50, l: 50, r: 50, t: 20 },
-                                xaxis: { title: {text: time_scale_label } },
-                                yaxis: { title: {text: "Power flags" }, rangemode: "tozero" } }
+    power_flags.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Power flags" }, rangemode: "tozero" }
+    }
 
     plot = document.getElementById("power_flags")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, power_flags.data, power_flags.layout, {displaylogo: false});
+    Plotly.newPlot(plot, power_flags.data, power_flags.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Performace load
@@ -3496,29 +3531,31 @@ function reset() {
 
     performance_load.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} %" }]
 
-    performance_load.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Load (%)" } }
-                         }
+    performance_load.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Load (%)" } }
+    }
 
     plot = document.getElementById("performance_load")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, performance_load.data, performance_load.layout, {displaylogo: false});
+    Plotly.newPlot(plot, performance_load.data, performance_load.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Performace memory
     performance_mem.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} B" }]
 
-    performance_mem.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 60, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Free memory (bytes)" } }
-                         }
+    performance_mem.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 60, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Free memory (bytes)" } }
+    }
 
     plot = document.getElementById("performance_mem")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, performance_mem.data, performance_mem.layout, {displaylogo: false});
+    Plotly.newPlot(plot, performance_mem.data, performance_mem.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Performace time
@@ -3532,36 +3569,39 @@ function reset() {
     name = "Average"
     performance_time.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: performance_time_hover })
 
-    performance_time.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Loop rate (Hz)" } }
-                         }
+    performance_time.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Loop rate (Hz)" } }
+    }
 
     plot = document.getElementById("performance_time")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, performance_time.data, performance_time.layout, {displaylogo: false});
+    Plotly.newPlot(plot, performance_time.data, performance_time.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Stack
     document.getElementById("Stack").hidden = true
 
     // Memory
-    stack_mem.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Free memory (bytes)" } }
-                         }
+    stack_mem.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Free memory (bytes)" } }
+    }
 
     plot = document.getElementById("stack_mem")
     plot_visibility(plot, true)
 
     // Percentage
-    stack_pct.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Memory usage (%)" } }
-                         }
+    stack_pct.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Memory usage (%)" } }
+    }
 
     plot = document.getElementById("stack_pct")
     plot_visibility(plot, true)
@@ -3572,15 +3612,16 @@ function reset() {
     // Log dropped packets
     log_dropped.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f}" }]
 
-    log_dropped.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                           margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Dropped messages" } }
-                         }
+    log_dropped.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Dropped messages" } }
+    }
 
     plot = document.getElementById("log_dropped")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, log_dropped.data, log_dropped.layout, {displaylogo: false});
+    Plotly.newPlot(plot, log_dropped.data, log_dropped.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Log free buffer space
@@ -3597,33 +3638,37 @@ function reset() {
     name = "Minimum"
     log_buffer.data.push({ mode: 'lines', name: name, meta: name, hovertemplate: log_buffer_hover })
 
-    log_buffer.layout = { legend: {itemclick: false, itemdoubleclick: false }, 
-                          margin: { b: 50, l: 50, r: 50, t: 20 },
-                           xaxis: { title: {text: time_scale_label } },
-                           yaxis: { title: {text: "Free Buffer Space (bytes)" } }
-                        }
+    log_buffer.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+        xaxis: { title: { text: time_scale_label } },
+        yaxis: { title: { text: "Free Buffer Space (bytes)" } }
+    }
 
     plot = document.getElementById("log_buffer")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, log_buffer.data, log_buffer.layout, {displaylogo: false});
+    Plotly.newPlot(plot, log_buffer.data, log_buffer.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Log Composition
-    log_stats.data = [ { type: 'pie', textposition: 'inside', textinfo: "label+percent",
-                         hovertemplate: '%{label}<br>%{value:,i} Bytes<br>%{percent}<extra></extra>'} ]
-    log_stats.layout = { showlegend: false,
-                         margin: { b: 10, l: 50, r: 50, t: 10 },
-                         }
+    log_stats.data = [{
+        type: 'pie', textposition: 'inside', textinfo: "label+percent",
+        hovertemplate: '%{label}<br>%{value:,i} Bytes<br>%{percent}<extra></extra>'
+    }]
+    log_stats.layout = {
+        showlegend: false,
+        margin: { b: 10, l: 50, r: 50, t: 10 },
+    }
 
     plot = document.getElementById("log_stats")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, log_stats.data, log_stats.layout, {displaylogo: false});
+    Plotly.newPlot(plot, log_stats.data, log_stats.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
     // Clock drift
     clock_drift.data = []
-    clock_drift.layout = { 
-        legend: { itemclick: false, itemdoubleclick: false }, 
+    clock_drift.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
         margin: { b: 50, l: 50, r: 50, t: 20 },
         xaxis: { title: { text: time_scale_label } },
         yaxis: { title: { text: "Clock drift (ms)" } }
@@ -3631,7 +3676,7 @@ function reset() {
 
     plot = document.getElementById("clock_drift")
     Plotly.purge(plot)
-    Plotly.newPlot(plot, clock_drift.data, clock_drift.layout, {displaylogo: false});
+    Plotly.newPlot(plot, clock_drift.data, clock_drift.layout, { displaylogo: false });
     plot_visibility(plot, true)
 
 }
@@ -3661,11 +3706,11 @@ async function initial_load() {
     return new Promise((resolve) => {
         fetch("board_types.txt")
             .then((res) => {
-            return res.text()
-        }).then((data) => {
-            load_board_types(data)
-            resolve()
-        });
+                return res.text()
+            }).then((data) => {
+                load_board_types(data)
+                resolve()
+            });
     })
 }
 
