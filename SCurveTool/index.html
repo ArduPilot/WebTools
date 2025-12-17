@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot SCurve plotter</title>
+<link rel="icon" href="../images/AP_favicon.png">
+<script type="text/javascript" src="SCurveTool.js"></script>
+<script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+
+<script src='../modules/plotly.js/dist/plotly.min.js'></script>
+
+<script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
+<script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
+
+</head>
+<table style="width:1200px"><tr><td>
+  <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <br>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<style>
+  div.plotly-notifier {
+    visibility: hidden;
+  }
+
+  .params {
+      width:330px;
+      height:235px;
+  }
+
+  .params p {
+    margin-top:0px;
+    margin-bottom:0px;
+  }
+
+  .params p input {
+    width: 100px;
+  }
+
+  .position {
+      width:150px;
+      height:100px;
+      flex: auto;
+  }
+
+  .outer {
+    width:1130px;
+    align-items: center;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .label {
+    width: 60px;
+    height: 15px;
+  }
+
+  .checkOption {
+    width: 15px;
+    height: 15px;
+  }
+
+  .plot2D {
+    width:1130px;
+    height:300px;
+  }
+
+</style>
+
+<table><tr><td style="width:1130px">
+  <h1 style="text-align:center; margin-block-end: 0.25em;"><a href="" style="color: #000000; text-decoration:none;">ArduPilot SCurve plotter</a></h1>
+</td></tr></table>
+
+<body onload="initial_load(); update()">
+
+<fieldset class="outer">
+  <legend>Waypoints
+      <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+      data-tippy-content='The parameter values that the user has to define the curve',
+      data-tippy-maxWidth='750px'/>
+  </legend>
+
+  <fieldset class="position">
+    <legend>Position 1
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Waypoint that the vehicle is moving away from',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="first_wp_x" value="0" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="first_wp_x">North (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="first_wp_y" value="0" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="first_wp_y">East (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="first_wp_z" value="300" min="0" step="10" max="300" class="label" onchange="update()"/>
+      <label for="first_wp_z">Up (m)</label>
+    </p>
+  </fieldset>
+
+  <fieldset class="position">
+    <legend>Position 2
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Waypoint that the vehicle is moving toward',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="curr_wp_x" value="300" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="curr_wp_x">North (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="curr_wp_y" value="300" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="curr_wp_y">East (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="curr_wp_z" value="150" min="0" step="10" max="300" class="label" onchange="update()"/>
+      <label for="curr_wp_z">Up (m)</label>
+    </p>
+  </fieldset>
+
+  <fieldset class="position">
+    <legend>Position 3
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Next waypoint in mission sequence, after current is waypoint is achieved',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="next_wp_x" value="70" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="next_wp_x">North (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="next_wp_y" value="35" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="next_wp_y">East (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="next_wp_z" value="80" min="0" step="10" max="300" class="label" onchange="update()"/>
+      <label for="next_wp_z">Up (m)</label>
+    </p>
+  </fieldset>
+
+  <fieldset class="position">
+    <legend>Position 4
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Next waypoint in mission sequence, after current is waypoint is achieved',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="last_wp_x" value="100" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="last_wp_x">North (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="last_wp_y" value="250" min="-300" step="10" max="300" class="label" onchange="update()"/>
+      <label for="last_wp_y">East (m)</label>
+    </p>
+
+    <p style="margin-top:5px; margin-bottom:5px;">
+      <input type="number" id="last_wp_z" value="80" min="0" step="10" max="300" class="label" onchange="update()"/>
+      <label for="last_wp_z">Up (m)</label>
+    </p>
+  </fieldset>
+
+</fieldset>
+
+<fieldset class="outer">
+  <legend>Parameters
+      <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+      data-tippy-content='The parameter values that the user has to define the curve',
+      data-tippy-maxWidth='750px'/>
+  </legend>
+
+  <fieldset class="params">
+    <legend>Attitude Control
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Attitude control parameters',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p>
+      <input type="number" id="ANGLE_MAX" value="3000" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_ACCEL_R_MAX" value="110000" data-paramValues="false" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_ACCEL_P_MAX" value="110000" data-paramValues="false" lass="label" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_RATE_R_MAX" value="0" data-paramValues="false" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_RATE_P_MAX" value="0" data-paramValues="false" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_INPUT_TC" value="0.15" data-paramValues="false" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_RATE_FF_ENAB" value="1" onchange="update()"/>
+    </p>
+  </fieldset>
+
+  <fieldset class="params">
+    <legend>Position Control
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Position control parameters',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p>
+      <input type="number" id="PSC_JERK_XY" value="5.0" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="PSC_JERK_Z" value="5.0" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="PSC_ANGLE_MAX" value="0" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="PSC_ACCZ_FLTT" value="0" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="PSC_ACCZ_FLTE" value="0" onchange="update()"/>
+    </p>
+  </fieldset>
+
+  <fieldset class="params">
+    <legend>Waypoint Navigation
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+        data-tippy-content='Waypoint navigation parameters',
+        data-tippy-maxWidth='750px'/>
+    </legend>
+
+    <p>
+      <input type="number" id="WPNAV_JERK" value="1.0" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_ACCEL_Z" value="100" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_ACCEL" value="250" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_ACCEL_C" value="250" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_SPEED" value="1000" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_SPEED_UP" value="250" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_SPEED_DN" value="150" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="WPNAV_RADIUS" value="5000" onchange="update()"/>
+    </p>
+  </fieldset>
+</fieldset>
+
+<h2 style="text-align:center">3D Flight path
+  <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+  data-tippy-content='3D plot of flight path',
+  data-tippy-maxWidth='750px'/>
+</h2>
+
+<div id="waypoint_plot" style="width:1130px;height:1130px"></div>
+
+<div style="width:1130px; display: flex; justify-content: space-around;">
+<fieldset style="width:850px; display:flex; justify-content:space-around;">
+  <legend>Display Options
+      <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+      data-tippy-content='Options for different ways to visualise the kinematic trajectories',
+      data-tippy-maxWidth='750px'/>
+  </legend>
+
+  <p style="margin-top:5px; margin-bottom:5px;">
+    <input type="checkbox" id="display_wp_radius" class="checkOption" onchange="update()"/>
+    <label for="display_wp_radius">Display wp radius</label>
+  </p>
+
+  <p style="margin-top:5px; margin-bottom:5px;">
+    <input type="checkbox" id="display_wp_vel" class="checkOption" onchange="update_wp_colours(0)" checked/>
+    <label for="display_wp_vel">Colour WP plot by velocity</label>
+  </p>
+
+  <p style="margin-top:5px; margin-bottom:5px;">
+    <input type="checkbox" id="display_wp_accel" class="checkOption" onchange="update_wp_colours(1)"/>
+    <label for="display_wp_accel">Colour WP plot by Acceleration</label>
+  </p>
+
+  <p style="margin-top:5px; margin-bottom:5px;">
+    <input type="checkbox" id="display_wp_jerk" class="checkOption" onchange="update_wp_colours(2)"/>
+    <label for="display_wp_jerk">Colour WP plot by Jerk</label>
+  </p>
+
+</fieldset>
+</div>
+
+<h2 style="text-align:center">1D SCurves
+  <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+  data-tippy-content='Computed SCurves along the vector of each leg',
+  data-tippy-maxWidth='750px'/>
+</h2>
+
+<div id="pos_plot" class="plot2D"></div>
+<div id="vel_plot" class="plot2D"></div>
+<div id="accel_plot" class="plot2D"></div>
+<div id="jerk_plot" class="plot2D"></div>
+<div id="snap_plot" class="plot2D"></div>
+
+<script>
+
+  window.onerror = function(msg, url, linenumber) {
+      alert('Sorry, something went wrong.\n\n' + 
+            'Please try a hard reload of this page to clear its cache.\n\n' +
+            'If the error persists open an issue on the GitHub repo.\n' +
+            'Include a copy of the log and the following error message:\n\n' +
+            msg + '\n' +
+            'URL: '+ url +'\n' +
+            'Line Number: '+ linenumber)
+      return false
+  }
+  window.addEventListener('unhandledrejection', function (e) {
+    throw new Error(e.reason.stack)
+  })
+
+  // Load tool tips
+  tippy('#TT')
+
+  const params = [
+    "ANGLE_MAX",
+    "ATC_ACCEL_R_MAX",
+    "ATC_ACCEL_P_MAX",
+    "ATC_RATE_R_MAX",
+    "ATC_RATE_P_MAX",
+    "ATC_INPUT_TC",
+    "ATC_RATE_FF_ENAB",
+    "PSC_JERK_XY",
+    "PSC_JERK_Z",
+    "PSC_ANGLE_MAX",
+    "PSC_ACCZ_FLTT",
+    "PSC_ACCZ_FLTE",
+    "WPNAV_JERK",
+    "WPNAV_ACCEL_Z",
+    "WPNAV_ACCEL",
+    "WPNAV_ACCEL_C",
+    "WPNAV_SPEED",
+    "WPNAV_SPEED_UP",
+    "WPNAV_SPEED_DN",
+    "WPNAV_RADIUS",
+  ]
+
+  load_param_inputs("params.json", params)
+
+
+</script>
+
+</body>
+</html>
