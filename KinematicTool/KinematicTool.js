@@ -8,7 +8,10 @@ function initial_load()
     let plot
 
     // position
-    ang_pos.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg" }]
+    ang_pos.data = [
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Sqrt' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'SCurve' }
+    ]
 
     ang_pos.layout = {
         legend: { itemclick: false, itemdoubleclick: false },
@@ -30,7 +33,10 @@ function initial_load()
     Plotly.newPlot(plot, ang_pos.data, ang_pos.layout, { displaylogo: false })
 
     // velocity
-    ang_vel.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s" }]
+    ang_vel.data = [
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Sqrt' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'SCurve' },
+    ]
 
     ang_vel.layout = {
         legend: { itemclick: false, itemdoubleclick: false },
@@ -52,7 +58,10 @@ function initial_load()
     Plotly.newPlot(plot, ang_vel.data, ang_vel.layout, { displaylogo: false })
 
     // Acceleration
-    ang_accel.data = [{ mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²" }]
+    ang_accel.data = [
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Sqrt' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'SCurve' },
+    ]
 
     ang_accel.layout = {
         legend: { itemclick: false, itemdoubleclick: false },
@@ -255,6 +264,41 @@ function sqrt_controller(error, p, second_ord_lim, dt)
     }
 }
 
+function updateSqrtControl(config, desired, state, dt)
+{
+    const i = state.pos.length
+
+    let vel_target
+    if (config.mode.use_pos) {
+
+        let desired_ang_vel = 0
+        let max_ang_vel = 0
+        if (config.mode.use_vel) {
+            desired_ang_vel = desired.vel
+            max_ang_vel = config.vel_limit
+        }
+        const pos_error = wrap_PI(desired.pos - state.pos[i-1])
+        vel_target = input_shaping_angle(pos_error, config.input_tc, config.accel_limit, state.vel[i-1], desired_ang_vel, max_ang_vel, dt)
+
+    } else if (config.mode.use_vel) {
+        vel_target = input_shaping_ang_vel(state.vel[i-1], desired.vel, config.accel_limit, dt, config.rate_tc)
+    }
+
+    if (is_positive(config.vel_limit)) {
+        vel_target = constrain_float(vel_target, -config.vel_limit, config.vel_limit)
+    }
+
+    // update velocity
+    state.vel[i] = vel_target
+
+    // Integrate to position
+    state.pos[i] = wrap_PI(state.pos[i-1] + (state.vel[i-1] + vel_target) * dt * 0.5)
+
+    // Differentiate to accel
+    state.accel[i] = (vel_target - state.vel[i-1]) / dt
+
+}
+
 // Shapes the velocity request based on a rate time constant. The angular acceleration and deceleration is limited.
 function input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, input_tc)
 {
@@ -287,65 +331,197 @@ function input_shaping_angle(error_angle, input_tc, accel_max, target_ang_vel, d
     return input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, 0.0)
 }
 
+// Applies jerk-limited shaping to the acceleration value to gradually approach a new target.
+// - Constrains the rate of change of acceleration to be within ±`jerk_max` over time `dt`.
+// - The current acceleration value is modified in-place.
+// Useful for ensuring smooth transitions in thrust or lean angle command profiles.
+function shape_accel(accel_input, accel, jerk_max, dt)
+{
+    // sanity check jerk_max
+    if (!is_positive(jerk_max)) {
+        return;
+    }
+
+    // jerk limit acceleration change
+    if (is_positive(dt)) {
+        let accel_delta = accel_input - accel;
+        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
+        accel += accel_delta;
+    }
+
+    return accel
+}
+
+// Shapes velocity and acceleration using jerk-limited control.
+// - Computes correction acceleration needed to reach `vel_input` from current `vel`.
+// - Uses a square-root controller with max acceleration and jerk constraints.
+// - Correction is combined with feedforward `accel_input`.
+// - If `limit_total_accel` is true, total acceleration is constrained to `accel_min` / `accel_max`.
+// The result is applied via `shape_accel`.
+function shape_vel_accel(vel_input, accel_input, vel, accel, accel_min, accel_max, jerk_max, dt, limit_total_accel)
+{
+    // sanity check accel_min, accel_max and jerk_max.
+    if (!is_negative(accel_min) || !is_positive(accel_max) || !is_positive(jerk_max)) {
+        return;
+    }
+
+    // velocity error to be corrected
+    const vel_error = vel_input - vel;
+
+    // Calculate time constants and limits to ensure stable operation
+    // The direction of acceleration limit is the same as the velocity error.
+    // This is because the velocity error is negative when slowing down while
+    // closing a positive position error.
+    let  KPa;
+    if (is_positive(vel_error)) {
+        KPa = jerk_max / accel_max;
+    } else {
+        KPa = jerk_max / (-accel_min);
+    }
+
+    // acceleration to correct velocity
+    let accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
+
+    // constrain correction acceleration from accel_min to accel_max
+    accel_target = constrain_float(accel_target, accel_min, accel_max);
+
+    // velocity correction with input velocity
+    accel_target += accel_input;
+
+    // Constrain total acceleration if limiting is enabled
+    if (limit_total_accel) {
+        accel_target = constrain_float(accel_target, accel_min, accel_max);
+    }
+
+    return shape_accel(accel_target, accel, jerk_max, dt);
+}
+
+// Computes a jerk-limited acceleration command to follow an angular position, velocity, and acceleration target.
+// - This function applies jerk-limited shaping to angular acceleration, based on input angle, angular velocity, and angular acceleration.
+// - Internally computes a target angular velocity using a square-root controller on the angle error.
+// - Velocity and acceleration are both optionally constrained:
+//   - If `limit_total` is true, limits apply to the total (not just correction) command.
+//   - Setting `angle_vel_max` or `angle_accel_max` to zero disables that respective limit.
+// - The acceleration output is shaped toward the target using `shape_vel_accel`.
+// Used for attitude control with limited angular velocity and angular acceleration (e.g., roll/pitch shaping).
+function shape_angle_vel_accel(angle_input, angle_vel_input, angle_accel_input, angle, angle_vel, angle_accel, angle_vel_max, angle_accel_max, angle_jerk_max, dt, limit_total)
+{
+    // sanity check accel_max
+    if (!is_positive(angle_accel_max)) {
+        return;
+    }
+
+    // Estimate time to decelerate based on current angular velocity and acceleration limit
+    const stopping_time = Math.abs(angle_vel / angle_accel_max);
+
+    // Compute total angular error with prediction of future motion, then wrap to [-π, π]
+    let angle_error = angle_input - angle - angle_vel * stopping_time;
+    angle_error = wrap_PI(angle_error);
+    angle_error += angle_vel * stopping_time;
+
+    // Calculate time constants and limits to ensure stable operation
+    // These ensure the square-root controller respects angular acceleration and jerk constraints
+    const angle_accel_tc_max = 0.5 * angle_accel_max;
+    const KPv = 0.5 * angle_jerk_max / angle_accel_max;
+
+    // velocity to correct position
+    let angle_vel_target = sqrt_controller(angle_error, KPv, angle_accel_tc_max, dt);
+
+    // limit velocity to vel_max
+    if (is_positive(angle_vel_max)) {
+        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
+    }
+
+    // velocity correction with input velocity
+    angle_vel_target += angle_vel_input;
+
+    // Constrain total velocity if limiting is enabled and angle_vel_max is positive 
+    if (limit_total && is_positive(angle_vel_max)) {
+        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
+    }
+
+    // Shape the angular acceleration using jerk-limited profile
+    return shape_vel_accel(angle_vel_target, angle_accel_input, angle_vel, angle_accel, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total);
+}
+
+function updateSCurve(config, desired, state, dt)
+{
+    const i = state.pos.length
+
+    // Hardcoded jerk limit for now, to be calculated from time-constant and accel limit in the future
+    const jerkLimit = radians(50000)
+
+    let accel
+    if (config.mode.use_pos) {
+
+        let desired_ang_vel = 0
+        if (config.mode.use_vel) {
+            desired_ang_vel = desired.vel
+        }
+
+        accel = shape_angle_vel_accel(desired.pos, desired_ang_vel, 0.0, state.pos[i-1], state.vel[i-1], state.accel[i-1], config.vel_limit, config.accel_limit, jerkLimit, dt, false)
+
+    } else if (config.mode.use_vel) {
+        accel = shape_vel_accel(desired.vel, 0.0, state.vel[i-1], state.accel[i-1], -config.accel_limit, config.accel_limit, jerkLimit, dt, false)
+
+    }
+
+    const delta_pos = state.vel[i-1] * dt + accel * 0.5 * sq(dt)
+    state.pos[i] =  wrap_PI(state.pos[i-1] + delta_pos)
+
+    const delta_vel = accel * dt
+    state.vel[i] = state.vel[i-1] + delta_vel
+
+    state.accel[i] = accel
+
+}
+
 function run_attitude()
 {
     const param_names = update_axis()
     const mode = update_mode(param_names)
 
-    const desired_pos = wrap_PI(radians(parseFloat(document.getElementById("desired_pos").value)))
-    const desired_vel = radians(parseFloat(document.getElementById("desired_vel").value))
+    const desired = {
+        pos: wrap_PI(radians(parseFloat(document.getElementById("desired_pos").value))),
+        vel: radians(parseFloat(document.getElementById("desired_vel").value)),
+    }
+
     const end_time = parseFloat(document.getElementById("end_time").value)
     const max_time = 20
 
     const dt = 1/400
 
-    const vel_limit = radians(parseFloat(document.getElementById(param_names.rate_max).value))
-    const accel_limit = radians(parseFloat(document.getElementById(param_names.accel_max).value) * 0.01)
-    const input_tc = parseFloat(document.getElementById("ATC_INPUT_TC").value)
-    const rate_tc = parseFloat(document.getElementById(param_names.rate_tc).value)
+    const config = {
+        mode,
+        vel_limit: radians(parseFloat(document.getElementById(param_names.rate_max).value)),
+        accel_limit: radians(parseFloat(document.getElementById(param_names.accel_max).value) * 0.01),
+        input_tc: parseFloat(document.getElementById("ATC_INPUT_TC").value),
+        rate_tc: parseFloat(document.getElementById(param_names.rate_tc).value),
+    }
 
     const pos_tol = radians(0.1)
     const vel_tol = radians(0.1)
 
     // Initial state
     let time = [0]
-    let pos = [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))]
-    let vel = [radians(parseFloat(document.getElementById("initial_vel").value))]
-    let accel = [0]
+    const sqrtState = {
+        pos: [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))],
+        vel: [radians(parseFloat(document.getElementById("initial_vel").value))],
+        accel: [0]
+    }
+    const SCurveState = {
+        pos: [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))],
+        vel: [radians(parseFloat(document.getElementById("initial_vel").value))],
+        accel: [0]
+    }
 
     // Run until current reaches target
     let i = 1
     let done_time
     while(true) {
 
-        let vel_target
-        if (mode.use_pos) {
-
-            let desired_ang_vel = 0
-            let max_ang_vel = 0
-            if (mode.use_vel) {
-                desired_ang_vel = desired_vel
-                max_ang_vel = vel_limit
-            }
-            const pos_error = wrap_PI(desired_pos - pos[i-1])
-            vel_target = input_shaping_angle(pos_error, input_tc, accel_limit, vel[i-1], desired_ang_vel, max_ang_vel, dt)
-
-        } else if (mode.use_vel) {
-            vel_target = input_shaping_ang_vel(vel[i-1], desired_vel, accel_limit, dt, rate_tc)
-        }
-
-        if (is_positive(vel_limit)) {
-            vel_target = constrain_float(vel_target, -vel_limit, vel_limit)
-        }
-
-        // update velocity
-        vel[i] = vel_target
-
-        // Integrate to position
-        pos[i] = wrap_PI(pos[i-1] + (vel[i-1] + vel_target) * dt * 0.5)
-
-        // Differentiate to accel
-        accel[i] = (vel_target - vel[i-1]) / dt
+        updateSqrtControl(config, desired, sqrtState, dt)
+        updateSCurve(config, desired, SCurveState, dt)
 
         // update time
         time[i] = i * dt
@@ -354,10 +530,12 @@ function run_attitude()
         if (done_time == null) {
             let done = false
             if (mode.use_pos) {
-                done = Math.abs(wrap_PI(desired_pos - pos[i])) < pos_tol
+                done = Math.abs(wrap_PI(desired.pos - sqrtState.pos[i])) < pos_tol &&
+                        Math.abs(wrap_PI(desired.pos - SCurveState.pos[i])) < pos_tol
 
             } else if (mode.use_vel) {
-                done = Math.abs(desired_vel - vel[i]) < vel_tol
+                done = Math.abs(desired.vel - sqrtState.vel[i]) < vel_tol &&
+                        Math.abs(desired.vel - SCurveState.vel[i]) < vel_tol
             }
             if (done) {
                 done_time = time[i]
@@ -378,30 +556,29 @@ function run_attitude()
         i++
     }
 
-    // Convert to degrees
-    for (let i = 0; i < pos.length; i++) {
-        pos[i] = degrees(pos[i])
-        vel[i] = degrees(vel[i])
-        accel[i] = degrees(accel[i])
-    }
-
     // Update plots
     ang_pos.data[0].x = time
-    ang_pos.data[0].y = pos
-    ang_pos.layout.shapes[0].y0 = degrees(desired_pos)
-    ang_pos.layout.shapes[0].y1 = degrees(desired_pos)
+    ang_pos.data[0].y = array_scale(sqrtState.pos, 180.0 / Math.PI)
+    ang_pos.data[1].x = time
+    ang_pos.data[1].y = array_scale(SCurveState.pos, 180.0 / Math.PI)
+    ang_pos.layout.shapes[0].y0 = degrees(desired.pos)
+    ang_pos.layout.shapes[0].y1 = degrees(desired.pos)
     ang_pos.layout.shapes[0].visible = mode.use_pos
     Plotly.redraw("ang_pos")
 
     ang_vel.data[0].x = time
-    ang_vel.data[0].y = vel
-    ang_vel.layout.shapes[0].y0 = degrees(desired_vel)
-    ang_vel.layout.shapes[0].y1 = degrees(desired_vel)
+    ang_vel.data[0].y = array_scale(sqrtState.vel, 180.0 / Math.PI)
+    ang_vel.data[1].x = time
+    ang_vel.data[1].y = array_scale(SCurveState.vel, 180.0 / Math.PI)
+    ang_vel.layout.shapes[0].y0 = degrees(desired.vel)
+    ang_vel.layout.shapes[0].y1 = degrees(desired.vel)
     ang_vel.layout.shapes[0].visible = mode.use_vel
     Plotly.redraw("ang_vel")
 
     ang_accel.data[0].x = time
-    ang_accel.data[0].y = accel
+    ang_accel.data[0].y = array_scale(sqrtState.accel, 180.0 / Math.PI)
+    ang_accel.data[1].x = time
+    ang_accel.data[1].y = array_scale(SCurveState.accel, 180.0 / Math.PI)
     Plotly.redraw("ang_accel")
 
 }
