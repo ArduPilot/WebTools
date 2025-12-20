@@ -2,6 +2,7 @@
 ang_pos = {}
 ang_vel = {}
 ang_accel = {}
+ang_jerk = {}
 function initial_load()
 {
     const time_scale_label = "Time (s)"
@@ -74,11 +75,29 @@ function initial_load()
     Plotly.purge(plot)
     Plotly.newPlot(plot, ang_accel.data, ang_accel.layout, { displaylogo: false })
 
+    // Jerk
+    ang_jerk.data = [
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Sqrt' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'SCurve' },
+    ]
+
+    ang_jerk.layout = {
+        legend: { itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 60, r: 50, t: 20 },
+        xaxis: { title: {text: time_scale_label } },
+        yaxis: { title: {text: "Jerk (deg/s³)" } }
+    }
+
+    plot = document.getElementById("ang_jerk")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, ang_jerk.data, ang_jerk.layout, { displaylogo: false })
+
     // Link all time axis
     link_plot_axis_range([
         ["ang_pos", "x", "", ang_pos],
         ["ang_vel", "x", "", ang_vel],
         ["ang_accel", "x", "", ang_accel],
+        ["ang_jerk", "x", "", ang_jerk],
     ])
 
     // Link plot reset
@@ -86,6 +105,7 @@ function initial_load()
         ["ang_pos", ang_pos],
         ["ang_vel", ang_vel],
         ["ang_accel", ang_accel],
+        ["ang_jerk", ang_jerk],
     ])
 }
 
@@ -272,13 +292,11 @@ function updateSqrtControl(config, desired, state, dt)
     if (config.mode.use_pos) {
 
         let desired_ang_vel = 0
-        let max_ang_vel = 0
         if (config.mode.use_vel) {
             desired_ang_vel = desired.vel
-            max_ang_vel = config.vel_limit
         }
         const pos_error = wrap_PI(desired.pos - state.pos[i-1])
-        vel_target = input_shaping_angle(pos_error, config.input_tc, config.accel_limit, state.vel[i-1], desired_ang_vel, max_ang_vel, dt)
+        vel_target = input_shaping_angle(pos_error, config.input_tc, config.accel_limit, state.vel[i-1], desired_ang_vel, config.vel_limit, dt)
 
     } else if (config.mode.use_vel) {
         vel_target = input_shaping_ang_vel(state.vel[i-1], desired.vel, config.accel_limit, dt, config.rate_tc)
@@ -448,9 +466,6 @@ function updateSCurve(config, desired, state, dt)
 {
     const i = state.pos.length
 
-    // Hardcoded jerk limit for now, to be calculated from time-constant and accel limit in the future
-    const jerkLimit = radians(50000)
-
     let accel
     if (config.mode.use_pos) {
 
@@ -458,10 +473,14 @@ function updateSCurve(config, desired, state, dt)
         if (config.mode.use_vel) {
             desired_ang_vel = desired.vel
         }
+        const jerkLimit = config.accel_limit / config.input_tc
 
         accel = shape_angle_vel_accel(desired.pos, desired_ang_vel, 0.0, state.pos[i-1], state.vel[i-1], state.accel[i-1], config.vel_limit, config.accel_limit, jerkLimit, dt, false)
 
     } else if (config.mode.use_vel) {
+
+        const jerkLimit = config.accel_limit / config.rate_tc
+
         accel = shape_vel_accel(desired.vel, 0.0, state.vel[i-1], state.accel[i-1], -config.accel_limit, config.accel_limit, jerkLimit, dt, false)
 
     }
@@ -580,5 +599,16 @@ function run_attitude()
     ang_accel.data[1].x = time
     ang_accel.data[1].y = array_scale(SCurveState.accel, 180.0 / Math.PI)
     Plotly.redraw("ang_accel")
+
+    // Calculate jerk by differentiating accel
+    const jerkTime = array_offset(time.slice(0, -1), dt * 0.5)
+    const sqrtJerk = array_scale(array_sub(sqrtState.accel.slice(1), sqrtState.accel.slice(0, -1)), (1 / dt) * (180.0 / Math.PI))
+    const SCurveJerk = array_scale(array_sub(SCurveState.accel.slice(1), SCurveState.accel.slice(0, -1)), (1 / dt) * (180.0 / Math.PI))
+
+    ang_jerk.data[0].x = jerkTime
+    ang_jerk.data[0].y = sqrtJerk
+    ang_jerk.data[1].x = jerkTime
+    ang_jerk.data[1].y = SCurveJerk
+    Plotly.redraw("ang_jerk")
 
 }
