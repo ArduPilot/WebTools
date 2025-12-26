@@ -2019,7 +2019,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Att_DRB" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.DRB_H  // calculated disturbance rejection
         calc_fr_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
-        if (sid_axis < 4 || sid_axis > 6) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 14) || sid_axis > 17) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.DRB_H  // predicted disturbance rejection
@@ -2052,7 +2052,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Att_Ctrlr_nff" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 13) || (sid_axis > 22 && sid_axis < 24)) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 18) || sid_axis > 21) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
