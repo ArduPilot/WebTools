@@ -1,3 +1,10 @@
+var RuckigModule
+const import_done = new Promise((resolve) => {
+    import('./Ruckig/ruckig.js').then(async(mod) => { 
+        RuckigModule = await mod.default()
+        resolve()
+    })
+})
 
 ang_pos = {}
 ang_vel = {}
@@ -11,7 +18,8 @@ function initial_load()
     // position
     ang_pos.data = [
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Sqrt' },
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'SCurve' }
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'SCurve' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Optimal' },
     ]
 
     ang_pos.layout = {
@@ -37,6 +45,7 @@ function initial_load()
     ang_vel.data = [
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Sqrt' },
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'SCurve' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Optimal' },
     ]
 
     ang_vel.layout = {
@@ -62,6 +71,7 @@ function initial_load()
     ang_accel.data = [
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Sqrt' },
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'SCurve' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Optimal' },
     ]
 
     ang_accel.layout = {
@@ -79,6 +89,7 @@ function initial_load()
     ang_jerk.data = [
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Sqrt' },
         { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'SCurve' },
+        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Optimal' },
     ]
 
     ang_jerk.layout = {
@@ -495,8 +506,104 @@ function updateSCurve(config, desired, state, dt)
 
 }
 
-function run_attitude()
+// Ruckig is a time-optimal jerk limited trajectory planner
+// see: https://github.com/pantor/ruckig
+function update_ruckig(config, desired, state, dt)
 {
+    function toWASM(vec) {
+        const q = new RuckigModule.Vector()
+        const len = vec.length
+        q.resize(len, 0.0)
+        for (let i = 0; i < len; i++) {
+            q.set(i, vec[i])
+        }
+        return q
+    }
+
+    // Single DoF
+    const input = new RuckigModule.InputParameter(1)
+
+    // Start
+    input.current_position = toWASM([state.pos[0]])
+    input.current_velocity = toWASM([state.vel[0]])
+    input.current_acceleration = toWASM([state.accel[0]])
+
+    // Extract config
+    let desired_ang_vel = 0
+    let jerkLimit = Infinity
+    if (config.mode.use_pos) {
+        if (config.mode.use_vel) {
+            desired_ang_vel = desired.vel
+        }
+        if (config.input_tc > 0) {
+            jerkLimit = config.accel_limit / config.input_tc
+        }
+        input.control_interface = RuckigModule.ControlInterface.Position
+
+    } else if (config.mode.use_vel) {
+        if (config.rate_tc > 0) {
+            jerkLimit = config.accel_limit / config.rate_tc
+        }
+        input.control_interface = RuckigModule.ControlInterface.Velocity
+        desired_ang_vel = desired.vel
+
+    }
+
+    // End
+    input.target_position = toWASM([desired.pos])
+    input.target_velocity = toWASM([desired_ang_vel])
+    input.target_acceleration = toWASM([0])
+
+    // Limits
+    let maxVel = Infinity
+    if (config.vel_limit > 0) {
+        maxVel = config.vel_limit
+    }
+    input.max_velocity = toWASM([maxVel])
+    input.max_acceleration = toWASM([config.accel_limit])
+    input.max_jerk = toWASM([jerkLimit])
+
+    const trajectory = new RuckigModule.Trajectory(1);
+
+    const ruckig = new RuckigModule.Ruckig(1);
+    const result = ruckig.calculate(input, trajectory);
+
+    if (result.value !== 0) {
+        if (result.value === -100) {
+            console.log('Invalid input parameters.')
+        } else if (result.value === -101) {
+            console.log('The trajectory duration exceeds its numerical limits.')
+        } else if (result.value === -110) {
+            console.log('ErrorExecutionTimeCalculation.')
+        } else {
+            console.log(`Unknown error (${result.value}).`)
+        }
+        return
+    }
+
+    const duration = trajectory.get_duration();
+
+    state.time = []
+    state.pos = []
+    state.vel = []
+    state.accel = []
+    state.jerk = []
+    for (const t of array_from_range(0, duration, dt)) {
+        const stateAtTime = trajectory.at_time(t);
+
+        state.time.push(t);
+        state.pos.push(stateAtTime.position.get(0));
+        state.vel.push(stateAtTime.velocity.get(0));
+        state.accel.push(stateAtTime.acceleration.get(0));
+        state.jerk.push(stateAtTime.jerk.get(0));
+    }
+
+}
+
+async function run_attitude()
+{
+    await import_done
+
     const param_names = update_axis()
     const mode = update_mode(param_names)
 
@@ -529,6 +636,12 @@ function run_attitude()
         accel: [0]
     }
     const SCurveState = {
+        pos: [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))],
+        vel: [radians(parseFloat(document.getElementById("initial_vel").value))],
+        accel: [0]
+    }
+    const ruckigState = {
+        time: [0],
         pos: [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))],
         vel: [radians(parseFloat(document.getElementById("initial_vel").value))],
         accel: [0]
@@ -575,11 +688,15 @@ function run_attitude()
         i++
     }
 
+    update_ruckig(config, desired, ruckigState, dt)
+
     // Update plots
     ang_pos.data[0].x = time
     ang_pos.data[0].y = array_scale(sqrtState.pos, 180.0 / Math.PI)
     ang_pos.data[1].x = time
     ang_pos.data[1].y = array_scale(SCurveState.pos, 180.0 / Math.PI)
+    ang_pos.data[2].x = ruckigState.time
+    ang_pos.data[2].y = array_scale(ruckigState.pos, 180.0 / Math.PI)
     ang_pos.layout.shapes[0].y0 = degrees(desired.pos)
     ang_pos.layout.shapes[0].y1 = degrees(desired.pos)
     ang_pos.layout.shapes[0].visible = mode.use_pos
@@ -589,6 +706,8 @@ function run_attitude()
     ang_vel.data[0].y = array_scale(sqrtState.vel, 180.0 / Math.PI)
     ang_vel.data[1].x = time
     ang_vel.data[1].y = array_scale(SCurveState.vel, 180.0 / Math.PI)
+    ang_vel.data[2].x = ruckigState.time
+    ang_vel.data[2].y = array_scale(ruckigState.vel, 180.0 / Math.PI)
     ang_vel.layout.shapes[0].y0 = degrees(desired.vel)
     ang_vel.layout.shapes[0].y1 = degrees(desired.vel)
     ang_vel.layout.shapes[0].visible = mode.use_vel
@@ -598,17 +717,22 @@ function run_attitude()
     ang_accel.data[0].y = array_scale(sqrtState.accel, 180.0 / Math.PI)
     ang_accel.data[1].x = time
     ang_accel.data[1].y = array_scale(SCurveState.accel, 180.0 / Math.PI)
+    ang_accel.data[2].x = ruckigState.time
+    ang_accel.data[2].y = array_scale(ruckigState.accel, 180.0 / Math.PI)
     Plotly.redraw("ang_accel")
 
     // Calculate jerk by differentiating accel
     const jerkTime = array_offset(time.slice(0, -1), dt * 0.5)
-    const sqrtJerk = array_scale(array_sub(sqrtState.accel.slice(1), sqrtState.accel.slice(0, -1)), (1 / dt) * (180.0 / Math.PI))
+    //const sqrtJerk = array_scale(array_sub(sqrtState.accel.slice(1), sqrtState.accel.slice(0, -1)), (1 / dt) * (180.0 / Math.PI))
     const SCurveJerk = array_scale(array_sub(SCurveState.accel.slice(1), SCurveState.accel.slice(0, -1)), (1 / dt) * (180.0 / Math.PI))
 
-    ang_jerk.data[0].x = jerkTime
-    ang_jerk.data[0].y = sqrtJerk
+    // Since sqrt controller is not jerk limited plotting it blows up the scale
+    //ang_jerk.data[0].x = jerkTime
+    //ang_jerk.data[0].y = sqrtJerk
     ang_jerk.data[1].x = jerkTime
     ang_jerk.data[1].y = SCurveJerk
+    ang_jerk.data[2].x = ruckigState.time
+    ang_jerk.data[2].y = array_scale(ruckigState.jerk, 180.0 / Math.PI)
     Plotly.redraw("ang_jerk")
 
 }
