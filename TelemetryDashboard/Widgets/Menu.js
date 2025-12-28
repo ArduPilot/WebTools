@@ -196,6 +196,11 @@ class WidgetMenu extends WidgetBase {
         let AP_div = document.createElement("div")
         AP_div.appendChild(document.importNode(document.getElementById('AP_link').content, true))
         this.grid.addWidget(AP_div)
+        
+        // WebTools link
+        let WT_div = document.createElement("div");
+        WT_div.appendChild(document.importNode(document.getElementById('WT_link').content, true))
+        this.grid.addWidget(WT_div)
 
         // Github repo link
         let GH_div = document.createElement("div")
@@ -350,7 +355,11 @@ class WidgetMenu extends WidgetBase {
 
         // Set number of columns and row height
         this.grid.column(columns)
-        this.grid.cellHeight(Math.floor((height * columns) / 4) + "px")
+        // this.grid.cellHeight(Math.floor((height * columns) / 4) + "px")
+        const num_widgets = this.grid.getGridItems().length
+        const max_y = Math.floor((num_widgets - 1) / columns)
+        const num_rows = max_y + 1
+        this.grid.cellHeight(height / num_rows)
 
         // Place each item
         const widgets = this.grid.getGridItems()
