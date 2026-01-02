@@ -488,6 +488,9 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     // Calculate transfer function for Rate PID
     var PID_filter = []
     var param_prefix = "PSC_ACCZ_";
+    if (vehicle_type == "ArduPlane_VTOL") {
+        param_prefix = "Q_P_ACCZ_";
+    }
     PID_filter.push(new PID(PID_rate,
         get_form(param_prefix + "P"),
         get_form(param_prefix + "I"),
@@ -949,7 +952,7 @@ function axis_changed() {
 }
 
 function update_PID_filters() {
-    if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical") {
+    if (vehicle_type != "ArduPlane_FW" && page_axis != "Lateral" && page_axis != "Longitudinal" && page_axis != "Vertical" && page_axis != "Vertical-Accel") {
         document.getElementById('RollPitchTC').style.display = 'none';
         document.getElementById('YawTC').style.display = 'none';
     }
@@ -980,8 +983,8 @@ function update_PID_filters() {
                 document.getElementById('FILT' + NEF_num).style.display = 'block';
             }
         }
-    } else if (page_axis == "Pitch") {
-        if (vehicle_type != "ArduPlane_FW") {
+    } else if (page_axis == "Pitch" || page_axis == "Vertical-Accel") {
+        if (vehicle_type != "ArduPlane_FW" && page_axis != "Vertical-Accel") {
             document.getElementById('RollPitchTC').style.display = 'block';
         }
         document.getElementById('PitchPIDS').style.display = 'block';
@@ -1000,15 +1003,17 @@ function update_PID_filters() {
             document.getElementById('YawTC').style.display = 'block';
         }
         document.getElementById('YawPIDS').style.display = 'block';
-        document.getElementById('YawNOTCH').style.display = 'block';
-        console.log(get_rate_param_prefix() + 'NTF')
-        const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
-        if (NTF_num > 0) {
-            document.getElementById('FILT' + NTF_num).style.display = 'block';
-        }
-        const NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value;
-        if (NEF_num > 0 && NEF_num != NTF_num) {
-            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        if (page_axis != "Vertical") {
+            document.getElementById('YawNOTCH').style.display = 'block';
+            console.log(get_rate_param_prefix() + 'NTF')
+            const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
+            if (NTF_num > 0) {
+                document.getElementById('FILT' + NTF_num).style.display = 'block';
+            }
+            const NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value;
+            if (NEF_num > 0 && NEF_num != NTF_num) {
+                document.getElementById('FILT' + NEF_num).style.display = 'block';
+            }
         }
     }
 }
@@ -1045,7 +1050,7 @@ function calculate_freq_resp() {
     var sample_rate
     if (vehicle_type == "ArduPlane_FW") {
         [data_set, sample_rate] = load_fw_time_history_data(t_start, t_end, page_axis)
-    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical" || page_axis == "Vertical-Accel") {
         [data_set, sample_rate] = load_posctrl_time_history_data(t_start, t_end, page_axis)
     } else {
         [data_set, sample_rate] = load_vtol_time_history_data(t_start, t_end, page_axis)
@@ -1165,9 +1170,9 @@ function calculate_freq_resp() {
     var H_rate_bl_pred
     var H_sys_bl_pred
     console.log("page_axis: ", page_axis)
-    if (page_axis == "Lateral" || page_axis == "Longitudinal") {
+    if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
-    } else if (page_axis == "Vertical") {
+    } else if (page_axis == "Vertical-Accel") {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_vert_predicted_TF(H_acft_tf, sample_rate, window_size)
     } else {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_attctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
@@ -1338,26 +1343,6 @@ function load_vtol_time_history_data(t_start, t_end, axis) {
 
 function load_posctrl_time_history_data(t_start, t_end, axis) {
 
-    var timePSCN_arr
-    timePSCN_arr = log.get("PSCN", "TimeUS")
-    const ind1_n = nearestIndex(timePSCN_arr, t_start*1000000)
-    const ind2_n = nearestIndex(timePSCN_arr, t_end*1000000)
-
-
-    var timePSCE
-    var ind1_e
-    var ind2_e
-    timePSCE = log.get("PSCE", "TimeUS")
-    ind1_e = nearestIndex(timePSCE, t_start*1000000)
-    ind2_e = nearestIndex(timePSCE, t_end*1000000)
-
-    var timePSCD
-    var ind1_d
-    var ind2_d
-    timePSCD = log.get("PSCD", "TimeUS")
-    ind1_d = nearestIndex(timePSCD, t_start*1000000)
-    ind2_d = nearestIndex(timePSCD, t_end*1000000)
-
     var timeRate
     var ind1_r
     var ind2_r
@@ -1402,7 +1387,53 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     var AttData
     var GyroRawData
 
-    if (axis != "Vertical") {
+    if (axis == "Vertical-Accel") {
+        ActInputData = Array.from(log.get("RATE", "AOut"))
+        ActInputData = ActInputData.slice(ind1_r, ind2_r)
+        ActInputData = array_scale(ActInputData, 1000)
+        RateTgtData = Array.from(log.get("RATE", "ADes"))
+        RateTgtData = RateTgtData.slice(ind1_r, ind2_r)
+        RateData = Array.from(log.get("RATE", "A"))
+        RateData = RateData.slice(ind1_r, ind2_r)
+        AttTgtData = Array.from(log.get("RATE", "ADes"))
+        AttTgtData = AttTgtData.slice(ind1_r, ind2_r)
+        AttData = Array.from(log.get("RATE", "A"))
+        AttData = AttData.slice(ind1_r, ind2_r)
+        GyroRawData = Array.from(log.get("RATE", "A"))
+        GyroRawData = GyroRawData.slice(ind1_r, ind2_r)
+    } else if (axis == "Vertical") {
+        var timePSCD
+        var ind1_d
+        var ind2_d
+        timePSCD = log.get("PSCD", "TimeUS")
+        ind1_d = nearestIndex(timePSCD, t_start*1000000)
+        ind2_d = nearestIndex(timePSCD, t_end*1000000)
+
+        ActInputData = Array.from(log.get("PSCD", "TAD"))
+        ActInputData = ActInputData.slice(ind1_d, ind2_d)
+        RateTgtData = Array.from(log.get("PSCD", "TVD"))
+        RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
+        RateData = Array.from(log.get("PSCD", "VD"))
+        RateData = RateData.slice(ind1_d, ind2_d)
+        AttTgtData = Array.from(log.get("PSCD", "TPD"))
+        AttTgtData = AttTgtData.slice(ind1_d, ind2_d)
+        AttData = Array.from(log.get("PSCD", "PD"))
+        AttData = AttData.slice(ind1_d, ind2_d)
+        GyroRawData = Array.from(log.get("PSCD", "VD"))
+        GyroRawData = GyroRawData.slice(ind1_d, ind2_d)
+    } else {
+        var timePSCN_arr
+        timePSCN_arr = log.get("PSCN", "TimeUS")
+        const ind1_n = nearestIndex(timePSCN_arr, t_start*1000000)
+        const ind2_n = nearestIndex(timePSCN_arr, t_end*1000000)
+
+        var timePSCE
+        var ind1_e
+        var ind2_e
+        timePSCE = log.get("PSCE", "TimeUS")
+        ind1_e = nearestIndex(timePSCE, t_start*1000000)
+        ind2_e = nearestIndex(timePSCE, t_end*1000000)
+
         // Rotate North/East to body frame for lateral and longitudinal axes
         let PSCN_TAN = Array.from(log.get("PSCN", "TAN"))
         PSCN_TAN = PSCN_TAN.slice(ind1_n, ind2_n)
@@ -1443,28 +1474,14 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
             AttData = array_add(array_scale(PSCN_PN, coshdg), array_scale(PSCE_PE, sinhdg))
             GyroRawData = array_add(array_scale(PSCN_VN, coshdg), array_scale(PSCE_VE, sinhdg))
         }
-    } else if (axis == "Vertical") {
-        ActInputData = Array.from(log.get("RATE", "AOut"))
-        ActInputData = ActInputData.slice(ind1_r, ind2_r)
-        ActInputData = array_scale(ActInputData, 1000)
-        RateTgtData = Array.from(log.get("PSCD", "TAD"))
-        RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
-        RateData = Array.from(log.get("PSCD", "VD"))
-        RateData = RateData.slice(ind1_d, ind2_d)
-        AttTgtData = Array.from(log.get("PSCD", "TPD"))
-        AttTgtData = AttTgtData.slice(ind1_d, ind2_d)
-        AttData = Array.from(log.get("PSCD", "PD"))
-        AttData = AttData.slice(ind1_d, ind2_d)
-        GyroRawData = Array.from(log.get("RATE", "A"))
-        GyroRawData = GyroRawData.slice(ind1_r, ind2_r)
     }
     var PilotInputData
-    if (axis != "Vertical") {
+    if (axis == "Vertical-Accel") {
+        PilotInputData = Array.from(log.get("RATE", "ADes"))
+        PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
+    } else {
         PilotInputData = Array.from(log.get("SIDD", "Targ"))
         PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
-    } else {
-        PilotInputData = Array.from(log.get("RATE", "PDes"))
-        PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
     }
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
@@ -1734,23 +1751,25 @@ function save_parameters() {
                 var value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
-            NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value
-            NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value
-            if (NEF_num > 0) {
-                if (name.startsWith("FILT" + NEF_num + "_")) {
+            if (page_axis != "Longitudinal" && page_axis != "Lateral" && page_axis != "Vertical" && page_axis != "Vertical-Accel") {
+                NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value
+                NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value
+                if (NEF_num > 0) {
+                    if (name.startsWith("FILT" + NEF_num + "_")) {
+                        var value = inputs[v].value;
+                        params += name + "," + param_to_string(value) + "\n";
+                    }
+                }
+                if (NTF_num > 0 && NEF_num != NTF_num) {
+                    if (name.startsWith("FILT" + NTF_num + "_")) {
+                        var value = inputs[v].value;
+                        params += name + "," + param_to_string(value) + "\n";
+                    }
+                }
+                if (name.startsWith("INS_")) {
                     var value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
-            }
-            if (NTF_num > 0 && NEF_num != NTF_num) {
-                if (name.startsWith("FILT" + NTF_num + "_")) {
-                    var value = inputs[v].value;
-                    params += name + "," + param_to_string(value) + "\n";
-                }
-            }
-            if (name.startsWith("INS_")) {
-                var value = inputs[v].value;
-                params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith("SCHED_")) {
                 var value = inputs[v].value;
@@ -1789,7 +1808,7 @@ async function load_parameters(file) {
 function update_all_hidden()
 {
     // skip if position controller tuning is being conducted
-    if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+    if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical" || page_axis == "Vertical-Accel") {
         return;
     }
     var enable_params = ["INS_HNTCH_ENABLE", "INS_HNTC2_ENABLE"];
@@ -2052,7 +2071,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Att_Ctrlr_nff" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 18) || sid_axis > 21) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 13) || (sid_axis > 13 && sid_axis < 18) || (sid_axis > 21  && sid_axis < 24)) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
@@ -2236,8 +2255,10 @@ function set_sid_axis(axis) {
         page_axis = "Pitch"
     } else if (axis == 3 || axis == 6 || axis == 9 || axis == 12) {
         page_axis = "Yaw"
-    } else if (axis == 13 || axis == 24) {
+    } else if (axis == 24) {
         page_axis = "Vertical"
+    } else if (axis == 13) {
+        page_axis = "Vertical-Accel"
     } else if (axis == 14 || axis == 16 || axis == 18) {
         page_axis = "Lateral"
     } else if (axis == 15 || axis == 17 || axis == 19) {
@@ -2284,6 +2305,12 @@ function get_rate_param_prefix() {
         }
     } else if (page_axis == "Vertical") {
         if (vehicle_type == "ArduPlane_VTOL") {
+            prefix = "Q_P_VELZ_"
+        } else {
+            prefix = "PSC_VELZ_"
+        }
+    } else if (page_axis == "Vertical-Accel") {
+        if (vehicle_type == "ArduPlane_VTOL") {
             prefix = "Q_P_ACCZ_"
         } else {
             prefix = "PSC_ACCZ_"
@@ -2304,7 +2331,7 @@ function get_angle_param_prefix() {
         } else {
             prefix = "PSC_POSXY_";
         }
-    } else if (page_axis == "Vertical") {
+    } else if (page_axis == "Vertical" || page_axis == "Vertical-Accel") {
         if (vehicle_type == "ArduPlane_VTOL") {
             prefix = "Q_P_POSZ_"
         } else {
@@ -2320,7 +2347,7 @@ function get_page_suffix() {
     var suffix = ""
     if (vehicle_type == "ArduPlane_FW") {
         suffix = "_FW";
-    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical" || page_axis == "Vertical-Accel") {
         suffix = "_POS";
     }
     return suffix
