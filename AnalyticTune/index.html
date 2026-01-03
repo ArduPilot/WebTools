@@ -842,6 +842,31 @@ const pageSections_freq_resp_plot_options = [
                                                         { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr_POS', name: 'Control_Loop', value: 'Rate_Ctrlr'},
                                                         { tag: 'br' },
                                                         { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_POS', name: 'Control_Loop', value: 'Att_Ctrlr' }
+                                                    ]},
+                                                    { divId: 'Options_POS_Acc', style: 'display:none', elements: [
+                                                        { tag: 'input', type: 'radio', id: 'type_Bare_AC_POS_Acc', name: 'Control_Loop', value: 'Bare_AC' },
+                                                        { tag: 'label', for: 'type_Bare_AC_POS_Acc', text: 'Attitude Controller Response' },
+                                                        { tag: 'input', type: 'checkbox', id: 'UseAttitude_POS_Acc', name: 'UseAttitude' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr_POS_Acc', name: 'Control_Loop', value: 'Rate_Ctrlr'},
+                                                        { tag: 'label', for: 'type_Rate_Ctrlr_POS_Acc', text: 'Acceleration Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_nff_POS_Acc', name: 'Control_Loop', value: 'Att_Ctrlr_nff'},
+                                                        { tag: 'label', for: 'type_Att_Ctrlr_nff_POS_Acc', text: 'Position Controller' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_DRB_POS_Acc', name: 'Control_Loop', value: 'Att_DRB' },
+                                                        { tag: 'label', for: 'type_Att_DRB_POS_Acc', text: 'Position Disturbance Rejection' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Sys_Stab_POS_Acc', name: 'Control_Loop', value: 'Sys_Stab' },
+                                                        { tag: 'label', for: 'type_Sys_Stab_POS_Acc', text: 'Entire System Stability' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Pilot_Ctrlr_POS_Acc', name: 'Control_Loop', value: 'Pilot_Ctrlr' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Rate_Stab_POS_Acc', name: 'Control_Loop', value: 'Rate_Stab' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Stab_POS_Acc', name: 'Control_Loop', value: 'Att_Stab' },
+                                                        { tag: 'br' },
+                                                        { tag: 'input', type: 'radio', id: 'type_Att_Ctrlr_POS_Acc', name: 'Control_Loop', value: 'Att_Ctrlr' }
                                                     ]}
                                                 ]
                                             }
@@ -1143,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buildDynamicContent(pageSections_freq_resp_plots);
             buildDynamicContent(pageSections_freq_resp_plot_options_start);
             buildDynamicContent(pageSections_freq_resp_plot_options);
-            if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical' || get_page_axis() === 'Vertical-Accel') {
+            if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
                 document.getElementById('Options_POS').style.display = 'block';
                 document.getElementById('type_Bare_AC_POS').checked = true;
                 document.getElementById('UseAttitude_POS').style.display = 'block';
@@ -1155,6 +1180,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('type_Pilot_Ctrlr_POS').style.display = 'none';
                 document.getElementById('type_Rate_Stab_POS').style.display = 'none';
                 document.getElementById('type_Att_Stab_POS').style.display = 'none';
+            } else if (get_page_axis() === 'Vertical-Accel') {
+                document.getElementById('Options_POS_Acc').style.display = 'block';
+                document.getElementById('type_Bare_AC_POS_Acc').checked = true;
+                document.getElementById('UseAttitude_POS_Acc').style.display = 'block';
+                document.getElementById('Options_POS_Acc').style.display = 'block';
+                document.getElementById('type_Rate_Ctrlr_POS_Acc').checked = true;
+                document.getElementById('UseAttitude_POS_Acc').style.display = 'none';
+                document.getElementById('type_Att_Ctrlr_POS_Acc').style.display = 'none';
+                document.getElementById('type_Pilot_Ctrlr_POS_Acc').style.display = 'none';
+                document.getElementById('type_Rate_Stab_POS_Acc').style.display = 'none';
+                document.getElementById('type_Att_Stab_POS_Acc').style.display = 'none';
             } else if (get_vehicle_type() === 'ArduPlane_FW') {
                 document.getElementById('Options_FW').style.display = 'block';
                 document.getElementById('type_Rate_Ctrlr_FW').checked = true;

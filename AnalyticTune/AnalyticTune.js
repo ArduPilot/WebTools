@@ -376,7 +376,17 @@ function calculate_posctrl_predicted_TF(H_acft, sample_rate, window_size) {
 
     // Calculate transfer function for Rate PID
     var PID_filter = []
-    var param_prefix = get_rate_param_prefix();
+    var param_prefix
+    // special case for vertical accel controller to predict position controller transfer function
+    if (page_axis == "Vertical-Accel") {
+        if (vehicle_type == "ArduPlane_VTOL") {
+            param_prefix = "Q_P_VELZ_"
+        } else {
+            param_prefix = "PSC_VELZ_"
+        }
+    } else {
+        param_prefix = get_rate_param_prefix();
+    }
     PID_filter.push(new PID(PID_rate,
         get_form(param_prefix + "P"),
         get_form(param_prefix + "I"),
@@ -556,17 +566,22 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     }
     const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
-//    const Ret_rate=FLTT_FFPID_Acft
-    const len = H_acft[0].length-1
+    // calculate transfer function to convert acceleration tf to position controller input tf
+    var tf_conv_filter = []
+    tf_conv_filter.push(new Ang_P(PID_rate, 1.0))
+    const tf_conv_H = evaluate_transfer_functions([tf_conv_filter], freq_max, freq_step, use_dB, unwrap_phase)
+    const posctrl_H = complex_mul(Ret_rate, tf_conv_H.H_total)
 
-    const Ret_att_ff = [new Array(len).fill(1), new Array(len).fill(0)]
-    // no pilot feel in position controller
-    const Ret_pilot = [new Array(len).fill(1), new Array(len).fill(0)]
-    const Ret_att_nff = Ret_rate
-    const Ret_DRB = [new Array(len).fill(1), new Array(len).fill(0)]
-    const Ret_att_bl = [new Array(len).fill(1), new Array(len).fill(0)]
-    const Ret_rate_bl = [new Array(len).fill(1), new Array(len).fill(0)]
-    const Ret_sys_bl = [new Array(len).fill(1), new Array(len).fill(0)]
+    var dummy_rate
+    var Ret_att_ff
+    var Ret_pilot
+    var Ret_att_nff
+    var Ret_DRB
+    var Ret_att_bl
+    var Ret_rate_bl
+    var Ret_sys_bl
+
+    [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
 
 
     return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
@@ -983,8 +998,8 @@ function update_PID_filters() {
                 document.getElementById('FILT' + NEF_num).style.display = 'block';
             }
         }
-    } else if (page_axis == "Pitch" || page_axis == "Vertical-Accel") {
-        if (vehicle_type != "ArduPlane_FW" && page_axis != "Vertical-Accel") {
+    } else if (page_axis == "Pitch") {
+        if (vehicle_type != "ArduPlane_FW") {
             document.getElementById('RollPitchTC').style.display = 'block';
         }
         document.getElementById('PitchPIDS').style.display = 'block';
@@ -1015,7 +1030,19 @@ function update_PID_filters() {
                 document.getElementById('FILT' + NEF_num).style.display = 'block';
             }
         }
-    }
+    } else if (page_axis == "Vertical-Accel") {
+        document.getElementById('PitchPIDS').style.display = 'block';
+        document.getElementById('YawPIDS').style.display = 'block';
+        document.getElementById('PitchNOTCH').style.display = 'block';
+        const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
+        if (NTF_num > 0) {
+            document.getElementById('FILT' + NTF_num).style.display = 'block';
+        }
+        const NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value;
+        if (NEF_num > 0 && NEF_num != NTF_num) {
+            document.getElementById('FILT' + NEF_num).style.display = 'block';
+        }
+}
 }
 
 // Determine the frequency response from log data
@@ -2056,7 +2083,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Rate_Ctrlr" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.ratectrl_H
         calc_fr_coh = calc_freq_resp.ratectrl_coh
-        if (sid_axis > 9 && sid_axis < 14) {
+        if (sid_axis > 9 && sid_axis < 13) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.ratectrl_H
@@ -2071,7 +2098,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Att_Ctrlr_nff" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
-        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 13) || (sid_axis > 13 && sid_axis < 18) || (sid_axis > 21  && sid_axis < 24)) {
+        if (sid_axis < 4 || (sid_axis > 6 && sid_axis < 18) || (sid_axis > 21 && sid_axis < 24)) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
@@ -2347,8 +2374,10 @@ function get_page_suffix() {
     var suffix = ""
     if (vehicle_type == "ArduPlane_FW") {
         suffix = "_FW";
-    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical" || page_axis == "Vertical-Accel") {
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
         suffix = "_POS";
+    } else if (page_axis == "Vertical-Accel") {
+        suffix = "_POS_Acc";
     }
     return suffix
 }
