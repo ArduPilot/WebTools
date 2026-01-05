@@ -584,7 +584,7 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
 
 
-    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
+    return [posctrl_H, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
 
 
 }
@@ -1013,8 +1013,8 @@ function update_PID_filters() {
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
-    } else if (page_axis == "Yaw" || page_axis == "Vertical") {
-        if (vehicle_type != "ArduPlane_FW" && page_axis != "Vertical") {
+    } else if (page_axis == "Yaw") {
+        if (vehicle_type != "ArduPlane_FW") {
             document.getElementById('YawTC').style.display = 'block';
         }
         document.getElementById('YawPIDS').style.display = 'block';
@@ -1030,15 +1030,19 @@ function update_PID_filters() {
                 document.getElementById('FILT' + NEF_num).style.display = 'block';
             }
         }
-    } else if (page_axis == "Vertical-Accel") {
+    } else if (page_axis == "Vertical-Accel" || page_axis == "Vertical") {
         document.getElementById('PitchPIDS').style.display = 'block';
         document.getElementById('YawPIDS').style.display = 'block';
         document.getElementById('PitchNOTCH').style.display = 'block';
-        const NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value;
+        var param_prefix = "PSC_ACCZ_";
+        if (vehicle_type == "ArduPlane_VTOL") {
+            param_prefix = "Q_P_ACCZ_";
+        }
+        const NTF_num = document.getElementById(param_prefix + 'NTF').value;
         if (NTF_num > 0) {
             document.getElementById('FILT' + NTF_num).style.display = 'block';
         }
-        const NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value;
+        const NEF_num = document.getElementById(param_prefix + 'NEF').value;
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
@@ -1197,9 +1201,9 @@ function calculate_freq_resp() {
     var H_rate_bl_pred
     var H_sys_bl_pred
     console.log("page_axis: ", page_axis)
-    if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+    if (page_axis == "Lateral" || page_axis == "Longitudinal") {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
-    } else if (page_axis == "Vertical-Accel") {
+    } else if (page_axis == "Vertical-Accel" || page_axis == "Vertical") {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_vert_predicted_TF(H_acft_tf, sample_rate, window_size)
     } else {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_attctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
@@ -1230,7 +1234,7 @@ function calculate_freq_resp() {
         ratebl_H: H_rate_bl_pred,
         sysbl_H: H_sys_bl_pred
     }
-
+    console.log(pred_freq_resp)
     redraw_freq_resp()
 
 
@@ -1436,9 +1440,10 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
         ind1_d = nearestIndex(timePSCD, t_start*1000000)
         ind2_d = nearestIndex(timePSCD, t_end*1000000)
 
-        ActInputData = Array.from(log.get("PSCD", "TAD"))
-        ActInputData = ActInputData.slice(ind1_d, ind2_d)
-        RateTgtData = Array.from(log.get("PSCD", "TVD"))
+        ActInputData = Array.from(log.get("RATE", "AOut"))
+        ActInputData = ActInputData.slice(ind1_r, ind2_r)
+        ActInputData = array_scale(ActInputData, 1000)
+        RateTgtData = Array.from(log.get("PSCD", "TAD"))
         RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
         RateData = Array.from(log.get("PSCD", "VD"))
         RateData = RateData.slice(ind1_d, ind2_d)
@@ -1446,8 +1451,8 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
         AttTgtData = AttTgtData.slice(ind1_d, ind2_d)
         AttData = Array.from(log.get("PSCD", "PD"))
         AttData = AttData.slice(ind1_d, ind2_d)
-        GyroRawData = Array.from(log.get("PSCD", "VD"))
-        GyroRawData = GyroRawData.slice(ind1_d, ind2_d)
+        GyroRawData = Array.from(log.get("RATE", "A"))
+        GyroRawData = GyroRawData.slice(ind1_r, ind2_r)
     } else {
         var timePSCN_arr
         timePSCN_arr = log.get("PSCN", "TimeUS")
@@ -1506,6 +1511,10 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     if (axis == "Vertical-Accel") {
         PilotInputData = Array.from(log.get("RATE", "ADes"))
         PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
+    } else if (axis == "Vertical") {
+        PilotInputData = Array.from(log.get("RATE", "AOut"))
+        PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
+        PilotInputData = array_scale(ActInputData, 1000)
     } else {
         PilotInputData = Array.from(log.get("SIDD", "Targ"))
         PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
@@ -1944,7 +1953,7 @@ function redraw_freq_resp() {
     var pred_data_coh
 
     [calc_data, calc_data_coh, pred_data, pred_data_coh, show_set_calc, show_set_pred] = get_plotted_frequency_response()
-
+    console.log(pred_data, show_set_pred)
     // Apply selected scale, set to y axis
     fft_plot.data[0].y = amplitude_scale.scale(complex_abs(calc_data))
 
@@ -2083,7 +2092,7 @@ function get_plotted_frequency_response() {
     } else if (document.getElementById("type_Rate_Ctrlr" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.ratectrl_H
         calc_fr_coh = calc_freq_resp.ratectrl_coh
-        if (sid_axis > 9 && sid_axis < 13) {
+        if (sid_axis > 9 && sid_axis < 14) {
             show_calc = false
         }
         pred_fr = pred_freq_resp.ratectrl_H

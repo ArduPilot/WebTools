@@ -1149,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (get_vehicle_type() === 'ArduPlane_VTOL') {
                 if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical' || get_page_axis() === 'Vertical-Accel') {
                     buildDynamicContent(pageSections_param_POS_QP);
-                    if (get_page_axis() === 'Vertical-Accel') {
+                    if (get_page_axis() === 'Vertical-Accel' || get_page_axis() === 'Vertical') {
                         buildDynamicContent(pageSections_notch_param_POS_QP);
                     }
                 } else {
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical' || get_page_axis() === 'Vertical-Accel') {
                 buildDynamicContent(pageSections_param_POS);
-                if (get_page_axis() === 'Vertical-Accel') {
+                if (get_page_axis() === 'Vertical-Accel' || get_page_axis() === 'Vertical') {
                     buildDynamicContent(pageSections_notch_param_POS);
                 }
             } else {
@@ -1168,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buildDynamicContent(pageSections_freq_resp_plots);
             buildDynamicContent(pageSections_freq_resp_plot_options_start);
             buildDynamicContent(pageSections_freq_resp_plot_options);
-            if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal' || get_page_axis() === 'Vertical') {
+            if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal') {
                 document.getElementById('Options_POS').style.display = 'block';
                 document.getElementById('type_Bare_AC_POS').checked = true;
                 document.getElementById('UseAttitude_POS').style.display = 'block';
@@ -1180,7 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('type_Pilot_Ctrlr_POS').style.display = 'none';
                 document.getElementById('type_Rate_Stab_POS').style.display = 'none';
                 document.getElementById('type_Att_Stab_POS').style.display = 'none';
-            } else if (get_page_axis() === 'Vertical-Accel') {
+            } else if (get_page_axis() === 'Vertical-Accel' || get_page_axis() === 'Vertical') {
                 document.getElementById('Options_POS_Acc').style.display = 'block';
                 document.getElementById('type_Bare_AC_POS_Acc').checked = true;
                 document.getElementById('UseAttitude_POS_Acc').style.display = 'block';
