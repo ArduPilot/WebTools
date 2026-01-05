@@ -112,20 +112,43 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Flight Data</h2>
+    <h2 style="text-align:center">
+        Flight Data
+        <img id="PID_TT_FlightData" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content='Zoom into a section of the flight to change the Analysis time then click "Calculate".'
+            data-tippy-maxWidth="750px" />
+    </h2>
+
 </td></tr></table>
 
 <div id="FlightData" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Time domain</h2>
+    <h2 style="text-align:center">
+        Time domain
+        <img id="TT_PID_TimeDomain" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Shows PID inputs and outputs in the time domain.
+    Useful for inspecting tracking error, overshoot, and oscillations.
+    " />
+    </h2>
+
 </td></tr></table>
 
 <div id="TimeInputs" style="width:1200px;height:450px"></div>
 <div id="TimeOutputs" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Frequency domain</h2>
+    <h2 style="text-align:center">
+        Frequency domain
+        <img id="TT_PID_FrequencyDomain" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Displays the frequency response of PID components.
+    Helps identify resonances, noise amplification, and D-term behavior.
+    " />
+    </h2>
+
+
 </td></tr></table>
 
 <table>
@@ -214,13 +237,31 @@
 </table>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">Step Response</h2>
+    <h2 style="text-align:center">
+        Step Response
+        <img id="TT_PID_StepResponse" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Simulated PID response to a step input.
+    Used to evaluate rise time, overshoot, damping, and stability.
+    " />
+    </h2>
+
+
 </td></tr></table>
 
 <div id="step_plot" style="width:1200px;height:450px"></div>
 
 <table><tr><td style="width:1200px">
-    <h2 style="text-align:center">PID Spectrogram</h2>
+    <h2 style="text-align:center">
+        PID Spectrogram
+        <img id="TT_PID_Spectrogram" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Time-frequency view of PID output.
+    Shows how control effort and noise vary throughout the flight.
+    " />
+    </h2>
+
+
 </td></tr></table>
 
 <div id="Spectrogram" style="width:1200px;height:450px"></div>
@@ -274,6 +315,14 @@
     window.addEventListener('unhandledrejection', function (e) {
         throw new Error(e.reason.stack)
     })
+
+    tippy('#PID_TT_FlightData')
+    tippy('#TT_PID_FlightData');
+    tippy('#TT_PID_TimeDomain');
+    tippy('#TT_PID_FrequencyDomain');
+    tippy('#TT_PID_StepResponse');
+    tippy('#TT_PID_Spectrogram');
+
 
     setup_plots()
     reset()
