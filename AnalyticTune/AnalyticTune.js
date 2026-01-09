@@ -1127,6 +1127,9 @@ function calculate_freq_resp() {
     var coh_rate
     if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
+    } else if (page_axis == "Vertical") {
+        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
+        console.log("Using Rate for Vertical")
     } else {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
     }
@@ -2048,6 +2051,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.pilotctrl_H
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("pilot ctrlr selected")
     } else if (document.getElementById("type_Sys_Stab" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
         calc_fr_coh = calc_freq_resp.sysbl_coh
@@ -2057,6 +2061,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.sysbl_H  // attitude stability
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("sys stab selected")
     } else if (document.getElementById("type_Att_Stab" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
         calc_fr_coh = calc_freq_resp.sysbl_coh
@@ -2064,6 +2069,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.attbl_H  // attitude stability
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("att stab selected")
     } else if (document.getElementById("type_Rate_Stab" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.sysbl_H  // entire control system stability
         calc_fr_coh = calc_freq_resp.sysbl_coh
@@ -2071,6 +2077,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.ratebl_H  // attitude stability
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("rate stab selected")
     } else if (document.getElementById("type_Att_DRB" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.DRB_H  // calculated disturbance rejection
         calc_fr_coh = calc_freq_resp.DRB_coh  // calculated disturbance rejection coherence
@@ -2080,6 +2087,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.DRB_H  // predicted disturbance rejection
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("att DRB selected")
     } else if (document.getElementById("type_Att_Ctrlr" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
@@ -2089,6 +2097,7 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.attctrl_ff_H  // attitude controller with feedforward
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("att ctrlr selected")
     } else if (document.getElementById("type_Rate_Ctrlr" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.ratectrl_H
         calc_fr_coh = calc_freq_resp.ratectrl_coh
@@ -2098,12 +2107,14 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.ratectrl_H
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("rate ctrlr selected")
     } else if (document.getElementById("type_Bare_AC" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.bareAC_H
         calc_fr_coh = calc_freq_resp.bareAC_coh
         show_calc = true
         pred_fr = pred_freq_resp.ratectrl_H
         show_pred = false
+        console.log("bare AC selected")
     } else if (document.getElementById("type_Att_Ctrlr_nff" + get_page_suffix()).checked) {
         calc_fr = calc_freq_resp.attctrl_H
         calc_fr_coh = calc_freq_resp.attctrl_coh
@@ -2113,12 +2124,14 @@ function get_plotted_frequency_response() {
         pred_fr = pred_freq_resp.attctrl_nff_H  // attitude controller without feedforward
         pred_fr_coh = calc_freq_resp.bareAC_coh
         show_pred = true
+        console.log("att ctrlr nff selected")
     } else {
         calc_fr = calc_freq_resp.bareAC_H
         calc_fr_coh = calc_freq_resp.bareAC_coh
         show_calc = true
         pred_fr = pred_freq_resp.ratectrl_H
         show_pred = false
+        console.log("default selected")
     }
     return [calc_fr, calc_fr_coh, pred_fr, pred_fr_coh, show_calc, show_pred]
 
@@ -2383,9 +2396,9 @@ function get_page_suffix() {
     var suffix = ""
     if (vehicle_type == "ArduPlane_FW") {
         suffix = "_FW";
-    } else if (page_axis == "Lateral" || page_axis == "Longitudinal" || page_axis == "Vertical") {
+    } else if (page_axis == "Lateral" || page_axis == "Longitudinal") {
         suffix = "_POS";
-    } else if (page_axis == "Vertical-Accel") {
+    } else if (page_axis == "Vertical-Accel" || page_axis == "Vertical") {
         suffix = "_POS_Acc";
     }
     return suffix

@@ -1170,9 +1170,6 @@ document.addEventListener('DOMContentLoaded', () => {
             buildDynamicContent(pageSections_freq_resp_plot_options);
             if (get_page_axis() === 'Lateral' || get_page_axis() === 'Longitudinal') {
                 document.getElementById('Options_POS').style.display = 'block';
-                document.getElementById('type_Bare_AC_POS').checked = true;
-                document.getElementById('UseAttitude_POS').style.display = 'block';
-                document.getElementById('Options_POS').style.display = 'block';
                 document.getElementById('type_Att_Ctrlr_nff_POS').checked = true;
                 document.getElementById('UseAttitude_POS').style.display = 'none';
                 document.getElementById('type_Att_Ctrlr_POS').style.display = 'none';
@@ -1181,9 +1178,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('type_Rate_Stab_POS').style.display = 'none';
                 document.getElementById('type_Att_Stab_POS').style.display = 'none';
             } else if (get_page_axis() === 'Vertical-Accel' || get_page_axis() === 'Vertical') {
-                document.getElementById('Options_POS_Acc').style.display = 'block';
-                document.getElementById('type_Bare_AC_POS_Acc').checked = true;
-                document.getElementById('UseAttitude_POS_Acc').style.display = 'block';
                 document.getElementById('Options_POS_Acc').style.display = 'block';
                 document.getElementById('type_Rate_Ctrlr_POS_Acc').checked = true;
                 document.getElementById('UseAttitude_POS_Acc').style.display = 'none';
