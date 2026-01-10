@@ -584,7 +584,7 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
 
 
-    return [posctrl_H, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
+    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
 
 
 }
@@ -1127,9 +1127,9 @@ function calculate_freq_resp() {
     var coh_rate
     if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
-    } else if (page_axis == "Vertical") {
-        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
-        console.log("Using Rate for Vertical")
+//    } else if (page_axis == "Vertical") {
+//        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
+//        console.log("Using Rate for Vertical")
     } else {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
     }
@@ -1446,8 +1446,8 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
         ActInputData = Array.from(log.get("RATE", "AOut"))
         ActInputData = ActInputData.slice(ind1_r, ind2_r)
         ActInputData = array_scale(ActInputData, 1000)
-        RateTgtData = Array.from(log.get("PSCD", "TAD"))
-        RateTgtData = RateTgtData.slice(ind1_d, ind2_d)
+        RateTgtData = Array.from(log.get("RATE", "ADes"))
+        RateTgtData = RateTgtData.slice(ind1_r, ind2_r)
         RateData = Array.from(log.get("PSCD", "VD"))
         RateData = RateData.slice(ind1_d, ind2_d)
         AttTgtData = Array.from(log.get("PSCD", "TPD"))
