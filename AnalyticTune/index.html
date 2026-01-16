@@ -845,8 +845,9 @@ const pageSections_freq_resp_plot_options = [
                                                     ]},
                                                     { divId: 'Options_POS_Acc', style: 'display:none', elements: [
                                                         { tag: 'input', type: 'radio', id: 'type_Bare_AC_POS_Acc', name: 'Control_Loop', value: 'Bare_AC' },
-                                                        { tag: 'label', for: 'type_Bare_AC_POS_Acc', text: 'Attitude Controller Response' },
+                                                        { tag: 'label', for: 'type_Bare_AC_POS_Acc', text: 'Accel Ctrl Response' },
                                                         { tag: 'input', type: 'checkbox', id: 'UseAttitude_POS_Acc', name: 'UseAttitude' },
+                                                        { tag: 'label', for: 'UseAttitude_POS_Acc', text: 'Position ctrl only' },
                                                         { tag: 'br' },
                                                         { tag: 'input', type: 'radio', id: 'type_Rate_Ctrlr_POS_Acc', name: 'Control_Loop', value: 'Rate_Ctrlr'},
                                                         { tag: 'label', for: 'type_Rate_Ctrlr_POS_Acc', text: 'Acceleration Controller' },
@@ -1180,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (get_page_axis() === 'Vertical-Accel' || get_page_axis() === 'Vertical') {
                 document.getElementById('Options_POS_Acc').style.display = 'block';
                 document.getElementById('type_Rate_Ctrlr_POS_Acc').checked = true;
-                document.getElementById('UseAttitude_POS_Acc').style.display = 'none';
+                document.getElementById('UseAttitude_POS_Acc').style.display = 'block';
                 document.getElementById('type_Att_Ctrlr_POS_Acc').style.display = 'none';
                 document.getElementById('type_Pilot_Ctrlr_POS_Acc').style.display = 'none';
                 document.getElementById('type_Rate_Stab_POS_Acc').style.display = 'none';

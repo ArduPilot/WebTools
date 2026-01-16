@@ -1183,7 +1183,7 @@ function calculate_freq_resp() {
         freq_tf[k-1] = data_set.FFT.bins[k]
     }
 
-    if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
+    if (document.getElementById('UseAttitude' + get_page_suffix()).checked && page_axis != "Vertical") {
         var loop_rate = get_form("SCHED_LOOP_RATE")
         // determine transfer function for s
         var der_filter = []
