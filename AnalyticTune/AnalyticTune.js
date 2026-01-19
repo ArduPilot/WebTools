@@ -555,15 +555,25 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     // calculation of transfer function for the rate controller (includes serveral intermediate steps)
     var H_PID_Acft_plus_one = [new Array(PID_H_TOT[0].length).fill(0), new Array(PID_H_TOT[0].length).fill(0)]
 
-    const PID_Acft = complex_mul(H_acft, PID_H_TOT)
+    // calculate transfer function for throttle LPF
+    var throttle_filt_freq = 2.0 // default 2 Hz
+    var Th_filter = []
+    Th_filter.push(new LPF_1P(PID_rate, throttle_filt_freq))
+    const FLTTH_H = evaluate_transfer_functions([Th_filter], freq_max, freq_step, use_dB, unwrap_phase)
 
-    const FFPID_Acft = complex_mul(H_acft, FFPID_H)
+    // apply throttle LPF to aircraft transfer function
+    const acft_fltth = complex_mul(H_acft, FLTTH_H.H_total)
+
+    const PID_Acft = complex_mul(acft_fltth, PID_H_TOT)
+
+    const FFPID_Acft = complex_mul(acft_fltth, FFPID_H)
     const FLTT_FFPID_Acft = complex_mul(FFPID_Acft, TGT_FILT_H)
 
     for (let k=0;k<H_acft[0].length+1;k++) {
         H_PID_Acft_plus_one[0][k] = PID_Acft[0][k] + 1
         H_PID_Acft_plus_one[1][k] = PID_Acft[1][k]
     }
+
     const Ret_rate = complex_div(FLTT_FFPID_Acft, H_PID_Acft_plus_one)
 
     // calculate transfer function to convert acceleration tf to position controller input tf
@@ -572,7 +582,7 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     const tf_conv_H = evaluate_transfer_functions([tf_conv_filter], freq_max, freq_step, use_dB, unwrap_phase)
     const posctrl_H = complex_mul(Ret_rate, tf_conv_H.H_total)
 
-    var dummy_rate
+    // set up empty arrays for return values for the position controller whic are calculated in next step
     var Ret_att_ff = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var Ret_att_nff = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var Ret_DRB = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
@@ -580,11 +590,7 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     var Ret_rate_bl = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
     var Ret_sys_bl = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
 
-//    [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
-
-
     return [Ret_rate, Ret_att_ff, posctrl_H, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
-
 
 }
 
