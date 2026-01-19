@@ -573,18 +573,17 @@ function calculate_posctrl_vert_predicted_TF(H_acft, sample_rate, window_size) {
     const posctrl_H = complex_mul(Ret_rate, tf_conv_H.H_total)
 
     var dummy_rate
-    var Ret_att_ff
-    var Ret_pilot
-    var Ret_att_nff
-    var Ret_DRB
-    var Ret_att_bl
-    var Ret_rate_bl
-    var Ret_sys_bl
+    var Ret_att_ff = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var Ret_att_nff = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var Ret_DRB = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var Ret_att_bl = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var Ret_rate_bl = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
+    var Ret_sys_bl = [new Array(H_acft[0].length).fill(0), new Array(H_acft[0].length).fill(0)]
 
-    [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
+//    [dummy_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl] = calculate_posctrl_predicted_TF(posctrl_H, sample_rate, window_size)
 
 
-    return [Ret_rate, Ret_att_ff, Ret_pilot, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
+    return [Ret_rate, Ret_att_ff, posctrl_H, Ret_DRB, Ret_att_nff, Ret_att_bl, Ret_rate_bl, Ret_sys_bl]
 
 
 }
@@ -1109,7 +1108,7 @@ function calculate_freq_resp() {
 
     var H_pilot
     var coh_pilot
-    if (page_axis == "Yaw") {        
+    if (page_axis == "Yaw" || page_axis == "Vertical") {        
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
     } else {
         [H_pilot, coh_pilot] = calculate_freq_resp_from_FFT(data_set.FFT.PilotInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
@@ -1117,7 +1116,7 @@ function calculate_freq_resp() {
 
     var H_acft
     var coh_acft
-    if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
+    if (document.getElementById('UseAttitude' + get_page_suffix()).checked && page_axis != "Vertical") {
         [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
     } else {
         [H_acft, coh_acft] = calculate_freq_resp_from_FFT(data_set.FFT.ActInput, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
@@ -1125,11 +1124,8 @@ function calculate_freq_resp() {
 
     var H_rate
     var coh_rate
-    if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
+    if (document.getElementById('UseAttitude' + get_page_suffix()).checked && page_axis != "Vertical") {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Att, start_index, end_index, mean_length, window_size, sample_rate)
-//    } else if (page_axis == "Vertical") {
-//        [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.Rate, start_index, end_index, mean_length, window_size, sample_rate)
-//        console.log("Using Rate for Vertical")
     } else {
         [H_rate, coh_rate] = calculate_freq_resp_from_FFT(data_set.FFT.RateTgt, data_set.FFT.GyroRaw, start_index, end_index, mean_length, window_size, sample_rate)
     }
@@ -1208,6 +1204,13 @@ function calculate_freq_resp() {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
     } else if (page_axis == "Vertical-Accel" || page_axis == "Vertical") {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_vert_predicted_TF(H_acft_tf, sample_rate, window_size)
+        if (document.getElementById('UseAttitude' + get_page_suffix()).checked) {
+            var H_dummy
+            [H_dummy, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_pilot, sample_rate, window_size)
+        } else {
+            var H_dummy
+            [H_dummy, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_posctrl_predicted_TF(H_pilot_pred, sample_rate, window_size)
+        }
     } else {
         [H_rate_pred, H_att_ff_pred, H_pilot_pred, H_DRB_pred, H_att_nff_pred, H_att_bl_pred, H_rate_bl_pred, H_sys_bl_pred] = calculate_attctrl_predicted_TF(H_acft_tf, sample_rate, window_size)
     }
@@ -1515,9 +1518,9 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
         PilotInputData = Array.from(log.get("RATE", "ADes"))
         PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
     } else if (axis == "Vertical") {
-        PilotInputData = Array.from(log.get("RATE", "AOut"))
-        PilotInputData = PilotInputData.slice(ind1_r, ind2_r)
-        PilotInputData = array_scale(ActInputData, 1000)
+        PilotInputData = Array.from(log.get("PSCD", "TAD"))
+        PilotInputData = PilotInputData.slice(ind1_d, ind2_d)
+//        PilotInputData = array_scale(ActInputData, 1000)
     } else {
         PilotInputData = Array.from(log.get("SIDD", "Targ"))
         PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
