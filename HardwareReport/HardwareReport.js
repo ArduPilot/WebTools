@@ -3142,7 +3142,9 @@ function load() {
         reader.readAsArrayBuffer(file)
 
     } else {
-        load_param_file(file.text())
+        loading_call(async () => {
+            load_param_file(await file.text())
+        })
     }
 
 }
