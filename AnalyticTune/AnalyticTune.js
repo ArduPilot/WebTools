@@ -1526,7 +1526,6 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     } else if (axis == "Vertical") {
         PilotInputData = Array.from(log.get("PSCD", "TAD"))
         PilotInputData = PilotInputData.slice(ind1_d, ind2_d)
-//        PilotInputData = array_scale(ActInputData, 1000)
     } else {
         PilotInputData = Array.from(log.get("SIDD", "Targ"))
         PilotInputData = PilotInputData.slice(ind1_s, ind2_s)
@@ -1534,7 +1533,16 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
     DRBInputData = PilotInputData
-    DRBRespData = array_sub(AttData, DRBInputData)
+    // use integrated velocity to remove bias from position data
+    let intrate = new Array(RateData.length).fill(0);
+    for (let k=1;k<RateData.length;k++) {
+        intrate[k] = intrate[k-1] + RateData[k] / trecord;
+    }
+//    DRBRespData = array_add(DRBInputData, array_offset(AttData,-1*array_mean(AttData)))
+    DRBRespData = array_add(DRBInputData, intrate)
+
+    console.log("DRBinputData: ", DRBInputData)
+    console.log("intrate: ", intrate)
 
     SysBLInputData = ActInputData
     SysBLOutputData = array_sub(PilotInputData, ActInputData)
