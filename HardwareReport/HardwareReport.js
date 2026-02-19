@@ -1671,7 +1671,386 @@ function update_minimal_config() {
     }
 }
 
+// SERVOx_FUNCTION lookup table
+const servo_functions = {
+    0: "Disabled",
+    1: "RCPassThru",
+    2: "Flap",
+    3: "Flap_auto",
+    4: "Aileron",
+    6: "Mount1Yaw",
+    7: "Mount1Pitch",
+    8: "Mount1Roll",
+    9: "Mount1Retract",
+    10: "CameraTrigger",
+    12: "Mount2Yaw",
+    13: "Mount2Pitch",
+    14: "Mount2Roll",
+    16: "Mount2Retract",
+    19: "Elevator",
+    21: "Rudder",
+    22: "SprayerPump",
+    23: "SprayerSpinner",
+    24: "FlaperonLeft",
+    25: "FlaperonRight",
+    26: "GroundSteering",
+    27: "Parachute",
+    28: "Gripper",
+    29: "LandingGear",
+    30: "EngineRunEnable",
+    31: "HeliRSC",
+    32: "HeliTailRSC",
+    33: "Motor1",
+    34: "Motor2",
+    35: "Motor3",
+    36: "Motor4",
+    37: "Motor5",
+    38: "Motor6",
+    39: "Motor7",
+    40: "Motor8",
+    41: "MotorTilt",
+    51: "RCINPassThru1",
+    52: "RCINPassThru2",
+    53: "RCINPassThru3",
+    54: "RCINPassThru4",
+    55: "RCINPassThru5",
+    56: "RCINPassThru6",
+    57: "RCINPassThru7",
+    58: "RCINPassThru8",
+    59: "RCINPassThru9",
+    60: "RCINPassThru10",
+    61: "RCINPassThru11",
+    62: "RCINPassThru12",
+    63: "RCINPassThru13",
+    64: "RCINPassThru14",
+    65: "RCINPassThru15",
+    66: "RCINPassThru16",
+    70: "Throttle",
+    71: "TrackerYaw",
+    72: "TrackerPitch",
+    73: "ThrottleLeft",
+    74: "ThrottleRight",
+    75: "TiltMotorFrontLeft",
+    76: "TiltMotorFrontRight",
+    77: "ElevonLeft",
+    78: "ElevonRight",
+    79: "VTailLeft",
+    80: "VTailRight",
+    81: "BoostThrottle",
+    82: "Motor9",
+    83: "Motor10",
+    84: "Motor11",
+    85: "Motor12",
+    86: "DifferentialSpoilerLeft2",
+    87: "DifferentialSpoilerRight2",
+    88: "Winch",
+    89: "Main Sail",
+    90: "CameraISO",
+    91: "CameraAperture",
+    92: "CameraFocus",
+    93: "CameraShutterSpeed",
+    94: "Script1",
+    95: "Script2",
+    96: "Script3",
+    97: "Script4",
+    98: "Script5",
+    99: "Script6",
+    100: "Script7",
+    101: "Script8",
+    102: "Script9",
+    103: "Script10",
+    104: "Script11",
+    105: "Script12",
+    106: "Script13",
+    107: "Script14",
+    108: "Script15",
+    109: "Script16",
+    120: "NeoPixel1",
+    121: "NeoPixel2",
+    122: "NeoPixel3",
+    123: "NeoPixel4",
+    124: "RateRoll",
+    125: "RatePitch",
+    126: "RateThrust",
+    127: "RateYaw",
+    128: "WingSailElevator",
+    129: "ProfiLED1",
+    130: "ProfiLED2",
+    131: "ProfiLED3",
+    132: "ProfiLEDClock",
+    133: "Winch Clutch",
+    134: "SERVOn_MIN",
+    135: "SERVOn_TRIM",
+    136: "SERVOn_MAX",
+    137: "SailMastRotation",
+    138: "Alarm",
+    139: "Alarm Inverted",
+    140: "RCIN PassThru17",
+    141: "RCIN PassThru18",
+    142: "RCIN PassThru19",
+    143: "RCIN PassThru20",
+    144: "RCIN PassThru21",
+    145: "RCIN PassThru22",
+    146: "RCIN PassThru23",
+    147: "RCIN PassThru24",
+    148: "RCIN PassThru25",
+    149: "RCIN PassThru26",
+    150: "RCIN PassThru27",
+    155: "Motor13",
+    156: "Motor14",
+}
+
+function load_vehicle_config() {
+    const section = document.getElementById("VehicleConfig")
+
+    const build_type_names = {
+        1: "Rover",
+        2: "Copter",
+        3: "Plane",
+        4: "AntennaTracker",
+        7: "Sub",
+        12: "Blimp",
+    }
+
+    // Frame class lookup
+    const frame_classes = {
+        0: "Undefined",
+        1: "Quad",
+        2: "Hexa",
+        3: "Octa",
+        4: "OctaQuad",
+        5: "Y6",
+        6: "Heli",
+        7: "Tri",
+        8: "SingleCopter",
+        9: "CoaxCopter",
+        10: "Tailsitter",
+        11: "Heli_Dual",
+        12: "DodecaHexa",
+        13: "HeliQuad",
+        14: "Deca",
+        15: "Scripting Matrix",
+        16: "6DoF Scripting",
+        17: "Dynamic Scripting Matrix",
+    }
+
+    // Frame type lookup
+    const frame_types = {
+        0: "Plus",
+        1: "X",
+        2: "V",
+        3: "H",
+        4: "V-Tail",
+        5: "A-Tail",
+        10: "Y6B",
+        11: "Y6F",
+        12: "BetaFlightX",
+        13: "DJIX",
+        14: "ClockwiseX",
+        15: "I",
+        18: "BetaFlightXReversed",
+        19: "Y4",
+    }
+
+    let have_content = false
+
+    // Vehicle type from build_type (determined in load_log via get_version_and_board)
+    // We can also infer from params
+    let vehicle_name
+    if ("Q_ENABLE" in params) {
+        vehicle_name = "Plane"
+        if (params["Q_ENABLE"] > 0) {
+            vehicle_name = "QuadPlane"
+
+            // Check for tailsitter
+            if (("Q_TAILSIT_ENABLE" in params) && (params["Q_TAILSIT_ENABLE"] > 0)) {
+                vehicle_name = "Tailsitter"
+            }
+            // Check for tilt rotor
+            if (("Q_TILT_ENABLE" in params) && (params["Q_TILT_ENABLE"] > 0)) {
+                vehicle_name = "Tilt Rotor"
+            }
+        }
+    } else if ("FRAME_CLASS" in params) {
+        vehicle_name = "Copter"
+    } else if ("TURN_RADIUS" in params) {
+        vehicle_name = "Rover"
+    } else if (("SURFACE_DEPTH" in params) || ("PILOT_SPEED_DN" in params)) {
+        vehicle_name = "Sub"
+    } else if ("TKOFF_ALT" in params) {
+        vehicle_name = "Plane"
+    }
+
+    if (vehicle_name != null) {
+        section.appendChild(document.createTextNode("Vehicle type: " + vehicle_name))
+        section.appendChild(document.createElement("br"))
+        have_content = true
+    }
+
+    // Frame class and type for copter/quadplane
+    let frame_class_param = "FRAME_CLASS"
+    let frame_type_param = "FRAME_TYPE"
+    if (("Q_ENABLE" in params) && (params["Q_ENABLE"] > 0)) {
+        frame_class_param = "Q_FRAME_CLASS"
+        frame_type_param = "Q_FRAME_TYPE"
+    }
+
+    if (frame_class_param in params) {
+        const fc = params[frame_class_param]
+        const fc_name = frame_classes[fc] || ("Unknown (" + fc + ")")
+        section.appendChild(document.createTextNode("Frame class: " + fc_name))
+        section.appendChild(document.createElement("br"))
+        have_content = true
+
+        if (frame_type_param in params) {
+            const ft = params[frame_type_param]
+            const ft_name = frame_types[ft] || ("Unknown (" + ft + ")")
+            section.appendChild(document.createTextNode("Frame type: " + ft_name))
+            section.appendChild(document.createElement("br"))
+        }
+    }
+
+    if (have_content) {
+        section.hidden = false
+        section.previousElementSibling.hidden = false
+    }
+}
+
+function load_output_config() {
+    const section = document.getElementById("OutputConfig")
+
+    const max_servo = 32
+    let outputs = []
+
+    for (let i = 1; i <= max_servo; i++) {
+        const func_name = "SERVO" + i + "_FUNCTION"
+        if (func_name in params) {
+            const func_val = params[func_name]
+            if (func_val != 0) {
+                const func_label = servo_functions[func_val] || ("Unknown (" + func_val + ")")
+                outputs.push({ channel: i, func_val: func_val, func_name: func_label })
+            }
+        }
+    }
+
+    if (outputs.length == 0) {
+        return
+    }
+
+    section.hidden = false
+    section.previousElementSibling.hidden = false
+
+    // Build table
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
+    section.appendChild(table)
+
+    // Header row
+    let header = document.createElement("tr")
+    table.appendChild(header)
+
+    function add_header_cell(text) {
+        let th = document.createElement("th")
+        th.style.border = "1px solid #000"
+        th.style.padding = "6px 12px"
+        th.style.textAlign = "left"
+        th.appendChild(document.createTextNode(text))
+        header.appendChild(th)
+    }
+    add_header_cell("Channel")
+    add_header_cell("Function")
+
+    for (const output of outputs) {
+        let row = document.createElement("tr")
+        table.appendChild(row)
+
+        function add_cell(text) {
+            let td = document.createElement("td")
+            td.style.border = "1px solid #000"
+            td.style.padding = "4px 12px"
+            td.appendChild(document.createTextNode(text))
+            row.appendChild(td)
+        }
+
+        add_cell("SERVO" + output.channel)
+        add_cell(output.func_name)
+    }
+
+    // Check for CAN servo outputs
+    let can_outputs = []
+    for (let driver = 1; driver <= 2; driver++) {
+        const option_name = "CAN_D" + driver + "_UC_OPTION"
+        if (!(option_name in params)) {
+            continue
+        }
+        // Check if ESC output over CAN is enabled (bit 7)
+        const options = params[option_name]
+        const esc_via_can = (options & (1 << 7)) != 0
+        if (!esc_via_can) {
+            // Also check for servo output functions sent via CAN
+            // Look for any SERVOn function on a CAN ESC channel
+            for (let i = 1; i <= max_servo; i++) {
+                const func_name = "SERVO" + i + "_FUNCTION"
+                if (func_name in params) {
+                    const func_val = params[func_name]
+                    // Motor functions (33-40 and 82-85) can be sent over CAN
+                    const is_motor = (func_val >= 33 && func_val <= 40) || (func_val >= 82 && func_val <= 85)
+                    if (is_motor) {
+                        can_outputs.push({ driver: driver, channel: i, func_val: func_val })
+                    }
+                }
+            }
+        }
+    }
+
+    // Check for DroneCAN ESC
+    for (let driver = 1; driver <= 2; driver++) {
+        const protocol = "CAN_P" + driver + "_DRIVER"
+        if (!(protocol in params)) {
+            continue
+        }
+        const driver_num = params[protocol]
+        if (driver_num == 0) {
+            continue
+        }
+        const esc_bm_name = "CAN_D" + driver_num + "_UC_ESC_BM"
+        if (esc_bm_name in params) {
+            const bitmask = params[esc_bm_name]
+            if (bitmask > 0) {
+                section.appendChild(document.createElement("br"))
+                section.appendChild(document.createTextNode("DroneCAN driver " + driver_num + " ESC bitmask: 0x" + bitmask.toString(16)))
+
+                let channels = []
+                for (let bit = 0; bit < 32; bit++) {
+                    if ((bitmask & (1 << bit)) != 0) {
+                        channels.push(bit + 1)
+                    }
+                }
+                section.appendChild(document.createTextNode(" (channels: " + channels.join(", ") + ")"))
+            }
+        }
+        const srv_bm_name = "CAN_D" + driver_num + "_UC_SRV_BM"
+        if (srv_bm_name in params) {
+            const bitmask = params[srv_bm_name]
+            if (bitmask > 0) {
+                section.appendChild(document.createElement("br"))
+                section.appendChild(document.createTextNode("DroneCAN driver " + driver_num + " Servo bitmask: 0x" + bitmask.toString(16)))
+
+                let channels = []
+                for (let bit = 0; bit < 32; bit++) {
+                    if ((bitmask & (1 << bit)) != 0) {
+                        channels.push(bit + 1)
+                    }
+                }
+                section.appendChild(document.createTextNode(" (channels: " + channels.join(", ") + ")"))
+            }
+        }
+    }
+}
+
 function load_params(log) {
+    load_vehicle_config()
+    load_output_config()
     load_ins(log)
     load_compass(log)
     load_baro(log)
@@ -3180,6 +3559,8 @@ function reset() {
     setup_section(document.getElementById("FC"))
     setup_section(document.getElementById("WDOG"))
     setup_section(document.getElementById("InternalError"))
+    setup_section(document.getElementById("VehicleConfig"))
+    setup_section(document.getElementById("OutputConfig"))
     setup_section(document.getElementById("IOMCU"))
     setup_section(document.getElementById("INS"))
     setup_section(document.getElementById("COMPASS"))

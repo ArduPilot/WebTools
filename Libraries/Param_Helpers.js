@@ -89,13 +89,37 @@ function param_to_string(value)
     throw new Error("Could not convert " + value.toString() + " to float string")
 }
 
+// Natural sort comparator: treats embedded numbers numerically
+// Matches the sort order used by MAVProxy and Mission Planner
+function natural_compare(a, b) {
+    const re = /(\d+)|(\D+)/g
+    const a_parts = a.match(re) || []
+    const b_parts = b.match(re) || []
+    const len = Math.min(a_parts.length, b_parts.length)
+    for (let i = 0; i < len; i++) {
+        const a_part = a_parts[i]
+        const b_part = b_parts[i]
+        const a_num = parseInt(a_part, 10)
+        const b_num = parseInt(b_part, 10)
+        if (!isNaN(a_num) && !isNaN(b_num)) {
+            if (a_num !== b_num) {
+                return a_num - b_num
+            }
+        } else {
+            const cmp = a_part < b_part ? -1 : a_part > b_part ? 1 : 0
+            if (cmp !== 0) {
+                return cmp
+            }
+        }
+    }
+    return a_parts.length - b_parts.length
+}
+
 // Return formatted text for param download
 function get_param_download_text(params)
 {
-    // Sort alphabetically, localeCompare does underscores differently to built in sort
-    const keys = Object.keys(params).sort((a, b) =>
-        a.localeCompare(b)
-    )
+    // Natural sort to match MAVProxy and Mission Planner param file ordering
+    const keys = Object.keys(params).sort(natural_compare)
 
     let text = ""
     for (const key of keys) {
