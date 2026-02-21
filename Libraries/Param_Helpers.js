@@ -92,9 +92,9 @@ function param_to_string(value)
 // Return formatted text for param download
 function get_param_download_text(params)
 {
-    // Sort alphabetically, localeCompare does underscores differently to built in sort
+    // Natural sort to match MAVProxy and Mission Planner param file ordering
     const keys = Object.keys(params).sort((a, b) =>
-        a.localeCompare(b)
+        a.localeCompare(b, undefined, {numeric: true})
     )
 
     let text = ""
