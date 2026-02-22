@@ -386,7 +386,7 @@ function setup_table(logs) {
 
                 // Sort alphabetically, localeCompare does underscores differently to built in sort
                 function param_sort(a, b) {
-                    return a.localeCompare(b)
+                    return a.localeCompare(b, undefined, {numeric: true})
                 }
 
                 if (Object.keys(diff.added).length > 0) {
