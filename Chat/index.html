@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArduPilot AI Chat Control</title>
+  <link rel="icon" href="../images/AP_favicon.png">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
+
+  <script type="text/javascript" src="../modules/MAVLink/mavlink.js"></script>
+
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body class="antialiased">
+  <div class="flex flex-col h-screen">
+
+    <!-- Header (Only visible on Desktop) -->
+    <header
+      class="text-center p-4 shadow-sm shrink-0 lg:flex hidden rounded-b-lg bg-[var(--bg-secondary)] border-b border-[var(--border-color)]">
+      <div class="container mx-auto flex items-center justify-center gap-4 relative text-[var(--blue-accent)]">
+        <h1 class="text-xl font-bold text-[var(--blue-accent)]">ArduPilot AI Chat Control</h1>
+        <!-- Theme Toggle Button for desktop header -->
+        <div id="theme-toggle-container-desktop" class="absolute right-0 top-1/2 -translate-y-1/2">
+          <button id="themeToggleButtonDesktop"
+            class="bg-gray-200 text-gray-800 p-2 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg id="themeIconDesktop" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mode Chooser Card (Centered Overlay) -->
+    <div id="modeChooser"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+      <div
+        class="max-w-md w-full rounded-2xl shadow-2xl p-8 transform transition-all opacity-100 scale-100 bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+        <h2 class="text-2xl font-bold text-center mb-2 text-[var(--blue-accent)]">Choose Session Mode</h2>
+        <p class="text-sm text-center mb-6 text-[var(--text-muted)]">Select how to run this session.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button id="pickAssistant"
+            class="w-full font-semibold rounded-lg py-3 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2">
+            Assistant API
+          </button>
+          <button id="pickRealtime"
+            class="w-full font-semibold rounded-lg py-3 transition-all duration-200 ease-in-out shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2">
+            Realtime API
+          </button>
+        </div>
+        <div class="text-xs mt-6 space-y-3">
+          <div>
+            <div class="font-semibold text-[var(--blue-accent)]">Realtime</div>
+            <ul class="list-disc list-inside pl-1 mt-1 space-y-1 text-[var(--text-primary)]">
+              <li>Very low latency streaming</li>
+              <li>Session lasts about 28 minutes, then auto-reconnects with a summary</li>
+              <li>History is temporary, older sessions cannot be resumed</li>
+            </ul>
+          </div>
+          <div>
+            <div class="font-semibold text-[var(--blue-accent)]">Assistant</div>
+            <ul class="list-disc list-inside pl-1 mt-1 space-y-1 text-[var(--text-primary)]">
+              <li>Slower, turn-based text interaction.</li>
+              <li>Conversation thread is stored and can be resumed later.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App Layout -->
+    <main id="appRoot" class="flex-1 container mx-auto p-2 lg:p-6 flex flex-col lg:grid lg:grid-cols-5 gap-6 hidden">
+
+      <!-- AI Chat Panel (spanning 3 columns on large screens for 60% width) -->
+      <div
+        class="lg:col-span-3 shadow-lg rounded-2xl p-3 lg:p-4 flex flex-col border overflow-hidden mobile-chat-full-height bg-[var(--bg-secondary)] border-[var(--border-color)]">
+        <!-- Chat Panel Header (flex to align title, timer, and theme toggle for mobile) -->
+        <div class="flex items-center justify-between chat-panel-header shrink-0">
+          <h2 class="text-xl font-bold text-[var(--blue-accent)]">AI Chat</h2>
+          <div class="flex items-center gap-2">
+            <!-- Session countdown (only visible on mobile here) -->
+            <div id="sessionTimer"
+              class="flex items-center gap-2 px-2 py-1 rounded-full border text-sm lg:hidden hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-12a.75.75 0 00-1.5 0v4c0 .199.079.39.22.53l2.5 2.5a.75.75 0 101.06-1.06l-2.28-2.28V6z"
+                  clip-rule="evenodd" />
+              </svg>
+              <span id="sessionExpiryTimerText" class="font-medium">28:00</span>
+            </div>
+            <!-- Theme Toggle Button for mobile chat panel -->
+            <div id="theme-toggle-container-mobile" class="lg:hidden">
+              <button id="themeToggleButtonMobile"
+                class="bg-gray-200 text-gray-800 p-2 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg id="themeIconMobile" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="chatBox" class="flex-1 overflow-y-auto p-3 space-y-4 flex flex-col rounded-lg mb-4">
+          <div class="assistant-text">
+            <p class="font-medium">Welcome! I'm your ArduPilot AI assistant.</p>
+            <p class="mt-2">You can control the drone with commands like:</p>
+            <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+              <li>"Arm the drone"</li>
+              <li>"Take off to 10 meters"</li>
+              <li>"Fly north for 50 meters"</li>
+              <li>"Return to launch"</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- User Input Section -->
+        <div class="mt-auto pt-4 border-t shrink-0">
+          <!-- User Message Input and Buttons -->
+          <div class="flex items-center gap-3 chat-input-row">
+            <input type="text" id="userInput" placeholder="Type your command..."
+              class="flex-1 w-full rounded-lg shadow-sm px-3 py-2 text-base transition input-row-element input-base"
+              autocomplete="off">
+
+            <div class="flex gap-3 input-button-group">
+              <button id="sendMessageButton" title="Send Message" class="btn btn-green input-row-element">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+              </button>
+
+              <button id="recordButton" title="Use Voice" class="btn btn-yellow input-row-element">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill="currentColor"
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- MAVLink Connection Input and Button -->
+          <div class="flex items-center gap-3 mt-4 connect-drone-row">
+            <input type="text" id="mavlink-connect-url"
+              class="flex-1 rounded-lg shadow-sm text-sm transition input-row-element input-base"
+              value="ws://127.0.0.1:56781" placeholder="WebSocket URL">
+            <button id="mavlink-connect-button"
+              class="btn btn-blue px-5 py-2 whitespace-nowrap text-sm input-row-element">
+              Connect Drone
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Panel (spanning 2 columns on large screens for 40% width) -->
+      <div
+        class="lg:col-span-2 shadow-lg rounded-2xl p-4 flex flex-col border overflow-hidden side-panel-mobile-styling bg-[var(--bg-secondary)] border-[var(--border-color)]">
+        <div class="p-4 border-b shrink-0">
+          <h2 class="text-xl font-bold text-[var(--blue-accent)]">Configuration</h2>
+        </div>
+        <div class="flex-1 p-6 space-y-5 overflow-y-auto">
+          <div class="space-y-4">
+            <div>
+              <label for="openai_api_key" class="block text-sm font-medium mb-1">OpenAI API Key:</label>
+              <div class="flex gap-2">
+                <input type="password" id="openai_api_key"
+                  class="flex-1 rounded-lg shadow-sm p-3 transition input-row-element overflow-x-auto min-w-0 input-base input-muted"
+                  autocomplete="off">
+                <button id="toggleApiKeyButton" class="btn btn-blue p-2 input-row-element">
+                  <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
+                      clip-rule="evenodd" />
+                    <path
+                      d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
+
+                  </svg>
+                </button>
+              </div>
+              <button id="openai-connect-button" class="w-full btn btn-green px-5 py-2.5 mt-3">
+                Connect AI</button>
+            </div>
+
+            <div id="assistantIdContainer">
+              <label for="assistantId" class="block text-sm font-medium mb-1">Assistant ID:</label>
+              <input type="text" id="assistantId"
+                class="w-full rounded-lg shadow-sm p-2 text-xs font-mono input-row-element input-base input-muted"
+                readonly>
+            </div>
+
+            <!-- thread id for assistant api -->
+            <div id="assistantThreadIdContainer">
+              <label for="assistantThreadId" class="block text-sm font-medium mb-1">Thread ID:</label>
+              <div class="flex items-center space-x-2">
+                <input type="text" id="assistantThreadId"
+                  class="flex-grow rounded-lg shadow-sm p-2 text-xs font-mono input-row-element min-w-0 input-base input-muted"
+                  readonly>
+                <button id="startNewChatButton"
+                  class="btn btn-red px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white">
+                  New Chat
+                </button>
+              </div>
+            </div>
+
+            <!-- session id for realtime api -->
+            <div id="sessionIdContainer" class="hidden">
+              <label for="sessionId" class="block text-sm font-medium mb-1">Session ID:</label>
+              <input type="text" id="sessionId"
+                class="w-full rounded-lg shadow-sm p-2 text-xs font-mono input-row-element input-base input-muted"
+                readonly>
+            </div>
+
+
+            <div>
+              <label for="assistantRunStatus" class="block text-sm font-medium mb-1">Run Status:</label>
+              <input type="text" id="assistantRunStatus"
+                class="w-full rounded-lg shadow-sm p-2 text-xs input-row-element input-base input-muted" readonly>
+            </div>
+          </div>
+
+          <div class="border-t pt-5">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-bold">Debug Output</h3>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" id="autoScrollToggle" checked class="rounded">
+                Auto-scroll
+              </label>
+            </div>
+            <textarea id="debugOutput"
+              class="w-full rounded-lg shadow-sm p-3 text-xs font-mono h-48 resize-y input-base input-muted"
+              readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Handles chat mode selection and initialization -->
+  <script type="module" src="./main.js"></script>
+
+  <!-- Toggle Script (Theme and API key visibility) -->
+  <script type="module" src="./toggle.js"></script>
+
+  <!-- MAVLink connection and message handling logic -->
+  <script type="module" src="./mavlink-connection.js"></script>
+
+  <!-- script for handling function calls -->
+  <script type="module" src="./function-calls.js"></script>
+
+</body>
+
+</html>
