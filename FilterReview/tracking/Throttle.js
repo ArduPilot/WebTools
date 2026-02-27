@@ -1,10 +1,19 @@
 // Throttle target
 class ThrottleTarget extends NotchTarget {
     constructor(log) {
-        super(log, "RATE", "AOut", "Throttle", 1)
+        // Prefer RATE.AOut for throttle, but fall back to CTUN.ThO if RATE is not logged
+        if ("RATE" in log.messageTypes) {
+            super(log, "RATE", "AOut", "Throttle", 1)
+        } else if ("CTUN" in log.messageTypes) {
+            super(log, "CTUN", "ThO", "Throttle", 1)
+        } else {
+            console.log("No RATE.AOut or CTUN.ThO logging for throttle notch")
+            return
+        }
 
         // Need RC outputs for per motor throttle notch
         if (!("RCOU" in log.messageTypes)) {
+            console.log("No RCOU logging for throttle notch")
             return
         }
 
