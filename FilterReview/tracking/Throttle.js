@@ -1,7 +1,15 @@
 // Throttle target
 class ThrottleTarget extends NotchTarget {
     constructor(log) {
-        super(log, "RATE", "AOut", "Throttle", 1)
+        const { build_type } = get_version_and_board(log)
+
+        // Prefer RATE.AOut for throttle information, but on Arducopter fall back to CTUN.ThO if RATE is not logged
+        if ("RATE" in log.messageTypes) {
+            super(log, "RATE", "AOut", "Throttle", 1)
+        } else if ("CTUN" in log.messageTypes && build_type === 2) {
+            // build_type 2 == ArduCopter (see Libraries/LogHelpers.js)
+            super(log, "CTUN", "ThO", "Throttle", 1)
+        }
 
         // Need RC outputs for per motor throttle notch
         if (!("RCOU" in log.messageTypes)) {
