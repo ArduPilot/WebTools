@@ -673,7 +673,7 @@ function setup_plots() {
             Spectrogram.data.push({
                 type:"scatter",
                 mode: "lines",
-                line: { width: 4, dash: dash },
+                line: { width: 1, dash: dash },
                 visible: false,
                 name: name,
                 meta: Group_name + "<br>" + name,
@@ -692,7 +692,7 @@ function setup_plots() {
             Spectrogram.data.push({
                 type:"scatter",
                 mode: "lines",
-                line: { width: 4, dash: dash },
+                line: { width: 1, dash: dash },
                 visible: false,
                 name: name,
                 meta: Group_name + "<br>" + name,
