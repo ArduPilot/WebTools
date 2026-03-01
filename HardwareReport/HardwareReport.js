@@ -1671,7 +1671,208 @@ function update_minimal_config() {
     }
 }
 
-function load_params(log) {
+// Param metadata loaded from params.json
+let param_metadata = {}
+
+// Lookup a value name from param metadata
+function get_param_value_name(param_name, param_value) {
+    function recursive_search(obj, param) {
+        for (const [key, val] of Object.entries(obj)) {
+            if (!param.startsWith(key)) continue
+            if (param === key) return val
+            let found = recursive_search(val, param)
+            if (found != null) return found
+        }
+    }
+    const metadata = recursive_search(param_metadata, param_name)
+    if (metadata != null && "Values" in metadata) {
+        const str_value = String(param_value)
+        if (str_value in metadata.Values) {
+            return metadata.Values[str_value]
+        }
+    }
+    return null
+}
+
+function load_vehicle_config(build_type) {
+    const section = document.getElementById("VehicleConfig")
+
+    const build_type_names = {
+        1: "Rover",
+        2: "Copter",
+        3: "Plane",
+        4: "AntennaTracker",
+        7: "Sub",
+        12: "Blimp",
+    }
+
+    let have_content = false
+
+    // Vehicle type from build_type (from log VER/MSG messages)
+    let vehicle_name
+    if (build_type != null) {
+        vehicle_name = build_type_names[build_type]
+    }
+
+    // Refine Plane sub-types from params
+    if (vehicle_name === "Plane") {
+        if (("Q_ENABLE" in params) && (params["Q_ENABLE"] > 0)) {
+            vehicle_name = "QuadPlane"
+            if (("Q_TAILSIT_ENABLE" in params) && (params["Q_TAILSIT_ENABLE"] > 0)) {
+                vehicle_name = "Tailsitter"
+            }
+            if (("Q_TILT_ENABLE" in params) && (params["Q_TILT_ENABLE"] > 0)) {
+                vehicle_name = "Tilt Rotor"
+            }
+        }
+    }
+
+    if (vehicle_name != null) {
+        section.appendChild(document.createTextNode("Vehicle type: " + vehicle_name))
+        section.appendChild(document.createElement("br"))
+        have_content = true
+    }
+
+    // Frame class and type for copter/quadplane
+    let frame_class_param = "FRAME_CLASS"
+    let frame_type_param = "FRAME_TYPE"
+    if (("Q_ENABLE" in params) && (params["Q_ENABLE"] > 0)) {
+        frame_class_param = "Q_FRAME_CLASS"
+        frame_type_param = "Q_FRAME_TYPE"
+    }
+
+    if (frame_class_param in params) {
+        const fc = params[frame_class_param]
+        const fc_name = get_param_value_name("FRAME_CLASS", fc) || ("Unknown (" + fc + ")")
+        section.appendChild(document.createTextNode("Frame class: " + fc_name))
+        section.appendChild(document.createElement("br"))
+        have_content = true
+
+        if (frame_type_param in params) {
+            const ft = params[frame_type_param]
+            const ft_name = get_param_value_name("FRAME_TYPE", ft) || ("Unknown (" + ft + ")")
+            section.appendChild(document.createTextNode("Frame type: " + ft_name))
+            section.appendChild(document.createElement("br"))
+        }
+    }
+
+    if (have_content) {
+        section.hidden = false
+        section.previousElementSibling.hidden = false
+    }
+}
+
+function load_output_config() {
+    const section = document.getElementById("OutputConfig")
+
+    const max_servo = 32
+    let outputs = []
+
+    for (let i = 1; i <= max_servo; i++) {
+        const func_name = "SERVO" + i + "_FUNCTION"
+        if (func_name in params) {
+            const func_val = params[func_name]
+            if (func_val != 0) {
+                const func_label = get_param_value_name("SERVOn_FUNCTION", func_val) || ("Unknown (" + func_val + ")")
+                outputs.push({ channel: i, func_val: func_val, func_name: func_label })
+            }
+        }
+    }
+
+    if (outputs.length == 0) {
+        return
+    }
+
+    // Gather per-port DroneCAN ESC and Servo bitmasks and index offsets
+    let dronecan_ports = []
+    for (let port = 1; port < 10; port++) {
+        const protocol = "CAN_P" + port + "_DRIVER"
+        if (!(protocol in params) || params[protocol] == 0) {
+            continue
+        }
+        const driver_num = params[protocol]
+        let port_info = { port: port, esc_bm: 0, srv_bm: 0, esc_of: 0, srv_of: 0 }
+        const esc_bm_name = "CAN_D" + driver_num + "_UC_ESC_BM"
+        if (esc_bm_name in params) {
+            port_info.esc_bm = params[esc_bm_name]
+        }
+        const srv_bm_name = "CAN_D" + driver_num + "_UC_SRV_BM"
+        if (srv_bm_name in params) {
+            port_info.srv_bm = params[srv_bm_name]
+        }
+        const esc_of_name = "CAN_D" + driver_num + "_UC_ESC_OF"
+        if (esc_of_name in params) {
+            port_info.esc_of = params[esc_of_name]
+        }
+        const srv_of_name = "CAN_D" + driver_num + "_UC_SRV_OF"
+        if (srv_of_name in params) {
+            port_info.srv_of = params[srv_of_name]
+        }
+        if (port_info.esc_bm > 0 || port_info.srv_bm > 0) {
+            dronecan_ports.push(port_info)
+        }
+    }
+    const have_dronecan = dronecan_ports.length > 0
+
+    section.hidden = false
+    section.previousElementSibling.hidden = false
+
+    // Build table
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
+    section.appendChild(table)
+
+    // Header row
+    let header = document.createElement("tr")
+    table.appendChild(header)
+
+    function add_header_cell(text) {
+        let th = document.createElement("th")
+        th.style.border = "1px solid #000"
+        th.style.padding = "6px 12px"
+        th.style.textAlign = "left"
+        th.appendChild(document.createTextNode(text))
+        header.appendChild(th)
+    }
+    add_header_cell("Channel")
+    add_header_cell("Function")
+    if (have_dronecan) {
+        add_header_cell("Output Type")
+    }
+
+    for (const output of outputs) {
+        let row = document.createElement("tr")
+        table.appendChild(row)
+
+        function add_cell(text) {
+            let td = document.createElement("td")
+            td.style.border = "1px solid #000"
+            td.style.padding = "4px 12px"
+            td.appendChild(document.createTextNode(text))
+            row.appendChild(td)
+        }
+
+        add_cell("SERVO" + output.channel)
+        add_cell(output.func_name)
+        if (have_dronecan) {
+            const bit = 1 << (output.channel - 1)
+            let output_types = []
+            for (const port of dronecan_ports) {
+                if (port.esc_bm & bit) {
+                    output_types.push("CAN" + port.port + " ESC " + (output.channel - 1 + port.esc_of))
+                }
+                if (port.srv_bm & bit) {
+                    output_types.push("CAN" + port.port + " Servo " + (output.channel - 1 + port.srv_of))
+                }
+            }
+            add_cell(output_types.join(", "))
+        }
+    }
+}
+
+function load_params(log, build_type) {
+    load_vehicle_config(build_type)
+    load_output_config()
     load_ins(log)
     load_compass(log)
     load_baro(log)
@@ -2590,9 +2791,9 @@ async function load_log(log_file) {
         document.getElementById("param_base_changed").checked = true
     }
 
-    load_params(log)
-
     const version = get_version_and_board(log)
+
+    load_params(log, version.build_type)
 
     if (version.fw_string != null) {
         let section = document.getElementById("VER")
@@ -3180,6 +3381,8 @@ function reset() {
     setup_section(document.getElementById("FC"))
     setup_section(document.getElementById("WDOG"))
     setup_section(document.getElementById("InternalError"))
+    setup_section(document.getElementById("VehicleConfig"))
+    setup_section(document.getElementById("OutputConfig"))
     setup_section(document.getElementById("IOMCU"))
     setup_section(document.getElementById("INS"))
     setup_section(document.getElementById("COMPASS"))
@@ -3660,15 +3863,15 @@ async function initial_load() {
         }
     }
 
-    return new Promise((resolve) => {
-        fetch("board_types.txt")
-            .then((res) => {
-            return res.text()
-        }).then((data) => {
-            load_board_types(data)
-            resolve()
-        });
-    })
+    const board_types_promise = fetch("board_types.txt")
+        .then((res) => res.text())
+        .then((data) => load_board_types(data))
+
+    const param_metadata_promise = fetch("params.json")
+        .then((res) => res.json())
+        .then((data) => { param_metadata = data })
+
+    await Promise.all([board_types_promise, param_metadata_promise])
 }
 
 function save_text(text, file_postfix) {
