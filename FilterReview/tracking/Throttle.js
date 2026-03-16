@@ -9,6 +9,9 @@ class ThrottleTarget extends NotchTarget {
         } else if ("CTUN" in log.messageTypes && build_type === 2) {
             // build_type 2 == ArduCopter (see Libraries/LogHelpers.js)
             super(log, "CTUN", "ThO", "Throttle", 1)
+        } else {
+            // Make sure bass class constructor is always called.
+            super(null, null, null, "Throttle", null)
         }
 
         // Need RC outputs for per motor throttle notch
