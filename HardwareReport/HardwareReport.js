@@ -3750,4 +3750,31 @@ function save_minimal_parameters() {
     save_text(get_param_download_text(minimal), "_minimal.param")
 
 }
+function analyzeHardwareReport() {
 
+    
+    let temperature = 80
+    let cpu = 60
+    let memory = 70
+
+
+    if (temperature > 75) {
+        document.getElementById("temp-status").innerText = "Temperature: High ⚠️"
+    } else {
+        document.getElementById("temp-status").innerText = "Temperature: Normal"
+    }
+
+    
+    if (cpu > 80) {
+        document.getElementById("cpu-status").innerText = "CPU: High Usage"
+    } else {
+        document.getElementById("cpu-status").innerText = "CPU: Normal"
+    }
+
+    
+    if (memory < 30) {
+        document.getElementById("mem-status").innerText = "Memory: Low ⚠️"
+    } else {
+        document.getElementById("mem-status").innerText = "Memory: Good"
+    }
+}
