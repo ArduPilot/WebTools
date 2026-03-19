@@ -3146,7 +3146,7 @@ function load() {
             load_param_file(await file.text())
         })
     }
-
+    analyzeHardwareReport();
 }
 
 let Sensor_Offset = {}
