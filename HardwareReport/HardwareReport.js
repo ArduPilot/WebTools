@@ -2351,7 +2351,7 @@ function plot_data_rate(log) {
                     return false
                 }
                 baud = 1500000
-                title = "IMUCU, " + baud + " baud"
+                title = "IOMCU, " + baud + " baud"
                 return true
             }
 
