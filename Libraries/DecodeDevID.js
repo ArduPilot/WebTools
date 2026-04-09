@@ -44,7 +44,10 @@ compass_types = {
     0x13 : "MMC5883",
     0x14 : "AK09918",
     0x15 : "AK09915",
-    0x16 : "QMC5883P"
+    0x16 : "QMC5883P",
+    0x17 : "BMM350",
+    0x18 : "IIS2MDC",
+    0x19 : "LIS2MDL",
 }
 
 imu_types = {
@@ -83,6 +86,8 @@ imu_types = {
     0x3B : "ICM45686",
     0x3C : "SCHA63T",
     0x3D : "IIM42653",
+    0x3E : "LSM6DSV",
+    0x3F : "ASM330",
 }
 
 baro_types = {
