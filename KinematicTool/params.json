@@ -38,62 +38,59 @@
     }
   },
   "ATC_": {
-    "ATC_ACCEL_P_MAX": {
+    "ATC_ACC_P_MAX": {
       "Description": "Maximum acceleration in pitch axis",
       "DisplayName": "Acceleration Max for Pitch",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "180000",
+        "high": "1800",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "108000": "Medium",
-        "162000": "Fast",
-        "30000": "VerySlow",
-        "72000": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Pitch\n    // @Description: Maximum acceleration in pitch axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+        "1080": "Medium",
+        "1620": "Fast",
+        "300": "VerySlow",
+        "720": "Slow"
+      }
     },
-    "ATC_ACCEL_R_MAX": {
+    "ATC_ACC_R_MAX": {
       "Description": "Maximum acceleration in roll axis",
       "DisplayName": "Acceleration Max for Roll",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "180000",
+        "high": "1800",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "108000": "Medium",
-        "162000": "Fast",
-        "30000": "VerySlow",
-        "72000": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Roll\n    // @Description: Maximum acceleration in roll axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+        "1080": "Medium",
+        "1620": "Fast",
+        "300": "VerySlow",
+        "720": "Slow"
+      }
     },
-    "ATC_ACCEL_Y_MAX": {
+    "ATC_ACC_Y_MAX": {
       "Description": "Maximum acceleration in yaw axis",
       "DisplayName": "Acceleration Max for Yaw",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "72000",
+        "high": "720",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "18000": "Slow",
-        "36000": "Medium",
-        "54000": "Fast",
-        "9000": "VerySlow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Yaw\n    // @Description: Maximum acceleration in yaw axis\n    // @Units: cdeg/s/s\n    // @Range: 0 72000\n    // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast\n    // @Increment: 1000\n    // @User: Advanced"
+        "180": "Slow",
+        "360": "Medium",
+        "540": "Fast",
+        "90": "VerySlow"
+      }
     },
     "ATC_ANGLE_BOOST": {
       "Description": "Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude",
@@ -102,8 +99,18 @@
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
+      }
+    },
+    "ATC_ANGLE_MAX": {
+      "Description": "Maximum lean angle in all flight modes",
+      "DisplayName": "Angle Max",
+      "Increment": "0.1",
+      "Range": {
+        "high": "80.0",
+        "low": "10.0"
       },
-      "__field_text": "\n    // @DisplayName: Angle Boost\n    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+      "Units": "deg",
+      "User": "Standard"
     },
     "ATC_ANG_LIM_TC": {
       "Description": "Angle Limit (to maintain altitude) Time Constant",
@@ -112,38 +119,37 @@
         "high": "10.0",
         "low": "0.5"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Angle Limit (to maintain altitude) Time Constant\n    // @Description: Angle Limit (to maintain altitude) Time Constant\n    // @Range: 0.5 10.0\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_ANG_PIT_P": {
       "Description": "Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate",
       "DisplayName": "Pitch axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis angle controller P gain\n    // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_ANG_RLL_P": {
       "Description": "Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate",
       "DisplayName": "Roll axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis angle controller P gain\n    // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_ANG_YAW_P": {
       "Description": "Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate",
       "DisplayName": "Yaw axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis angle controller P gain\n    // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 6.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_HOVR_ROL_TRM": {
       "Description": "Trim the hover roll angle to counter tail rotor thrust in a hover",
@@ -154,8 +160,7 @@
         "low": "0"
       },
       "Units": "cdeg",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Hover Roll Trim\n    // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover\n    // @Units: cdeg\n    // @Increment: 10\n    // @Range: 0 1000\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_INPUT_TC": {
       "Description": "Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response",
@@ -173,8 +178,34 @@
         "0.15": "Medium",
         "0.2": "Soft",
         "0.5": "Very Soft"
+      }
+    },
+    "ATC_LAND_P_MULT": {
+      "Description": "Pitch gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the pitch axis.",
+      "DisplayName": "Landed pitch gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
       },
-      "__field_text": "\n    // @DisplayName: Attitude control input time constant\n    // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response\n    // @Units: s\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp\n    // @User: Standard"
+      "User": "Advanced"
+    },
+    "ATC_LAND_R_MULT": {
+      "Description": "Roll gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the roll axis.",
+      "DisplayName": "Landed roll gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
+      },
+      "User": "Advanced"
+    },
+    "ATC_LAND_Y_MULT": {
+      "Description": "Yaw gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the yaw axis.",
+      "DisplayName": "Landed yaw gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
+      },
+      "User": "Advanced"
     },
     "ATC_PIRO_COMP": {
       "Description": "Pirouette compensation enabled",
@@ -183,18 +214,16 @@
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
-      },
-      "__field_text": "\n    // @DisplayName: Piro Comp Enable\n    // @Description: Pirouette compensation enabled\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_FF_ENAB": {
-      "Description": "Controls whether body-frame rate feedfoward is enabled or disabled",
+      "Description": "Controls whether body-frame rate feedforward is enabled or disabled",
       "DisplayName": "Rate Feedforward Enable",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
-      },
-      "__field_text": "\n    // @DisplayName: Rate Feedforward Enable\n    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_P_MAX": {
       "Description": "Maximum angular velocity in pitch axis",
@@ -211,8 +240,7 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Pitch\n    // @Description: Maximum angular velocity in pitch axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_R_MAX": {
       "Description": "Maximum angular velocity in roll axis",
@@ -229,8 +257,18 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
+      }
+    },
+    "ATC_RATE_WPY_MAX": {
+      "Description": "Maximum rate the yaw target can be updated in Auto, Guided, Circle, Follow, RTL, SmartRTL, Throw and ZigZag flight modes",
+      "DisplayName": "Yaw target slew rate",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "5"
       },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Roll\n    // @Description: Maximum angular velocity in roll axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      "Units": "deg/s",
+      "User": "Advanced"
     },
     "ATC_RATE_Y_MAX": {
       "Description": "Maximum angular velocity in yaw axis",
@@ -247,8 +285,7 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Yaw\n    // @Description: Maximum angular velocity in yaw axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      }
     },
     "ATC_RAT_PIT_D": {
       "Description": "Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate",
@@ -258,8 +295,20 @@
         "high": "0.03",
         "low": "0.0"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Pitch Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FF": {
@@ -270,8 +319,8 @@
         "high": "0.5",
         "low": "0.05"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller feed forward\n    // @Description: Pitch axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTD": {
@@ -284,7 +333,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller derivative frequency in Hz\n    // @Description: Pitch axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTE": {
@@ -297,7 +345,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller error frequency in Hz\n    // @Description: Pitch axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTT": {
@@ -310,7 +357,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller target frequency in Hz\n    // @Description: Pitch axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_I": {
@@ -321,8 +367,8 @@
         "high": "0.6",
         "low": "0.0"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain\n    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_ILMI": {
@@ -332,8 +378,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_PIT_IMAX": {
       "Description": "Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -344,7 +389,26 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain maximum\n    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NEF": {
+      "Description": "Pitch Error notch filter index",
+      "DisplayName": "Pitch Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NTF": {
+      "Description": "Pitch Target notch filter index",
+      "DisplayName": "Pitch Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_P": {
@@ -355,9 +419,18 @@
         "high": "0.35",
         "low": "0.0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller P gain\n    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_PDMX": {
+      "Description": "Pitch axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Pitch axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_PIT_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -368,7 +441,6 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Pitch slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_D": {
@@ -379,8 +451,20 @@
         "high": "0.03",
         "low": "0.0"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller D gain\n    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Roll Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FF": {
@@ -391,8 +475,8 @@
         "high": "0.5",
         "low": "0.05"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller feed forward\n    // @Description: Roll axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTD": {
@@ -405,7 +489,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller derivative frequency in Hz\n    // @Description: Roll axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTE": {
@@ -418,7 +501,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller error frequency in Hz\n    // @Description: Roll axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTT": {
@@ -431,7 +513,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller target frequency in Hz\n    // @Description: Roll axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_I": {
@@ -442,8 +523,8 @@
         "high": "0.6",
         "low": "0.0"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain\n    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_ILMI": {
@@ -453,8 +534,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_RLL_IMAX": {
       "Description": "Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -465,7 +545,26 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain maximum\n    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NEF": {
+      "Description": "Roll Error notch filter index",
+      "DisplayName": "Roll Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NTF": {
+      "Description": "Roll Target notch filter index",
+      "DisplayName": "Roll Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_P": {
@@ -476,9 +575,18 @@
         "high": "0.35",
         "low": "0.0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller P gain\n    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_PDMX": {
+      "Description": "Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Roll axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_RLL_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -489,7 +597,6 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Roll slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_D": {
@@ -500,8 +607,20 @@
         "high": "0.02",
         "low": "0.000"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D gain\n    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate\n    // @Range: 0.000 0.02\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Yaw Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FF": {
@@ -512,8 +631,8 @@
         "high": "0.5",
         "low": "0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller feed forward\n    // @Description: Yaw axis rate controller feed forward\n    // @Range: 0 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTD": {
@@ -526,7 +645,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller derivative frequency in Hz\n    // @Description: Yaw axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTE": {
@@ -539,7 +657,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller error frequency in Hz\n    // @Description: Yaw axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTT": {
@@ -552,7 +669,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller target frequency in Hz\n    // @Description: Yaw axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_I": {
@@ -563,8 +679,8 @@
         "high": "0.2",
         "low": "0.01"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain\n    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate\n    // @Range: 0.01 0.2\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_ILMI": {
@@ -574,8 +690,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_YAW_IMAX": {
       "Description": "Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -586,7 +701,27 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain maximum\n    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NEF": {
+      "Description": "Yaw Error notch filter index",
+      "DisplayName": "Yaw Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NTF": {
+      "Description": "Yaw Target notch filter index",
+      "DisplayName": "Yaw Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_P": {
@@ -597,9 +732,18 @@
         "high": "0.60",
         "low": "0.180"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller P gain\n    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate\n    // @Range: 0.180 0.60\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_PDMX": {
+      "Description": "Yaw axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Yaw axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_YAW_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -610,20 +754,7 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
-    },
-    "ATC_SLEW_YAW": {
-      "Description": "Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes",
-      "DisplayName": "Yaw target slew rate",
-      "Increment": "100",
-      "Range": {
-        "high": "18000",
-        "low": "500"
-      },
-      "Units": "cdeg/s",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw target slew rate\n    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes\n    // @Units: cdeg/s\n    // @Range: 500 18000\n    // @Increment: 100\n    // @User: Advanced"
     },
     "ATC_THR_G_BOOST": {
       "Description": "Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.",
@@ -632,8 +763,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle-gain boost\n    // @Description: Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MAN": {
       "Description": "Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)",
@@ -642,8 +772,7 @@
         "high": "0.9",
         "low": "0.1"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Manual\n    // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.9\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MAX": {
       "Description": "Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)",
@@ -652,8 +781,7 @@
         "high": "0.9",
         "low": "0.5"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Maximum\n    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.5 0.9\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MIN": {
       "Description": "Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)",
@@ -662,8 +790,7 @@
         "high": "0.25",
         "low": "0.1"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
+      "User": "Advanced"
     }
   },
   "json": {
