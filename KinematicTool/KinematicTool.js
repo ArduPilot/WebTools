@@ -138,7 +138,7 @@ function get_param_names_for_axi(axi)
 
     return {
         rate_max: "ATC_RATE_" + axi + "_MAX",
-        accel_max: "ATC_ACCEL_" + axi + "_MAX",
+        accel_max: "ATC_ACC_" + axi + "_MAX",
         rate_tc
     }
 }
@@ -484,7 +484,7 @@ async function run_attitude()
     const config = {
         mode,
         vel_limit: radians(parseFloat(document.getElementById(param_names.rate_max).value)),
-        accel_limit: radians(parseFloat(document.getElementById(param_names.accel_max).value) * 0.01),
+        accel_limit: radians(parseFloat(document.getElementById(param_names.accel_max).value)),
         input_tc: parseFloat(document.getElementById("ATC_INPUT_TC").value),
         rate_tc: parseFloat(document.getElementById(param_names.rate_tc).value),
     }
