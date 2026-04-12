@@ -1,10 +1,19 @@
 var RuckigModule
-const import_done = new Promise((resolve) => {
+let import_done = []
+import_done[0] = new Promise((resolve) => {
     import('./Ruckig/ruckig.js').then(async(mod) => { 
         RuckigModule = await mod.default()
         resolve()
     })
 })
+
+var ardupilotModule
+import_done[1] = new Promise((resolve) => {
+    ControlModule().then((Module) => {
+        ardupilotModule = Module
+        resolve();
+    });
+});
 
 ang_pos = {}
 ang_vel = {}
@@ -223,16 +232,6 @@ function is_positive(x)
     return x > 0.0
 }
 
-function is_negative(x)
-{
-    return x < 0.0
-}
-
-function is_zero(x)
-{
-    return !is_negative(x) && !is_positive(x)
-}
-
 function constrain_float(amt, low, high)
 {
     if (amt < low) {
@@ -244,55 +243,6 @@ function constrain_float(amt, low, high)
     }
 
     return amt
-}
-
-function sq(x)
-{
-    return Math.pow(x, 2.0)
-}
-
-function safe_sqrt(x)
-{
-    let ret = Math.sqrt(x)
-    if (Number.isNaN(ret)) {
-        return 0
-    }
-    return ret
-}
-
-// sqrt_controller calculates the correction based on a proportional controller with piecewise sqrt sections to constrain second derivative.
-function sqrt_controller(error, p, second_ord_lim, dt)
-{
-    let correction_rate
-    if (is_negative(second_ord_lim) || is_zero(second_ord_lim)) {
-        // second order limit is zero or negative.
-        correction_rate = error * p
-    } else if (is_zero(p)) {
-        // P term is zero but we have a second order limit.
-        if (is_positive(error)) {
-            correction_rate = safe_sqrt(2.0 * second_ord_lim * (error))
-        } else if (is_negative(error)) {
-            correction_rate = -safe_sqrt(2.0 * second_ord_lim * (-error))
-        } else {
-            correction_rate = 0.0
-        }
-    } else {
-        // Both the P and second order limit have been defined.
-        const linear_dist = second_ord_lim / sq(p)
-        if (error > linear_dist) {
-            correction_rate = safe_sqrt(2.0 * second_ord_lim * (error - (linear_dist / 2.0)))
-        } else if (error < -linear_dist) {
-            correction_rate = -safe_sqrt(2.0 * second_ord_lim * (-error - (linear_dist / 2.0)))
-        } else {
-            correction_rate = error * p
-        }
-    }
-    if (is_positive(dt)) {
-        // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
-        return constrain_float(correction_rate, -Math.abs(error) / dt, Math.abs(error) / dt)
-    } else {
-        return correction_rate
-    }
 }
 
 function updateSqrtControl(config, desired, state, dt)
@@ -334,7 +284,7 @@ function input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, i
     if (is_positive(input_tc)) {
         // Calculate the acceleration to smoothly achieve rate. Jerk is not limited.
         const error_rate = desired_ang_vel - target_ang_vel
-        const desired_ang_accel = sqrt_controller(error_rate, 1.0 / Math.max(input_tc, 0.01), 0.0, dt)
+        const desired_ang_accel = ardupilotModule._sqrt_controller_wrapper(error_rate, 1.0 / Math.max(input_tc, 0.01), 0.0, dt)
         desired_ang_vel = target_ang_vel + desired_ang_accel * dt
     }
     // Acceleration is limited directly to smooth the beginning of the curve.
@@ -351,7 +301,7 @@ function input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, i
 function input_shaping_angle(error_angle, input_tc, accel_max, target_ang_vel, desired_ang_vel, max_ang_vel, dt)
 {
     // Calculate the velocity as error approaches zero with acceleration limited by accel_max_radss
-    desired_ang_vel += sqrt_controller(error_angle, 1.0 / Math.max(input_tc, 0.01), accel_max, dt)
+    desired_ang_vel += ardupilotModule._sqrt_controller_wrapper(error_angle, 1.0 / Math.max(input_tc, 0.01), accel_max, dt)
     if (is_positive(max_ang_vel)) {
         desired_ang_vel = constrain_float(desired_ang_vel, -max_ang_vel, max_ang_vel)
     }
@@ -360,117 +310,35 @@ function input_shaping_angle(error_angle, input_tc, accel_max, target_ang_vel, d
     return input_shaping_ang_vel(target_ang_vel, desired_ang_vel, accel_max, dt, 0.0)
 }
 
-// Applies jerk-limited shaping to the acceleration value to gradually approach a new target.
-// - Constrains the rate of change of acceleration to be within ±`jerk_max` over time `dt`.
-// - The current acceleration value is modified in-place.
-// Useful for ensuring smooth transitions in thrust or lean angle command profiles.
-function shape_accel(accel_input, accel, jerk_max, dt)
+
+// calculates the velocity correction from an angle error. The angular velocity has acceleration and
+// deceleration limits including basic jerk limiting using _input_tc
+// Translated from `AC_AttitudeControl::attitude_command_model`
+function attitude_command_model(error_angle, desired_ang_vel, target_ang_vel, target_ang_accel, max_ang_vel, accel_max, input_tc, dt)
 {
-    // sanity check jerk_max
-    if (!is_positive(jerk_max)) {
-        return;
+    if (!is_positive(dt)) {
+        return 0.0;
+    }
+    
+    // protect against divide by zero
+    if (!is_positive(accel_max)) {
+        // no acceleration set so default to 1800 degrees/s²
+        accel_max = radians(1800);
     }
 
-    // jerk limit acceleration change
-    if (is_positive(dt)) {
-        let accel_delta = accel_input - accel;
-        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
-        accel += accel_delta;
+    if (!is_positive(input_tc)) {
+        // no acceleration set so default to achieve maximum acceleration in 10 clock cycles
+        input_tc = dt * 10.0;
     }
 
-    return accel
-}
-
-// Shapes velocity and acceleration using jerk-limited control.
-// - Computes correction acceleration needed to reach `vel_input` from current `vel`.
-// - Uses a square-root controller with max acceleration and jerk constraints.
-// - Correction is combined with feedforward `accel_input`.
-// - If `limit_total_accel` is true, total acceleration is constrained to `accel_min` / `accel_max`.
-// The result is applied via `shape_accel`.
-function shape_vel_accel(vel_input, accel_input, vel, accel, accel_min, accel_max, jerk_max, dt, limit_total_accel)
-{
-    // sanity check accel_min, accel_max and jerk_max.
-    if (!is_negative(accel_min) || !is_positive(accel_max) || !is_positive(jerk_max)) {
-        return;
-    }
-
-    // velocity error to be corrected
-    const vel_error = vel_input - vel;
-
-    // Calculate time constants and limits to ensure stable operation
-    // The direction of acceleration limit is the same as the velocity error.
-    // This is because the velocity error is negative when slowing down while
-    // closing a positive position error.
-    let  KPa;
-    if (is_positive(vel_error)) {
-        KPa = jerk_max / accel_max;
-    } else {
-        KPa = jerk_max / (-accel_min);
-    }
-
-    // acceleration to correct velocity
-    let accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
-
-    // constrain correction acceleration from accel_min to accel_max
-    accel_target = constrain_float(accel_target, accel_min, accel_max);
-
-    // velocity correction with input velocity
-    accel_target += accel_input;
-
-    // Constrain total acceleration if limiting is enabled
-    if (limit_total_accel) {
-        accel_target = constrain_float(accel_target, accel_min, accel_max);
-    }
-
-    return shape_accel(accel_target, accel, jerk_max, dt);
-}
-
-// Computes a jerk-limited acceleration command to follow an angular position, velocity, and acceleration target.
-// - This function applies jerk-limited shaping to angular acceleration, based on input angle, angular velocity, and angular acceleration.
-// - Internally computes a target angular velocity using a square-root controller on the angle error.
-// - Velocity and acceleration are both optionally constrained:
-//   - If `limit_total` is true, limits apply to the total (not just correction) command.
-//   - Setting `angle_vel_max` or `angle_accel_max` to zero disables that respective limit.
-// - The acceleration output is shaped toward the target using `shape_vel_accel`.
-// Used for attitude control with limited angular velocity and angular acceleration (e.g., roll/pitch shaping).
-function shape_angle_vel_accel(angle_input, angle_vel_input, angle_accel_input, angle, angle_vel, angle_accel, angle_vel_max, angle_accel_max, angle_jerk_max, dt, limit_total)
-{
-    // sanity check accel_max
-    if (!is_positive(angle_accel_max)) {
-        return;
-    }
-
-    // Estimate time to decelerate based on current angular velocity and acceleration limit
-    const stopping_time = Math.abs(angle_vel / angle_accel_max);
-
-    // Compute total angular error with prediction of future motion, then wrap to [-π, π]
-    let angle_error = angle_input - angle - angle_vel * stopping_time;
-    angle_error = wrap_PI(angle_error);
-    angle_error += angle_vel * stopping_time;
-
-    // Calculate time constants and limits to ensure stable operation
-    // These ensure the square-root controller respects angular acceleration and jerk constraints
-    const angle_accel_tc_max = 0.5 * angle_accel_max;
-    const KPv = 0.5 * angle_jerk_max / angle_accel_max;
-
-    // velocity to correct position
-    let angle_vel_target = sqrt_controller(angle_error, KPv, angle_accel_tc_max, dt);
-
-    // limit velocity to vel_max
-    if (is_positive(angle_vel_max)) {
-        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
-    }
-
-    // velocity correction with input velocity
-    angle_vel_target += angle_vel_input;
-
-    // Constrain total velocity if limiting is enabled and angle_vel_max is positive 
-    if (limit_total && is_positive(angle_vel_max)) {
-        angle_vel_target = constrain_float(angle_vel_target, -angle_vel_max, angle_vel_max);
-    }
-
-    // Shape the angular acceleration using jerk-limited profile
-    return shape_vel_accel(angle_vel_target, angle_accel_input, angle_vel, angle_accel, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total);
+    return ardupilotModule._shape_angle_vel_accel_wrapper(
+        error_angle, desired_ang_vel, 0.0, // Target
+        0.0, target_ang_vel, target_ang_accel, // Current
+        -max_ang_vel, max_ang_vel, // Vel limits
+        accel_max, // accel limit
+        accel_max / input_tc, // jerk limit
+        dt, true // time step and limit flag
+    );
 }
 
 function updateSCurve(config, desired, state, dt)
@@ -484,19 +352,15 @@ function updateSCurve(config, desired, state, dt)
         if (config.mode.use_vel) {
             desired_ang_vel = desired.vel
         }
-        const jerkLimit = config.accel_limit / config.input_tc
 
-        accel = shape_angle_vel_accel(desired.pos, desired_ang_vel, 0.0, state.pos[i-1], state.vel[i-1], state.accel[i-1], config.vel_limit, config.accel_limit, jerkLimit, dt, false)
+        accel = attitude_command_model(wrap_PI(desired.pos - state.pos[i-1]), desired_ang_vel, state.vel[i-1], state.accel[i-1], config.vel_limit, config.accel_limit, config.input_tc, dt)
 
     } else if (config.mode.use_vel) {
-
-        const jerkLimit = config.accel_limit / config.rate_tc
-
-        accel = shape_vel_accel(desired.vel, 0.0, state.vel[i-1], state.accel[i-1], -config.accel_limit, config.accel_limit, jerkLimit, dt, false)
+        accel = attitude_command_model(0.0, desired.vel, state.vel[i-1], state.accel[i-1], 0.0, config.accel_limit, config.rate_tc, dt)
 
     }
 
-    const delta_pos = state.vel[i-1] * dt + accel * 0.5 * sq(dt)
+    const delta_pos = state.vel[i-1] * dt + accel * 0.5 * Math.pow(dt, 2.0)
     state.pos[i] =  wrap_PI(state.pos[i-1] + delta_pos)
 
     const delta_vel = accel * dt
@@ -602,7 +466,7 @@ function update_ruckig(config, desired, state, dt)
 
 async function run_attitude()
 {
-    await import_done
+    await Promise.allSettled(import_done)
 
     const param_names = update_axis()
     const mode = update_mode(param_names)
