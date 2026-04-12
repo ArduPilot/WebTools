@@ -25,3 +25,6 @@
 [submodule "modules/pyAircraftIden"]
 	path = modules/pyAircraftIden
 	url = https://github.com/Astik-2002/pyAircraftIden.git
+[submodule "modules/ardupilot"]
+	path = modules/ardupilot
+	url = https://github.com/ArduPilot/ardupilot.git
