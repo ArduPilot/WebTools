@@ -821,8 +821,8 @@ function redraw() {
     // Rectangles to show param changes
     if (PID.params.sets.length > 1) {
         for (let i = 0; i < PID.params.sets.length; i++) {
-            const set_start = Math.max(time_range[0], PID.params.sets[i].start_time)
-            const set_end = Math.min(time_range[1], PID.params.sets[i].end_time)
+            const set_start = Math.max(PID_log_messages.start_time, PID.params.sets[i].start_time)
+            const set_end = Math.min(PID_log_messages.end_time, PID.params.sets[i].end_time)
 
             TimeInputs.layout.shapes[i].x0 = set_start
             TimeInputs.layout.shapes[i].x1 = set_end
