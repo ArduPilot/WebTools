@@ -4,12 +4,14 @@
 <meta charset="utf-8" />
 <title>ArduPilot SCurve plotter</title>
 <link rel="icon" href="../images/AP_favicon.png">
+<script src="./ardupilot/wpnav.js"></script>
 <script type="text/javascript" src="SCurveTool.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
 <script type="text/javascript" src="../Libraries/Array_Math.js"></script>
 <script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
 <script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
 <script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
 
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 
@@ -196,23 +198,19 @@
     </legend>
 
     <p>
-      <input type="number" id="ANGLE_MAX" value="3000" onchange="update()"/>
-    </p>
-
-    <p>
-      <input type="number" id="ATC_ACCEL_R_MAX" value="110000" data-paramValues="false" onchange="update()"/>
-    </p>
-
-    <p>
-      <input type="number" id="ATC_ACCEL_P_MAX" value="110000" data-paramValues="false" lass="label" onchange="update()"/>
-    </p>
-
-    <p>
       <input type="number" id="ATC_RATE_R_MAX" value="0" data-paramValues="false" onchange="update()"/>
     </p>
 
     <p>
       <input type="number" id="ATC_RATE_P_MAX" value="0" data-paramValues="false" onchange="update()"/>
+    </p>    
+
+    <p>
+      <input type="number" id="ATC_ACC_R_MAX" value="1100" data-paramValues="false" lass="label" onchange="update()"/>
+    </p>
+
+    <p>
+      <input type="number" id="ATC_ACC_P_MAX" value="1100" data-paramValues="false" lass="label" onchange="update()"/>
     </p>
 
     <p>
@@ -222,6 +220,7 @@
     <p>
       <input type="number" id="ATC_RATE_FF_ENAB" value="1" onchange="update()"/>
     </p>
+
   </fieldset>
 
   <fieldset class="params">
@@ -232,23 +231,23 @@
     </legend>
 
     <p>
-      <input type="number" id="PSC_JERK_XY" value="5.0" onchange="update()"/>
+      <input type="number" id="PSC_JERK_NE" value="5.0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="PSC_JERK_Z" value="5.0" onchange="update()"/>
+      <input type="number" id="PSC_JERK_D" value="5.0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="PSC_ANGLE_MAX" value="0" onchange="update()"/>
+      <input type="number" id="PSC_NE_POS_P" value="1.0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="PSC_ACCZ_FLTT" value="0" onchange="update()"/>
+      <input type="number" id="PSC_D_ACC_FLTT" value="0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="PSC_ACCZ_FLTE" value="0" onchange="update()"/>
+      <input type="number" id="PSC_D_ACC_FLTE" value="20" onchange="update()"/>
     </p>
   </fieldset>
 
@@ -260,35 +259,35 @@
     </legend>
 
     <p>
-      <input type="number" id="WPNAV_JERK" value="1.0" onchange="update()"/>
+      <input type="number" id="WP_JERK" value="1.0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_ACCEL_Z" value="100" onchange="update()"/>
+      <input type="number" id="WP_ACC_Z" value="1.0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_ACCEL" value="250" onchange="update()"/>
+      <input type="number" id="WP_ACC" value="2.5" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_ACCEL_C" value="250" onchange="update()"/>
+      <input type="number" id="WP_ACC_CNR" value="0" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_SPEED" value="1000" onchange="update()"/>
+      <input type="number" id="WP_SPD" value="10" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_SPEED_UP" value="250" onchange="update()"/>
+      <input type="number" id="WP_SPD_UP" value="2.5" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_SPEED_DN" value="150" onchange="update()"/>
+      <input type="number" id="WP_SPD_DN" value="1.5" onchange="update()"/>
     </p>
 
     <p>
-      <input type="number" id="WPNAV_RADIUS" value="5000" onchange="update()"/>
+      <input type="number" id="WP_RADIUS_M" value="50.0" onchange="update()"/>
     </p>
   </fieldset>
 </fieldset>
@@ -363,31 +362,17 @@
   // Load tool tips
   tippy('#TT')
 
-  const params = [
-    "ANGLE_MAX",
-    "ATC_ACCEL_R_MAX",
-    "ATC_ACCEL_P_MAX",
-    "ATC_RATE_R_MAX",
-    "ATC_RATE_P_MAX",
-    "ATC_INPUT_TC",
-    "ATC_RATE_FF_ENAB",
-    "PSC_JERK_XY",
-    "PSC_JERK_Z",
-    "PSC_ANGLE_MAX",
-    "PSC_ACCZ_FLTT",
-    "PSC_ACCZ_FLTE",
-    "WPNAV_JERK",
-    "WPNAV_ACCEL_Z",
-    "WPNAV_ACCEL",
-    "WPNAV_ACCEL_C",
-    "WPNAV_SPEED",
-    "WPNAV_SPEED_UP",
-    "WPNAV_SPEED_DN",
-    "WPNAV_RADIUS",
-  ]
+  let params = []
+  var inputs = document.getElementsByTagName("input");
+  for (param of inputs) {
+      if (param.id.startsWith("ATC_") || param.id.startsWith("PSC") || param.id.startsWith("WP_")) {
+          params.push(param.id)
+      }
+  }
 
   load_param_inputs("params.json", params)
 
+  init_loading_overlay()
 
 </script>
 

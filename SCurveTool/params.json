@@ -1,110 +1,58 @@
 {
-  "": {
-    "ANGLE_MAX": {
-      "Description": "Maximum lean angle in all flight modes",
-      "DisplayName": "Angle Max",
-      "Increment": "10",
-      "Range": {
-        "high": "8000",
-        "low": "1000"
-      },
-      "Units": "cdeg",
-      "User": "Advanced"
-    },
-    "ACRO_RP_RATE_TC": {
-      "Description": "Acro roll and pitch rate control input time constant.  Low numbers lead to sharper response, higher numbers to softer response",
-      "DisplayName": "Acro roll/pitch rate control input time constant",
-      "Increment": "0.01",
-      "Range": {
-        "high": "1",
-        "low": "0"
-      },
-      "Units": "s",
-      "User": "Standard",
-      "Values": {
-        "0.05": "Very Crisp",
-        "0.1": "Crisp",
-        "0.15": "Medium",
-        "0.2": "Soft",
-        "0.5": "Very Soft"
-      }
-    },
-    "PILOT_Y_RATE_TC": {
-      "Description": "Pilot yaw rate control input time constant.  Low numbers lead to sharper response, higher numbers to softer response",
-      "DisplayName": "Pilot yaw rate control input time constant",
-      "Increment": "0.01",
-      "Range": {
-        "high": "1",
-        "low": "0"
-      },
-      "Units": "s",
-      "User": "Standard",
-      "Values": {
-        "0.05": "Very Crisp",
-        "0.1": "Crisp",
-        "0.15": "Medium",
-        "0.2": "Soft",
-        "0.5": "Very Soft"
-      }
-    }
-  },
   "ATC_": {
-    "ATC_ACCEL_P_MAX": {
+    "ATC_ACC_P_MAX": {
       "Description": "Maximum acceleration in pitch axis",
       "DisplayName": "Acceleration Max for Pitch",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "180000",
+        "high": "1800",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "108000": "Medium",
-        "162000": "Fast",
-        "30000": "VerySlow",
-        "72000": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Pitch\n    // @Description: Maximum acceleration in pitch axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+        "1080": "Medium",
+        "1620": "Fast",
+        "300": "VerySlow",
+        "720": "Slow"
+      }
     },
-    "ATC_ACCEL_R_MAX": {
+    "ATC_ACC_R_MAX": {
       "Description": "Maximum acceleration in roll axis",
       "DisplayName": "Acceleration Max for Roll",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "180000",
+        "high": "1800",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "108000": "Medium",
-        "162000": "Fast",
-        "30000": "VerySlow",
-        "72000": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Roll\n    // @Description: Maximum acceleration in roll axis\n    // @Units: cdeg/s/s\n    // @Range: 0 180000\n    // @Increment: 1000\n    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast\n    // @User: Advanced"
+        "1080": "Medium",
+        "1620": "Fast",
+        "300": "VerySlow",
+        "720": "Slow"
+      }
     },
-    "ATC_ACCEL_Y_MAX": {
+    "ATC_ACC_Y_MAX": {
       "Description": "Maximum acceleration in yaw axis",
       "DisplayName": "Acceleration Max for Yaw",
-      "Increment": "1000",
+      "Increment": "10",
       "Range": {
-        "high": "72000",
+        "high": "720",
         "low": "0"
       },
-      "Units": "cdeg/s/s",
+      "Units": "deg/s/s",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
-        "18000": "Slow",
-        "36000": "Medium",
-        "54000": "Fast",
-        "9000": "VerySlow"
-      },
-      "__field_text": "\n    // @DisplayName: Acceleration Max for Yaw\n    // @Description: Maximum acceleration in yaw axis\n    // @Units: cdeg/s/s\n    // @Range: 0 72000\n    // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast\n    // @Increment: 1000\n    // @User: Advanced"
+        "180": "Slow",
+        "360": "Medium",
+        "540": "Fast",
+        "90": "VerySlow"
+      }
     },
     "ATC_ANGLE_BOOST": {
       "Description": "Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude",
@@ -113,8 +61,18 @@
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
+      }
+    },
+    "ATC_ANGLE_MAX": {
+      "Description": "Maximum lean angle in all flight modes",
+      "DisplayName": "Angle Max",
+      "Increment": "0.1",
+      "Range": {
+        "high": "80.0",
+        "low": "10.0"
       },
-      "__field_text": "\n    // @DisplayName: Angle Boost\n    // @Description: Angle Boost increases output throttle as the vehicle leans to reduce loss of altitude\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+      "Units": "deg",
+      "User": "Standard"
     },
     "ATC_ANG_LIM_TC": {
       "Description": "Angle Limit (to maintain altitude) Time Constant",
@@ -123,38 +81,37 @@
         "high": "10.0",
         "low": "0.5"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Angle Limit (to maintain altitude) Time Constant\n    // @Description: Angle Limit (to maintain altitude) Time Constant\n    // @Range: 0.5 10.0\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_ANG_PIT_P": {
       "Description": "Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate",
       "DisplayName": "Pitch axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis angle controller P gain\n    // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_ANG_RLL_P": {
       "Description": "Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate",
       "DisplayName": "Roll axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis angle controller P gain\n    // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 12.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_ANG_YAW_P": {
       "Description": "Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate",
       "DisplayName": "Yaw axis angle controller P gain",
+      "Increment": "0.01",
       "Range": {
         "high": "12.000",
         "low": "3.000"
       },
-      "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis angle controller P gain\n    // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate\n    // @Range: 3.000 12.000\n    // @Range{Sub}: 0.0 6.000\n    // @User: Standard"
+      "User": "Standard"
     },
     "ATC_HOVR_ROL_TRM": {
       "Description": "Trim the hover roll angle to counter tail rotor thrust in a hover",
@@ -165,8 +122,7 @@
         "low": "0"
       },
       "Units": "cdeg",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Hover Roll Trim\n    // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover\n    // @Units: cdeg\n    // @Increment: 10\n    // @Range: 0 1000\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_INPUT_TC": {
       "Description": "Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response",
@@ -184,8 +140,34 @@
         "0.15": "Medium",
         "0.2": "Soft",
         "0.5": "Very Soft"
+      }
+    },
+    "ATC_LAND_P_MULT": {
+      "Description": "Pitch gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the pitch axis.",
+      "DisplayName": "Landed pitch gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
       },
-      "__field_text": "\n    // @DisplayName: Attitude control input time constant\n    // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response\n    // @Units: s\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp\n    // @User: Standard"
+      "User": "Advanced"
+    },
+    "ATC_LAND_R_MULT": {
+      "Description": "Roll gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the roll axis.",
+      "DisplayName": "Landed roll gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
+      },
+      "User": "Advanced"
+    },
+    "ATC_LAND_Y_MULT": {
+      "Description": "Yaw gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the yaw axis.",
+      "DisplayName": "Landed yaw gain multiplier",
+      "Range": {
+        "high": "1.0",
+        "low": "0.25"
+      },
+      "User": "Advanced"
     },
     "ATC_PIRO_COMP": {
       "Description": "Pirouette compensation enabled",
@@ -194,18 +176,16 @@
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
-      },
-      "__field_text": "\n    // @DisplayName: Piro Comp Enable\n    // @Description: Pirouette compensation enabled\n    // @Values: 0:Disabled,1:Enabled\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_FF_ENAB": {
-      "Description": "Controls whether body-frame rate feedfoward is enabled or disabled",
+      "Description": "Controls whether body-frame rate feedforward is enabled or disabled",
       "DisplayName": "Rate Feedforward Enable",
       "User": "Advanced",
       "Values": {
         "0": "Disabled",
         "1": "Enabled"
-      },
-      "__field_text": "\n    // @DisplayName: Rate Feedforward Enable\n    // @Description: Controls whether body-frame rate feedfoward is enabled or disabled\n    // @Values: 0:Disabled, 1:Enabled\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_P_MAX": {
       "Description": "Maximum angular velocity in pitch axis",
@@ -222,8 +202,7 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Pitch\n    // @Description: Maximum angular velocity in pitch axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      }
     },
     "ATC_RATE_R_MAX": {
       "Description": "Maximum angular velocity in roll axis",
@@ -240,8 +219,18 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
+      }
+    },
+    "ATC_RATE_WPY_MAX": {
+      "Description": "Maximum rate the yaw target can be updated in Auto, Guided, Circle, Follow, RTL, SmartRTL, Throw and ZigZag flight modes",
+      "DisplayName": "Yaw target slew rate",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "5"
       },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Roll\n    // @Description: Maximum angular velocity in roll axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      "Units": "deg/s",
+      "User": "Advanced"
     },
     "ATC_RATE_Y_MAX": {
       "Description": "Maximum angular velocity in yaw axis",
@@ -258,8 +247,7 @@
         "180": "Medium",
         "360": "Fast",
         "60": "Slow"
-      },
-      "__field_text": "\n    // @DisplayName: Angular Velocity Max for Yaw\n    // @Description: Maximum angular velocity in yaw axis\n    // @Units: deg/s\n    // @Range: 0 1080\n    // @Increment: 1\n    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast\n    // @User: Advanced"
+      }
     },
     "ATC_RAT_PIT_D": {
       "Description": "Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate",
@@ -269,8 +257,20 @@
         "high": "0.03",
         "low": "0.0"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller D gain\n    // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Pitch Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FF": {
@@ -281,8 +281,8 @@
         "high": "0.5",
         "low": "0.05"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller feed forward\n    // @Description: Pitch axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTD": {
@@ -295,7 +295,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller derivative frequency in Hz\n    // @Description: Pitch axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTE": {
@@ -308,7 +307,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller error frequency in Hz\n    // @Description: Pitch axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_FLTT": {
@@ -321,7 +319,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller target frequency in Hz\n    // @Description: Pitch axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_I": {
@@ -332,8 +329,8 @@
         "high": "0.6",
         "low": "0.0"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain\n    // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_ILMI": {
@@ -343,8 +340,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_PIT_IMAX": {
       "Description": "Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -355,7 +351,26 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller I gain maximum\n    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NEF": {
+      "Description": "Pitch Error notch filter index",
+      "DisplayName": "Pitch Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_NTF": {
+      "Description": "Pitch Target notch filter index",
+      "DisplayName": "Pitch Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_PIT_P": {
@@ -366,9 +381,18 @@
         "high": "0.35",
         "low": "0.0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Pitch axis rate controller P gain\n    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_PIT_PDMX": {
+      "Description": "Pitch axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Pitch axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_PIT_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -379,7 +403,6 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Pitch slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_D": {
@@ -390,8 +413,20 @@
         "high": "0.03",
         "low": "0.0"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller D gain\n    // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.03\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Roll Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FF": {
@@ -402,8 +437,8 @@
         "high": "0.5",
         "low": "0.05"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller feed forward\n    // @Description: Roll axis rate controller feed forward\n    // @Range: 0.05 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTD": {
@@ -416,7 +451,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller derivative frequency in Hz\n    // @Description: Roll axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTE": {
@@ -429,7 +463,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller error frequency in Hz\n    // @Description: Roll axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_FLTT": {
@@ -442,7 +475,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller target frequency in Hz\n    // @Description: Roll axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_I": {
@@ -453,8 +485,8 @@
         "high": "0.6",
         "low": "0.0"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain\n    // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate\n    // @Range: 0.0 0.6\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_ILMI": {
@@ -464,8 +496,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_RLL_IMAX": {
       "Description": "Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -476,7 +507,26 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller I gain maximum\n    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NEF": {
+      "Description": "Roll Error notch filter index",
+      "DisplayName": "Roll Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_NTF": {
+      "Description": "Roll Target notch filter index",
+      "DisplayName": "Roll Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_RLL_P": {
@@ -487,9 +537,18 @@
         "high": "0.35",
         "low": "0.0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Roll axis rate controller P gain\n    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate\n    // @Range: 0.0 0.35\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_RLL_PDMX": {
+      "Description": "Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Roll axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_RLL_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -500,7 +559,6 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Roll slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_D": {
@@ -511,8 +569,20 @@
         "high": "0.02",
         "low": "0.000"
       },
+      "Units": "s^2/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller D gain\n    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate\n    // @Range: 0.000 0.02\n    // @Increment: 0.001\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Yaw Derivative FeedForward Gain",
+      "Increment": "0.0001",
+      "Range": {
+        "high": "0.02",
+        "low": "0"
+      },
+      "Units": "s^2/rad",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FF": {
@@ -523,8 +593,8 @@
         "high": "0.5",
         "low": "0"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller feed forward\n    // @Description: Yaw axis rate controller feed forward\n    // @Range: 0 0.5\n    // @Increment: 0.001\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTD": {
@@ -537,7 +607,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller derivative frequency in Hz\n    // @Description: Yaw axis rate controller derivative frequency in Hz\n    // @Range: 0 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTE": {
@@ -550,7 +619,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller error frequency in Hz\n    // @Description: Yaw axis rate controller error frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_FLTT": {
@@ -563,7 +631,6 @@
       },
       "Units": "Hz",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller target frequency in Hz\n    // @Description: Yaw axis rate controller target frequency in Hz\n    // @Range: 5 50\n    // @Increment: 1\n    // @Units: Hz\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_I": {
@@ -574,8 +641,8 @@
         "high": "0.2",
         "low": "0.01"
       },
+      "Units": "1/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain\n    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate\n    // @Range: 0.01 0.2\n    // @Increment: 0.01\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_ILMI": {
@@ -585,8 +652,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I-term leak minimum\n    // @Description: Point below which I-term will not leak down\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_RAT_YAW_IMAX": {
       "Description": "Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
@@ -597,7 +663,27 @@
         "low": "0"
       },
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller I gain maximum\n    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output\n    // @Range: 0 1\n    // @Increment: 0.01\n    // @User: Standard",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NEF": {
+      "Description": "Yaw Error notch filter index",
+      "DisplayName": "Yaw Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced",
+      "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_NTF": {
+      "Description": "Yaw Target notch filter index",
+      "DisplayName": "Yaw Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Advanced",
       "path": "AC_AttitudeControl_Heli"
     },
     "ATC_RAT_YAW_P": {
@@ -608,9 +694,18 @@
         "high": "0.60",
         "low": "0.180"
       },
+      "Units": "s/rad",
       "User": "Standard",
-      "__field_text": "\n    // @DisplayName: Yaw axis rate controller P gain\n    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate\n    // @Range: 0.180 0.60\n    // @Increment: 0.005\n    // @User: Standard",
       "path": "AC_AttitudeControl_Heli"
+    },
+    "ATC_RAT_YAW_PDMX": {
+      "Description": "Yaw axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Yaw axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
     },
     "ATC_RAT_YAW_SMAX": {
       "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
@@ -621,20 +716,7 @@
         "low": "0"
       },
       "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw slew rate limit\n    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.\n    // @Range: 0 200\n    // @Increment: 0.5\n    // @User: Advanced",
       "path": "AC_AttitudeControl_Heli"
-    },
-    "ATC_SLEW_YAW": {
-      "Description": "Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes",
-      "DisplayName": "Yaw target slew rate",
-      "Increment": "100",
-      "Range": {
-        "high": "18000",
-        "low": "500"
-      },
-      "Units": "cdeg/s",
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Yaw target slew rate\n    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes\n    // @Units: cdeg/s\n    // @Range: 500 18000\n    // @Increment: 100\n    // @User: Advanced"
     },
     "ATC_THR_G_BOOST": {
       "Description": "Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.",
@@ -643,8 +725,7 @@
         "high": "1",
         "low": "0"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle-gain boost\n    // @Description: Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.\n    // @Range: 0 1\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MAN": {
       "Description": "Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)",
@@ -653,8 +734,7 @@
         "high": "0.9",
         "low": "0.1"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Manual\n    // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.9\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MAX": {
       "Description": "Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)",
@@ -663,8 +743,7 @@
         "high": "0.9",
         "low": "0.5"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Maximum\n    // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.5 0.9\n    // @User: Advanced"
+      "User": "Advanced"
     },
     "ATC_THR_MIX_MIN": {
       "Description": "Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)",
@@ -673,174 +752,12 @@
         "high": "0.25",
         "low": "0.1"
       },
-      "User": "Advanced",
-      "__field_text": "\n    // @DisplayName: Throttle Mix Minimum\n    // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)\n    // @Range: 0.1 0.25\n    // @User: Advanced"
+      "User": "Advanced"
     }
   },
   "PSC": {
-    "PSC_ACCEL_DN_MAX": {
-      "Description": "Hard vertical descent acceleration limit, must be larger than waypoint and pilot targets, 0 disables",
-      "DisplayName": "Maximin vertical descent acceleration",
-      "Increment": "0.1",
-      "Range": {
-        "high": "5",
-        "low": "0.5"
-      },
-      "Units": "m/s/s",
-      "User": "Advanced"
-    },
-    "PSC_ACCEL_UP_MAX": {
-      "Description": "Hard vertical climb acceleration limit, must be larger than waypoint and pilot targets, 0 disables",
-      "DisplayName": "Maximin vertical climb acceleration",
-      "Increment": "0.1",
-      "Range": {
-        "high": "5",
-        "low": "0.5"
-      },
-      "Units": "m/s/s",
-      "User": "Advanced"
-    },
-    "PSC_ACCZ_D": {
-      "Description": "Acceleration (vertical) controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration",
-      "DisplayName": "Acceleration (vertical) controller D gain",
-      "Range": {
-        "high": "0.400",
-        "low": "0.000"
-      },
-      "User": "Standard"
-    },
-    "PSC_ACCZ_D_FF": {
-      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
-      "DisplayName": "Accel (vertical) Derivative FeedForward Gain",
-      "Increment": "0.0001",
-      "Range": {
-        "high": "0.02",
-        "low": "0"
-      },
-      "User": "Advanced"
-    },
-    "PSC_ACCZ_FF": {
-      "Description": "Acceleration (vertical) controller feed forward",
-      "DisplayName": "Acceleration (vertical) controller feed forward",
-      "Increment": "0.001",
-      "Range": {
-        "high": "0.5",
-        "low": "0"
-      },
-      "User": "Standard"
-    },
-    "PSC_ACCZ_FLTD": {
-      "Description": "Acceleration (vertical) controller derivative frequency in Hz",
-      "DisplayName": "Acceleration (vertical) controller derivative frequency in Hz",
-      "Increment": "1",
-      "Range": {
-        "high": "100",
-        "low": "1"
-      },
-      "Units": "Hz",
-      "User": "Standard"
-    },
-    "PSC_ACCZ_FLTE": {
-      "Description": "Acceleration (vertical) controller error frequency in Hz",
-      "DisplayName": "Acceleration (vertical) controller error frequency in Hz",
-      "Increment": "1",
-      "Range": {
-        "high": "100",
-        "low": "1"
-      },
-      "Units": "Hz",
-      "User": "Standard"
-    },
-    "PSC_ACCZ_FLTT": {
-      "Description": "Acceleration (vertical) controller target frequency in Hz",
-      "DisplayName": "Acceleration (vertical) controller target frequency in Hz",
-      "Increment": "1",
-      "Range": {
-        "high": "50",
-        "low": "1"
-      },
-      "Units": "Hz",
-      "User": "Standard"
-    },
-    "PSC_ACCZ_I": {
-      "Description": "Acceleration (vertical) controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration",
-      "DisplayName": "Acceleration (vertical) controller I gain",
-      "Range": {
-        "high": "3.000",
-        "low": "0.000"
-      },
-      "User": "Standard"
-    },
-    "PSC_ACCZ_IMAX": {
-      "Description": "Acceleration (vertical) controller I gain maximum.  Constrains the maximum pwm that the I term will generate",
-      "DisplayName": "Acceleration (vertical) controller I gain maximum",
-      "Range": {
-        "high": "1000",
-        "low": "0"
-      },
-      "Units": "d%",
-      "User": "Standard"
-    },
-    "PSC_ACCZ_NEF": {
-      "Description": "Accel (vertical) Error notch filter index",
-      "DisplayName": "Accel (vertical) Error notch filter index",
-      "Range": {
-        "high": "8",
-        "low": "1"
-      },
-      "User": "Advanced"
-    },
-    "PSC_ACCZ_NTF": {
-      "Description": "Accel (vertical) Target notch filter index",
-      "DisplayName": "Accel (vertical) Target notch filter index",
-      "Range": {
-        "high": "8",
-        "low": "1"
-      },
-      "User": "Advanced"
-    },
-    "PSC_ACCZ_P": {
-      "Description": "Acceleration (vertical) controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output",
-      "DisplayName": "Acceleration (vertical) controller P gain",
-      "Increment": "0.05",
-      "Range": {
-        "high": "1.500",
-        "low": "0.200"
-      },
-      "User": "Standard"
-    },
-    "PSC_ACCZ_PDMX": {
-      "Description": "Acceleration (vertical) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
-      "DisplayName": "Acceleration (vertical) controller PD sum maximum",
-      "Range": {
-        "high": "1000",
-        "low": "0"
-      },
-      "Units": "d%"
-    },
-    "PSC_ACCZ_SMAX": {
-      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
-      "DisplayName": "Accel (vertical) slew rate limit",
-      "Increment": "0.5",
-      "Range": {
-        "high": "200",
-        "low": "0"
-      },
-      "User": "Advanced"
-    },
-    "PSC_ACC_XY_FILT": {
-      "Description": "Lower values will slow the response of the navigation controller and reduce twitchiness",
-      "DisplayName": "XY Acceleration filter cutoff frequency",
-      "Increment": "0.1",
-      "Range": {
-        "high": "5",
-        "low": "0.5"
-      },
-      "Units": "Hz",
-      "User": "Advanced"
-    },
     "PSC_ANGLE_MAX": {
-      "Description": "Maximum lean angle autopilot can request.  Set to zero to use ANGLE_MAX parameter value",
+      "Description": "Maximum lean angle autopilot can request. Set to zero to use ANGLE_MAX parameter value",
       "DisplayName": "Position Control Angle Max",
       "Increment": "1",
       "Range": {
@@ -850,243 +767,361 @@
       "Units": "deg",
       "User": "Advanced"
     },
-    "PSC_JERK_XY": {
-      "Description": "Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target",
-      "DisplayName": "Jerk limit for the horizontal kinematic input shaping",
-      "Increment": "1",
+    "PSC_D_ACC_D": {
+      "Description": "Acceleration (vertical) controller D gain. Compensates for short-term change in desired vertical acceleration vs actual acceleration. If upgrading from 4.6 this is _ACCZ_D * 0.1.",
+      "DisplayName": "Acceleration (vertical) controller D gain",
+      "Increment": "0.001",
       "Range": {
-        "high": "20",
-        "low": "1"
+        "high": "0.100",
+        "low": "0.000"
       },
-      "Units": "m/s/s/s",
+      "User": "Standard"
+    },
+    "PSC_D_ACC_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target. If upgrading from 4.6 this is _ACCZ_P * 0.1.",
+      "DisplayName": "Accel (vertical) Derivative FeedForward Gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.050",
+        "low": "0.000"
+      },
       "User": "Advanced"
     },
-    "PSC_JERK_Z": {
+    "PSC_D_ACC_FF": {
+      "Description": "Acceleration (vertical) controller feed forward. If upgrading from 4.6 this is _ACCZ_FF * 0.1.",
+      "DisplayName": "Acceleration (vertical) controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.100",
+        "low": "0.000"
+      },
+      "User": "Standard"
+    },
+    "PSC_D_ACC_FLTD": {
+      "Description": "Acceleration (vertical) controller derivative frequency in Hz. Previously _ACCZ_FLTD.",
+      "DisplayName": "Acceleration (vertical) controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PSC_D_ACC_FLTE": {
+      "Description": "Acceleration (vertical) controller error frequency in Hz. Previously _ACCZ_FLTE.",
+      "DisplayName": "Acceleration (vertical) controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PSC_D_ACC_FLTT": {
+      "Description": "Acceleration (vertical) controller target frequency in Hz. Previously _ACCZ_FLTT.",
+      "DisplayName": "Acceleration (vertical) controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "1"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PSC_D_ACC_I": {
+      "Description": "Acceleration (vertical) controller I gain. Corrects long-term difference in desired vertical acceleration and actual acceleration. If upgrading from 4.6 this is _ACCZ_I * 0.1.",
+      "DisplayName": "Acceleration (vertical) controller I gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.500",
+        "low": "0.000"
+      },
+      "User": "Standard"
+    },
+    "PSC_D_ACC_IMAX": {
+      "Description": "Acceleration (vertical) controller I gain maximum. Constrains the maximum pwm that the I term will generate. If upgrading from 4.6 this is _ACCZ_IMAX * 0.001.",
+      "DisplayName": "Acceleration (vertical) controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1.0",
+        "low": "0.0"
+      },
+      "Units": "d%",
+      "User": "Standard"
+    },
+    "PSC_D_ACC_NEF": {
+      "Description": "Accel (vertical) Error notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NEF.",
+      "DisplayName": "Accel (vertical) Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_ACC_NTF": {
+      "Description": "Accel (vertical) Target notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NTF.",
+      "DisplayName": "Accel (vertical) Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_ACC_P": {
+      "Description": "Acceleration (vertical) controller P gain. Converts the difference between desired vertical acceleration and actual acceleration into a motor output. If upgrading from 4.6 this is _ACCZ_P * 0.1.",
+      "DisplayName": "Acceleration (vertical) controller P gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.250",
+        "low": "0.010"
+      },
+      "User": "Standard"
+    },
+    "PSC_D_ACC_PDMX": {
+      "Description": "Acceleration (vertical) controller PD sum maximum. The maximum/minimum value that the sum of the P and D term can output. If upgrading from 4.6 this is _ACCZ_P * 0.1.",
+      "DisplayName": "Acceleration (vertical) controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1.00",
+        "low": "0.00"
+      },
+      "Units": "d%"
+    },
+    "PSC_D_ACC_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Accel (vertical) slew rate limit",
+      "Increment": "0.1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_POS_P": {
+      "Description": "Position (vertical) controller P gain. Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller. Previously _POSZ_P.",
+      "DisplayName": "Position (vertical) controller P gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "4.00",
+        "low": "0.50"
+      },
+      "User": "Standard"
+    },
+    "PSC_D_VEL_D": {
+      "Description": "Velocity (vertical) controller D gain. Corrects short-term changes in velocity. Previously _VELZ_D.",
+      "DisplayName": "Velocity (vertical) controller D gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "2.00",
+        "low": "0.00"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_VEL_FF": {
+      "Description": "Velocity (vertical) controller Feed Forward gain. Produces an output that is proportional to the magnitude of the target. Previously _VELZ_FF.",
+      "DisplayName": "Velocity (vertical) controller Feed Forward gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "2.00",
+        "low": "0.00"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_VEL_FLTD": {
+      "Description": "Velocity (vertical) input filter for D term. This filter (in Hz) is applied to the input for D terms. Previously _VELZ_FLTD.",
+      "DisplayName": "Velocity (vertical) input filter for D term",
+      "Increment": "1.0",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "PSC_D_VEL_FLTE": {
+      "Description": "Velocity (vertical) error filter. This filter (in Hz) is applied to the input for P and I terms. Previously _VELZ_FLTE.",
+      "DisplayName": "Velocity (vertical) error filter",
+      "Increment": "1.0",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "PSC_D_VEL_I": {
+      "Description": "Velocity (vertical) controller I gain. Corrects long-term difference in desired velocity to a target acceleration. Previously _VELZ_I.",
+      "DisplayName": "Velocity (vertical) controller I gain",
+      "Increment": "0.1",
+      "Range": {
+        "high": "10.0",
+        "low": "0.00"
+      },
+      "User": "Advanced"
+    },
+    "PSC_D_VEL_IMAX": {
+      "Description": "Velocity (vertical) controller I gain maximum. Constrains the target acceleration that the I gain will output. If upgrading from 4.6 this is _VELZ_IMAX * 0.01.",
+      "DisplayName": "Velocity (vertical) controller I gain maximum",
+      "Increment": "0.1",
+      "Range": {
+        "high": "10.000",
+        "low": "1.000"
+      },
+      "User": "Standard"
+    },
+    "PSC_D_VEL_P": {
+      "Description": "Velocity (vertical) controller P gain. Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller. Previously _VELZ_P.",
+      "DisplayName": "Velocity (vertical) controller P gain",
+      "Increment": "0.1",
+      "Range": {
+        "high": "10.0",
+        "low": "1.0"
+      },
+      "User": "Standard"
+    },
+    "PSC_JERK_D": {
       "Description": "Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target",
       "DisplayName": "Jerk limit for the vertical kinematic input shaping",
       "Increment": "1",
       "Range": {
         "high": "50",
-        "low": "5"
+        "low": "1"
       },
       "Units": "m/s/s/s",
       "User": "Advanced"
     },
-    "PSC_POSXY_P": {
-      "Description": "Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller",
+    "PSC_JERK_NE": {
+      "Description": "Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target",
+      "DisplayName": "Jerk limit for the horizontal kinematic input shaping",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "1"
+      },
+      "Units": "m/s/s/s",
+      "User": "Advanced"
+    },
+    "PSC_NE_POS_P": {
+      "Description": "Position controller P gain. Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller. Previously _POSXY_P.",
       "DisplayName": "Position (horizontal) controller P gain",
+      "Increment": "0.01",
       "Range": {
-        "high": "2.000",
-        "low": "0.500"
+        "high": "4.00",
+        "low": "0.50"
       },
       "User": "Standard"
     },
-    "PSC_POSZ_P": {
-      "Description": "Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller",
-      "DisplayName": "Position (vertical) controller P gain",
+    "PSC_NE_VEL_D": {
+      "Description": "Velocity (horizontal) D gain. Corrects short-term changes in velocity. Previously _VELXY_D.",
+      "DisplayName": "Velocity (horizontal) D gain",
+      "Increment": "0.01",
       "Range": {
-        "high": "3.000",
-        "low": "1.000"
+        "high": "1.00",
+        "low": "0.00"
       },
-      "User": "Standard"
+      "User": "Advanced"
     },
-    "PSC_SPEED_DN_MAX": {
-      "Description": "Hard descent rate limit, must be larger than waypoint and pilot targets, 0 disables",
-      "DisplayName": "Maximin descent rate",
-      "Increment": "0.1",
+    "PSC_NE_VEL_FF": {
+      "Description": "Velocity (horizontal) feed forward gain. Converts the difference between desired velocity to a target acceleration. Previously _VELXY_FF.",
+      "DisplayName": "Velocity (horizontal) feed forward gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "10.00",
+        "low": "0.10"
+      },
+      "User": "Advanced"
+    },
+    "PSC_NE_VEL_FLTD": {
+      "Description": "Velocity (horizontal) input filter. This filter (in Hz) is applied to the input for D term. Previously _VELXY_FLTD.",
+      "DisplayName": "Velocity (horizontal) input filter",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "PSC_NE_VEL_FLTE": {
+      "Description": "Velocity (horizontal) input filter. This filter (in Hz) is applied to the input for P and I terms. Previously _VELXY_FLTE.",
+      "DisplayName": "Velocity (horizontal) input filter",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Advanced"
+    },
+    "PSC_NE_VEL_I": {
+      "Description": "Velocity (horizontal) I gain. Corrects long-term difference between desired and actual velocity to a target acceleration. Previously _VELXY_I.",
+      "DisplayName": "Velocity (horizontal) I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "10.00",
+        "low": "0.10"
+      },
+      "User": "Advanced"
+    },
+    "PSC_NE_VEL_IMAX": {
+      "Description": "Velocity (horizontal) integrator maximum. Constrains the target acceleration that the I gain will output. If upgrading from 4.6 this is _VELXY_IMAX * 0.01.",
+      "DisplayName": "Velocity (horizontal) integrator maximum",
+      "Increment": "1",
       "Range": {
         "high": "10",
         "low": "0"
       },
-      "Units": "m/s",
+      "Units": "m/s/s",
       "User": "Advanced"
     },
-    "PSC_SPEED_UP_MAX": {
-      "Description": "Hard climb rate limit, must be larger than waypoint and pilot targets, 0 disables",
-      "DisplayName": "Maximin climb rate",
-      "Increment": "0.1",
-      "Range": {
-        "high": "5",
-        "low": "0"
-      },
-      "Units": "m/s",
-      "User": "Advanced"
-    },
-    "PSC_VELXY_D": {
-      "Description": "Velocity (horizontal) D gain.  Corrects short-term changes in velocity",
-      "DisplayName": "Velocity (horizontal) D gain",
-      "Increment": "0.001",
-      "Range": {
-        "high": "1.00",
-        "low": "0.00"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELXY_FF": {
-      "Description": "Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration",
-      "DisplayName": "Velocity (horizontal) feed forward gain",
-      "Increment": "0.01",
-      "Range": {
-        "high": "6",
-        "low": "0"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELXY_FLTD": {
-      "Description": "Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term",
-      "DisplayName": "Velocity (horizontal) input filter",
-      "Range": {
-        "high": "100",
-        "low": "0"
-      },
-      "Units": "Hz",
-      "User": "Advanced"
-    },
-    "PSC_VELXY_FLTE": {
-      "Description": "Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms",
-      "DisplayName": "Velocity (horizontal) input filter",
-      "Range": {
-        "high": "100",
-        "low": "0"
-      },
-      "Units": "Hz",
-      "User": "Advanced"
-    },
-    "PSC_VELXY_I": {
-      "Description": "Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration",
-      "DisplayName": "Velocity (horizontal) I gain",
-      "Increment": "0.01",
-      "Range": {
-        "high": "1.00",
-        "low": "0.02"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELXY_IMAX": {
-      "Description": "Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output",
-      "DisplayName": "Velocity (horizontal) integrator maximum",
-      "Increment": "10",
-      "Range": {
-        "high": "4500",
-        "low": "0"
-      },
-      "Units": "cm/s/s",
-      "User": "Advanced"
-    },
-    "PSC_VELXY_P": {
-      "Description": "Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration",
+    "PSC_NE_VEL_P": {
+      "Description": "Velocity (horizontal) P gain. Converts the difference between desired and actual velocity to a target acceleration. Previously _VELXY_P.",
       "DisplayName": "Velocity (horizontal) P gain",
-      "Increment": "0.1",
-      "Range": {
-        "high": "6.0",
-        "low": "0.1"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELZ_D": {
-      "Description": "Velocity (vertical) controller D gain.  Corrects short-term changes in velocity",
-      "DisplayName": "Velocity (vertical) controller D gain",
-      "Increment": "0.001",
-      "Range": {
-        "high": "1.00",
-        "low": "0.00"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELZ_FF": {
-      "Description": "Velocity (vertical) controller Feed Forward gain.  Produces an output that is proportional to the magnitude of the target",
-      "DisplayName": "Velocity (vertical) controller Feed Forward gain",
       "Increment": "0.01",
       "Range": {
-        "high": "1",
-        "low": "0"
+        "high": "10.00",
+        "low": "0.10"
       },
       "User": "Advanced"
-    },
-    "PSC_VELZ_FLTD": {
-      "Description": "Velocity (vertical) input filter for D term.  This filter (in Hz) is applied to the input for D terms",
-      "DisplayName": "Velocity (vertical) input filter for D term",
-      "Range": {
-        "high": "100",
-        "low": "0"
-      },
-      "Units": "Hz",
-      "User": "Advanced"
-    },
-    "PSC_VELZ_FLTE": {
-      "Description": "Velocity (vertical) error filter.  This filter (in Hz) is applied to the input for P and I terms",
-      "DisplayName": "Velocity (vertical) error filter",
-      "Range": {
-        "high": "100",
-        "low": "0"
-      },
-      "Units": "Hz",
-      "User": "Advanced"
-    },
-    "PSC_VELZ_I": {
-      "Description": "Velocity (vertical) controller I gain.  Corrects long-term difference in desired velocity to a target acceleration",
-      "DisplayName": "Velocity (vertical) controller I gain",
-      "Increment": "0.01",
-      "Range": {
-        "high": "1.00",
-        "low": "0.02"
-      },
-      "User": "Advanced"
-    },
-    "PSC_VELZ_IMAX": {
-      "Description": "Velocity (vertical) controller I gain maximum.  Constrains the target acceleration that the I gain will output",
-      "DisplayName": "Velocity (vertical) controller I gain maximum",
-      "Range": {
-        "high": "8.000",
-        "low": "1.000"
-      },
-      "User": "Standard"
-    },
-    "PSC_VELZ_P": {
-      "Description": "Velocity (vertical) controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller",
-      "DisplayName": "Velocity (vertical) controller P gain",
-      "Range": {
-        "high": "8.000",
-        "low": "1.000"
-      },
-      "User": "Standard"
     }
   },
-  "WPNAV_": {
-    "WPNAV_ACCEL": {
-      "Description": "Defines the horizontal acceleration in cm/s/s used during missions",
-      "DisplayName": "Waypoint Acceleration ",
-      "Increment": "10",
+  "WP_": {
+    "WP_ACC": {
+      "Description": "Horizontal acceleration in m/s/s used during missions",
+      "DisplayName": "Waypoint Acceleration",
+      "Increment": "0.10",
       "Range": {
-        "high": "500",
-        "low": "50"
+        "high": "5.00",
+        "low": "0.50"
       },
-      "Units": "cm/s/s",
+      "Units": "m/s/s",
       "User": "Standard"
     },
-    "WPNAV_ACCEL_C": {
-      "Description": "Defines the maximum cornering acceleration in cm/s/s used during missions.  If zero uses 2x accel value.",
+    "WP_ACC_CNR": {
+      "Description": "Maximum cornering acceleration in m/s/s used during missions.  If zero uses 2x accel value.",
       "DisplayName": "Waypoint Cornering Acceleration",
-      "Increment": "10",
+      "Increment": "0.10",
       "Range": {
-        "high": "500",
+        "high": "5.00",
         "low": "0"
       },
-      "Units": "cm/s/s",
+      "Units": "m/s/s",
       "User": "Standard"
     },
-    "WPNAV_ACCEL_Z": {
-      "Description": "Defines the vertical acceleration in cm/s/s used during missions",
+    "WP_ACC_Z": {
+      "Description": "Vertical acceleration in m/s/s used during missions",
       "DisplayName": "Waypoint Vertical Acceleration",
-      "Increment": "10",
+      "Increment": "0.10",
       "Range": {
-        "high": "500",
-        "low": "50"
+        "high": "5.00",
+        "low": "0.50"
       },
-      "Units": "cm/s/s",
+      "Units": "m/s/s",
       "User": "Standard"
     },
-    "WPNAV_JERK": {
+    "WP_JERK": {
       "Description": "Defines the horizontal jerk in m/s/s used during missions",
       "DisplayName": "Waypoint Jerk",
       "Range": {
@@ -1096,18 +1131,18 @@
       "Units": "m/s/s/s",
       "User": "Standard"
     },
-    "WPNAV_RADIUS": {
-      "Description": "Defines the distance from a waypoint, that when crossed indicates the wp has been hit.",
+    "WP_RADIUS_M": {
+      "Description": "Distance from a waypoint, that when crossed indicates the wp has been reached.",
       "DisplayName": "Waypoint Radius",
-      "Increment": "1",
+      "Increment": "0.01",
       "Range": {
-        "high": "1000",
-        "low": "5"
+        "high": "10.00",
+        "low": "0.05"
       },
-      "Units": "cm",
+      "Units": "m",
       "User": "Standard"
     },
-    "WPNAV_RFND_USE": {
+    "WP_RFND_USE": {
       "Description": "This controls if waypoint missions use rangefinder for terrain following",
       "DisplayName": "Waypoint missions use rangefinder for terrain following",
       "User": "Advanced",
@@ -1116,40 +1151,40 @@
         "1": "Enable"
       }
     },
-    "WPNAV_SPEED": {
-      "Description": "Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission",
+    "WP_SPD": {
+      "Description": "Speed in m/s which the aircraft will attempt to maintain horizontally during a WP mission",
       "DisplayName": "Waypoint Horizontal Speed Target",
-      "Increment": "50",
+      "Increment": "0.10",
       "Range": {
-        "high": "2000",
-        "low": "10"
+        "high": "20.00",
+        "low": "0.10"
       },
-      "Units": "cm/s",
+      "Units": "m/s",
       "User": "Standard"
     },
-    "WPNAV_SPEED_DN": {
-      "Description": "Defines the speed in cm/s which the aircraft will attempt to maintain while descending during a WP mission",
+    "WP_SPD_DN": {
+      "Description": "Speed in m/s which the aircraft will attempt to maintain while descending during a WP mission",
       "DisplayName": "Waypoint Descent Speed Target",
-      "Increment": "10",
+      "Increment": "0.10",
       "Range": {
-        "high": "500",
-        "low": "10"
+        "high": "10.00",
+        "low": "0.10"
       },
-      "Units": "cm/s",
+      "Units": "m/s",
       "User": "Standard"
     },
-    "WPNAV_SPEED_UP": {
-      "Description": "Defines the speed in cm/s which the aircraft will attempt to maintain while climbing during a WP mission",
+    "WP_SPD_UP": {
+      "Description": "Speed in m/s which the aircraft will attempt to maintain while climbing during a WP mission",
       "DisplayName": "Waypoint Climb Speed Target",
-      "Increment": "50",
+      "Increment": "0.10",
       "Range": {
-        "high": "1000",
-        "low": "10"
+        "high": "10.00",
+        "low": "0.10"
       },
-      "Units": "cm/s",
+      "Units": "m/s",
       "User": "Standard"
     },
-    "WPNAV_TER_MARGIN": {
+    "WP_TER_MARGIN": {
       "Description": "Waypoint Terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)",
       "DisplayName": "Waypoint Terrain following altitude margin",
       "Range": {
