@@ -2098,6 +2098,13 @@ function load_from_batch(log, num_gyro, gyro_rate, get_param) {
                                     z: z })
     }
 
+    // Remove any batches with no data
+    for (let i = 0; i < Gyro_batch.length; i++) {
+        if (Gyro_batch[i]?.length === 0) {
+            Gyro_batch[i] = null
+        }
+    }
+
     // Work out if logging is pre/post from param value
     const INS_LOG_BAT_OPT = get_param("INS_LOG_BAT_OPT", false)
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
