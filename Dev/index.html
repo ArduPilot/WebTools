@@ -79,9 +79,8 @@ The tools on this page are either developer focused, or a work in progress, they
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>TelemetryDashboard</h2>
-      Telemetry Dashboard allows customizable data displays from a MAVLink telemetry stream. Requires a WebSocket server to forward raw binary MAVLink. Attempts to auto connect to MissionPlanner at <code>ws://127.0.0.1:56781</code>. Latest PyMAVLink can also be used eg: <a href="https://github.com/IamPete1/pymavlink/blob/WebSocket_forwarding_example/examples/mavtcpsniff.py">TCP to WebSocket</a>. 
-      This is read only, MAVLink commands are not sent (including stream rate requests). 
-      This is not a GCS replacement.
+      Telemetry Dashboard is a drone management solution for swarms, multiple or single vehicles to display customisable data from MAVLink telemetry streams. It requires a WebSocket server to forward raw binary MAVLink, eg: <a href="https://github.com/izzy-barr/pymavlink/blob/master/examples/mavtcpsniff.py">TCP to WebSocket</a>  modified for any IP address. 
+      It includes Widget & Primary Vehicle Selectors, Vehicle Info Pop-up, colour and icons according to vehicle type. It is read only and not a GCS replacement.
     </td>
   </tr>
 
@@ -116,16 +115,6 @@ The tools on this page are either developer focused, or a work in progress, they
       <h2>AI Log Analyzer</h2>
       AI Log Analyzer module
       Use an AI agent to analyze your logs file
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <a href="../SCurveTool" style="margin: 20px; display: inline-block;"><img src="../images/SCurveTool_Icon.png" style="width:200px"></a>
-    </td>
-    <td style="text-align:left; vertical-align:top; max-width:960px;">
-      <h2>SCurve Kinematic Tool</h2>
-      A tool to help understanding s-curve trajectories.
     </td>
   </tr>
 

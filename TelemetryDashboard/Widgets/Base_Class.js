@@ -87,10 +87,19 @@ class WidgetBase extends HTMLElement {
 
         // Add form
         const form_div = this.tippy_div.querySelector(`div[id="form"]`)
+        
+        // Add vehicle selector to widgets listed in vehicleSelectorWidgets
+        let vehicleSelectorWidgets = ["Attitude gauge", "Graph", "Map", "MAVLink inspector", "MAVLink messages", "Stats", "Value"]
+        if (vehicleSelectorWidgets.includes(this.about.name)) {
+            form_definition = this.add_vehicleSelector(form_definition) 
+        }
+
+        let previousVehicleIDs = [];
+
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
             this.form = form
-
+            
             // Load form
             this.form.setForm(form_definition).then(() => {
 
@@ -105,6 +114,12 @@ class WidgetBase extends HTMLElement {
 
                     // Clear changed flag
                     this.changed = false
+
+                    // Get selected vehicles
+                    previousVehicleIDs = this.form.submission.data.vehicleID || []
+                    if (Array.isArray(previousVehicleIDs) == false) {
+                        previousVehicleIDs = [previousVehicleIDs]
+                    }
 
                     // Add change callback
                     this.last_content = JSON.stringify(this.form.submission.data)
@@ -121,6 +136,33 @@ class WidgetBase extends HTMLElement {
                         if (this.last_content == JSON_data) {
                             // No change from last submission
                             return
+                        }
+                        
+                        // Find removed vehicle from selected vehicles                     
+                        if (e.changed.component.key === 'vehicleID') {
+                            let currentValue = e.changed.value || [];
+
+                            // Arrayify currentValue if not already
+                            if (Array.isArray(currentValue) == false) {
+                                currentValue = [currentValue]
+                            }
+
+                            // Find removed vehicles
+                            const removed = previousVehicleIDs.filter(val => !currentValue.includes(val));
+
+                            // Dispatch vehicle remove to widget of the same name if the vehicle was removed
+                            if (removed.length > 0) {
+                                removed.forEach(id => {
+                                    const evt = new CustomEvent('vehicleRemove'+this.about.name, {
+                                        detail: { vehicleID: id }
+                                    });
+                                    window.dispatchEvent(evt);
+                                });
+                            }
+
+                            // Update previousVehicleIDs
+                            previousVehicleIDs = [...currentValue]
+                    
                         }
                         this.last_content = JSON_data
                         this.form_changed()
@@ -156,6 +198,9 @@ class WidgetBase extends HTMLElement {
         })
 
         this.ondblclick = (e) => {
+
+            this.updateVehicleSelect() // Update vehicle selector according to options in vehicle
+
             if (this.edit_enabled) {
                 this.edit_tip.show()
             }
@@ -164,6 +209,129 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
+        // Listen for primary vehicle to be selected
+        parent.addEventListener('primarySelectVehicle', e => {
+            const primaryVehicleID = e.detail.vehicleID
+            this.primaryVehicleSelector(primaryVehicleID)
+        })
+
+        // Add to listen for vehicle disconnected
+        parent.addEventListener('vehicleDisconnect', e => {
+            const vehicleID = e.detail.vehicleID
+            this.updateVehicleSelect(vehicleID)            
+        })
+
+    }
+
+    // Adding Vehicle Selector to form_definition
+    add_vehicleSelector(form_definition) {
+
+        // Return original form definition if it doesn't exist or have components
+        if (!form_definition || !form_definition.components) {
+            return form_definition
+        }
+
+        // Get connected vehicles for selector options
+        let currentEntries = this.get_mapEntries()
+
+        // Try to find existing selector
+        const existingComponent = form_definition.components.find(
+            comp => comp.key === "vehicleID"
+        )
+
+        // If selector exists, update entries and return
+        if (existingComponent) {
+            existingComponent.data.values = currentEntries
+            return form_definition
+        }
+
+        // Mostly let single select except Map and Graph
+        let allowMultiple = false;
+        if (this.about.name == "Map" || this.about.name == "Graph") {
+            allowMultiple = true;
+        } else allowMultiple = false;
+
+        // Add selector at the top of the Edit Tippy
+        form_definition.components.unshift({
+            type: "select",
+            label: "Select Vehicle",
+            key: "vehicleID",
+            input: true,
+            tableView: true,
+            multiple: allowMultiple,
+            dataSrc: "values",
+            data: {
+                values: currentEntries
+            },
+        })
+
+        return form_definition
+    }
+
+    // Get entries for Vehicle Selector dropdown menu according to connected websockets
+    get_mapEntries() {
+
+        // If map doesn't exist or is empty, return an empty array
+        if (!vehicleMap || vehicleMap.size === 0) return []
+
+        // From the window's vehicleMap, filter vehicles which have connected WebSockets
+        const connectedVehicles = [...vehicleMap.values()]
+            .filter(vehicle => vehicle.ws && vehicle.ws.readyState === WebSocket.OPEN) // Only include connected vehicles
+            .map(vehicle => ({
+                label: vehicle.name,
+                value: vehicle.id
+            }))
+        return connectedVehicles
+    }
+
+    // Set default option to primary vehicle selected
+    primaryVehicleSelector(id) {
+
+        if (!this.form) return // Return if the form doesn't exist
+
+        const comp = this.form.getComponent("vehicleID") // Find Vehicle Selector
+        if (!comp) return // Return if it doesn't exist
+
+        comp.setValue(id) // Set the value to the primary vehicle selected
+
+        this.form.triggerChange() // Trigger change to update form content and notify the widget
+        
+    }
+
+    // Update select Vehicle options in dropdown menu according to connected websockets
+    updateVehicleSelect(id) {
+
+        if (!this.form) return // Return if form doesn't exist
+
+        // Get vehicle(s) already in form and return if no Vehicle Selector
+        const compVehID = this.form.getComponent("vehicleID")
+        if (!compVehID) return
+ 
+        // Get the vehicle(s) with connected websockets
+        const values = this.get_mapEntries()
+        const validValues = values.map(v => v.value)
+
+        // Update dropdown options to connected vehicles
+        compVehID.component.data.values = values
+        compVehID.redraw()
+
+        // Arrayify selected vehicle(s) already in form
+        let compVehIDValues = compVehID.getValue()
+        if (Array.isArray(compVehIDValues) == false) {
+            compVehIDValues = [compVehIDValues]
+        }
+
+        // Return if removed vehicle was not previously selected
+        if (compVehIDValues.includes(id) == false) return
+
+        // Remove vehicle from options if it was previously selected
+        if (compVehIDValues.length > 1) {
+            const newValue = compVehIDValues.filter(val => validValues.includes(val))
+            compVehID.setValue(newValue)
+        } else compVehID.setValue("")
+
+        this.form.triggerChange()
+       
     }
 
     // Enable or disable editing
@@ -177,7 +345,6 @@ class WidgetBase extends HTMLElement {
     get_about() {
         return this.about
     }
-
     
     // Get edit text type
     get_edit_language() { }
@@ -215,7 +382,6 @@ class WidgetBase extends HTMLElement {
         this.tippy_div.querySelector(`div[id="form"]`).style.display = have_content ? "block" : "none"
 
     }
-
 
     // Update form definition
     set_form_definition(new_def) {

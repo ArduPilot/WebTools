@@ -166,76 +166,6 @@
             "truncateMultipleSpaces": false
           },
           {
-            "label": "color",
-            "tooltip": "Text color",
-            "key": "color",
-            "type": "color",
-            "input": true,
-            "tableView": false,
-            "widget": {
-              "type": "input"
-            },
-            "inputType": "color",
-            "mask": false,
-            "data": "#000000",
-            "id": "emqmow4a",
-            "placeholder": "",
-            "prefix": "",
-            "customClass": "",
-            "suffix": "",
-            "multiple": false,
-            "defaultValue": null,
-            "protected": false,
-            "unique": false,
-            "persistent": true,
-            "hidden": false,
-            "clearOnHide": true,
-            "refreshOn": "",
-            "redrawOn": "",
-            "modalEdit": false,
-            "dataGridLabel": false,
-            "labelPosition": "top",
-            "description": "",
-            "errorLabel": "",
-            "hideLabel": false,
-            "tabindex": "",
-            "disabled": false,
-            "autofocus": false,
-            "dbIndex": false,
-            "customDefaultValue": "",
-            "calculateValue": "",
-            "calculateServer": false,
-            "attributes": {},
-            "validateOn": "change",
-            "validate": {
-              "required": false,
-              "custom": "",
-              "customPrivate": false,
-              "strictDateValidation": false,
-              "multiple": false,
-              "unique": false
-            },
-            "conditional": {
-              "show": null,
-              "when": null,
-              "eq": ""
-            },
-            "overlay": {
-              "style": "",
-              "left": "",
-              "top": "",
-              "width": "",
-              "height": ""
-            },
-            "allowCalculateOverride": false,
-            "encrypted": false,
-            "showCharCount": false,
-            "showWordCount": false,
-            "properties": {},
-            "allowMultipleMasks": false,
-            "addons": []
-          },
-          {
             "label": "Message",
             "tooltip": "Message to look for",
             "key": "message",
@@ -1690,7 +1620,7 @@
           },
           {
             "label": "Field",
-            "tooltip": "Mesage feild to display",
+            "tooltip": "Message field to display",
             "MAVLinkMsgSelect": "message",
             "defaultValue": "groundspeed",
             "key": "field",
@@ -1945,10 +1875,9 @@
         "field": "groundspeed",
         "scaleFactor": 1,
         "time": 60,
-        "color": "#000000",
         "periodS": 60
       },
-      "sandbox": "// Include potly\nconst script = document.createElement(\"script\")\nscript.src = \"https://cdn.plot.ly/plotly-2.35.0.min.js\"\ndocument.body.appendChild(script)\n\n// Setup layout\nconst plot_layout = { \n    title: { text: options.title },\n    legend: { itemclick: false, itemdoubleclick: false }, \n    margin: { b: 50, l: 65, r: 50, t: 50 },\n    xaxis: { title: { text: \"time (s)\" }, range: [-options.time, 0], zeroline: false, showline: true, mirror: true },\n    yaxis: { title: { text: options.label }, zeroline: false, showline: true, mirror: true }\n}\n\nconst plot_data = [\n    { mode: 'lines', x: [], y:[], line: { color: options.color } }\n]\n\ndata = {\n    time: [],\n    value: []\n}\n\nlet plot_created = false\n\n// Update plot\nfunction update_data() {\n\n    // Calculate time since sample\n    const now = Date.now()\n    const len = data.time.length\n    const dt = new Array(len)\n    for (let i = 0; i<len; i++) {\n        dt[i] = (now - data.time[i]) / -1000.0\n    }\n\n    // See if there is any data to discard\n    const last = dt.findLastIndex((x) => -x > options.time)\n    if (last != -1) {\n        data.time.splice(0, last)\n        data.value.splice(0, last)\n        dt.splice(0, last)\n    }\n\n    // Update plot\n    plot_data[0].x = dt\n    plot_data[0].y = data.value\n\n    // Make sure plotly is loaded\n    if (window.Plotly !== undefined) {\n        if (!plot_created) {\n            replot()\n        }\n        Plotly.redraw(div)\n    }\n}\n\n\nfunction replot() {\n    // Clear plot and redraw to cope with change in size or options\n    plot_layout.title.text = options.title\n    plot_layout.xaxis.range[0] = -options.time\n    plot_layout.yaxis.title.text = options.label\n    plot_data[0].line.color = options.color\n\n    if (window.Plotly !== undefined) {\n        Plotly.purge(div)\n        Plotly.newPlot(div, plot_data, plot_layout, {displaylogo: false})\n        plot_created = true\n    }\n}\n\n// Watch for size changes\nnew ResizeObserver(() => { replot() }).observe(div)\n\n// Runtime function\nhandle_msg = function (msg) {\n\n    // Check message ID\n    if (msg._id != options.message) {\n        return\n    }\n\n    // Check for field\n    if (!(options.field in msg)) {\n        throw new Error(\"No field \" + options.field + \" in \" + msg._name)\n    }\n\n    let value = msg[options.field]\n    value *= options.scaleFactor\n\n    // Add data\n    data.value.push(value)\n    data.time.push(Date.now())\n\n    // Plot\n    update_data()\n}\n\n// Add 10Hz update plot\nsetInterval(update_data, 100)\n\n// Optional function to allow run-time update of options\nhandle_options = function (new_options) {\n    options = new_options\n\n    replot()\n}\n",
+      "sandbox": "// Include Plotly\nconst script = document.createElement(\"script\")\nscript.src = \"https://cdn.plot.ly/plotly-2.35.0.min.js\"\ndocument.body.appendChild(script)\n\n// Setup layout\nconst plot_layout = {\n    title: { text: options.title },\n    legend: { itemclick: false, itemdoubleclick: false },\n    margin: { b: 50, l: 65, r: 50, t: 50 },\n    xaxis: {\n        title: { text: \"time (s)\" },\n        range: [-options.time, 0],\n        zeroline: false,\n        showline: true,\n        mirror: true\n    },\n    yaxis: {\n        title: { text: options.label },\n        zeroline: false,\n        showline: true,\n        mirror: true\n    }\n}\n\nconst plot_data = [] //IB change for multi vehicle\n\nlet vehicle_data = {} //IB add\nlet plot_created = false\n\n//IB moved plot_data and vehicle_data into function for multi vehicle purposes\nfunction graph_vehicle_init(id, colour, vehicleID) {\n\n    const trace = {\n        mode: \"lines\",\n        x: [],\n        y: [],\n        line: { color: colour }, //IB change colour to vehicle colour property\n        name: parent.vehicleMap.get(vehicleID).name //IB label according to user-inputted vehicle name\n    }\n\n    plot_data.push(trace)\n\n    vehicle_data[id] = {\n        time: [],\n        value: [],\n        trace_index: plot_data.length - 1\n    }\n\n    replot()\n}\n\n// Update plot\nfunction update_data() {\n\n    //IB move inside for loop for each vehicle and updated variable names\n    for (const id in vehicle_data) {\n        \n         // Calculate time since sample\n        const v = vehicle_data[id] //IB add\n        const now = Date.now()\n        const len = v.time.length\n        const dt = new Array(len)\n\n        for (let i = 0;  i < len;  i++) {\n            dt[i] = (now - v.time[i]) / -1000.0 \n        }\n\n        // See if there is any data to discard\n        const last = dt.findLastIndex((x) => -x > options.time) \n\n        if (last !== -1) {\n            v.time.splice(0, last) \n            v.value.splice(0, last) \n            dt.splice(0, last) \n        }\n\n        // Update plot data\n        plot_data[v.trace_index].x = dt \n        plot_data[v.trace_index].y = v.value \n\n    }\n    \n\n    // Make sure Plotly is loaded\n    if (window.Plotly !== undefined) {\n        if (!plot_created) {\n            replot() \n        }\n        Plotly.redraw(div) \n    }\n}\n\nfunction replot() {\n    // Clear plot and redraw to cope with change in size or options\n    plot_layout.title.text = options.title \n    plot_layout.xaxis.range[0] = -options.time \n    plot_layout.yaxis.title.text = options.label \n\n    if (window.Plotly !== undefined) {\n        Plotly.purge(div) \n        Plotly.newPlot(div, plot_data, plot_layout, { displaylogo: false }) \n        plot_created = true \n    }\n}\n\n//IB change plotline colour\nfunction change_colour(colour, id) {\n    // Change colour, clear plot and redraw\n    plot_data[vehicle_data[id].trace_index].line.color = colour \n    if (window.Plotly !== undefined) {\n        Plotly.purge(div) \n        Plotly.newPlot(div, plot_data, plot_layout, { displaylogo: false }) \n        plot_created = true \n    }\n}\n\n// Watch for size changes\nnew ResizeObserver(() => {\n    replot() \n}).observe(div) \n\n// Runtime function\nhandle_msg = function (msg) {\n\n    // Check message ID\n    if (msg._id !== options.message) {\n        return \n    }\n\n    // Check for field\n    if (!(options.field in msg)) {\n        throw new Error(\"No field \" + options.field + \" in \" + msg._name) \n    }\n\n    const id = msg._vehicleID //IB add\n\n    //IB initiate new trace for new vehicle\n    if (vehicle_data[id] == null) {\n        graph_vehicle_init(id, msg._colour, msg._vehicleID)\n    } else if (plot_data[vehicle_data[id].trace_index].line.color !== msg._colour) {\n        change_colour(msg._colour, id)\n    }\n\n    let value = msg[options.field] \n    value *= options.scaleFactor \n\n    // Add data\n    vehicle_data[id].value.push(value) \n    vehicle_data[id].time.push(Date.now()) \n\n    // Plot\n    update_data() \n} \n\n// Add 10 Hz update plot\nsetInterval(update_data, 100) \n\n// Optional function to allow run-time update of options\nhandle_options = function (new_options) {\n    options = new_options \n    replot() \n} ",
       "about" : {
         "name": "Graph",
         "info": "Graph example built using the Sandbox widget. User customizable plot options."
