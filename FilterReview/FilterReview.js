@@ -2500,7 +2500,7 @@ async function load(log_file) {
     let primary_gyro = 0
     const AHRS_EKF_TYPE = get_param("AHRS_EKF_TYPE")
     const EK3_PRIMARY = get_param("EK3_PRIMARY")
-    if ((AHRS_EKF_TYPE == 3) && (EK3_PRIMARY != null)) {
+    if ((AHRS_EKF_TYPE == 3) && (EK3_PRIMARY != null) && (EK3_PRIMARY >= 0) && (EK3_PRIMARY <= 2)) {
         primary_gyro = EK3_PRIMARY
 
         // Add label to primary
