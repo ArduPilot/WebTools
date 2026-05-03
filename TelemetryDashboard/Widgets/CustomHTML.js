@@ -2,7 +2,7 @@
 // Loads iframe and sends messages to it
 
 class WidgetCustomHTML extends WidgetBase {
-    constructor(options, html) {
+    constructor(options) {
 
         if (options == null) {
             options = {}
@@ -10,7 +10,7 @@ class WidgetCustomHTML extends WidgetBase {
 
         // Add info used in palette tool tip
         // This can be added manual for custom widgets by editing the JSON
-        if (!("about" in options)) {
+        if (options?.about == null) {
             options.about = {
                 name: "Custom HTML",
                 info: "Custom HTML allowing user defined HTML. User input using Formio form."

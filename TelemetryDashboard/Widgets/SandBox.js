@@ -10,7 +10,7 @@ class WidgetSandBox extends WidgetBase {
 
         // Add info used in palette tool tip
         // This can be added manual for custom widgets by editing the JSON
-        if (!("about" in options)) {
+        if (options?.about == null) {
             options.about = {
                 name: "Sandbox",
                 info: "Sandboxed widget allowing user defined functionality with JavaScript. User input using Formio form."
