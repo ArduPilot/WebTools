@@ -734,7 +734,8 @@ async function exportVideo() {
 
     // Print progress
     conversion.onProgress = (progress) => {
-        console.log(`${(progress * 100).toFixed(2)}%`);
+        const loadingOverlay = document.getElementById("loading")
+        loadingOverlay.firstChild.innerHTML = `${(progress * 100).toFixed(2)}%`
     }
 
     // Run the conversion
