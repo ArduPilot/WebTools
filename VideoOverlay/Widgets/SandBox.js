@@ -2,6 +2,8 @@
 // Loads iframe and sends messages to it
 
 class WidgetSandBoxVideoOverlay extends WidgetSandBox {
+    initDone
+
     constructor(options) {
 
         if (options == null) {
@@ -23,7 +25,7 @@ div.appendChild(logTime)
 
 // Load function
 loadLog = function (log) {
-    message_report.nodeValue = "Got log of length: " + (log.durationUS() / 1000000).toFixed(2)
+    message_report.nodeValue = "Got log starting at: " + log.extractStartTime()
 }
 
 // Runtime function
@@ -39,8 +41,11 @@ setTime = function(time) {
         this.iframe.src = 'Widgets/SandBox.html'
 
         // Send over user config as soon as iframe is loaded
-        this.iframe.addEventListener("load", (e) => {
-            this.init()
+        this.initDone = new Promise((resolve) => {
+            this.iframe.addEventListener("load", (e) => {
+                this.init()
+                resolve()
+            })
         })
 
     }
@@ -59,11 +64,13 @@ setTime = function(time) {
     }
 
     loadLog() {
-        if ((log == null) || (this.iframe.contentWindow == null)){
+        if (log == null) {
             return
         }
         const data = { logData: log.buffer }
-        this.iframe.contentWindow.postMessage(data, '*')
+        this.initDone.then(() => {
+            this.iframe.contentWindow.postMessage(data, '*')
+        })
     }
 
     form_changed() {
