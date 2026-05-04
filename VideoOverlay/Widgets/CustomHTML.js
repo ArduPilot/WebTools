@@ -22,7 +22,7 @@ class WidgetCustomHTMLVideoOverlay extends WidgetCustomHTML {
 </body>
 <script type="module">
     var DataflashParser
-    const import_done = import('../../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
+    const import_done = import(window.parent.location.href + '../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default })
 
     let options
 
