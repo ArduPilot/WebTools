@@ -696,6 +696,8 @@ async function exportVideo() {
     const renderCanvas = new OffscreenCanvas(exportSettings.width, exportSettings.height);
     const renderCtx = renderCanvas.getContext('2d', { alpha: false });
 
+    const loadingOverlay = document.getElementById("loading")
+
     const conversion = await Conversion.init({
         input,
         output,
@@ -704,6 +706,9 @@ async function exportVideo() {
             frameRate: exportSettings.fps,
             // Called for each decoded video frame
             process: async (sample) => {
+                // Update progress
+                loadingOverlay.firstChild.innerHTML = `${((sample.timestamp / (exportSettings.end - exportSettings.start)) * 100).toFixed(2)}%`
+
                 // Set the widget time and Wait for all widgets to update
                 // Here sample timestamp is relative to the export not the import, so we need to correct for the start time
                 await setWidgetTime(sample.timestamp + exportSettings.start)
@@ -732,14 +737,11 @@ async function exportVideo() {
         console.warn('Discarded tracks:', conversion.discardedTracks);
     }
 
-    // Print progress
-    conversion.onProgress = (progress) => {
-        const loadingOverlay = document.getElementById("loading")
-        loadingOverlay.firstChild.innerHTML = `${(progress * 100).toFixed(2)}%`
-    }
-
     // Run the conversion
     await conversion.execute();
+
+    // Put back the loading overlay
+    loadingOverlay.firstChild.innerHTML = `Loading`
 
     // Download
     const blob = new Blob([output.target.buffer], { type: output.format.mimeType });
