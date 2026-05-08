@@ -69,6 +69,9 @@ setTime = function(time) {
         }
         const data = { logData: log.buffer }
         this.initDone.then(() => {
+            if (this.iframe.contentWindow == null) {
+                return
+            }
             this.iframe.contentWindow.postMessage(data, '*')
         })
     }

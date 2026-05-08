@@ -46,29 +46,8 @@ function init_editor() {
         alwaysShowResizeHandle: true
     }, document.getElementById("TestGrid"))
 
-    // Edit buttons
+    // Edit
     const edit_overlay = document.getElementById("edit_overlay")
-    const edit_icon = edit_overlay.querySelector(`svg[name="edit"]`)
-    const lock_icon = edit_overlay.querySelector(`svg[name="lock"]`)
-
-    // Handle edit button clicks
-    function edit_click(b) {
-        edit_icon.setAttribute("display", !b ? "block" : "none")
-        lock_icon.setAttribute("display",  b ? "block" : "none")
-
-        if (b) {
-            test_grid.enable()
-        } else {
-            test_grid.disable()
-        }
-
-        for (const widget of test_grid.getGridItems()) {
-            widget.set_edit(b)
-        }
-    }
-
-    edit_icon.onclick = () => { edit_click(true) }
-    lock_icon.onclick = () => { edit_click(false) }
 
     // Custom input for color
     const input_component = Formio.Components.components.input
@@ -295,9 +274,7 @@ function load_editor(widget) {
 
     // Reset test grid
     test_grid.removeAll()
-    test_grid.disable()
-    edit_overlay.querySelector(`svg[name="edit"]`).setAttribute("display", "block")
-    edit_overlay.querySelector(`svg[name="lock"]`).setAttribute("display", "none")
+    test_grid.enable()
 
     // Load a copy of the widget onto the test grid
     const obj = get_widget_object(widget)
@@ -319,6 +296,8 @@ function load_editor(widget) {
     test_widget.disable_buttons_for_edit()
 
     test_grid.addWidget(test_widget, pos_opts)
+
+    test_widget.set_edit(true)
 
     // Set editor for correct language
     monaco.editor.setModelLanguage(monaco.editor.getModel(model.uri), test_widget.get_edit_language());
