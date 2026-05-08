@@ -233,9 +233,6 @@ function init_editor() {
         } else if (button.name == "form") {
             form_tab.style.display = "block"
 
-            // Click the edit button of the test grid
-            edit_icon.onclick()
-
             // Pop the options menu of the test widget
             for (const widget of test_grid.getGridItems()) {
                 // Show widget and prevent hide
