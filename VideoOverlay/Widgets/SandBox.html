@@ -250,9 +250,9 @@
 
         // Set time and render
         if ("time" in data) {
-            setTime(data.time).then(
+            setTime(data.time).then(() => {
                 e.source.postMessage("renderDone")
-            )
+            })
         }
     })
 </script>
