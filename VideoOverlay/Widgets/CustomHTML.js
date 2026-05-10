@@ -54,9 +54,9 @@ class WidgetCustomHTMLVideoOverlay extends WidgetCustomHTML {
 
         // Set time and render, reply once render is done
         if ("time" in data) {
-            setTime(data.time).then(
+            setTime(data.time).then(() => {
                 e.source.postMessage("renderDone")
-            )
+            })
         }
 
     })
@@ -67,6 +67,9 @@ class WidgetCustomHTMLVideoOverlay extends WidgetCustomHTML {
         }
 
         super(options)
+
+        // Wait a short time to give the html a chance to load
+        setTimeout(() => this.loadLog(), 100)
     }
 
     getContentForRender(parentsBB) {
@@ -92,12 +95,16 @@ class WidgetCustomHTMLVideoOverlay extends WidgetCustomHTML {
 
     form_changed() {
         super.form_changed()
-        this.loadLog(log)
+
+        // Wait a short time to give the html a chance to load
+        setTimeout(() => this.loadLog(), 100)
     }
 
     set_edited_text(text) {
         super.set_edited_text(text)
-        this.loadLog(log)
+
+        // Wait a short time to give the html a chance to load
+        setTimeout(() => this.loadLog(), 100)
     }
 
     setTime(time) {

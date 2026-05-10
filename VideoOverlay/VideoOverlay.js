@@ -653,6 +653,7 @@ async function exportVideo() {
         MovOutputFormat,
         BlobSource,
         BufferTarget,
+        QUALITY_VERY_HIGH,
         ALL_FORMATS
     } = Mediabunny;
 
@@ -704,6 +705,7 @@ async function exportVideo() {
         video: {
             codec: exportSettings.vidCodec,
             frameRate: exportSettings.fps,
+            bitrate: QUALITY_VERY_HIGH,
             // Called for each decoded video frame
             process: async (sample) => {
                 // Update progress
