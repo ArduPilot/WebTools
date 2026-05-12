@@ -106,7 +106,8 @@ function reset() {
 
     const types = ["PIDP",   "PIDR",   "PIDY",
                    "PIQP",   "PIQR",   "PIQY",
-                   "RATE_R", "RATE_P", "RATE_Y"]
+                   "RATE_R", "RATE_P", "RATE_Y",
+                   "PIDS", "PIDA"]
     for (const type of types) {
         let ele = document.getElementById("type_" + type)
         ele.disabled = true
@@ -812,6 +813,8 @@ function redraw() {
     // Set X axis to selected time range
     const time_range = [ parseFloat(document.getElementById("TimeStart").value), parseFloat(document.getElementById("TimeEnd").value) ]
 
+    TimeInputs.layout.yaxis.title.text = PID.units
+
     TimeInputs.layout.xaxis.autorange = false
     TimeInputs.layout.xaxis.range = time_range
 
@@ -1377,27 +1380,61 @@ async function load(log_file) {
     // Reset buttons and labels
     reset()
 
-    // Reset log object                                  Copter          Plane
-    PID_log_messages = [ {id: ["PIDR"],      prefixes: [ "ATC_RAT_RLL_", "RLL_RATE_"]},
-                         {id: ["PIDP"],      prefixes: [ "ATC_RAT_PIT_", "PTCH_RATE_"]},
-                         {id: ["PIDY"],      prefixes: [ "ATC_RAT_YAW_", "YAW_RATE_"]},
-                         {id: ["PIQR"],      prefixes: [                 "Q_A_RAT_RLL_"]},
-                         {id: ["PIQP"],      prefixes: [                 "Q_A_RAT_PIT_"]},
-                         {id: ["PIQY"],      prefixes: [                 "Q_A_RAT_YAW_"]},
-                         {id: ["RATE", "R"], prefixes: [ "ATC_RAT_RLL_", "Q_A_RAT_RLL_"]},
-                         {id: ["RATE", "P"], prefixes: [ "ATC_RAT_PIT_", "Q_A_RAT_PIT_"]},
-                         {id: ["RATE", "Y"], prefixes: [ "ATC_RAT_YAW_", "Q_A_RAT_YAW_"]} ]
+    let log = new DataflashParser()
+    log.processData(log_file , [])
+
+    open_in_update(log)
+
+    // Get vehicle type
+    const { build_type } = get_version_and_board(log)
+
+    // Get PID object avalavle for vehicle type
+    const rad2deg = 180.0 / Math.PI
+    const degUnits = "deg /s"
+    switch (build_type) {
+        case 1: // Rover
+            PID_log_messages = [
+                {id: ["PIDS"], prefixes: ["ATC_STR_RAT_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIDA"], prefixes: ["ATC_SPEED_"],   unitScale: 1.0,     units: "m / s" }
+            ]
+            break
+
+        case 2: // Copter
+            PID_log_messages = [
+                {id: ["PIDR"],      prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIDP"],      prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIDY"],      prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "R"], prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "P"], prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "Y"], prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits }
+            ]
+            break
+
+        case 3: // Plane
+            PID_log_messages = [
+                {id: ["PIDR"],      prefixes: ["RLL_RATE_"],    unitScale: 1.0,     units: degUnits },
+                {id: ["PIDP"],      prefixes: ["PTCH_RATE_"],   unitScale: 1.0,     units: degUnits },
+                {id: ["PIDY"],      prefixes: ["YAW_RATE_"],    unitScale: 1.0,     units: degUnits },
+                {id: ["PIQR"],      prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIQP"],      prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIQY"],      prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "R"], prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "P"], prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
+                {id: ["RATE", "Y"], prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
+            ]
+            break
+
+        default:
+            alert("Vehicle Type not supported")
+            return
+    }
+
 
     // Set flags for no data
     PID_log_messages.have_data = false
     for (let i = 0; i < PID_log_messages.length; i++) {
         PID_log_messages[i].have_data = false
     }
-
-    let log = new DataflashParser()
-    log.processData(log_file , [])
-
-    open_in_update(log)
 
     // micro seconds to seconds helpers
     const US2S = 1 / 1000000
@@ -1499,13 +1536,12 @@ async function load(log_file) {
                                                                      Out: Array.from(log_msg[axis_prefix + "Out"].slice(batch.batch_start, batch.batch_end))})
 
                 } else {
-                    // Convert radians to degress
-                    const rad2deg = 180.0 / Math.PI
+                    // Read in and apply unit scale
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
                                                                      sample_rate: batch.sample_rate,
-                                                                     Tar: array_scale(Array.from(log_msg.Tar.slice(batch.batch_start, batch.batch_end)), rad2deg),
-                                                                     Act: array_scale(Array.from(log_msg.Act.slice(batch.batch_start, batch.batch_end)), rad2deg),
-                                                                     Err: array_scale(Array.from(log_msg.Err.slice(batch.batch_start, batch.batch_end)), rad2deg),
+                                                                     Tar: array_scale(Array.from(log_msg.Tar.slice(batch.batch_start, batch.batch_end)), PID_log_messages[i].unitScale),
+                                                                     Act: array_scale(Array.from(log_msg.Act.slice(batch.batch_start, batch.batch_end)), PID_log_messages[i].unitScale),
+                                                                     Err: array_scale(Array.from(log_msg.Err.slice(batch.batch_start, batch.batch_end)), PID_log_messages[i].unitScale),
                                                                      P:   Array.from(log_msg.P.slice(batch.batch_start, batch.batch_end)),
                                                                      I:   Array.from(log_msg.I.slice(batch.batch_start, batch.batch_end)),
                                                                      D:   Array.from(log_msg.D.slice(batch.batch_start, batch.batch_end)),
