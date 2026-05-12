@@ -21,7 +21,7 @@ function get_open_in(get_file_fun) {
     }
 
     function enable_pid_review(msgs) {
-        const pid_log = ["RATE", "PIDR", "PIDP", "PIDY", "PIQR", "PIQP", "PIQY"]
+        const pid_log = ["RATE", "PIDR", "PIDP", "PIDY", "PIQR", "PIQP", "PIQY", "PIDS", "PIDA"]
         return pid_log.some(item => msgs.includes(item));
     }
 
