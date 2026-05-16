@@ -792,16 +792,16 @@ let param_diff_ignore = [
     { name: "Compass declination", fun: (name) => { return name == "COMPASS_DEC"} },
     { name: "Airspeed offset", fun: (name) => { return /(:?(ARSPD)[123]?(_OFFSET))/gm.test(name)} },
     { name: "Stream rates", fun: (name) => {
-        return /(:?(SR)[0123456]_(RAW_SENS))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXT_STAT))/gm.test(name) ||
-            /(:?(SR)[0123456]_(RC_CHAN))/gm.test(name) ||
-            /(:?(SR)[0123456]_(RAW_CTRL))/gm.test(name) ||
-            /(:?(SR)[0123456]_(POSITION))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA1))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA2))/gm.test(name) ||
-            /(:?(SR)[0123456]_(EXTRA3))/gm.test(name) ||
-            /(:?(SR)[0123456]_(PARAMS))/gm.test(name) ||
-            /(:?(SR)[0123456]_(ADSB))/gm.test(name)
+        return /(:?(SR|MAV)\d{1,2}_(RAW_SENS))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(EXT_STAT))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(RC_CHAN))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(RAW_CTRL))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(POSITION))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(EXTRA1))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(EXTRA2))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(EXTRA3))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(PARAMS))/gm.test(name) ||
+            /(:?(SR|MAV)\d{1,2}_(ADSB))/gm.test(name)
         }
     },
 ]
