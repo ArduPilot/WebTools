@@ -3326,18 +3326,24 @@ function reset() {
         if (document.getElementById("param_stream_" + i).checked) {
             continue
         }
-        const SR_prefix = "SR" + i + "_"
-        const SR_names = [ SR_prefix + "RAW_SENS", 
-                           SR_prefix + "EXT_STAT",
-                           SR_prefix + "RC_CHAN",
-                           SR_prefix + "RAW_CTRL",
-                           SR_prefix + "POSITION",
-                           SR_prefix + "EXTRA1",
-                           SR_prefix + "EXTRA2",
-                           SR_prefix + "EXTRA3",
-                           SR_prefix + "PARAMS",
-                           SR_prefix + "ADSB"]
-        setup_minimal_param("param_stream_" + i, SR_names)
+        function get_stream_rates(prefix) {
+            return [
+                prefix + "RAW_SENS", 
+                prefix + "EXT_STAT",
+                prefix + "RC_CHAN",
+                prefix + "RAW_CTRL",
+                prefix + "POSITION",
+                prefix + "EXTRA1",
+                prefix + "EXTRA2",
+                prefix + "EXTRA3",
+                prefix + "PARAMS",
+                prefix + "ADSB",
+                prefix + "OPTIONS"
+            ]
+        }
+        const SR_names = get_stream_rates(`SR${i}_`)
+        const MAV_names = get_stream_rates(`MAV${i+1}_`)
+        setup_minimal_param("param_stream_" + i, SR_names.concat(MAV_names))
     }
 
 
@@ -3724,7 +3730,15 @@ function save_minimal_parameters() {
     let skip_params = []
 
     // Never save stats
-    skip_params.push("STAT_BOOTCNT", "STAT_FLTTIME", "STAT_RUNTIME", "STAT_RESET", "SYS_NUM_RESETS")
+    skip_params.push(
+        "STAT_BOOTCNT",
+        "STAT_FLTTIME",
+        "STAT_RUNTIME",
+        "STAT_RESET",
+        "STAT_FLTCNT",
+        "STAT_DISTFLWN",
+        "SYS_NUM_RESETS"
+    )
 
     // Some read only params that should never be changed
     skip_params.push("FORMAT_VERSION", "MIS_TOTAL", "FENCE_TOTAL", "RALLY_TOTAL")
