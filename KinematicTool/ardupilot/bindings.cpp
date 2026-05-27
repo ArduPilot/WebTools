@@ -14,4 +14,13 @@ float sqrt_controller_wrapper(float error, float p, float second_ord_lim, float 
     return sqrt_controller(error, p, second_ord_lim, dt);
 }
 
+float shape_pos_vel_accel_wrapper(float pos_desired, float vel_desired, float accel_desired,
+                         float pos, float vel, float accel,
+                         float vel_min, float vel_max,
+                         float accel_min, float accel_max,
+                         float jerk_max, float dt, bool limit_total) {
+    shape_pos_vel_accel(pos_desired, vel_desired, accel_desired, pos, vel, accel, vel_min, vel_max, accel_min, accel_max, jerk_max, dt, limit_total);
+    return accel;
+}
+
 }

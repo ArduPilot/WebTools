@@ -1211,6 +1211,7 @@ function checkIncomingModuleAPI() {
 // Imports from the Wasm binary.
 var _shape_angle_vel_accel_wrapper = Module['_shape_angle_vel_accel_wrapper'] = makeInvalidEarlyAccess('_shape_angle_vel_accel_wrapper');
 var _sqrt_controller_wrapper = Module['_sqrt_controller_wrapper'] = makeInvalidEarlyAccess('_sqrt_controller_wrapper');
+var _shape_pos_vel_accel_wrapper = Module['_shape_pos_vel_accel_wrapper'] = makeInvalidEarlyAccess('_shape_pos_vel_accel_wrapper');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
 var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_free');
@@ -1226,6 +1227,7 @@ var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
 function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['shape_angle_vel_accel_wrapper'] != 'undefined', 'missing Wasm export: shape_angle_vel_accel_wrapper');
   assert(typeof wasmExports['sqrt_controller_wrapper'] != 'undefined', 'missing Wasm export: sqrt_controller_wrapper');
+  assert(typeof wasmExports['shape_pos_vel_accel_wrapper'] != 'undefined', 'missing Wasm export: shape_pos_vel_accel_wrapper');
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
   assert(typeof wasmExports['emscripten_stack_get_free'] != 'undefined', 'missing Wasm export: emscripten_stack_get_free');
@@ -1238,6 +1240,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
   _shape_angle_vel_accel_wrapper = Module['_shape_angle_vel_accel_wrapper'] = createExportWrapper('shape_angle_vel_accel_wrapper', 12);
   _sqrt_controller_wrapper = Module['_sqrt_controller_wrapper'] = createExportWrapper('sqrt_controller_wrapper', 4);
+  _shape_pos_vel_accel_wrapper = Module['_shape_pos_vel_accel_wrapper'] = createExportWrapper('shape_pos_vel_accel_wrapper', 13);
   _fflush = createExportWrapper('fflush', 1);
   _emscripten_stack_init = wasmExports['emscripten_stack_init'];
   _emscripten_stack_get_free = wasmExports['emscripten_stack_get_free'];
