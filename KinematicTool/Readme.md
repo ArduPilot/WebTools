@@ -24,7 +24,7 @@ emcc -v
 Some helper bindings and defines are needed, these are in `/ardupilot` the code can then be built with:
 
 ```
-emcc -I .\KinematicTool\ardupilot\stubs -I .\modules\ardupilot\libraries -include .\KinematicTool\ardupilot\stubs.h .\modules\ardupilot\libraries\AP_Math\AP_Math.cpp .\modules\ardupilot\libraries\AP_Math\control.cpp KinematicTool\ardupilot\bindings.cpp -o .\KinematicTool\ardupilot\control.js -s MODULARIZE=1 -s ENVIRONMENT='web' -s EXPORT_NAME='ControlModule' -s EXPORTED_FUNCTIONS='["_shape_angle_vel_accel_wrapper", "_sqrt_controller_wrapper"]'
+emcc -I .\KinematicTool\ardupilot\stubs -I .\modules\ardupilot\libraries -include .\KinematicTool\ardupilot\stubs.h .\modules\ardupilot\libraries\AP_Math\AP_Math.cpp .\modules\ardupilot\libraries\AP_Math\control.cpp KinematicTool\ardupilot\bindings.cpp -o .\KinematicTool\ardupilot\control.js -s MODULARIZE=1 -s ENVIRONMENT='web' -s EXPORT_NAME='ControlModule' -s EXPORTED_FUNCTIONS='["_shape_angle_vel_accel_wrapper", "_sqrt_controller_wrapper", "_shape_pos_vel_accel_wrapper"]'
 ```
 
 This then builds `control.js` and `control.wasm` which are included in `/ardupilot`.
