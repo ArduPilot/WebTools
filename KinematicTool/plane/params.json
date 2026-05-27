@@ -1,0 +1,376 @@
+{
+  "RLL": {
+    "RLL2SRV_ACCEL": {
+      "Description": "Roll acceleration limit. Setting to zero disables input shaping.",
+      "DisplayName": "Roll max acceleration",
+      "Increment": "1",
+      "Range": {
+        "high": "2500",
+        "low": "0"
+      },
+      "Units": "deg/s/s",
+      "User": "Advanced"
+    },
+    "RLL2SRV_RMAX": {
+      "Description": "This sets the maximum roll rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables this limit.",
+      "DisplayName": "Maximum Roll Rate",
+      "Increment": "1",
+      "Range": {
+        "high": "180",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced"
+    },
+    "RLL2SRV_TCONST": {
+      "Description": "Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.",
+      "DisplayName": "Roll Time Constant",
+      "Increment": "0.1",
+      "Range": {
+        "high": "1.0",
+        "low": "0.4"
+      },
+      "Units": "s",
+      "User": "Advanced"
+    },
+    "RLL_ANGLE_P": {
+      "Description": "Roll angle P gain. Setting to zero disables input shaping. Acceleration limit also must be configured.",
+      "DisplayName": "Roll angle P gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Advanced"
+    },
+    "RLL_RATE_D": {
+      "Description": "Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.001"
+      },
+      "User": "Standard"
+    },
+    "RLL_RATE_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Roll Derivative FeedForward Gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "RLL_RATE_FF": {
+      "Description": "Roll axis rate controller feed forward",
+      "DisplayName": "Roll axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "3.0",
+        "low": "0"
+      },
+      "User": "Standard"
+    },
+    "RLL_RATE_FLTD": {
+      "Description": "Roll axis rate controller derivative frequency in Hz",
+      "DisplayName": "Roll axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "RLL_RATE_FLTE": {
+      "Description": "Roll axis rate controller error frequency in Hz",
+      "DisplayName": "Roll axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "2"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "RLL_RATE_FLTT": {
+      "Description": "Roll axis rate controller target frequency in Hz",
+      "DisplayName": "Roll axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "2"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "RLL_RATE_I": {
+      "Description": "Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.01"
+      },
+      "User": "Standard"
+    },
+    "RLL_RATE_IMAX": {
+      "Description": "Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Roll axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard"
+    },
+    "RLL_RATE_NEF": {
+      "Description": "Roll Error notch filter index",
+      "DisplayName": "Roll Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "RLL_RATE_NTF": {
+      "Description": "Roll Target notch filter index",
+      "DisplayName": "Roll Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "RLL_RATE_P": {
+      "Description": "Roll axis rate controller P gain. Corrects in proportion to the difference between the desired roll rate vs actual roll rate",
+      "DisplayName": "Roll axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.08"
+      },
+      "User": "Standard"
+    },
+    "RLL_RATE_PDMX": {
+      "Description": "Roll axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Roll axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
+    },
+    "RLL_RATE_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Roll slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced"
+    }
+  },
+  "PTCH": {
+    "PTCH2SRV_ACCEL": {
+      "Description": "Pitch acceleration limit. Setting to zero disables input shaping.",
+      "DisplayName": "Pitch max acceleration",
+      "Increment": "1",
+      "Range": {
+        "high": "2500",
+        "low": "0"
+      },
+      "Units": "deg/s/s",
+      "User": "Advanced"
+    },
+    "PTCH2SRV_RLL": {
+      "Description": "Gain added to pitch to keep aircraft from descending or ascending in turns. Increase in increments of 0.05 to reduce altitude loss. Decrease for altitude gain.",
+      "DisplayName": "Roll compensation",
+      "Increment": "0.05",
+      "Range": {
+        "high": "1.5",
+        "low": "0.7"
+      },
+      "User": "Standard"
+    },
+    "PTCH2SRV_RMAX_DN": {
+      "Description": "This sets the maximum nose down pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.",
+      "DisplayName": "Pitch down max rate",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced"
+    },
+    "PTCH2SRV_RMAX_UP": {
+      "Description": "This sets the maximum nose up pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.",
+      "DisplayName": "Pitch up max rate",
+      "Increment": "1",
+      "Range": {
+        "high": "100",
+        "low": "0"
+      },
+      "Units": "deg/s",
+      "User": "Advanced"
+    },
+    "PTCH2SRV_TCONST": {
+      "Description": "Time constant in seconds from demanded to achieved pitch angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.",
+      "DisplayName": "Pitch Time Constant",
+      "Increment": "0.1",
+      "Range": {
+        "high": "1.0",
+        "low": "0.4"
+      },
+      "Units": "s",
+      "User": "Advanced"
+    },
+    "PTCH_ANGLE_P": {
+      "Description": "Pitch angle P gain. Setting to zero disables input shaping. Acceleration limit also must be configured.",
+      "DisplayName": "Pitch angle P gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "12.000",
+        "low": "3.000"
+      },
+      "User": "Advanced"
+    },
+    "PTCH_RATE_D": {
+      "Description": "Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller D gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0.001"
+      },
+      "User": "Standard"
+    },
+    "PTCH_RATE_D_FF": {
+      "Description": "FF D Gain which produces an output that is proportional to the rate of change of the target",
+      "DisplayName": "Pitch Derivative FeedForward Gain",
+      "Increment": "0.001",
+      "Range": {
+        "high": "0.03",
+        "low": "0"
+      },
+      "User": "Advanced"
+    },
+    "PTCH_RATE_FF": {
+      "Description": "Pitch axis rate controller feed forward",
+      "DisplayName": "Pitch axis rate controller feed forward",
+      "Increment": "0.001",
+      "Range": {
+        "high": "3.0",
+        "low": "0"
+      },
+      "User": "Standard"
+    },
+    "PTCH_RATE_FLTD": {
+      "Description": "Pitch axis rate controller derivative frequency in Hz",
+      "DisplayName": "Pitch axis rate controller derivative frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "0"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PTCH_RATE_FLTE": {
+      "Description": "Pitch axis rate controller error frequency in Hz",
+      "DisplayName": "Pitch axis rate controller error frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "2"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PTCH_RATE_FLTT": {
+      "Description": "Pitch axis rate controller target frequency in Hz",
+      "DisplayName": "Pitch axis rate controller target frequency in Hz",
+      "Increment": "1",
+      "Range": {
+        "high": "50",
+        "low": "2"
+      },
+      "Units": "Hz",
+      "User": "Standard"
+    },
+    "PTCH_RATE_I": {
+      "Description": "Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller I gain",
+      "Increment": "0.01",
+      "Range": {
+        "high": "0.6",
+        "low": "0.01"
+      },
+      "User": "Standard"
+    },
+    "PTCH_RATE_IMAX": {
+      "Description": "Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output",
+      "DisplayName": "Pitch axis rate controller I gain maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      },
+      "User": "Standard"
+    },
+    "PTCH_RATE_NEF": {
+      "Description": "Pitch Error notch filter index",
+      "DisplayName": "Pitch Error notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "PTCH_RATE_NTF": {
+      "Description": "Pitch Target notch filter index",
+      "DisplayName": "Pitch Target notch filter index",
+      "Range": {
+        "high": "8",
+        "low": "1"
+      },
+      "User": "Advanced"
+    },
+    "PTCH_RATE_P": {
+      "Description": "Pitch axis rate controller P gain. Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate",
+      "DisplayName": "Pitch axis rate controller P gain",
+      "Increment": "0.005",
+      "Range": {
+        "high": "0.35",
+        "low": "0.08"
+      },
+      "User": "Standard"
+    },
+    "PTCH_RATE_PDMX": {
+      "Description": "Pitch axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output",
+      "DisplayName": "Pitch axis rate controller PD sum maximum",
+      "Increment": "0.01",
+      "Range": {
+        "high": "1",
+        "low": "0"
+      }
+    },
+    "PTCH_RATE_SMAX": {
+      "Description": "Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.",
+      "DisplayName": "Pitch slew rate limit",
+      "Increment": "0.5",
+      "Range": {
+        "high": "200",
+        "low": "0"
+      },
+      "User": "Advanced"
+    }
+  },
+  "json": {
+    "version": 0
+  }
+}
