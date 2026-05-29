@@ -46,7 +46,7 @@
 <table>
   <tr>
     <td>
-      <fieldset style="width:60px;height:120px">
+      <fieldset style="width:60px;height:150px">
         <legend>Axis
             <img id="TT" src="../../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
             data-tippy-content='Change the parameters used to the selected axis',
@@ -66,7 +66,7 @@
       </fieldset>
     </td>
     <td>
-      <fieldset style="width:110px;height:120px">
+      <fieldset style="width:110px;height:150px">
         <legend>Mode
             <img id="TT" src="../../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
             data-tippy-content='Change the parameters used to the selected axis',
@@ -86,7 +86,7 @@
       </fieldset>
     </td>
     <td>
-      <fieldset style="width:245px;height:120px">
+      <fieldset style="width:245px;height:150px">
         <legend>Inputs
             <img id="TT" src="../../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
             data-tippy-content='Desired angle and rate from the pilot or navigation controller. End time set the minimum runtime of the simulation.',
@@ -110,7 +110,7 @@
       </fieldset>
     </td>
     <td>
-      <fieldset style="width:245px;height:120px">
+      <fieldset style="width:245px;height:150px">
         <legend>Initial conditions
             <img id="TT" src="../../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
             data-tippy-content='The angle and rate that the vehicle starts at.',
@@ -129,7 +129,7 @@
       </fieldset>
     </td>
     <td>
-      <fieldset style="width:330px;height:120px">
+      <fieldset style="width:330px;height:150px">
         <legend>Parameters
             <img id="TT" src="../../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
             data-tippy-content='The ArduPilot parameters that define the input shaping vehicle model. Note that in some flight modes ATC_SLEW_YAW provides secondary yaw rate limit. Rate time constant also changes for acro mode.',
@@ -145,6 +145,9 @@
           <p style="margin-top:0px; margin-bottom:0px;">
             <input id="RLL2SRV_TCONST" name="RLL2SRV_TCONST" type="number" style="width: 100px" value="0.5" onchange="run_attitude()"/>
           </p>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="RLL_ANGLE_P" name="RLL_ANGLE_P" type="number" style="width: 100px" value="0" onchange="run_attitude()"/>
+          </p>
         </div>
         <div id="pitch_params" hidden>
           <p style="margin-top:0px; margin-bottom:0px;">
@@ -158,6 +161,9 @@
           </p>
           <p style="margin-top:0px; margin-bottom:0px;">
             <input id="PTCH2SRV_TCONST" name="PTCH2SRV_TCONST" type="number" style="width: 100px" value="0.5" onchange="run_attitude()"/>
+          </p>
+          <p style="margin-top:0px; margin-bottom:0px;">
+            <input id="PTCH_ANGLE_P" name="PTCH_ANGLE_P" type="number" style="width: 100px" value="0" onchange="run_attitude()"/>
           </p>
         </div>
       </fieldset>
@@ -193,10 +199,12 @@
     "RLL2SRV_RMAX",
     "RLL2SRV_ACCEL",
     "RLL2SRV_TCONST",
+    "RLL_ANGLE_P",
     "PTCH2SRV_RMAX_UP",
     "PTCH2SRV_RMAX_DN",
     "PTCH2SRV_ACCEL",
     "PTCH2SRV_TCONST",
+    "PTCH_ANGLE_P"
   ])
 
 </script>

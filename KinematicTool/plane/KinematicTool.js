@@ -17,8 +17,9 @@ function initial_load()
 
     // position
     ang_pos.data = [
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Pre 4.8' },
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: '4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Pre 4.8' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Input shaping 4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg", name: 'Error 4.8 +' },
     ]
 
     ang_pos.layout = {
@@ -42,8 +43,9 @@ function initial_load()
 
     // velocity
     ang_vel.data = [
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Pre 4.8' },
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: '4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Pre 4.8' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Input shaping 4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s", name: 'Error 4.8 +' },
     ]
 
     ang_vel.layout = {
@@ -67,8 +69,9 @@ function initial_load()
 
     // Acceleration
     ang_accel.data = [
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Pre 4.8' },
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: '4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Pre 4.8' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Input shaping 4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s²", name: 'Error 4.8 +' },
     ]
 
     ang_accel.layout = {
@@ -84,8 +87,9 @@ function initial_load()
 
     // Jerk
     ang_jerk.data = [
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Pre 4.8' },
-        { mode: 'lines', hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: '4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Pre 4.8' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Input shaping 4.8 +' },
+        { mode: 'lines', showlegend: true, hovertemplate: "<extra></extra>%{x:.2f} s<br>%{y:.2f} deg/s³", name: 'Error 4.8 +' },
     ]
 
     ang_jerk.layout = {
@@ -129,6 +133,7 @@ function update_axis()
                 rateMin: rateLimit,
                 accelMax: parseFloat(document.getElementById("RLL2SRV_ACCEL").value),
                 timeConstant: parseFloat(document.getElementById("RLL2SRV_TCONST").value),
+                angleP: parseFloat(document.getElementById("RLL_ANGLE_P").value)
             }
 
         case "P":
@@ -139,6 +144,7 @@ function update_axis()
                 rateMin: parseFloat(document.getElementById("PTCH2SRV_RMAX_DN").value),
                 accelMax: parseFloat(document.getElementById("PTCH2SRV_ACCEL").value),
                 timeConstant: parseFloat(document.getElementById("PTCH2SRV_TCONST").value),
+                angleP: parseFloat(document.getElementById("PTCH_ANGLE_P").value)
             }
     }
 }
@@ -179,6 +185,7 @@ function wrap_180(x)
     return ret
 }
 
+// Old method, error path only, no input shaping
 function updateOld(params, mode, desired, state, dt)
 {
     const i = state.pos.length
@@ -186,10 +193,6 @@ function updateOld(params, mode, desired, state, dt)
     let vel_target
     if (mode.use_pos) {
 
-        let desired_ang_vel = 0
-        if (mode.use_vel) {
-            desired_ang_vel = desired.vel
-        }
         const pos_error = wrap_180(desired.pos - state.pos[i-1])
         vel_target = pos_error / params.timeConstant
 
@@ -213,8 +216,14 @@ function updateOld(params, mode, desired, state, dt)
     // Differentiate to accel
     state.accel[i] = (vel_target - state.vel[i-1]) / dt
 
+    // Ignore accel in first step, it swamps the plot
+    if (i == 1) {
+        state.accel[0] = NaN
+        state.accel[1] = NaN
+    }
 }
 
+// New method input shaping
 function updateInputShaping(params, mode, desired, state, dt)
 {
     const i = state.pos.length
@@ -254,6 +263,51 @@ function updateInputShaping(params, mode, desired, state, dt)
 
 }
 
+// New method error path
+function updateError(params, mode, desired, state, dt)
+{
+    const i = state.pos.length
+
+    let vel_target
+    if (mode.use_pos) {
+
+        const pos_error = wrap_180(desired.pos - state.pos[i-1])
+
+        let angle_gain = 1.0 / params.timeConstant
+        if (params.angleP > 0) {
+            angle_gain = params.angleP
+        }
+
+        vel_target = ardupilotModule._sqrt_controller_wrapper(pos_error, angle_gain, params.accelMax * 0.5, dt)
+
+        if (params.rateMax > 0) {
+            vel_target = Math.min(params.rateMax, vel_target)
+        }
+        if (params.rateMin > 0) {
+            vel_target = Math.max(-params.rateMin, vel_target)
+        }
+
+    } else if (mode.use_vel) {
+        vel_target = desired.vel
+    }
+
+    // update velocity
+    state.vel[i] = vel_target
+
+    // Integrate to position
+    state.pos[i] = wrap_180(state.pos[i-1] + (state.vel[i-1] + vel_target) * dt * 0.5)
+
+    // Differentiate to accel
+    state.accel[i] = (vel_target - state.vel[i-1]) / dt
+
+    // Ignore accel in first step, it swamps the plot
+    if (i == 1) {
+        state.accel[0] = NaN
+        state.accel[1] = NaN
+    }
+
+}
+
 async function run_attitude()
 {
     await import_done
@@ -286,6 +340,11 @@ async function run_attitude()
         vel: [parseFloat(document.getElementById("initial_vel").value)],
         accel: [0]
     }
+    const errorState = {
+        pos: [wrap_180(parseFloat(document.getElementById("initial_pos").value))],
+        vel: [parseFloat(document.getElementById("initial_vel").value)],
+        accel: [0]
+    }
 
     // Run until current reaches target
     let i = 1
@@ -294,6 +353,7 @@ async function run_attitude()
 
         updateOld(params, mode, desired, oldState, dt)
         updateInputShaping(params, mode, desired, SCurveState, dt)
+        updateError(params, mode, desired, errorState, dt)
 
         // update time
         time[i] = i * dt
@@ -303,7 +363,8 @@ async function run_attitude()
             let done = false
             if (mode.use_pos) {
                 done = Math.abs(wrap_180(desired.pos - oldState.pos[i])) < pos_tol &&
-                        Math.abs(wrap_180(desired.pos - SCurveState.pos[i])) < pos_tol
+                        Math.abs(wrap_180(desired.pos - SCurveState.pos[i])) < pos_tol &&
+                        Math.abs(wrap_180(desired.pos - errorState.pos[i])) < pos_tol
 
             } else if (mode.use_vel) {
                 done = Math.abs(desired.vel - oldState.vel[i]) < vel_tol &&
@@ -333,6 +394,9 @@ async function run_attitude()
     ang_pos.data[0].y = oldState.pos
     ang_pos.data[1].x = time
     ang_pos.data[1].y = SCurveState.pos
+    ang_pos.data[2].x = time
+    ang_pos.data[2].y = errorState.pos
+    ang_pos.data[2].visible = mode.use_pos
     ang_pos.layout.shapes[0].y0 = desired.pos
     ang_pos.layout.shapes[0].y1 = desired.pos
     ang_pos.layout.shapes[0].visible = mode.use_pos
@@ -342,28 +406,37 @@ async function run_attitude()
     ang_vel.data[0].y = oldState.vel
     ang_vel.data[1].x = time
     ang_vel.data[1].y = SCurveState.vel
+    ang_vel.data[2].x = time
+    ang_vel.data[2].y = errorState.vel
+    ang_vel.data[2].visible = mode.use_pos
     ang_vel.layout.shapes[0].y0 = desired.vel
     ang_vel.layout.shapes[0].y1 = desired.vel
     ang_vel.layout.shapes[0].visible = mode.use_vel
     Plotly.redraw("ang_vel")
 
-    // Since old controller is not accel limited plotting it blows up the scale
-    //ang_accel.data[0].x = time
-    //ang_accel.data[0].y = oldState.accel
+    ang_accel.data[0].x = time
+    ang_accel.data[0].y = oldState.accel
     ang_accel.data[1].x = time
     ang_accel.data[1].y = SCurveState.accel
+    ang_accel.data[2].x = time
+    ang_accel.data[2].y = errorState.accel
+    ang_accel.data[2].visible = mode.use_pos
     Plotly.redraw("ang_accel")
 
     // Calculate jerk by differentiating accel
     const jerkTime = array_offset(time.slice(0, -1), dt * 0.5)
     //const oldJerk = array_scale(array_sub(oldState.accel.slice(1), oldState.accel.slice(0, -1)), 1 / dt)
     const SCurveJerk = array_scale(array_sub(SCurveState.accel.slice(1), SCurveState.accel.slice(0, -1)), 1 / dt)
+    //const errorJerk = array_scale(array_sub(errorState.accel.slice(1), errorState.accel.slice(0, -1)), 1 / dt)
 
-    // Since old controller is not jerk limited plotting it blows up the scale
+    // Since old controller and error path are not jerk limited plotting it blows up the scale
     //ang_jerk.data[0].x = jerkTime
     //ang_jerk.data[0].y = oldJerk
     ang_jerk.data[1].x = jerkTime
     ang_jerk.data[1].y = SCurveJerk
+    //ang_jerk.data[2].x = jerkTime
+    //ang_jerk.data[2].y = errorJerk
+    //ang_jerk.data[2].visible = mode.use_pos
     Plotly.redraw("ang_jerk")
 
 }
