@@ -4,7 +4,7 @@ var DataflashParser
 const import_done = import('../modules/JsDataflashParser/parser.js').then((mod) => { DataflashParser = mod.default });
 
 // Keys in data object to run FFT of
-const fft_keys = ["Tar", "Act", "Err", "P", "I", "D", "FF", "Out"]
+const fft_keys = ["Tar", "Act", "Err", "P", "I", "D", "FF", "DFF", "Out"]
 
 function run_batch_fft(data_set) {
 
@@ -272,7 +272,7 @@ function setup_plots() {
     Plotly.newPlot(plot, TimeInputs.data, TimeInputs.layout, {displaylogo: false})
 
 
-    const pid_outputs = ["P","I","D","FF","Output"]
+    const pid_outputs = ["P","I","D","FF","D FF","Output"]
     TimeOutputs.data = []
     for (const item of pid_outputs) {
         TimeOutputs.data.push({ mode: "lines",
@@ -388,7 +388,7 @@ function link_plots() {
 }
 
 // Add data sets to FFT plot
-const plot_types = ["Target", "Actual", "Error", "P", "I", "D", "FF", "Output"]
+const plot_types = ["Target", "Actual", "Error", "P", "I", "D", "FF", "D FF", "Output"]
 function get_FFT_data_index(set_num, plot_type) {
     return set_num*plot_types.length + plot_type
 }
@@ -717,12 +717,14 @@ function add_param_sets() {
     document.getElementById("PIDX_I").disabled = !have_all
     document.getElementById("PIDX_D").disabled = !have_all
     document.getElementById("PIDX_FF").disabled = !have_all
+    document.getElementById("PIDX_DFF").disabled = !have_all
 
     document.getElementById("Spec_Err").disabled = !have_all
     document.getElementById("Spec_P").disabled = !have_all
     document.getElementById("Spec_I").disabled = !have_all
     document.getElementById("Spec_D").disabled = !have_all
     document.getElementById("Spec_FF").disabled = !have_all
+    document.getElementById("Spec_DFF").disabled = !have_all
 
     // Uncheck any that are disabled
     if (!have_all) {
@@ -731,13 +733,15 @@ function add_param_sets() {
         document.getElementById("PIDX_I").checked = false
         document.getElementById("PIDX_D").checked = false
         document.getElementById("PIDX_FF").checked = false
+        document.getElementById("PIDX_DFF").checked = false
 
         // Change to Out on spectrogram if disabled option is set
         const disabled_checked = document.getElementById("Spec_Err").checked ||
                                  document.getElementById("Spec_P").checked ||
                                  document.getElementById("Spec_I").checked ||
                                  document.getElementById("Spec_D").checked ||
-                                 document.getElementById("Spec_FF").checked
+                                 document.getElementById("Spec_FF").checked ||
+                                 document.getElementById("Spec_DFF").checked
         if (disabled_checked) {
             document.getElementById("Spec_Out").checked = true
         }
@@ -806,7 +810,10 @@ function redraw() {
             if ("FF" in set[i]) {
                 TimeOutputs.data[3].y = TimeOutputs.data[3].y.concat(set[i].FF)
             }
-            TimeOutputs.data[4].y = TimeOutputs.data[4].y.concat(set[i].Out)
+            if ("DFF" in set[i]) {
+                TimeOutputs.data[4].y = TimeOutputs.data[4].y.concat(set[i].DFF)
+            }
+            TimeOutputs.data[5].y = TimeOutputs.data[5].y.concat(set[i].Out)
         }
     }
 
@@ -1204,7 +1211,7 @@ function update_hidden(source) {
         var index
         for (let j = 0; j < fft_keys.length; j++) {
             const key = fft_keys[j]
-            if (id.endsWith(key)) {
+            if (id.endsWith("_" + key)) {
                 index = j
                 break
             }
@@ -1300,9 +1307,12 @@ function get_PID_param_names(prefix) {
              KI:            prefix + "I",
              KD:            prefix + "D",
              FF:            prefix + "FF",
+             D_FF:          prefix + "D_FF",
              I_max:         prefix + "IMAX",
              Target_filter: prefix + "FLTT",
+             Notch_target:  prefix + "NTF",
              Error_filter:  prefix + "FLTE",
+             Notch_error:   prefix + "NEF",
              D_filter:      prefix + "FLTD",
              Slew_max:      prefix + "SMAX"}
 }
@@ -1545,7 +1555,8 @@ async function load(log_file) {
                                                                      P:   Array.from(log_msg.P.slice(batch.batch_start, batch.batch_end)),
                                                                      I:   Array.from(log_msg.I.slice(batch.batch_start, batch.batch_end)),
                                                                      D:   Array.from(log_msg.D.slice(batch.batch_start, batch.batch_end)),
-                                                                     FF:  Array.from(log_msg.FF.slice(batch.batch_start, batch.batch_end))})
+                                                                     FF:  Array.from(log_msg.FF.slice(batch.batch_start, batch.batch_end)),
+                                                                     ...( "DFF" in log_msg ? {DFF: Array.from(log_msg.DFF.slice(batch.batch_start, batch.batch_end))} : {} )})
                 }
             }
 
@@ -1610,7 +1621,7 @@ async function load(log_file) {
                 const len = batch.P.length
                 batch.Out = new Array(len)
                 for (let i = 0; i<len; i++) {
-                    batch.Out[i] = batch.P[i] + batch.I[i] + batch.D[i] + batch.FF[i]
+                    batch.Out[i] = batch.P[i] + batch.I[i] + batch.D[i] + batch.FF[i] + (batch.DFF != null ? batch.DFF[i] : 0)
                 }
             }
         }
