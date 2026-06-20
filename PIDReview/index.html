@@ -257,6 +257,17 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
 </td></tr></table>
 
 <div id="TargetFilterPlot" style="width:1200px;height:450px"></div>
+<div style="margin: 6px 0 2px 50px; font-size: 13px;">
+    <input type="checkbox" id="Tar_ShowLPF" onchange="redraw_filter_plots()" disabled>
+    <label for="Tar_ShowLPF">Show LPF</label>
+    <img id="TT_Tar_ShowLPF" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the 1st-order LPF cut-off frequency (ATC_RAT_xxx_FLTT). Only available when the cut-off frequency is non-zero." />
+    &nbsp;&nbsp;
+    <input type="checkbox" id="Tar_ShowNotch" onchange="redraw_filter_plots()" disabled>
+    <label for="Tar_ShowNotch">Show notch</label>
+    <img id="TT_Tar_ShowNotch" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the notch filter center frequency (FILTn_NOTCH_FREQ indexed by ATC_RAT_xxx_NTF). Only available when the notch filter index is non-zero." />
+</div>
 <div id="TargetFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
 
 <table><tr><td style="width:1200px">
@@ -271,6 +282,17 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
 </td></tr></table>
 
 <div id="ErrorFilterPlot" style="width:1200px;height:450px"></div>
+<div style="margin: 6px 0 2px 50px; font-size: 13px;">
+    <input type="checkbox" id="Err_ShowLPF" onchange="redraw_filter_plots()" disabled>
+    <label for="Err_ShowLPF">Show LPF</label>
+    <img id="TT_Err_ShowLPF" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the 1st-order LPF cut-off frequency (ATC_RAT_xxx_FLTE). Only available when the cut-off frequency is non-zero." />
+    &nbsp;&nbsp;
+    <input type="checkbox" id="Err_ShowNotch" onchange="redraw_filter_plots()" disabled>
+    <label for="Err_ShowNotch">Show notch</label>
+    <img id="TT_Err_ShowNotch" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the notch filter center frequency (FILTn_NOTCH_FREQ indexed by ATC_RAT_xxx_NEF). Only available when the notch filter index is non-zero." />
+</div>
 <div id="ErrorFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
 
 </div>
@@ -364,6 +386,10 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
     tippy('#TT_PID_FrequencyDomain');
     tippy('#TT_PID_TargetFilters');
     tippy('#TT_PID_ErrorFilters');
+    tippy('#TT_Tar_ShowLPF');
+    tippy('#TT_Tar_ShowNotch');
+    tippy('#TT_Err_ShowLPF');
+    tippy('#TT_Err_ShowNotch');
     tippy('#TT_PID_StepResponse');
     tippy('#TT_PID_Spectrogram');
 
