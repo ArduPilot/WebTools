@@ -1431,6 +1431,76 @@ function redraw_filter_plots() {
     document.getElementById("FilterPlotsSection").style.display = show ? "" : "none"
     if (!show) return
 
+    // --- Enable / disable frequency-line checkboxes ---
+    const filt_params = PID_log_messages.filt_params || {}
+    let has_lpf_tar = false, has_notch_tar = false
+    let has_lpf_err = false, has_notch_err = false
+    for (let i = 0; i < pid_entry.params.sets.length; i++) {
+        if (pid_entry.sets == null || pid_entry.sets[i] == null) continue
+        const s = pid_entry.params.sets[i]
+        if (s.Target_filter != null && s.Target_filter !== 0) has_lpf_tar = true
+        if (s.Error_filter  != null && s.Error_filter  !== 0) has_lpf_err = true
+        const ntf = s.Notch_target
+        if (ntf != null && ntf !== 0 && filt_params[Math.round(ntf)]?.NOTCH_FREQ) has_notch_tar = true
+        const nef = s.Notch_error
+        if (nef != null && nef !== 0 && filt_params[Math.round(nef)]?.NOTCH_FREQ) has_notch_err = true
+    }
+    const tar_lpf_cb   = document.getElementById("Tar_ShowLPF")
+    const tar_notch_cb = document.getElementById("Tar_ShowNotch")
+    const err_lpf_cb   = document.getElementById("Err_ShowLPF")
+    const err_notch_cb = document.getElementById("Err_ShowNotch")
+    // Default to checked the first time each checkbox becomes enabled (disabled → enabled transition)
+    if (tar_lpf_cb.disabled   && has_lpf_tar)   tar_lpf_cb.checked   = true
+    if (tar_notch_cb.disabled && has_notch_tar) tar_notch_cb.checked = true
+    if (err_lpf_cb.disabled   && has_lpf_err)   err_lpf_cb.checked   = true
+    if (err_notch_cb.disabled && has_notch_err) err_notch_cb.checked = true
+    tar_lpf_cb.disabled   = !has_lpf_tar;   if (!has_lpf_tar)   tar_lpf_cb.checked   = false
+    tar_notch_cb.disabled = !has_notch_tar; if (!has_notch_tar) tar_notch_cb.checked = false
+    err_lpf_cb.disabled   = !has_lpf_err;   if (!has_lpf_err)   err_lpf_cb.checked   = false
+    err_notch_cb.disabled = !has_notch_err; if (!has_notch_err) err_notch_cb.checked = false
+
+    // Build vertical-line shapes (and notch bandwidth shading) for a filter plot.
+    // lpf_key / notch_key are property names in pid_entry.params.sets[i].
+    function build_filter_shapes(lpf_key, notch_key, show_lpf, show_notch) {
+        const shapes = []
+        const lpf_freqs  = new Set()
+        const notch_data = new Map()  // freq_Hz -> q (deduplicated by centre frequency)
+        for (let i = 0; i < pid_entry.params.sets.length; i++) {
+            if (pid_entry.sets == null || pid_entry.sets[i] == null) continue
+            const s = pid_entry.params.sets[i]
+            if (show_lpf) {
+                const f = s[lpf_key]
+                if (f != null && f !== 0) lpf_freqs.add(f)
+            }
+            if (show_notch) {
+                const n = s[notch_key]
+                if (n != null && n !== 0) {
+                    const fp = filt_params[Math.round(n)]
+                    if (fp?.NOTCH_FREQ && fp.NOTCH_FREQ !== 0)
+                        notch_data.set(fp.NOTCH_FREQ, fp.NOTCH_Q ?? 1)
+                }
+            }
+        }
+        for (const f of lpf_freqs) {
+            const x = frequency_scale.fun([f])[0]
+            shapes.push({ type: 'line', x0: x, x1: x, y0: 0, y1: 1, yref: 'paper',
+                           line: { color: 'rgba(30,120,255,0.75)', dash: 'dash', width: 1.5 } })
+        }
+        for (const [f, q] of notch_data) {
+            const bw    = f / Math.max(q, 0.01)
+            const x_lo  = frequency_scale.fun([Math.max(f - bw, 0.01)])[0]
+            const x_hi  = frequency_scale.fun([f + bw])[0]
+            const x_ctr = frequency_scale.fun([f])[0]
+            // Grey band covering the notch bandwidth
+            shapes.push({ type: 'rect', x0: x_lo, x1: x_hi, y0: 0, y1: 1, yref: 'paper',
+                           fillcolor: 'rgba(150,150,150,0.2)', line: { width: 0 }, layer: 'below' })
+            // Centre frequency line
+            shapes.push({ type: 'line', x0: x_ctr, x1: x_ctr, y0: 0, y1: 1, yref: 'paper',
+                           line: { color: 'rgba(220,80,0,0.75)', dash: 'dot', width: 2 } })
+        }
+        return shapes
+    }
+
     const fft_cache = pid_entry.filter_fft
 
     // Compute a mean amplitude spectrum for a fft_data object over the selected time range.
@@ -1474,6 +1544,9 @@ function redraw_filter_plots() {
     target_filter_plot.layout.xaxis.type       = frequency_scale.type
     target_filter_plot.layout.xaxis.title.text = frequency_scale.label
     target_filter_plot.layout.yaxis.title.text = amplitude_scale.label
+    target_filter_plot.layout.shapes = build_filter_shapes(
+        "Target_filter", "Notch_target",
+        tar_lpf_cb.checked, tar_notch_cb.checked)
 
     Plotly.redraw("TargetFilterPlot")
 
@@ -1495,6 +1568,9 @@ function redraw_filter_plots() {
     error_filter_plot.layout.xaxis.type       = frequency_scale.type
     error_filter_plot.layout.xaxis.title.text = frequency_scale.label
     error_filter_plot.layout.yaxis.title.text = amplitude_scale.label
+    error_filter_plot.layout.shapes = build_filter_shapes(
+        "Error_filter", "Notch_error",
+        err_lpf_cb.checked, err_notch_cb.checked)
 
     Plotly.redraw("ErrorFilterPlot")
 
