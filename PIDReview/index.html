@@ -32,6 +32,16 @@
 
 <body>
 
+<table><tr><td style="width:1200px">
+<p style="text-align:center; background-color:#fff3cd; border:1px solid #ffc107; padding:10px; border-radius:4px;">
+    <b>Note:</b> To log PID data, the <b>PID</b> bit of the <code>LOG_BITMASK</code> parameter must be set.
+    In <i>Mission Planner</i> this is found under <i>CONFIG &gt; Full Parameter List</i>.
+    In <i>ArduPilot methodic configurator</i> this is done automatically when <a href="https://ardupilot.github.io/MethodicConfigurator/TUNING_GUIDE_ArduCopter#842-pid-notch-tuning">tuning the PID notch filters</a>.
+    Without this bit set, no PID log messages will be present in the log and this tool will show no data.
+    Here are <a href="https://github.com/ArduPilot/WebTools/blob/main/PIDReview/Readme.md">more details about this tool and how to use it</a>.
+</p>
+</td></tr></table>
+
 <style>
     div.plotly-notifier {
         visibility: hidden;
@@ -190,13 +200,16 @@
 
                         <input type="checkbox" id="PIDX_FF" onchange="update_hidden(this)">
                         <label for="PIDX_FF">FF</label>
+
+                        <input type="checkbox" id="PIDX_DFF" onchange="update_hidden(this)">
+                        <label for="PIDX_DFF">D FF</label>
                     </fieldset>
                 </p>
                 <p>
                     <fieldset style="width:300px">
                         <legend ondblclick="update_hidden(this)">Output</legend>
                         <input type="checkbox" id="PIDX_Out" onchange="update_hidden(this)">
-                        <label for="PIDX_Out">PID + FF</label>
+                        <label for="PIDX_Out">PID + FF + D FF</label>
                     </fieldset>
                 </p>
                 Logging rate: <label id="FFT_infoA"></label> Hz<br><br>
@@ -297,6 +310,9 @@
 
             <input type="radio" id="Spec_FF" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_FF">FF</label>
+
+            <input type="radio" id="Spec_DFF" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_DFF">D FF</label>
 
             <input type="radio" id="Spec_Out" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_Out">Output</label>
