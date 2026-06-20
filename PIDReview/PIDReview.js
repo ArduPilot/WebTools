@@ -136,6 +136,14 @@ function reset() {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
     }
+    for (let i = 0; i < target_filter_plot.data.length; i++) {
+        target_filter_plot.data[i].x = []
+        target_filter_plot.data[i].y = []
+    }
+    for (let i = 0; i < error_filter_plot.data.length; i++) {
+        error_filter_plot.data[i].x = []
+        error_filter_plot.data[i].y = []
+    }
 
     document.getElementById("calculate").disabled = true
 
@@ -166,6 +174,8 @@ var TimeOutputs = {}
 var fft_plot = {}
 var step_plot = {}
 var Spectrogram = {}
+var target_filter_plot = {}
+var error_filter_plot = {}
 function setup_plots() {
 
     const time_scale_label = "Time (s)"
@@ -356,6 +366,42 @@ function setup_plots() {
     Plotly.purge(plot)
     Plotly.newPlot(plot, Spectrogram.data, Spectrogram.layout, {displaylogo: false});
 
+    // Target filter plot setup
+    target_filter_plot.data = [
+        { mode: "lines", name: "Unfiltered target (RATE)", meta: "Unfiltered target (RATE)",
+          showlegend: true, hovertemplate: "" },
+        { mode: "lines", name: "Filtered target (PID)",   meta: "Filtered target (PID)",
+          showlegend: true, hovertemplate: "" }
+    ]
+    target_filter_plot.layout = {
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("TargetFilterPlot")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, target_filter_plot.data, target_filter_plot.layout, {displaylogo: false});
+
+    // Error filter plot setup
+    error_filter_plot.data = [
+        { mode: "lines", name: "Unfiltered error (Tar-Act)", meta: "Unfiltered error (Tar-Act)",
+          showlegend: true, hovertemplate: "" },
+        { mode: "lines", name: "Filtered error (PID Err)",  meta: "Filtered error (PID Err)",
+          showlegend: true, hovertemplate: "" }
+    ]
+    error_filter_plot.layout = {
+        xaxis: {title: {text: frequency_scale.label }, type: "linear", zeroline: false, showline: true, mirror: true},
+        yaxis: {title: {text: amplitude_scale.label }, zeroline: false, showline: true, mirror: true },
+        showlegend: true,
+        legend: {itemclick: false, itemdoubleclick: false },
+        margin: { b: 50, l: 50, r: 50, t: 20 },
+    }
+    plot = document.getElementById("ErrorFilterPlot")
+    Plotly.purge(plot)
+    Plotly.newPlot(plot, error_filter_plot.data, error_filter_plot.layout, {displaylogo: false});
+
     link_plots()
 } 
 
@@ -367,10 +413,14 @@ function link_plots() {
     document.getElementById("FFTPlot").removeAllListeners("plotly_relayout");
     document.getElementById("Spectrogram").removeAllListeners("plotly_relayout");
     document.getElementById("step_plot").removeAllListeners("plotly_relayout");
+    document.getElementById("TargetFilterPlot").removeAllListeners("plotly_relayout");
+    document.getElementById("ErrorFilterPlot").removeAllListeners("plotly_relayout");
 
 
     // Link all frequency axis
     link_plot_axis_range([["FFTPlot", "x", "", fft_plot],
+                          ["TargetFilterPlot", "x", "", target_filter_plot],
+                          ["ErrorFilterPlot", "x", "", error_filter_plot],
                           ["Spectrogram", "y", "", Spectrogram]])
 
     // Link time axis
@@ -384,7 +434,9 @@ function link_plots() {
                      ["TimeOutputs", TimeOutputs],
                      ["FFTPlot", fft_plot],
                      ["step_plot", step_plot],
-                     ["Spectrogram", Spectrogram]])
+                     ["Spectrogram", Spectrogram],
+                     ["TargetFilterPlot", target_filter_plot],
+                     ["ErrorFilterPlot", error_filter_plot]])
 
 }
 
@@ -519,6 +571,7 @@ function clear_calculation() {
             }
         }
         PID_log_messages[i].sets.FFT = null
+        PID_log_messages[i].filter_fft = null
     }
 }
 
@@ -534,6 +587,152 @@ function calculate() {
         run_batch_fft(PID_log_messages[i].sets)
     }
 
+    calculate_filter_ffts()
+
+}
+
+// Compute per-window FFT data for filter comparison plots.
+// Stores results on each PIDR/PIDP/PIDY entry as .filter_fft
+function calculate_filter_ffts() {
+
+    const window_size = parseInt(document.getElementById("FFTWindow_size").value)
+    if (!Number.isInteger(Math.log2(window_size))) {
+        return
+    }
+
+    const window_overlap = 0.5
+    const window_spacing = Math.round(window_size * (1 - window_overlap))
+    const windowing_fn = hanning(window_size)
+    const window_correction_obj = window_correction_factors(windowing_fn)
+    const fft_lib = new FFTJS(window_size)
+    const real_len = real_length(window_size)
+
+    // FFT normalization scale (same as run_fft)
+    const end_scale = 1 / window_size
+    const mid_scale = 2 / window_size
+    const norm_scale = new Array(real_len)
+    norm_scale[0] = end_scale
+    for (let j = 1; j < real_len - 1; j++) norm_scale[j] = mid_scale
+    norm_scale[real_len - 1] = end_scale
+
+    // Compute per-window FFT for a flat list of {time, data, sample_rate} batches.
+    // Returns {bins, average_sample_rate, window_size, correction, time, spectra} or null.
+    function run_windowed_fft(batches) {
+        let sample_rate_sum = 0, sample_rate_count = 0
+        for (const b of batches) {
+            if (b.data.length >= window_size) {
+                sample_rate_sum += b.sample_rate
+                sample_rate_count++
+            }
+        }
+        if (sample_rate_sum === 0) return null
+
+        const sample_time = sample_rate_count / sample_rate_sum
+        const fft_buf = fft_lib.createComplexArray()
+        const time_arr = []
+        const spectra_arr = []
+
+        for (const b of batches) {
+            if (b.data.length < window_size) continue
+            const num_win = Math.floor((b.data.length - window_size) / window_spacing) + 1
+            for (let i = 0; i < num_win; i++) {
+                const ws = i * window_spacing
+                time_arr.push(b.time[0] + (ws + window_size * 0.5) * sample_time)
+
+                const windowed = new Array(window_size)
+                for (let j = 0; j < window_size; j++) windowed[j] = b.data[ws + j] * windowing_fn[j]
+
+                fft_lib.realTransform(fft_buf, windowed)
+
+                const spectrum = [new Array(real_len), new Array(real_len)]
+                for (let j = 0; j < real_len; j++) {
+                    spectrum[0][j] = fft_buf[j * 2]     * norm_scale[j]
+                    spectrum[1][j] = fft_buf[j * 2 + 1] * norm_scale[j]
+                }
+                spectra_arr.push(spectrum)
+            }
+        }
+
+        if (time_arr.length === 0) return null
+
+        return {
+            bins: rfft_freq(window_size, sample_time),
+            average_sample_rate: 1 / sample_time,
+            window_size: window_size,
+            correction: window_correction_obj,
+            time: time_arr,
+            spectra: spectra_arr
+        }
+    }
+
+    // Collect flat batch list from sets array, optionally transforming data.
+    // key_fn: string key name or function(batch) => Array
+    // unit_scale: numeric multiplier applied to the data, or null/1 for no scaling
+    function get_batches(sets_arr, key_fn, unit_scale) {
+        const batches = []
+        if (sets_arr == null) return batches
+        for (const set of sets_arr) {
+            if (set == null) continue
+            for (const batch of set) {
+                let d = typeof key_fn === 'function' ? key_fn(batch) : batch[key_fn]
+                if (!d) continue
+                if (unit_scale != null && unit_scale !== 1.0) {
+                    d = array_scale(d, unit_scale)
+                }
+                batches.push({ time: batch.time, data: d, sample_rate: batch.sample_rate })
+            }
+        }
+        return batches
+    }
+
+    // Compute for each PIDR / PIDP / PIDY entry
+    for (const pid_entry of PID_log_messages) {
+        const id = pid_entry.id[0]
+        if (!["PIDR", "PIDP", "PIDY"].includes(id)) continue
+
+        if (!pid_entry.have_data) {
+            pid_entry.filter_fft = null
+            continue
+        }
+
+        // Axis letter: R, P, or Y
+        const axis = id.slice(-1)
+
+        // Find corresponding RATE_x entry (may not exist for all vehicle types)
+        const rate_entry = PID_log_messages.find(
+            m => m.id[0] === "RATE" && m.id[1] === axis && m.have_data
+        ) || null
+
+        pid_entry.filter_fft = {}
+
+        // Unfiltered target: RATE.RDes / PDes / YDes, scaled to PID units
+        if (rate_entry != null) {
+            pid_entry.filter_fft.tar_unfiltered = run_windowed_fft(
+                get_batches(rate_entry.sets, "Tar", pid_entry.unitScale)
+            )
+        } else {
+            pid_entry.filter_fft.tar_unfiltered = null
+        }
+
+        // Filtered target: PIDR.Tar (already unit-scaled during load)
+        pid_entry.filter_fft.tar_filtered = run_windowed_fft(
+            get_batches(pid_entry.sets, "Tar", null)
+        )
+
+        // Unfiltered error: Tar - Act (before error filter, both already unit-scaled)
+        pid_entry.filter_fft.err_unfiltered = run_windowed_fft(
+            get_batches(pid_entry.sets, function(batch) {
+                const arr = new Array(batch.Tar.length)
+                for (let i = 0; i < arr.length; i++) arr[i] = batch.Tar[i] - batch.Act[i]
+                return arr
+            }, null)
+        )
+
+        // Filtered error: PIDR.Err (already unit-scaled during load)
+        pid_entry.filter_fft.err_filtered = run_windowed_fft(
+            get_batches(pid_entry.sets, "Err", null)
+        )
+    }
 }
 
 // Get configured amplitude scale
@@ -853,6 +1052,7 @@ function redraw() {
     Plotly.redraw("TimeOutputs")
 
     if (PID.sets.FFT == null) {
+        redraw_filter_plots()
         return
     }
 
@@ -932,6 +1132,8 @@ function redraw() {
     redraw_Spectrogram()
 
     redraw_step()
+
+    redraw_filter_plots()
 }
 
 function redraw_Spectrogram() {
@@ -1207,6 +1409,162 @@ function redraw_step() {
     Plotly.redraw("step_plot")
 
 } 
+
+// Redraw the target-filter and error-filter plots.
+// Only shown when a Roll/Pitch/Yaw axis is selected and filter FFT data is available.
+function redraw_filter_plots() {
+
+    if ((PID_log_messages == null) || !PID_log_messages.have_data) {
+        document.getElementById("FilterPlotsSection").style.display = "none"
+        return
+    }
+
+    const PID = PID_log_messages[get_axis_index()]
+    const id  = PID.id[0]
+
+    // Resolve the PIDR/PIDP/PIDY entry that carries the filter_fft data
+    let pid_entry = null
+    if (["PIDR", "PIDP", "PIDY"].includes(id)) {
+        pid_entry = PID
+    } else if (id === "RATE") {
+        // e.g. id[1] = "R" -> look for "PIDR"
+        const axis = PID.id[1]
+        pid_entry = PID_log_messages.find(m => m.id[0] === "PID" + axis && m.have_data) || null
+    }
+
+    const show = (pid_entry != null) && (pid_entry.filter_fft != null)
+    document.getElementById("FilterPlotsSection").style.display = show ? "" : "none"
+    if (!show) return
+
+    const fft_cache = pid_entry.filter_fft
+
+    // Compute a mean amplitude spectrum for a fft_data object over the selected time range.
+    // Returns {x, y} ready for Plotly, or {x:[], y:[]} if no data.
+    function compute_mean_spectrum(fft_data) {
+        if (fft_data == null || fft_data.time.length === 0) return { x: [], y: [] }
+
+        const FFT_resolution = fft_data.average_sample_rate / fft_data.window_size
+        const window_corr = amplitude_scale.window_correction(fft_data.correction, FFT_resolution)
+        const scaled_bins = frequency_scale.fun(fft_data.bins)
+
+        const start_idx = find_start_index(fft_data.time)
+        const end_idx   = find_end_index(fft_data.time) + 1
+        const mean_len  = end_idx - start_idx
+        if (mean_len <= 0 || start_idx >= fft_data.spectra.length) return { x: [], y: [] }
+
+        const num_bins = fft_data.spectra[start_idx][0].length
+        let mean = new Array(num_bins).fill(0)
+        for (let k = start_idx; k < end_idx; k++) {
+            mean = array_add(mean, amplitude_scale.fun(complex_abs(fft_data.spectra[k])))
+        }
+
+        const corrected = array_scale(mean, window_corr / mean_len)
+        return { x: scaled_bins, y: amplitude_scale.scale(corrected) }
+    }
+
+    const hovertemplate = "<extra></extra>%{meta}<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("y")
+
+    // --- Target filter plot ---
+    const tar_unfilt = compute_mean_spectrum(fft_cache.tar_unfiltered)
+    const tar_filt   = compute_mean_spectrum(fft_cache.tar_filtered)
+
+    target_filter_plot.data[0].x = tar_unfilt.x
+    target_filter_plot.data[0].y = tar_unfilt.y
+    target_filter_plot.data[0].hovertemplate = hovertemplate
+
+    target_filter_plot.data[1].x = tar_filt.x
+    target_filter_plot.data[1].y = tar_filt.y
+    target_filter_plot.data[1].hovertemplate = hovertemplate
+
+    target_filter_plot.layout.xaxis.type       = frequency_scale.type
+    target_filter_plot.layout.xaxis.title.text = frequency_scale.label
+    target_filter_plot.layout.yaxis.title.text = amplitude_scale.label
+
+    Plotly.redraw("TargetFilterPlot")
+
+    // --- Target filter info ---
+    render_filter_info("TargetFilterInfo", pid_entry, "Target_filter", "Notch_target")
+
+    // --- Error filter plot ---
+    const err_unfilt = compute_mean_spectrum(fft_cache.err_unfiltered)
+    const err_filt   = compute_mean_spectrum(fft_cache.err_filtered)
+
+    error_filter_plot.data[0].x = err_unfilt.x
+    error_filter_plot.data[0].y = err_unfilt.y
+    error_filter_plot.data[0].hovertemplate = hovertemplate
+
+    error_filter_plot.data[1].x = err_filt.x
+    error_filter_plot.data[1].y = err_filt.y
+    error_filter_plot.data[1].hovertemplate = hovertemplate
+
+    error_filter_plot.layout.xaxis.type       = frequency_scale.type
+    error_filter_plot.layout.xaxis.title.text = frequency_scale.label
+    error_filter_plot.layout.yaxis.title.text = amplitude_scale.label
+
+    Plotly.redraw("ErrorFilterPlot")
+
+    // --- Error filter info ---
+    render_filter_info("ErrorFilterInfo", pid_entry, "Error_filter", "Notch_error")
+}
+
+// Populate a filter-info div with LPF cut-off and optional notch parameters.
+// lpf_key / notch_key are property names from get_PID_param_names().
+function render_filter_info(element_id, pid_entry, lpf_key, notch_key) {
+    const el = document.getElementById(element_id)
+    if (!el) return
+
+    const filt_params = (PID_log_messages.filt_params) || {}
+    const sets = pid_entry.params.sets
+    const prefix = pid_entry.params.prefix || ""
+
+    // Collect rows, one per param set that was actually logged (have data)
+    const rows = []
+    for (let i = 0; i < sets.length; i++) {
+        if (pid_entry.sets == null || pid_entry.sets[i] == null) continue
+
+        const set = sets[i]
+        const lpf_val    = set[lpf_key]
+        const notch_idx  = set[notch_key]
+
+        const lpf_param_name   = prefix + (lpf_key   === "Target_filter" ? "FLTT" : "FLTE")
+        const notch_param_name = prefix + (notch_key === "Notch_target"  ? "NTF"  : "NEF")
+
+        let html = ""
+
+        // LPF line
+        if (lpf_val != null) {
+            html += `<b>${lpf_param_name}</b> = ${lpf_val.toFixed(1)} Hz — 1st-order LPF cut-off frequency`
+        }
+
+        // Notch line (only when index != 0)
+        if (notch_idx != null && notch_idx !== 0) {
+            const n = Math.round(notch_idx)
+            const fp = filt_params[n] || {}
+            const freq = fp.NOTCH_FREQ != null ? fp.NOTCH_FREQ.toFixed(1) + " Hz" : "?"
+            const q    = fp.NOTCH_Q   != null ? fp.NOTCH_Q.toFixed(2)   : "?"
+            const att  = fp.NOTCH_ATT != null ? fp.NOTCH_ATT.toFixed(1) + " dB" : "?"
+            html += `<br><b>${notch_param_name}</b> = ${n} — `
+            html += `FILT${n}_NOTCH_FREQ = ${freq}, &nbsp;`
+            html += `FILT${n}_NOTCH_Q = ${q}, &nbsp;`
+            html += `FILT${n}_NOTCH_ATT = ${att}`
+        }
+
+        rows.push({ label: sets.length > 1 ? `Test ${i + 1}` : null, html })
+    }
+
+    if (rows.length === 0) { el.innerHTML = ""; return }
+
+    // Check whether all rows are identical (skip test labels in that case)
+    const all_same = rows.every(r => r.html === rows[0].html)
+
+    let out = ""
+    for (const row of rows) {
+        if (!all_same && row.label) out += `<b>${row.label}:</b> `
+        out += row.html
+        if (!all_same) out += "<br>"
+    }
+    el.innerHTML = out
+}
 
 // Update lines that are shown in FFT plot
 function update_hidden(source) {
@@ -1509,6 +1867,18 @@ async function load(log_file) {
 
     // Load params, split for any changes
     const PARM = log.get('PARM')
+
+    // Scan for FILTn_NOTCH_FREQ / _Q / _ATT parameters (global, not per-axis)
+    PID_log_messages.filt_params = {}
+    for (let j = 0; j < PARM.Name.length; j++) {
+        const match = PARM.Name[j].match(/^FILT(\d+)_(NOTCH_FREQ|NOTCH_Q|NOTCH_ATT)$/)
+        if (match) {
+            const idx = parseInt(match[1])
+            if (!PID_log_messages.filt_params[idx]) PID_log_messages.filt_params[idx] = {}
+            PID_log_messages.filt_params[idx][match[2]] = PARM.Value[j]
+        }
+    }
+
     for (let i = 0; i < PID_log_messages.length; i++) {
         PID_log_messages[i].params = { prefix: null, sets: [] }
         for (const prefix of PID_log_messages[i].prefixes) {

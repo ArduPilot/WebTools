@@ -243,6 +243,38 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
     </td>
 </table>
 
+<div id="FilterPlotsSection" style="display:none">
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">
+        Rate PID target filters
+        <img id="TT_PID_TargetFilters" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Compares the unfiltered rate target (from RATE log message, e.g. RDes) with the filtered target seen by the PID controller (e.g. PIDR.Tar).
+    Shows the effect of the target filters (ATC_RAT_xxx_FLTT and ATC_RAT_xxx_NTF).
+    " />
+    </h2>
+</td></tr></table>
+
+<div id="TargetFilterPlot" style="width:1200px;height:450px"></div>
+<div id="TargetFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">
+        Rate PID error filters
+        <img id="TT_PID_ErrorFilters" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Compares the unfiltered PID error (Tar - Act, before error filters) with the filtered error used by the PID controller (e.g. PIDR.Err).
+    Shows the effect of the error filters (ATC_RAT_xxx_FLTE and ATC_RAT_xxx_NEF).
+    " />
+    </h2>
+</td></tr></table>
+
+<div id="ErrorFilterPlot" style="width:1200px;height:450px"></div>
+<div id="ErrorFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
+
+</div>
+
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">
         Step Response
@@ -330,6 +362,8 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
     tippy('#TT_PID_FlightData');
     tippy('#TT_PID_TimeDomain');
     tippy('#TT_PID_FrequencyDomain');
+    tippy('#TT_PID_TargetFilters');
+    tippy('#TT_PID_ErrorFilters');
     tippy('#TT_PID_StepResponse');
     tippy('#TT_PID_Spectrogram');
 
