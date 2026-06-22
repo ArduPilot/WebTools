@@ -55,14 +55,22 @@ The **Logging rate** and **Frequency resolution** fields below the checkboxes re
 
 ### Rate PID Target Filters *(Roll / Pitch / Yaw axes only)*
 
-Shows the effect of the **target filters** (`ATC_RAT_xxx_FLTT` and `ATC_RAT_xxx_NTF`) by overlaying:
+These filters remove noise from the desired PID target input.
+The (optional) low pass filter limits the bandwidth of the PID input signal.
+The (optional) notch filter removes vehicle frame resonance (RPM independent noise).
+
+This graph shows the effect of the **target filters** (`ATC_RAT_xxx_FLTT` and `ATC_RAT_xxx_NTF`) by overlaying:
 
 - **Unfiltered target** – the raw rate demand from the `RATE` log message (`RDes`, `PDes`, `YDes`), processed at the RATE message sample rate.
 - **Filtered target** – the demand after the target filter, as seen by the PID controller (`PIDR/P/Y.Tar`).
 
 ### Rate PID Error Filters *(Roll / Pitch / Yaw axes only)*
 
-Shows the effect of the **error filters** (`ATC_RAT_xxx_FLTE` and `ATC_RAT_xxx_NEF`) by overlaying:
+These filters remove noise from the calculated control-loop error signal.
+The (optional) low pass filter limits the bandwidth of the error signal.
+The (optional) notch filter removes vehicle frame resonance (RPM independent noise).
+
+This graph shows the effect of the **error filters** (`ATC_RAT_xxx_FLTE` and `ATC_RAT_xxx_NEF`) by overlaying:
 
 - **Unfiltered error** – the raw error (Tar − Act) computed from the PID log message, before the error filter.
 - **Filtered error** – the error after the filter, as used by the PID controller (`PIDR/P/Y.Err`).
