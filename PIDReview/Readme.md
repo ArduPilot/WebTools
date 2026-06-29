@@ -4,9 +4,8 @@ A browser-based tool for analysing ArduPilot flight logs and evaluating PID tuni
 
 ## Requirements
 
-The **PID** bit of the `LOG_BITMASK` parameter must be set before flying so that PID log messages (`PIDR`, `PIDP`, `PIDY`, `PIQR`, `PIQP`, `PIQY`, `PIDS`, `PIDA`) are recorded.
-Without this the tool will find no data.
-The `RATE` log message is also used when available and is enabled by default.
+The **PID** bit of the `LOG_BITMASK` parameter should be set before flying so that `PIDx` log messages (`PIDR`, `PIDP`, `PIDY`, `PIQR`, `PIQP`, `PIQY`, `PIDS`, `PIDA`) are recorded.
+Without this the tool will fallback to using the less detailed `RATE` messages and will disable some features.
 
 ## Supported vehicles
 
@@ -24,7 +23,7 @@ For this vehicle type, here is the annotated signal diagram:
 
 ## How to use
 
-1. Open the tool in a browser and load a `.bin` log file using the file picker or the **Open In** button (when launched from a GCS).
+1. Open the tool in a browser and load a `.bin` log file using the file picker.
 2. Select the axis / controller to analyse using the radio buttons in the **Axis** panel.
 3. Optionally narrow the analysis window using the **Start / End** time inputs or by zooming into the **Flight Data** plot and dragging the range slider.
 4. Click **Calculate** to run the FFT. The button is re-enabled automatically whenever the time range or window size is changed.
@@ -46,7 +45,7 @@ Multiple test sections (caused by in-flight parameter changes) are shown with co
 ### Frequency Domain (FFT)
 
 Averaged windowed FFT of the selected PID signals over the chosen time range.
-Each signal (Target, Actual, Error, P, I, D, FF, Output) can be shown or hidden independently.
+Each signal (Target, Actual, Error, P, I, D, FF, DFF, Output) can be shown or hidden independently.
 
 - **Amplitude scale** – Linear, dB, or Power Spectral Density (PSD).
 - **Frequency scale** – Linear or logarithmic, in Hz or RPM.
