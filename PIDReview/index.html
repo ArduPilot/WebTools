@@ -32,15 +32,10 @@
 
 <body>
 
-<table><tr><td style="width:1200px">
-<p style="text-align:center; background-color:#fff3cd; border:1px solid #ffc107; padding:10px; border-radius:4px;">
-    <b>Note:</b> To log PID data, the <b>PID</b> bit of the <code>LOG_BITMASK</code> parameter must be set.
-    In <i>Mission Planner</i> this is found under <i>CONFIG &gt; Full Parameter List</i>.
-    In <i>ArduPilot methodic configurator</i> this is done automatically when <a href="https://ardupilot.github.io/MethodicConfigurator/TUNING_GUIDE_ArduCopter#842-pid-notch-tuning">tuning the PID notch filters</a>.
-    Without this bit set, no PID log messages will be present in the log and this tool will show no data.
-    Here are <a href="https://github.com/ArduPilot/WebTools/blob/main/PIDReview/Readme.md">more details about this tool and how to use it</a>.
+<p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
+This tool takes a .bin log with RATE or PID messages and shows the time and frequency content of the rate controller target, response and output. To record the full set of PID components the <b>PID</b> bit of the <code>LOG_BITMASK</code> parameter must be set before flying. The <code>RATE</code> log message is enabled by default and can also be used by this tool. Here are <a href="https://github.com/ArduPilot/WebTools/blob/main/PIDReview/Readme.md">more details about this tool and how to use it</a>.
 </p>
-</td></tr></table>
+
 
 <style>
     div.plotly-notifier {
@@ -288,7 +283,7 @@
 <table>
     <td style="width: 375px;"></td>
     <td>
-        <fieldset style="width:450px;height:40px">
+        <fieldset style="width:500px;height:40px">
             <legend>PID component</legend>
             <input type="radio" id="Spec_Tar" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_Tar">Target</label>
