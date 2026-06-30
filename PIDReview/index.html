@@ -32,6 +32,11 @@
 
 <body>
 
+<p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
+This tool takes a .bin log with RATE or PID messages and shows the time and frequency content of the rate controller target, response and output. To record the full set of PID components the <b>PID</b> bit of the <code>LOG_BITMASK</code> parameter must be set before flying. The <code>RATE</code> log message is enabled by default and can also be used by this tool. Here are <a href="https://github.com/ArduPilot/WebTools/blob/main/PIDReview/Readme.md">more details about this tool and how to use it</a>.
+</p>
+
+
 <style>
     div.plotly-notifier {
         visibility: hidden;
@@ -190,13 +195,16 @@
 
                         <input type="checkbox" id="PIDX_FF" onchange="update_hidden(this)">
                         <label for="PIDX_FF">FF</label>
+
+                        <input type="checkbox" id="PIDX_DFF" onchange="update_hidden(this)">
+                        <label for="PIDX_DFF">D FF</label>
                     </fieldset>
                 </p>
                 <p>
                     <fieldset style="width:300px">
                         <legend ondblclick="update_hidden(this)">Output</legend>
                         <input type="checkbox" id="PIDX_Out" onchange="update_hidden(this)">
-                        <label for="PIDX_Out">PID + FF</label>
+                        <label for="PIDX_Out">PID + FF + D FF</label>
                     </fieldset>
                 </p>
                 Logging rate: <label id="FFT_infoA"></label> Hz<br><br>
@@ -242,6 +250,60 @@
     </td>
 </table>
 
+<div id="FilterPlotsSection" style="display:none">
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">
+        Rate PID target filters
+        <img id="TT_PID_TargetFilters" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Compares the unfiltered rate target (from RATE log message, e.g. RDes) with the filtered target seen by the PID controller (e.g. PIDR.Tar).
+    Shows the effect of the target filters (ATC_RAT_xxx_FLTT and ATC_RAT_xxx_NTF).
+    " />
+    </h2>
+</td></tr></table>
+
+<div id="TargetFilterPlot" style="width:1200px;height:450px"></div>
+<div style="margin: 6px 0 2px 50px; font-size: 13px;">
+    <input type="checkbox" id="Tar_ShowLPF" onchange="redraw_filter_plots()" disabled>
+    <label for="Tar_ShowLPF">Show LPF</label>
+    <img id="TT_Tar_ShowLPF" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the 1st-order LPF cut-off frequency (ATC_RAT_xxx_FLTT). Only available when the cut-off frequency is non-zero." />
+    &nbsp;&nbsp;
+    <input type="checkbox" id="Tar_ShowNotch" onchange="redraw_filter_plots()" disabled>
+    <label for="Tar_ShowNotch">Show notch</label>
+    <img id="TT_Tar_ShowNotch" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the notch filter center frequency (FILTn_NOTCH_FREQ indexed by ATC_RAT_xxx_NTF). Only available when the notch filter index is non-zero." />
+</div>
+<div id="TargetFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">
+        Rate PID error filters
+        <img id="TT_PID_ErrorFilters" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+            data-tippy-content="
+    Compares the unfiltered PID error (Tar - Act, before error filters) with the filtered error used by the PID controller (e.g. PIDR.Err).
+    Shows the effect of the error filters (ATC_RAT_xxx_FLTE and ATC_RAT_xxx_NEF).
+    " />
+    </h2>
+</td></tr></table>
+
+<div id="ErrorFilterPlot" style="width:1200px;height:450px"></div>
+<div style="margin: 6px 0 2px 50px; font-size: 13px;">
+    <input type="checkbox" id="Err_ShowLPF" onchange="redraw_filter_plots()" disabled>
+    <label for="Err_ShowLPF">Show LPF</label>
+    <img id="TT_Err_ShowLPF" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the 1st-order LPF cut-off frequency (ATC_RAT_xxx_FLTE). Only available when the cut-off frequency is non-zero." />
+    &nbsp;&nbsp;
+    <input type="checkbox" id="Err_ShowNotch" onchange="redraw_filter_plots()" disabled>
+    <label for="Err_ShowNotch">Show notch</label>
+    <img id="TT_Err_ShowNotch" src="../images/question-circle.svg" style="width:1em; vertical-align:bottom"
+        data-tippy-content="Draw a vertical line at the notch filter center frequency (FILTn_NOTCH_FREQ indexed by ATC_RAT_xxx_NEF). Only available when the notch filter index is non-zero." />
+</div>
+<div id="ErrorFilterInfo" style="margin: 4px 0 14px 50px; font-size: 13px; color: #333;"></div>
+
+</div>
+
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">
         Step Response
@@ -275,7 +337,7 @@
 <table>
     <td style="width: 375px;"></td>
     <td>
-        <fieldset style="width:450px;height:40px">
+        <fieldset style="width:500px;height:40px">
             <legend>PID component</legend>
             <input type="radio" id="Spec_Tar" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_Tar">Target</label>
@@ -297,6 +359,9 @@
 
             <input type="radio" id="Spec_FF" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_FF">FF</label>
+
+            <input type="radio" id="Spec_DFF" name="Spec" onchange="redraw_Spectrogram()">
+            <label for="Spec_DFF">D FF</label>
 
             <input type="radio" id="Spec_Out" name="Spec" onchange="redraw_Spectrogram()">
             <label for="Spec_Out">Output</label>
@@ -326,6 +391,12 @@
     tippy('#TT_PID_FlightData');
     tippy('#TT_PID_TimeDomain');
     tippy('#TT_PID_FrequencyDomain');
+    tippy('#TT_PID_TargetFilters');
+    tippy('#TT_PID_ErrorFilters');
+    tippy('#TT_Tar_ShowLPF');
+    tippy('#TT_Tar_ShowNotch');
+    tippy('#TT_Err_ShowLPF');
+    tippy('#TT_Err_ShowNotch');
     tippy('#TT_PID_StepResponse');
     tippy('#TT_PID_Spectrogram');
 
