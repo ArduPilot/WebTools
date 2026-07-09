@@ -1,0 +1,18 @@
+{
+  "": {
+    "ARSPD": {
+      "ARSPD_RATIO": {
+        "DisplayName": "Airspeed ratio",
+        "Description": "Calibrates pitot tube pressure to airspeed. Increasing this value will indicate a higher airspeed at any given dynamic pressure.",
+        "Increment": "0.1",
+        "User": "Standard"
+      },
+      "ARSPD2_RATIO": {
+        "DisplayName": "Airspeed ratio",
+        "Description": "Calibrates pitot tube pressure to airspeed of the second airspeed sensor. Increasing this value will indicate a higher airspeed at any given dynamic pressure.",
+        "Increment": "0.1",
+        "User": "Standard"
+      }
+    }
+  }
+}
