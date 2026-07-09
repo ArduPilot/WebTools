@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot AirspeedFit</title>
+<link rel="icon" href="../images/AP_favicon.png">
+<script src='../modules/plotly.js/dist/plotly.min.js'></script>
+
+<script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
+<script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
+
+<script type="text/javascript" src="../Libraries/Array_Math.js"></script>
+<script type="text/javascript" src="../Libraries/Plotly_helpers.js"></script>
+<script type="text/javascript" src="../Libraries/Param_Helpers.js"></script>
+<script type="text/javascript" src="../Libraries/ParameterMetadata.js"></script>
+<script type="text/javascript" src="../Libraries/OpenIn.js"></script>
+<script type="text/javascript" src="../Libraries/LoadingOverlay.js"></script>
+<script type="text/javascript" src="../Libraries/DecodeDevID.js"></script>
+<script type="text/javascript" src="../Libraries/FileSaver.js"></script>
+<script type="text/javascript" src="../Libraries/LogHelpers.js"></script>
+<script src="../modules/build/matrix/matrix.umd.js"></script>
+<script type="text/javascript" src="airspeedfit_core.js"></script>
+<script type="text/javascript" src="airspeedfit.js"></script>
+
+</head>
+
+<style>
+    div.plotly-notifier {
+        visibility: hidden;
+    }
+
+    .tippy-box {
+        font-size: 20px;
+    }
+
+    .warn {
+        color: #b30000;
+    }
+    .ok {
+        color: #007a29;
+    }
+    .result_table td {
+        padding: 2px 18px 2px 0px;
+        vertical-align: top;
+    }
+</style>
+
+<table style="width:1200px"><tr><td>
+    <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
+</td><td>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+    <br>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+</td></tr></table>
+
+<table><tr><td style="width:1200px">
+<h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot AirspeedFit in flight airspeed calibration</a></h1>
+</td></tr></table>
+
+<body>
+
+<p style="width:1150px; text-align:justify; padding-left:30px; margin-block-start: 0; margin-block-end: 0.5em;">
+This tool takes a .bin log and estimates the airspeed ratio calibration (ARSPD_RATIO) for each airspeed sensor. The GPS/EKF ground velocity minus an estimated wind gives the true airspeed used as the truth source, and the ratio is fitted so each sensor's airspeed matches it over the selected window. This is the same relationship ArduPilot's in-flight autocalibration uses, but solved offline (forward and backward in time). For best results select a window with heading changes (turns or a loiter); a single straight cruise leg cannot separate the wind from the airspeed scale.
+</p>
+
+<table>
+<tr>
+<td style="width: 30px;"></td>
+<td>
+<fieldset style="width:1100px">
+    <legend>Setup</legend>
+    <table>
+        <td style="vertical-align:top">
+            <fieldset style="width:180px;height:175px">
+                <legend>Analysis time
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+                    data-tippy-content='Start and end times for the fit, automatically updated from the selected portion of the log shown in the Flight Data plot. Seeded automatically from the detected flight. The Calculate button must be clicked after any change of start/end time.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
+                <label for="TimeStart">Start (s)</label>
+                <input id="TimeStart" name="TimeStart" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:75px"/><br><br>
+                <label for="TimeEnd">End (s)</label>
+                <input id="TimeEnd" name="TimeEnd" type="number" min="0" step="1" value="0" onchange="time_range_changed()" style="width:75px"/>
+            </fieldset>
+        </td>
+        <td style="width: 10px;"></td>
+        <td style="vertical-align:top">
+            <fieldset style="width:200px;height:175px" id="VELOCITY">
+                <legend>Velocity source
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+                    data-tippy-content='EKF ground-velocity source (North/East/Down) used as the truth for the wind triangle. Normally the default (lowest EKF core) is fine. The Calculate button must be clicked after any change of source.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
+            </fieldset>
+        </td>
+        <td style="width: 10px;"></td>
+        <td style="vertical-align:top">
+            <fieldset style="width:250px;height:175px" id="TEMPERATURE">
+                <legend>Air temperature
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+                    data-tippy-content='Air temperature is needed to convert equivalent airspeed to true airspeed (EAS2TAS). Enter the outside air temperature at ground level, and it will be used to feed a simple atmospheric model to calculate EAS2TAS throughout the flight. Each degree of error in temperature corresponds to a ~0.2% error in the final calibrated airspeed measurements. Use the Source dropdown to fill the box, or type your own. By default, the temperature is looked up from Open-Meteo using the location/time of takeoff.'
+                    data-tippy-maxWidth='780px'/>
+                </legend>
+                <p style="margin:4px 0px;">
+                    <label for="temp_source">Source</label>
+                    <select id="temp_source" onchange="temp_source_changed()" style="max-width:175px"></select>
+                </p>
+                <p style="margin:4px 0px;">
+                    <input type="number" id="ground_temp" value="15" step="1" style="width: 55px" onchange="ground_temp_edited()">
+                    <label for="ground_temp">&deg;C at ground</label>
+                </p>
+                <p id="temp_debug" style="margin:8px 0px 0px; font-family:monospace; font-size:12px; color:#555; line-height:1.5"></p>
+            </fieldset>
+        </td>
+        <td style="width: 10px;"></td>
+        <td style="vertical-align:top">
+            <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br>
+            <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { calculate(); })">
+        </td>
+        <td style="width: 60px;"></td>
+        <td style="text-align:right; vertical-align:top">
+            <input id="OpenIn" type="button" value="Open In" disabled><br><br><br>
+            <img id="TT" src="../images/question-circle.svg" width="30px"
+                data-tippy-content='Load a .bin log file using the file button. "Open In" opens the log in one of the other WebTools.',
+                data-tippy-maxWidth='750px'
+            />
+        </td>
+    </table>
+</fieldset>
+</td>
+</tr>
+</table>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Flight Data
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='Zoom into a section of the flight to change the Analysis time then click "Calculate". Select a section with heading changes (turns / loiter) and steady airspeed for the best fit.',
+        data-tippy-maxWidth='750px'/>
+    </h2>
+</td></tr></table>
+
+<div id="FlightData" style="width:1200px;height:450px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Airspeed sensors</h2>
+</td></tr></table>
+
+<div id="SensorSummary" style="width:1200px"></div>
+
+<!-- All results below are hidden whenever a recalculation is pending (see set_results_shown). -->
+<div id="results" style="display:none">
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Expected vs measured airspeed
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='True airspeed (from the ground velocity and the estimated wind, black) versus each sensor&apos;s calibrated airspeed, before (current logged ratio) and after (fitted ratio). Click a legend entry to hide/show that line.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
+</td></tr></table>
+
+<div id="tas_combined" style="width:1200px;height:420px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Residuals
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='Residual = true airspeed &minus; calibrated airspeed, before and after calibration, for each sensor. Click a legend entry to hide/show.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
+</td></tr></table>
+
+<div id="resid_combined" style="width:1200px;height:350px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Calibration RMS error
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='RMS of the residual airspeed error before and after calibration, per sensor. Lower is better.'
+        data-tippy-maxWidth='750px'/>
+    </h2>
+</td></tr></table>
+
+<div id="rms_bar" style="width:1200px;height:300px"></div>
+
+<table><tr><td style="width:1200px">
+    <h2 style="text-align:center">Wind model
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='The wind over the flight, estimated as a slow random walk (an offline forward/backward smoother). This slider sets how quickly the wind may drift (process noise q): low q pins it nearly constant, higher q lets it track weather changes over a long flight. If q is set too high, the wind model can start absorbing real residuals and providing false confidence. The final airspeed ratios are generally robust against a poorly chosen q.'
+        data-tippy-maxWidth='800px'/>
+    </h2>
+</td></tr></table>
+
+<table style="width:1150px"><tr>
+    <td style="width:250px"><label for="q_slider">Wind process noise q</label></td>
+    <td style="width:500px">
+        <input type="range" id="q_slider" min="-3" max="0" step="0.05" value="-1.5" style="width:480px"
+               oninput="q_slider_input()" onchange="q_slider_changed()" disabled>
+    </td>
+    <td><span id="q_value" style="font-family:monospace">0.032</span> (m/s)/&radic;s
+        <span id="q_hint" style="margin-left:15px; color:#555"></span>
+    </td>
+</tr></table>
+
+<div id="WindModel" style="width:1200px"></div>
+
+<div id="ParamRows" style="width:1150px; margin-top:15px"></div>
+
+<table style="width:1150px">
+    <tr>
+        <td style="text-align:right">
+            <br>
+            <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();" disabled>
+        </td>
+    </tr>
+</table>
+
+</div>
+
+<div id="results_msg" style="width:1200px; text-align:center; color:#555; font-style:italic; margin:30px 0; display:none">
+    Hit Calculate to see results.
+</div>
+
+</body>
+
+<script>
+
+    window.onerror = function(msg, url, linenumber) {
+        alert('Sorry, something went wrong.\n\n' +
+                'Please try a hard reload of this page to clear its cache.\n\n' +
+                'If the error persists open an issue on the GitHub repo.\n' +
+                'Include a copy of the log and the following error message:\n\n' +
+                msg + '\n' +
+                'URL: '+ url +'\n' +
+                'Line Number: '+ linenumber)
+        return false
+    }
+    window.addEventListener('unhandledrejection', function (e) {
+        throw new Error(e.reason.stack)
+    })
+
+    // Load tool tips
+    tippy('#TT')
+
+    setup_plots()
+
+    function readFile(e) {
+        const file = e.files[0]
+        if (file == null) {
+            return
+        }
+        let reader = new FileReader()
+        reader.onload = function (e) {
+            loading_call( async () => {
+                await load(reader.result)
+                document.title = "AirspeedFit: " + file.name
+            })
+        }
+        reader.readAsArrayBuffer(file)
+    }
+
+    const open_in_update = setup_open_in("OpenIn", "fileItem", function (data) { loading_call(() => { load(data) }) })
+
+    init_loading_overlay()
+
+</script>
+</html>
