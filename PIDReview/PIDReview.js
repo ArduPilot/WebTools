@@ -64,7 +64,8 @@ function run_batch_fft(data_set) {
                 // Log section is too short, skip
                 continue
             }
-            var ret = run_fft(data_set[j][i], fft_keys, window_size, window_spacing, windowing_function, fft)
+            const valid_keys = fft_keys.filter(key => data_set[j][i][key] != null)
+            var ret = run_fft(data_set[j][i], valid_keys, window_size, window_spacing, windowing_function, fft)
 
             // Initialize arrays
             if (!have_data) {
@@ -76,7 +77,7 @@ function run_batch_fft(data_set) {
             }
 
             data_set[j].FFT.time.push(...array_offset(array_scale(ret.center, sample_time), data_set[j][i].time[0]))
-            for (const key of fft_keys) {
+            for (const key of valid_keys) {
                 data_set[j].FFT[key].push(...ret[key])
             }
         }
@@ -618,13 +619,13 @@ function add_param_sets() {
     set_cell_style(item)
 
     const names = get_PID_param_names(PID.params.prefix)
-    for (const [name, param_string] of Object.entries(names)) {
+    for (const [name, param] of Object.entries(names)) {
         let item = document.createElement("th")
         header.appendChild(item)
         set_cell_style(item)
 
-        item.appendChild(document.createTextNode(name.replace("_", " ")))
-        item.setAttribute('title', param_string)
+        item.appendChild(document.createTextNode(param.title))
+        item.setAttribute('title', param.name)
     }
 
     // Add line for each param set
@@ -667,21 +668,21 @@ function add_param_sets() {
         checkbox.disabled = (valid_sets == 1) || !valid
         item.appendChild(checkbox)
 
-        for (const name of Object.keys(names)) {
+        for (const [key, param] of Object.entries(names)) {
             let item = document.createElement("td")
             row.appendChild(item)
             set_cell_style(item, color)
 
-            const value = set[name]
+            const value = set[key]
             if (value == null) {
                 continue
             }
 
-            const text = document.createTextNode(value.toFixed(4))
+            const text = document.createTextNode(value.toFixed(param.decimalPlaces))
 
             let changed = false
             if (i > 0) {
-                const last_value = PID.params.sets[i-1][name]
+                const last_value = PID.params.sets[i-1][key]
                 if (value != last_value) {
                     changed = true
                 }
@@ -717,14 +718,17 @@ function add_param_sets() {
     document.getElementById("PIDX_I").disabled = !have_all
     document.getElementById("PIDX_D").disabled = !have_all
     document.getElementById("PIDX_FF").disabled = !have_all
-    document.getElementById("PIDX_DFF").disabled = !have_all
 
     document.getElementById("Spec_Err").disabled = !have_all
     document.getElementById("Spec_P").disabled = !have_all
     document.getElementById("Spec_I").disabled = !have_all
     document.getElementById("Spec_D").disabled = !have_all
     document.getElementById("Spec_FF").disabled = !have_all
-    document.getElementById("Spec_DFF").disabled = !have_all
+
+    // DFF is only available in newer firmware logs
+    const have_DFF = have_all && PID.sets.some(set => set != null && set.some(batch => batch.DFF != null))
+    document.getElementById("PIDX_DFF").disabled = !have_DFF
+    document.getElementById("Spec_DFF").disabled = !have_DFF
 
     // Uncheck any that are disabled
     if (!have_all) {
@@ -733,19 +737,20 @@ function add_param_sets() {
         document.getElementById("PIDX_I").checked = false
         document.getElementById("PIDX_D").checked = false
         document.getElementById("PIDX_FF").checked = false
+    }
+    if (!have_DFF) {
         document.getElementById("PIDX_DFF").checked = false
+    }
 
-        // Change to Out on spectrogram if disabled option is set
-        const disabled_checked = document.getElementById("Spec_Err").checked ||
-                                 document.getElementById("Spec_P").checked ||
-                                 document.getElementById("Spec_I").checked ||
-                                 document.getElementById("Spec_D").checked ||
-                                 document.getElementById("Spec_FF").checked ||
-                                 document.getElementById("Spec_DFF").checked
-        if (disabled_checked) {
-            document.getElementById("Spec_Out").checked = true
-        }
-    
+    // Change to Out on spectrogram if disabled option is set
+    const disabled_checked = document.getElementById("Spec_Err").checked ||
+                             document.getElementById("Spec_P").checked ||
+                             document.getElementById("Spec_I").checked ||
+                             document.getElementById("Spec_D").checked ||
+                             document.getElementById("Spec_FF").checked ||
+                             document.getElementById("Spec_DFF").checked
+    if ((!have_all || !have_DFF) && disabled_checked) {
+        document.getElementById("Spec_Out").checked = true
     }
 
 
@@ -810,7 +815,7 @@ function redraw() {
             if ("FF" in set[i]) {
                 TimeOutputs.data[3].y = TimeOutputs.data[3].y.concat(set[i].FF)
             }
-            if ("DFF" in set[i]) {
+            if (set[i].DFF != null) {
                 TimeOutputs.data[4].y = TimeOutputs.data[4].y.concat(set[i].DFF)
             }
             TimeOutputs.data[5].y = TimeOutputs.data[5].y.concat(set[i].Out)
@@ -1303,18 +1308,68 @@ function time_range_changed() {
 }
 
 function get_PID_param_names(prefix) {
-    return { KP:            prefix + "P",
-             KI:            prefix + "I",
-             KD:            prefix + "D",
-             FF:            prefix + "FF",
-             D_FF:          prefix + "D_FF",
-             I_max:         prefix + "IMAX",
-             Target_filter: prefix + "FLTT",
-             Notch_target:  prefix + "NTF",
-             Error_filter:  prefix + "FLTE",
-             Notch_error:   prefix + "NEF",
-             D_filter:      prefix + "FLTD",
-             Slew_max:      prefix + "SMAX"}
+    return { 
+        KP: {
+            title: "KP",
+            name: prefix + "P",
+            decimalPlaces: 4,
+        },
+        KI: {
+            title: "KI",
+            name: prefix + "I",
+            decimalPlaces: 4,
+        },
+        KD: {
+            title: "KD",
+            name: prefix + "D",
+            decimalPlaces: 4,
+        },
+        FF: {
+            title: "KFF",
+            name: prefix + "FF",
+            decimalPlaces: 4,
+        },
+        D_FF: {
+            title: "KDFF",
+            name: prefix + "D_FF",
+            decimalPlaces: 4,
+        },
+        I_max: {
+            title: "I Max",
+            name: prefix + "IMAX",
+            decimalPlaces: 4,
+        },
+        Target_filter: {
+            title: "Target Filter (Hz)",
+            name: prefix + "FLTT",
+            decimalPlaces: 4,
+        },
+        Notch_target: {
+            title: "Target Notch Index",
+            name: prefix + "NTF",
+            decimalPlaces: 0,
+        },
+        Error_filter: {
+            title: "Error Filter (Hz)",
+            name: prefix + "FLTE",
+            decimalPlaces: 4,
+        },
+        Notch_error: {
+            title: "Error Notch Index",
+            name: prefix + "NEF",
+            decimalPlaces: 0,
+        },
+        D_filter: {
+            title: "D Filter (Hz)",
+            name: prefix + "FLTD",
+            decimalPlaces: 4,
+        },
+        Slew_max: {
+            title: "Slew Max",
+            name: prefix + "SMAX",
+            decimalPlaces: 4,
+        }
+    }
 }
 
 // Split use the given time array to return split points in log data
@@ -1469,14 +1524,14 @@ async function load(log_file) {
             let last_set_end
             for (let j = 0; j < PARM.Name.length; j++) {
                 const param_name = PARM.Name[j]
-                for (const [name, param_string] of Object.entries(names)) {
-                    if (param_name !== param_string) {
+                for (const [key, param] of Object.entries(names)) {
+                    if (param_name !== param.name) {
                         continue
                     }
                     const time = PARM.TimeUS[j] * US2S
                     const value = PARM.Value[j]
                     found_param = true
-                    if (param_values[name] != null  && (param_values[name] != value)) {
+                    if (param_values[key] != null  && (param_values[key] != value)) {
                         if ((last_set_end == null) || (time - last_set_end > 1.0)) {
                             // First param change for a second
                             last_set_end = time
@@ -1489,12 +1544,12 @@ async function load(log_file) {
 
                         } else {
                             // Very recent param change, combine with latest set, this leaves gap between sets
-                            param_values[name] = value
+                            param_values[key] = value
                             param_values.start_time = time
 
                         }
                     }
-                    param_values[name] = value
+                    param_values[key] = value
                     break
                 }
             }
@@ -1556,7 +1611,8 @@ async function load(log_file) {
                                                                      I:   Array.from(log_msg.I.slice(batch.batch_start, batch.batch_end)),
                                                                      D:   Array.from(log_msg.D.slice(batch.batch_start, batch.batch_end)),
                                                                      FF:  Array.from(log_msg.FF.slice(batch.batch_start, batch.batch_end)),
-                                                                     ...( "DFF" in log_msg ? {DFF: Array.from(log_msg.DFF.slice(batch.batch_start, batch.batch_end))} : {} )})
+                                                                     DFF: ("DFF" in log_msg) ? Array.from(log_msg.DFF.slice(batch.batch_start, batch.batch_end)) : null,
+                    })
                 }
             }
 

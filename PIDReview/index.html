@@ -162,14 +162,11 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
 
 </td></tr></table>
 
-<table>
-    <tr>
-        <td style="width: 50px;"></td>
-        <td>
-            <fieldset style="width:300px">
+<div style="width:1145px; display: flex; flex-direction:row; margin-left:30px">
+            <fieldset>
                 <legend>PID</legend>
                 <p>
-                    <fieldset style="width:300px">
+                    <fieldset style="width:215px">
                         <legend ondblclick="update_hidden(this)">Inputs</legend>
                         <input type="checkbox" id="PIDX_Tar" onchange="update_hidden(this)">
                         <label for="PIDX_Tar">Target</label>
@@ -182,7 +179,7 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
                     </fieldset>
                 </p>
                 <p>
-                    <fieldset style="width:300px">
+                    <fieldset style="width:215px">
                         <legend ondblclick="update_hidden(this)">Components</legend>
                         <input type="checkbox" id="PIDX_P" onchange="update_hidden(this)">
                         <label for="PIDX_P">P</label>
@@ -201,7 +198,7 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
                     </fieldset>
                 </p>
                 <p>
-                    <fieldset style="width:300px">
+                    <fieldset style="width:215px">
                         <legend ondblclick="update_hidden(this)">Output</legend>
                         <input type="checkbox" id="PIDX_Out" onchange="update_hidden(this)">
                         <label for="PIDX_Out">PID + FF + D FF</label>
@@ -210,14 +207,10 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
                 Logging rate: <label id="FFT_infoA"></label> Hz<br><br>
                 Frequency resolution: <label id="FFT_infoB"></label> Hz
              </fieldset>
-        </td>
-        <td>
-            <fieldset style="width:600px; min-height:300px" id="test_sets">
+            <fieldset style="min-height:300px; flex: 1;" id="test_sets">
                 <legend>Tests</legend>
             </fieldset>
-        </td>
-    </tr>
-</table>
+        </div>
 
 <div id="FFTPlot" style="width:1200px;height:450px"></div>
 

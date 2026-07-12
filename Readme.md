@@ -22,7 +22,7 @@ python3 -m http.server --bind 127.0.0.1
 
 The landing page can then be found at `http://127.0.0.1:8000/`
 
-You need to keep your submodules update.
+You need to keep your submodules updated.
 When you rebase, or switch branches, update them like so:
 
 ```console
