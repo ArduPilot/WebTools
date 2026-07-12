@@ -63,18 +63,22 @@ function get_version_and_board(log) {
                 // Check we have bracketed the messages we need
                 continue
             }
+            let types = []
+            for (const type of Object.keys(build_types)) {
+                types.push("(?:" + type + ")")
+            }
+            const regex = new RegExp("(" + types.join("|") + ").+\\((.+)\\)", 'g')
+            const found = regex.exec(MSG.Message[i])
+            if (found == null) {
+                continue
+            }
             if (fw_string == null) {
-                let types = []
-                for (const type of Object.keys(build_types)) {
-                    types.push("(?:" + type + ")")
-                }
-                const regex = new RegExp("(" + types.join("|") + ").+\\((.+)\\)", 'g')
-                const found = regex.exec(MSG.Message[i])
-                if (found == null) {
-                    continue
-                }
                 fw_string = found[0]
+            }
+            if (build_type == null) {
                 build_type = build_types[found[1]]
+            }
+            if (fw_hash == null) {
                 fw_hash = found[2]
             }
             os_string = MSG.Message[i+1]
