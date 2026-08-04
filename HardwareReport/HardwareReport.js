@@ -1323,7 +1323,7 @@ function load_gps(log) {
         // This regular expression is used to get the word after "as" to get the GPS device name.
         // (?<=as\s) will exclude the "as" and a whitespace from the regex and then (\S+) will match the next word.
         const regex_gps_device = /(?<=as\s)(\S+)/i;
-        const regex_gps_number = /(?<=GPS\s)(\S)/
+        const regex_gps_number = /(?<=GPS\s)(\d+)/
         for (const message of messages) {
             if (message.startsWith("GPS")) {
                 const num_match = message.match(regex_gps_number)
