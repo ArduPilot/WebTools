@@ -315,8 +315,8 @@ class ThrottleTarget extends NotchTarget {
                 alert("No tracking data available for multi-Source throttle notch")
                 return
             }
-            if (get_filter_version() != 2) {
-                alert("Multi-Source throttle notch only available on filter V2")
+            if (get_filter_version() < 2) {
+                alert("Multi-Source throttle notch only available on filter V2+")
                 return
             }
         }
@@ -329,7 +329,7 @@ class ThrottleTarget extends NotchTarget {
             if (this.data.length == 0) {
                 return false
             }
-            if (get_filter_version() != 2) {
+            if (get_filter_version() < 2) {
                 return false
             }
         }
@@ -342,7 +342,7 @@ class ThrottleTarget extends NotchTarget {
         }
         const motors_throttle = Math.max(0, thrust)
         const throttle_norm = Math.sqrt(motors_throttle / config.ref)
-        if (get_filter_version() == 2) {
+        if (get_filter_version() >= 2) {
             return Math.abs(config.freq * throttle_norm)
         }
         return config.freq * Math.max(config.min_ratio, throttle_norm)

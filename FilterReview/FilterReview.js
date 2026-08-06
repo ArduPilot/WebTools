@@ -146,15 +146,18 @@ function MultiNotch(attenuation_dB, bandwidth_hz, harmonic, min_freq_fun, num, c
     this.notches = []
     this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 - notch_spread))
     this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 + notch_spread))
-    if (num == 3) {
+    if (num >= 3) {
         this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0))
+    }
+    if (num == 5) {
+        this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 - (2.0 * notch_spread)))
+        this.notches.push(new NotchFilter(attenuation_dB, bw_scaled, harmonic, min_freq_fun, 1.0 + (2.0 * notch_spread)))
     }
 
     this.transfer = function(Hn, Hd, center, sample_freq, Z1, Z2) {
-        this.notches[0].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
-        this.notches[1].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
-        if (this.notches.length == 3) {
-            this.notches[2].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
+        const len = this.notches.length
+        for (let i = 0; i<len; i++) {
+            this.notches[i].transfer(Hn, Hd, center, sample_freq, Z1, Z2)
         }
     }
 
@@ -200,11 +203,26 @@ function HarmonicNotchFilter(params) {
         return this
     }
 
+    const filter_version = get_filter_version()
+
+    const quintuple = (this.params.options & 64) != 0
     const triple = (this.params.options & 16) != 0
     const double = (this.params.options & 1) != 0
-    const single = !double && !triple
 
-    const filter_V1 = get_filter_version() == 1
+    let num_composite_notches = 1
+    if (double) {
+        num_composite_notches = 2
+    } else if (triple) {
+        num_composite_notches = 3
+    } else if (quintuple) {
+        if (filter_version < 4) {
+            alert("Quintuple notch only supported with filter version 4 or later")
+        } else {
+            num_composite_notches = 5
+        }
+    }
+
+    const filter_V1 = filter_version == 1
     const treat_low_freq_as_min = (this.params.options & 32) != 0
 
     this.get_min_freq = function(harmonic) {
@@ -222,10 +240,10 @@ function HarmonicNotchFilter(params) {
     for (var n=0; n<max_num_harmonics; n++) {
         if (this.params.harmonics & (1<<n)) {
             const harmonic = n + 1
-            if (single) {
+            if (num_composite_notches == 1) {
                 this.notches.push(new NotchFilter(this.params.attenuation, this.params.bandwidth * harmonic, harmonic, (h) => { return this.get_min_freq(h) }, 1.0))
             } else {
-                this.notches.push(new MultiNotch(this.params.attenuation, this.params.bandwidth, harmonic, (h) => { return this.get_min_freq(h) }, double ? 2 : 3, this.params.freq))
+                this.notches.push(new MultiNotch(this.params.attenuation, this.params.bandwidth, harmonic, (h) => { return this.get_min_freq(h) }, num_composite_notches, this.params.freq))
             }
         }
     }
@@ -353,9 +371,11 @@ function reset() {
     document.getElementById("FFTWindow_size").disabled = true
     document.getElementById("TimeStart").disabled = true
     document.getElementById("TimeEnd").disabled = true
-    document.getElementById("filter_version_1").disabled = true
+
+    for (const version of supported_filter_versions) {
+        document.getElementById("filter_version_" + version).disabled = true
+    }
     document.getElementById("filter_version_1").checked = true
-    document.getElementById("filter_version_2").disabled = true
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
     document.getElementById("OpenFilterTool").disabled = true
@@ -1985,14 +2005,14 @@ async function load_parameters(file) {
 
 // Get selected filter version
 let filter_version
+const supported_filter_versions = [1, 2, 3, 4]
 function get_filter_version() {
     return filter_version
 }
 
 // Update the filter vesion from user buttons
 function update_filter_version() {
-    const versions = [1, 2]
-    for (const version of versions) {
+    for (const version of supported_filter_versions) {
         const version_radio_button = document.getElementById("filter_version_" + version)
         if (version_radio_button.checked) {
             filter_version = version
@@ -2403,10 +2423,16 @@ async function load(log_file) {
         const version_radio_button = document.getElementById("filter_version_" + version)
         if (version_radio_button != null) {
             version_radio_button.checked = true
+        } else {
+            alert("Unsupported filter version: " + version)
+
+            // Default to the latest version in this case
+            document.getElementById("filter_version_" + supported_filter_versions.at(-1)).checked = true
         }
     }
-    document.getElementById("filter_version_1").disabled = false
-    document.getElementById("filter_version_2").disabled = false
+    for (const version of supported_filter_versions) {
+        document.getElementById("filter_version_" + version).disabled = false
+    }
 
     // Load potential sources of notch tracking targets
     tracking_methods = [new StaticTarget(),

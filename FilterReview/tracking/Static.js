@@ -8,7 +8,7 @@ class StaticTarget extends NotchTarget {
     interpolate(instance, time) { }
 
     get_target(config) {
-        if (get_filter_version() == 2) {
+        if (get_filter_version() >= 2) {
             return Math.abs(config.freq)
         }
         return config.freq
