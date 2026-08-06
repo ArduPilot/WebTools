@@ -126,14 +126,16 @@ These params can then be saved and loaded into the autopilot without the need fo
             <td>
                 <fieldset style="width:110px;height:80px">
                     <legend>Filter version
-                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
-                        data-tippy-content='ArduPilot version 4.6 and newer have a updated strategy at frequencies lower then the configured min frequency. The version is automatically populated from the log but can be manually changed to check how the new strategy would work using a log from a older version.'
+                        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+                        data-tippy-content='ArduPilot newer versions improved filtering options. The version is automatically populated from the log but can be manually changed to check how the new strategy would work using a log from a older version.'
                         data-tippy-maxWidth='750px'/>
                     </legend>
-                    <input type="radio" id="filter_version_1" name="filter_version" onchange="loading_call(re_calc)">
-                    <label for="filter_version_1">1.0</label><br>
-                    <input type="radio" id="filter_version_2" name="filter_version" onchange="loading_call(re_calc)">
-                    <label for="filter_version_2">2.0</label><br>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,auto);grid-auto-flow:column;row-gap:2px">
+                        <span title="Original filter implementation."><input type="radio" id="filter_version_1" name="filter_version" onchange="loading_call(re_calc)"><label for="filter_version_1">1.0</label></span>
+                        <span title="New strategy when tracking frequencies under the minimum limit. Adds multi-source throttle notch and minimum frequency ratio."><input type="radio" id="filter_version_2" name="filter_version" onchange="loading_call(re_calc)"><label for="filter_version_2">2.0</label></span>
+                        <span title="Quintuple (5) notch added but not functional."><input type="radio" id="filter_version_3" name="filter_version" onchange="loading_call(re_calc)"><label for="filter_version_3">3.0</label></span>
+                        <span title="Quintuple (5) notch fully functional."><input type="radio" id="filter_version_4" name="filter_version" onchange="loading_call(re_calc)"><label for="filter_version_4">4.0</label></span>
+                    </div>
                 </fieldset>
             </td>
             <td style="width: 10px;"></td>
