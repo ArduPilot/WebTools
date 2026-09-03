@@ -28,8 +28,10 @@ function get_version_and_board(log) {
 
         // Assume version does not change, just use first msg
         fw_string = VER.FWS[0]
-        fw_hash = VER.GH[0].toString(16).padStart(8, '0')
-        if (VER.APJ[0] != 0) {
+        if ("GH" in VER) {
+            fw_hash = VER.GH[0].toString(16).padStart(8, '0')
+        }
+        if (("APJ" in VER) && (VER.APJ[0] != 0)) {
             board_id = VER.APJ[0]
         }
         if ("BU" in VER) {
