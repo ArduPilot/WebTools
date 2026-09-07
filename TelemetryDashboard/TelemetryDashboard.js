@@ -40,32 +40,52 @@ function setup_connect(button_svg, button_color) {
         theme: 'light-border', // differentiate from the interactive tip were in already
     })
 
+    // Heartbeat tool tip
+    tippy(tip_div.querySelector('img[id="TTHeartbeat"]'), {
+        appendTo: () => document.body,
+        theme: 'light-border', // differentiate from the interactive tip were in already
+    })
+
     // Close button
     tip_div.querySelector(`svg[id="Close"]`).onclick = () => {
         tip.hide()
     }
 
     const url_input = tip_div.querySelector(`input[id="target_url"]`)
+    const heartbeat_enable = tip_div.querySelector(`input[id="heartbeat_enable"]`)
+    const heartbeat_options = tip_div.querySelector(`div[id="heartbeat_options"]`)
+    const signing_key_input = tip_div.querySelector(`input[id="signing_key"]`)
+    const sysid_input = tip_div.querySelector(`input[id="sysid"]`)
+    const compid_input = tip_div.querySelector(`input[id="compid"]`)
 
     const connect_button = tip_div.querySelector(`input[id="connection_button"]`)
     const disconnect_button = tip_div.querySelector(`input[id="disconnection_button"]`)
+
+    heartbeat_enable.onchange = () => {
+        heartbeat_options.style.display = heartbeat_enable.checked ? 'block' : 'none'
+    }
 
     // Websocket object
     let ws = null
     let expecting_close = false
     let been_connected = false
+    let heartBeatTimer = null
 
     function set_inputs(connected) {
         // Disable connect button and url input, enable disconnect button
         connect_button.disabled = connected
         url_input.disabled = connected
+        heartbeat_enable.disabled = connected
+        signing_key_input.disabled = connected
+        sysid_input.disabled = connected
+        compid_input.disabled = connected
 
         disconnect_button.disabled = !connected
     }
     set_inputs(false)
 
     // Connect to WebSocket server
-    function connect(target, auto_connect) {
+    function connect(target, passphrase, auto_connect) {
         // Make sure we are not connected to something else
         disconnect()
 
@@ -77,6 +97,19 @@ function setup_connect(button_svg, button_color) {
 
         // True if we have ever been connected
         been_connected = false
+
+        // Set source system and component IDs
+        MAVLink.srcSystem = parseInt(sysid_input.value)
+        MAVLink.srcComponent = parseInt(compid_input.value)
+
+        // Configure MAVLink signing
+        MAVLink.signing.sign_outgoing = false
+        if ((passphrase != null) && (passphrase.length > 0)) {
+            const enc = new TextEncoder();
+            const hash = mavlink20.sha256(enc.encode(passphrase));
+            MAVLink.signing.secret_key = new Uint8Array(hash);
+            MAVLink.signing.sign_outgoing = true;
+        }
 
         ws = new WebSocket(target)
         ws.binaryType = "arraybuffer"
@@ -97,6 +130,21 @@ function setup_connect(button_svg, button_color) {
 
             // Have been connected
             been_connected = true
+
+            // Setup regular heartbeat messages to keep the server alive
+            if (heartbeat_enable.checked) {
+                heartBeatTimer = setInterval(() => {
+                    const msg = new mavlink20.messages.heartbeat(
+                        mavlink20.MAV_TYPE_GCS,
+                        mavlink20.MAV_AUTOPILOT_INVALID,
+                        0,  // base_mode
+                        0,  // custom_mode
+                        mavlink20.MAV_STATE_ACTIVE
+                    )
+                    ws.send(new Uint8Array(msg.pack(MAVLink)))
+                    MAVLink.seq = (MAVLink.seq + 1) % 256
+                }, 1000)
+            }
         }
 
         ws.onclose = () => {
@@ -108,6 +156,9 @@ function setup_connect(button_svg, button_color) {
                 // Don't show red if the user manually disconnected
                 button_color("red")
             }
+
+            // Stop sending heartBeats
+            clearInterval(heartBeatTimer)
 
             // Enable connect buttons
             set_inputs(false)
@@ -163,7 +214,7 @@ function setup_connect(button_svg, button_color) {
         }
 
         url_input.disabled = true
-        connect(url_input.value)
+        connect(url_input.value, signing_key_input.value.trim())
     }
 
     disconnect_button.onclick = () => {
@@ -177,7 +228,7 @@ function setup_connect(button_svg, button_color) {
     }
 
     // Try auto connecting to MissionPlanner
-    connect("ws://127.0.0.1:56781", true)
+    connect("ws://127.0.0.1:56781", null, true)
 
 }
 
