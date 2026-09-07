@@ -170,6 +170,27 @@
                 <input id="target_url" type="url" placeholder="ws://127.0.0.1:5863" required="true" pattern="^(ws|wss)://.*">
                 <br>
                 <br>
+                <input id="heartbeat_enable" type="checkbox">
+                <label for="heartbeat_enable">Enable heartbeat</label>
+                <img id="TTHeartbeat" src="../images/question-circle.svg" style="width: 1em;"
+                data-tippy-allowHTML="true"
+                data-tippy-content='If enabled the dashboard will send a MAVLink heartbeat at 1Hz. The source system and component IDs can be selected and a optional signing passphrase provided.'/>
+                <br>
+                <div id="heartbeat_options" style="display:none">
+                    <label for="sysid">Source system ID</label>
+                    <br>
+                    <input id="sysid" type="number" value="254" min="1" max="255" style="width:4em">
+                    <br>
+                    <label for="compid">Source component ID</label>
+                    <br>
+                    <input id="compid" type="number" value="190" min="0" max="255" style="width:4em">
+                    <br>
+                    <label for="signing_key">Signing passphrase</label>
+                    <br>
+                    <input id="signing_key" type="password" placeholder="Signing disabled">
+                    <br>
+                </div>
+                <br>
                 <input id="connection_button" type="button" value="Connect">
                 <input id="disconnection_button" type="button" value="Disconnect">
             </div>
