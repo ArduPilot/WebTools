@@ -302,6 +302,16 @@ class WidgetMenu extends WidgetBase {
             save_layout()
         }
 
+        // Get link button
+        const get_link_button = settings_tip_div.querySelector(`input[id="get_link_button"]`)
+        get_link_button.onclick = async () => {
+            const link = await get_dashboard_link()
+            navigator.clipboard.writeText(link).then(() => {
+                get_link_button.value = 'Copied!'
+                setTimeout(() => { get_link_button.value = 'Get link' }, 2000)
+            })
+        }
+
         // Load button
         settings_tip_div.querySelector(`input[id="loadBase"]`).onchange = (e) => {
             settings_tip.hide()

@@ -136,6 +136,9 @@
                 <label for="load">Load dashboard or widget:</label>
                 <input id="load" type="button" onclick="document.getElementById('loadBase').click()" value="Load">
                 <input type="file" id="loadBase" style="display:none" accept=".json">
+                <br>
+                <label for="get_link_button">Get link:</label>
+                <input id="get_link_button" type="button" value="Get link">
                 <br><br>
                 <h6>Dashboard settings</h6>
                 <div style="height:1.5em; display:flex; align-content:center; margin-bottom: 5px;">
@@ -220,7 +223,6 @@
     // Load grid
     let grid
     let grid_changed = false
-    load_default_grid()
 
     // MAVLink parsing
     MAVLink = new MAVLink20Processor()
@@ -230,6 +232,23 @@
 
     // Setup widget pallet
     init_pallet()
+
+    async function load_initial_grid() {
+        const layout_param = new URLSearchParams(window.location.hash.slice(1)).get('layout')
+        if (layout_param) {
+            try {
+                const json = await decompress_layout(layout_param)
+                const obj = JSON.parse(json)
+                load_layout(obj.grid, obj.widgets)
+            } catch (e) {
+                console.log(e)
+                load_default_grid()
+            }
+        } else {
+            load_default_grid()
+        }
+    }
+    load_initial_grid()
 
     // Bind unload event to allow prompt for save
     window.addEventListener('beforeunload', handle_unload)
