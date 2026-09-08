@@ -1,3 +1,60 @@
+// Filled in by setup_connect so settings can read current connection state
+let get_connection_params = () => ({})
+
+async function compress_layout(json) {
+    const bytes = new TextEncoder().encode(json)
+    const cs = new CompressionStream('deflate-raw')
+    const writer = cs.writable.getWriter()
+    writer.write(bytes)
+    writer.close()
+    const buffer = await new Response(cs.readable).arrayBuffer()
+    let binary = ''
+    const compressed = new Uint8Array(buffer)
+    for (let i = 0; i < compressed.length; i++) {
+        binary += String.fromCharCode(compressed[i])
+    }
+    // URL-safe base64: replace + and / with - and _, strip = padding
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function decompress_layout(b64url) {
+    // Restore standard base64 from URL-safe base64
+    const pad = b64url.length % 4
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/') + (pad ? '='.repeat(4 - pad) : '')
+    const binary = atob(b64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i)
+    }
+    const ds = new DecompressionStream('deflate-raw')
+    const writer = ds.writable.getWriter()
+    writer.write(bytes)
+    writer.close()
+    return new Response(ds.readable).text()
+}
+
+async function get_dashboard_link() {
+    const url = new URL((window.location.href).split('?')[0].split('#')[0])
+
+    const hash_params = new URLSearchParams()
+    const conn = get_connection_params()
+    if (conn.ws) {
+        hash_params.set('ws', conn.ws)
+    }
+    if (conn.heartbeat) {
+        hash_params.set('heartbeat', '1')
+        hash_params.set('sysid', conn.sysid)
+        hash_params.set('compid', conn.compid)
+        if (conn.signing) {
+            hash_params.set('signing', conn.signing)
+        }
+    }
+    hash_params.set('layout', await compress_layout(JSON.stringify(get_layout())))
+    url.hash = hash_params.toString()
+
+    return url.toString()
+}
+
 // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
 function setup_connect(button_svg, button_color) {
 
@@ -227,8 +284,38 @@ function setup_connect(button_svg, button_color) {
         disconnect()
     }
 
-    // Try auto connecting to MissionPlanner
-    connect("ws://127.0.0.1:56781", null, true)
+    // Apply any hash connection settings
+    const params = new URLSearchParams(window.location.hash.slice(1))
+    const ws_param = params.get('ws')
+    const signing_param = params.get('signing')
+    if (ws_param) {
+        url_input.value = ws_param
+    }
+    if (params.get('heartbeat')) {
+        heartbeat_enable.checked = true
+        heartbeat_options.style.display = 'block'
+    }
+    if (params.get('sysid')) {
+        sysid_input.value = params.get('sysid')
+    }
+    if (params.get('compid')) {
+        compid_input.value = params.get('compid')
+    }
+    if (signing_param) {
+        signing_key_input.value = signing_param
+    }
+
+    // Expose connection state for get_dashboard_link()
+    get_connection_params = () => ({
+        ws: url_input.value,
+        heartbeat: heartbeat_enable.checked,
+        sysid: sysid_input.value,
+        compid: compid_input.value,
+        signing: signing_key_input.value,
+    })
+
+    // Try auto connecting; prefer query string URL, fall back to MissionPlanner default
+    connect(ws_param || "ws://127.0.0.1:56781", signing_param, true)
 
 }
 
