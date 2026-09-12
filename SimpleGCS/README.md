@@ -20,7 +20,9 @@ Copy `config.example.js` to the ignored `config.js` to set a deployment's
 `window.SIMPLEGCS_CONFIG.defaultUrl`. This prefills Connect for new browsers;
 a saved URL takes priority. A configured default alone does not connect until
 the user presses Connect. Signing credentials are entered in the dialog.
-The saved connection is restored on reload. Commands and file requests wait
+The saved connection is restored on reload. Background reconnects use the last
+submitted settings and leave the connection dialog and its unfinished edits open.
+Press **Connect** to apply edited settings. Commands and file requests wait
 for an ArduPilot heartbeat to identify the vehicle. The first discovered
 vehicle is selected until disconnect. If automatic mission fetching is enabled,
 failed downloads retry after five seconds without overlapping transfers. Mission

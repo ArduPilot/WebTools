@@ -26,7 +26,7 @@
     let reconnectTimer = null;
     let reconnectAttempts = 0;
     let intentionalDisconnect = false;
-    let lastConnectionUrl = null;
+    let lastConnectionSettings = null;
 
     // Link health tracking
     let lastRxMs = 0;
@@ -725,15 +725,17 @@
             window.SIMPLEGCS_CONFIG?.defaultUrl || "ws://127.0.0.1:5763";
         passphraseInput.value = localStorage.getItem(LS_KEYS.pass) || "";
 
-        function applyIds() {
-            let sid = parseInt(sysInput.value || "255", 10);
-            let cid = parseInt(compInput.value || "190", 10);
-            sid = (sid >= 1 && sid <= 255) ? sid : 255;
-            cid = (cid >= 0 && cid <= 255) ? cid : 190;
-            gcsSystemId = sid;
-            gcsComponentId = cid;
-            MAVLink.srcSystem = sid;
-            MAVLink.srcComponent = cid;
+        // Reconnects use the last submitted settings, never an in-progress edit.
+        function readConnectionSettings() {
+            const sid = parseInt(sysInput.value || "255", 10);
+            const cid = parseInt(compInput.value || "190", 10);
+            return {
+                url: urlInput.value.trim(),
+                passphrase: passphraseInput.value.trim(),
+                systemId: (sid >= 1 && sid <= 255) ? sid : 255,
+                componentId: (cid >= 0 && cid <= 255) ? cid : 190,
+                sendHeartbeat: hbCheckbox.checked
+            };
         }
 
         function setConnState(state) {
@@ -785,12 +787,12 @@ if (lagMs > 3000) {
         }
 
 
-        function startHeartbeatLoop() {
+        function startHeartbeatLoop(enabled) {
             if (hbInterval) {
                 clearInterval(hbInterval);
                 hbInterval = null;
             }
-            if (!hbCheckbox.checked) return;
+            if (!enabled) return;
 
             hbInterval = setInterval(() => {
                 try {
@@ -811,35 +813,35 @@ if (lagMs > 3000) {
             }, 1000);
         }
 
-        function connect(url) {
+        function connect(settings) {
             disconnect(false);
-            applyIds();
-            lastConnectionUrl = url;
+            gcsSystemId = MAVLink.srcSystem = settings.systemId;
+            gcsComponentId = MAVLink.srcComponent = settings.componentId;
+            lastConnectionSettings = settings;
             intentionalDisconnect = false;
             MAVLink.buf = new Uint8Array();
             MAVLink.expected_length = mavlink20.HEADER_LEN;
             MAVLink.signing.stream_timestamps = {};
             MAVLink.signing.timestamp = Math.max(MAVLink.signing.timestamp,
                 Math.floor((Date.now() - Date.UTC(2015, 0, 1)) * 100));
-            const pass = passphraseInput.value.trim();
+            const pass = settings.passphrase;
             MAVLink.signing.secret_key = pass ? mavlink20.sha256(new TextEncoder().encode(pass)) : new Uint8Array();
             MAVLink.signing.sign_outgoing = pass.length > 0;
 
             setConnState("connecting");
-            const socket = new WebSocket(url);
+            const socket = new WebSocket(settings.url);
             ws = socket;
             ws.binaryType = "arraybuffer";
 
             ws.onopen = () => {
                 if (ws !== socket) return;
-                tip.hide();
                 setConnState("connected");
                 reconnectAttempts = 0;
                 if (reconnectTimer) {
                     clearTimeout(reconnectTimer);
                     reconnectTimer = null;
                 }
-                startHeartbeatLoop();
+                startHeartbeatLoop(settings.sendHeartbeat);
                 lastRxMs = Date.now();
                 startLinkHealthMonitor();
                 window.GCSUtils.toast("Connected");};
@@ -887,8 +889,8 @@ if (lagMs > 3000) {
 
             reconnectTimer = setTimeout(() => {
                 reconnectTimer = null;
-                if (!intentionalDisconnect && lastConnectionUrl) {
-                    connect(lastConnectionUrl);
+                if (!intentionalDisconnect && lastConnectionSettings) {
+                    connect(lastConnectionSettings);
                 }
             }, delay);
         }
@@ -903,7 +905,7 @@ if (lagMs > 3000) {
 
             if (intentional) {
                 reconnectAttempts = 0;
-                lastConnectionUrl = null;
+                lastConnectionSettings = null;
             }
 
             const oldSocket = ws;
@@ -941,15 +943,17 @@ if (lagMs > 3000) {
                 return;
             }
 
-            localStorage.setItem(LS_KEYS.url, urlInput.value.trim());
-            const pass = passphraseInput.value.trim();
+            const settings = readConnectionSettings();
+            localStorage.setItem(LS_KEYS.url, settings.url);
+            const pass = settings.passphrase;
             if (pass.length) {
                 localStorage.setItem(LS_KEYS.pass, pass);
             } else {
                 localStorage.removeItem(LS_KEYS.pass);
             }
 
-            connect(urlInput.value);
+            tip.hide();
+            connect(settings);
         };
 
         disconnectBtn.onclick = () => {
@@ -957,7 +961,7 @@ if (lagMs > 3000) {
         };
 
         // Reconnect only to an explicitly saved endpoint.
-        if (localStorage.getItem(LS_KEYS.url)) connect(urlInput.value);
+        if (localStorage.getItem(LS_KEYS.url)) connect(readConnectionSettings());
     }
 
     // --- Message Handling ---
