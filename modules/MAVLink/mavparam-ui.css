@@ -1,0 +1,55 @@
+.mavparam-dialog { box-sizing:border-box; width:min(1200px,calc(100vw - 32px)); max-width:none; height:min(900px,calc(100dvh - 32px)); max-height:none; padding:0; border:1px solid #b8c4ce; border-radius:12px; background:#f7f9fb; color:#182632; font:15px system-ui,sans-serif; }
+.mavparam-dialog[open] { display:flex; flex-direction:column; }
+.mavparam-dialog::backdrop { background:rgb(0 0 0 / 45%); }
+.mavparam-dialog * { box-sizing:border-box; }
+.mavparam-dialog header,.mavparam-dialog footer { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#e8eef3; flex-shrink:0; }
+.mavparam-dialog header h2 { margin:0; flex:1; font-size:22px; }
+.mavparam-dialog button,.mavparam-dialog input,.mavparam-dialog select { font:inherit; color:inherit; }
+.mavparam-dialog button,.mavparam-dialog select { min-height:40px; border:1px solid #9aabba; border-radius:6px; background:white; padding:7px 10px; cursor:pointer; }
+.mavparam-dialog button:hover:not(:disabled) { background:#e7f2ff; border-color:#336d9b; }
+.mavparam-dialog :disabled { opacity:.5; cursor:default; }
+.mavparam-dialog input:not([type=checkbox]) { min-height:40px; padding:8px; border:1px solid #9aabba; border-radius:5px; background:white; width:100%; }
+.mavparam-dialog :focus-visible { outline:3px solid #3980ba; outline-offset:2px; }
+.mavparam-status { padding:8px 16px; min-height:36px; overflow-wrap:anywhere; flex-shrink:0; }
+.mavparam-error { color:#a32121; background:#ffeded; }
+.mavparam-metadata { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:0 16px 8px; font-size:13px; }
+.mavparam-metadata button { min-height:30px; padding:3px 8px; }
+.mavparam-toolbar,.mavparam-filters { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 16px; flex-shrink:0; }
+.mavparam-filters input[type=search] { flex:1; min-width:200px; }
+.mavparam-filters label { display:flex; align-items:center; min-height:44px; gap:6px; }
+.mavparam-dialog input[type=checkbox] { width:19px; height:19px; accent-color:#2d6fa3; }
+.mavparam-list { overflow:auto; overscroll-behavior:contain; flex:1; min-height:80px; padding:8px 16px; }
+.mavparam-row { display:grid; grid-template-columns:180px 185px 155px minmax(140px,1fr); align-items:start; gap:12px; padding:14px 12px; background:white; border:1px solid #d8e0e7; border-left:4px solid #d8e0e7; border-radius:7px; margin-bottom:8px; }
+.mavparam-changed { border-left-color:#c58214; }
+.mavparam-row strong { font:600 14px ui-monospace,monospace; overflow-wrap:anywhere; }
+.mavparam-label { margin-top:5px; font-size:13px; }
+.mavparam-value { display:flex; flex-wrap:wrap; align-items:end; gap:5px; margin:0; }
+.mavparam-value > label { flex:1; min-width:90px; font-size:12px; }
+.mavparam-value > select,.mavparam-value details { width:100%; }
+.mavparam-value summary { cursor:pointer; padding:8px 0; }
+.mavparam-bit { display:flex; align-items:center; gap:5px; padding:6px 0; }
+.mavparam-default { display:flex; flex-direction:column; align-items:start; gap:8px; font-size:13px; }
+.mavparam-help p { font-size:13px; margin:0 0 8px; white-space:pre-line; }
+.mavparam-help small { color:#536777; }
+.mavparam-dialog footer span { flex:1; }
+.mavparam-import { margin:8px 16px; padding:10px; border:1px solid #367cab; border-radius:8px; background:#edf6ff; flex-shrink:0; }
+.mavparam-import h3 { margin:0 0 8px; font-size:16px; overflow-wrap:anywhere; }
+.mavparam-import button { margin-right:8px; }
+.mavparam-preview { max-height:22dvh; overflow:auto; font:13px ui-monospace,monospace; margin-bottom:10px; }
+@media (max-width:800px) {
+    .mavparam-dialog { width:100%; height:100dvh; margin:0; border:0; border-radius:0; }
+    .mavparam-dialog header,.mavparam-dialog footer { padding:8px 10px; gap:6px; }
+    .mavparam-dialog footer { font-size:12px; padding-bottom:max(8px,env(safe-area-inset-bottom)); }
+    .mavparam-toolbar,.mavparam-filters { padding:4px 10px; }
+    .mavparam-toolbar button,.mavparam-toolbar select { flex:1; }
+    .mavparam-toolbar select { flex-basis:55%; }
+    .mavparam-metadata { padding:0 10px 4px; }
+    .mavparam-status { padding:6px 10px; font-size:13px; }
+    .mavparam-list { padding:6px 10px; }
+    .mavparam-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; padding:12px; }
+    .mavparam-row > :first-child,.mavparam-help { grid-column:1 / -1; }
+    .mavparam-value { align-items:start; }
+    .mavparam-value > label { flex-basis:100%; }
+    .mavparam-default { padding-top:16px; }
+    .mavparam-filters input[type=search] { flex-basis:100%; }
+}

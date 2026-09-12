@@ -9,6 +9,13 @@
     let MAVLink = new MAVLink20Processor();
     let gcsSystemId = 255, gcsComponentId = 190;
     let vehSysId = -1, vehCompId = -1;
+    let parameterClient = null;
+    const parameterUI = new MAVParamUI();
+    function disconnectParameters() {
+        parameterClient?.disconnect();
+        parameterClient = null;
+        parameterUI.setClient(null);
+    }
 
     // Vehicle type cache
     const VehicleType = { mavType: null, cls: "plane", lastSeen: 0 };
@@ -647,7 +654,11 @@
             tip.hide();
         };
 
-        wrap.append(tilesSection, displaySection, autoSection, closeBtn);
+        const parametersBtn = document.createElement("button");
+        parametersBtn.className = "btn small";
+        parametersBtn.textContent = "Parameters";
+        parametersBtn.onclick = () => { tip.hide(); parameterUI.open(); };
+        wrap.append(parametersBtn, tilesSection, displaySection, autoSection, closeBtn);
 
         const tip = tippy(anchorEl, {
             content: wrap,
@@ -853,6 +864,7 @@ if (lagMs > 3000) {
                 Fence.onDisconnected();
                 Mission.onDisconnected();
                 FTPManager.clearLink();
+                disconnectParameters();
                 stopLinkHealthMonitor();
 
                 if (!intentionalDisconnect) {
@@ -906,6 +918,7 @@ if (lagMs > 3000) {
             Fence.onDisconnected();
             Mission.onDisconnected();
             FTPManager.clearLink();
+            disconnectParameters();
             stopLinkHealthMonitor();
 
             if (hbInterval) {
@@ -983,6 +996,8 @@ if (lagMs > 3000) {
                 vehSysId = m._header.srcSystem;
                 vehCompId = m._header.srcComponent;
                 FTPManager.setLink(MAVLink, ws, vehSysId, vehCompId);
+                parameterClient = new MAVParam({ftp: FTPManager});
+                parameterUI.setClient(parameterClient, MAVParam.vehicleName(m.type));
                 Fence.onConnected(ws);
                 Mission.onConnected(ws);
 

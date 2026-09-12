@@ -68,10 +68,46 @@ node SimpleGCS/node_ftp.js "$WS_URL" "$SIGNING_PASSPHRASE" \
     @MISSION/fence.dat /tmp/fence.dat 30
 ```
 
-MAVFTP downloads are read-only and limited to 64 MiB by default. They validate
+MAVFTP transfers are limited to 64 MiB by default. They validate
 reply addressing, session, request sequence and bounds, retry lost requests,
 and recover missing ranges using ordinary reads. Completion requires every
 byte advertised by OpenFileRO, including missing final burst packets.
+
+## Parameters
+
+Open **Settings → Parameters** after connecting. The editor fetches current
+values and their vehicle-provided defaults using `@PARAM/param.pck?withdefaults=1`.
+Search names and descriptions as you type, or select **Non-default only**.
+Each changed value has **Reset to default**. Enter a value and press **Apply**;
+enumerations and bitmasks also offer labeled choices. Descriptions include
+units, ranges, read-only status and reboot requirements where documented.
+
+**Save to file** exports all parameters or just non-default values, independently
+of the search filter. Files use MAVProxy's `NAME VALUE` format. **Load from file**
+also accepts QGroundControl's five-column format, previews changes, then uploads
+only the changed values using MAVFTP to `@PARAM/param.pck`. Unknown parameters and invalid types are reported before uploading. Imports
+skip documented read-only parameters and list them in the preview.
+Enable a missing subsystem and fetch again before loading its parameters.
+
+Edits, resets and imports wait for the FTP close acknowledgement and then fetch
+parameters again to verify the vehicle retained the requested values. A failed
+transfer can have applied some settings, so the editor refreshes actual values
+and reports the failure. Closing the dialog lets an active operation finish;
+disconnecting invalidates the parameter list. **Fetch parameters** also picks
+up changes made by another GCS. File exports contain the last fetched values.
+
+Descriptions come from ArduPilot's official parameter definition JSON, generated
+from the same documentation used by MAVProxy's parameter help/editor. They are
+cached per vehicle in browser Cache Storage, refreshed weekly, and reused offline.
+**Refresh descriptions** forces an update. Descriptions track upstream firmware;
+the connected vehicle supplies the authoritative values, types and defaults.
+Parameters remain usable if descriptions cannot be fetched. Private browsers
+without persistent storage use a memory cache for the current page.
+
+The editor uses a paginated table on desktop and touch-sized cards on phones.
+The reusable protocol/model library is `modules/MAVLink/mavparam.js`; the optional
+DOM layer and styles are `mavparam-ui.js` and `mavparam-ui.css` in the same directory.
+See `modules/MAVLink/README.md` for integration outside SimpleGCS.
 
 ## Tests
 

@@ -20,3 +20,13 @@ Browser tests need `npm ci` and Playwright Chromium (or `CHROME_PATH` /
 `SIMPLEGCS_CDP_URL`). They still load the page's external map/UI resources.
 The live SITL procedure is documented in `SimpleGCS/README.md`; it requires an
 explicitly selected simulator and relay and is not part of unattended tests.
+
+`mavparam.test.cjs` checks packed defaults against independent Python/MAVProxy
+fixtures, exact int32 values, malformed records, file formats, type validation,
+search, resets, verified uploads, disconnect handling and offline definition
+caching. `generate_params.py` regenerates its fixtures and requires MAVProxy.
+FTP tests also cover acknowledged writes/closes and virtual files whose size is
+only an estimate, including fixed-size recovery reads and lost final packets.
+Browser tests exercise the parameter editor at desktop and phone viewport sizes,
+including metadata search, edits, read-only fields, resets, file save/import,
+and touch-operated bitmask controls.

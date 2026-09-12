@@ -5,6 +5,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const paramFixture = require('./fixtures/params.json');
 
 (async () => {
     const root = path.resolve(__dirname, '..');
@@ -23,9 +24,10 @@ const { chromium } = require('playwright');
     try {
         browser = process.env.SIMPLEGCS_CDP_URL ? await chromium.connectOverCDP(process.env.SIMPLEGCS_CDP_URL) :
             await chromium.launch({headless:true, executablePath:process.env.CHROME_PATH || undefined});
-        context = await browser.newContext({viewport:{width:1280,height:900}});
-        await context.addInitScript(() => {
+        context = await browser.newContext({viewport:{width:1280,height:900},hasTouch:true});
+        await context.addInitScript(({paramsHex,paramOffsets}) => {
             const state = window.testVehicle = {sent:[], sockets:[], armed:false, mode:0, reject: false};
+            state.paramBytes=Uint8Array.from(paramsHex.match(/../g),byte=>parseInt(byte,16));
             class VehicleSocket {
                 static CONNECTING=0;static OPEN=1;static CLOSING=2;static CLOSED=3;
                 constructor(url) {
@@ -64,25 +66,44 @@ const { chromium } = require('playwright');
                     }
                     if(msg._name==='FILE_TRANSFER_PROTOCOL') {
                         const req=this.codec.parseOp(msg.payload);
-                        if(req.opcode===4)this.ftpPath=new TextDecoder().decode(req.payload).replace(/\0.*$/, '');
-                        const bytes=new Uint8Array(48);const v=new DataView(bytes.buffer);
+                        if(req.opcode===4||req.opcode===6)this.ftpPath=new TextDecoder().decode(req.payload).replace(/\0.*$/, '');
+                        let bytes=new Uint8Array(48);const v=new DataView(bytes.buffer);
                         v.setUint16(0,0x763d,true);v.setUint16(2,1,true);v.setUint16(8,1,true);
                         v.setFloat32(10,50,true);v.setInt32(26,-350000000,true);v.setInt32(30,1490000000,true);v.setUint16(40,5003,true);bytes[47]=1;
                         if(this.ftpPath==='@MISSION/mission.dat'){v.setUint16(2,0,true);v.setUint16(40,16,true);}
+                        if(this.ftpPath.startsWith('@PARAM/'))bytes=state.paramBytes;
+                        if(req.opcode===6)this.upload=new Uint8Array(65535);
+                        if(req.opcode===7)this.upload.set(req.payload,req.offset);
+                        if(req.opcode===1&&this.upload){
+                            const header=new DataView(this.upload.buffer);const packed=this.upload.slice(0,header.getUint16(4,true));
+                            new DataView(packed.buffer).setUint16(4,header.getUint16(2,true),true);
+                            for(const p of MAVParam.decode(packed).values()){
+                                const {type,offset}=paramOffsets[p.name],view=new DataView(state.paramBytes.buffer);
+                                if(type===1)view.setInt8(offset,p.value);else if(type===2)view.setInt16(offset,p.value,true);else if(type===3)view.setInt32(offset,p.value,true);else view.setFloat32(offset,p.value,true);
+                            }
+                            this.upload=null;
+                        }
                         let payload=[];
-                        if(req.opcode===4){payload=new Uint8Array(4);new DataView(payload.buffer).setUint32(0,bytes.length,true);}
+                        if(req.opcode===4){payload=new Uint8Array(4);new DataView(payload.buffer).setUint32(0,bytes.length+(this.ftpPath.startsWith('@PARAM/')?128:0),true);}
                         if(req.opcode===15||req.opcode===5)payload=bytes.slice(req.offset,req.offset+80);
-                        const body=this.codec.packOp((req.seq+1)&65535,req.session,128,payload.length,req.opcode,1,req.offset,payload);
+                        const eof=(req.opcode===15||req.opcode===5)&&req.offset>=bytes.length;
+                        if(eof)payload=[6];
+                        const body=this.codec.packOp((req.seq+1)&65535,req.session,eof?129:128,payload.length,req.opcode,1,req.offset,payload);
                         setTimeout(()=>{if(this.readyState===1)this.emit(new mavlink20.messages.file_transfer_protocol(0,msg._header.srcSystem,msg._header.srcComponent,Array.from(body)));},0);
                     }
                 }
                 close() {this.readyState=3;clearInterval(this.timer);setTimeout(()=>this.onclose?.({code:1000,reason:''}),0);}
             }
             window.WebSocket=VehicleSocket;
-        });
+        }, {paramsHex:paramFixture.hex,paramOffsets:paramFixture.offsets});
         const page = await context.newPage();
         const errors=[];page.on('pageerror', e=>errors.push(e.message));
         await page.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:''}));
+        await page.route('**/Parameters/**/apm.pdef.json',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({Rover:{
+            TEST_I8:{DisplayName:'Motor speed',Description:'Adjust the motor test speed',Range:{low:'-128',high:'127'}},
+            TEST_OPTIONS:{Description:'Option flags',Bitmask:{0:'First option',2:'Third option'}},
+            TEST_READONLY:{Description:'A read-only parameter',ReadOnly:'True'}
+        }})}));
         await page.goto(`http://127.0.0.1:${server.address().port}/SimpleGCS/`);
         await page.waitForFunction(()=>window.AppSettings);
         assert.equal(await page.evaluate(()=>testVehicle.sockets.length),0,'no unsolicited connection');
@@ -104,6 +125,48 @@ const { chromium } = require('playwright');
         await page.locator('#video-panel').waitFor();
         await page.evaluate(()=>VideoPanel.close());
         assert.equal(await page.locator('#video-panel').count(),0);
+        await page.locator('#menuBtn').click();
+        await page.getByText('Settings',{exact:true}).click();
+        await page.getByRole('button',{name:'Parameters',exact:true}).click();
+        const parameterDialog=page.getByRole('dialog',{name:'Parameters',exact:true});
+        await page.waitForFunction(()=>document.querySelectorAll('.mavparam-row').length===6);
+        await page.getByText('Rover descriptions.',{exact:true}).waitFor();
+        const search=page.getByRole('searchbox',{name:'Search parameters'});
+        await search.fill('motor speed');
+        assert.equal(await page.locator('.mavparam-row').count(),1);
+        await page.getByRole('textbox',{name:'TEST_I8 value',exact:true}).fill('7');
+        await parameterDialog.getByRole('button',{name:'Apply',exact:true}).click();
+        await page.getByText('TEST_I8 saved and verified.',{exact:true}).waitFor();
+        await page.getByRole('checkbox',{name:'Non-default only'}).check();
+        await page.getByRole('button',{name:'Reset TEST_I8 to default'}).click();
+        await page.getByText('TEST_I8 reset and verified.',{exact:true}).waitFor();
+        assert.equal(await page.locator('.mavparam-row').count(),0);
+        await page.getByRole('checkbox',{name:'Non-default only'}).uncheck();
+        await search.fill('TEST_READONLY');
+        assert.equal(await page.getByRole('textbox',{name:'TEST_READONLY value'}).isDisabled(),true);
+        await search.fill('TEST_I32');
+        const downloadPromise=page.waitForEvent('download');
+        await parameterDialog.getByRole('button',{name:'Save to file'}).click();
+        const download=await downloadPromise;const saved=fs.readFileSync(await download.path(),'utf8');
+        assert.ok(saved.includes('TEST_I32\t16777217'));assert.ok(saved.includes('TEST_I8\t0'),'save includes parameters outside search');
+        await parameterDialog.locator('input[type=file]').setInputFiles({name:'test.parm',mimeType:'text/plain',buffer:Buffer.from('TEST_I32 16777219\nTEST_READONLY 0\n')});
+        await page.getByText('test.parm: 1 changes',{exact:true}).waitFor();
+        await page.getByText('Skipped read-only parameters: TEST_READONLY',{exact:true}).waitFor();
+        await parameterDialog.getByRole('button',{name:'Upload changes'}).click();
+        await page.getByText('Parameter file uploaded and verified.',{exact:true}).waitFor();
+        assert.equal(await page.getByRole('textbox',{name:'TEST_I32 value'}).inputValue(),'16777219');
+        await page.setViewportSize({width:390,height:844});
+        await search.fill('TEST_OPTIONS');
+        await page.getByText('Bitmask options',{exact:true}).tap();
+        await page.getByRole('checkbox',{name:'0: First option',exact:true}).uncheck();
+        await parameterDialog.getByRole('button',{name:'Apply',exact:true}).tap();
+        await page.getByText('TEST_OPTIONS saved and verified.',{exact:true}).waitFor();
+        assert.equal(await page.getByRole('textbox',{name:'TEST_OPTIONS value'}).inputValue(),'4');
+        assert.ok(await parameterDialog.evaluate(el=>el.scrollWidth<=el.clientWidth),'mobile dialog has no horizontal overflow');
+        assert.ok(await page.locator('.mavparam-row').evaluate(el=>el.scrollWidth<=el.clientWidth),'mobile card fits viewport');
+        await parameterDialog.getByRole('button',{name:'Close',exact:true}).tap();
+        await page.setViewportSize({width:1280,height:900});
+        console.log('PASS: parameter fetch/defaults, metadata search, edit/reset, readonly, save/load via FTP, exact int32 and mobile bitmask UI');
         await page.locator('#armBtn').click();
         await page.waitForFunction(()=>document.querySelector('#armed-pill').textContent==='ARMED');
         await page.locator('#loiterBtn').click();
