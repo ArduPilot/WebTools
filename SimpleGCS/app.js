@@ -699,7 +699,8 @@
             pass: "gcs.passphrase"
         };
 
-        urlInput.value = localStorage.getItem(LS_KEYS.url) || "ws://127.0.0.1:5763";
+        urlInput.value = localStorage.getItem(LS_KEYS.url) ||
+            window.SIMPLEGCS_CONFIG?.defaultUrl || "ws://127.0.0.1:5763";
         passphraseInput.value = localStorage.getItem(LS_KEYS.pass) || "";
 
         function applyIds() {

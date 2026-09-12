@@ -16,6 +16,10 @@ Open `http://127.0.0.1:8000/SimpleGCS/`. Press **Connect**, enter your MAVLink
 WebSocket relay's `ws://` or `wss://` address and optional signing passphrase,
 then press **Connect** in the dialog. HTTPS pages need a `wss://` endpoint.
 Signing is configured independently of the optional 1 Hz GCS heartbeat.
+Copy `config.example.js` to the ignored `config.js` to set a deployment's
+`window.SIMPLEGCS_CONFIG.defaultUrl`. This prefills Connect for new browsers;
+a saved URL takes priority. A configured default alone does not connect until
+the user presses Connect. Signing credentials are entered in the dialog.
 The saved connection is restored on reload. Commands and file requests wait
 for an ArduPilot heartbeat to identify the vehicle. The first discovered
 vehicle is selected until disconnect.

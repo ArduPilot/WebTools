@@ -87,6 +87,7 @@ const { chromium } = require('playwright');
         await page.waitForFunction(()=>window.AppSettings);
         assert.equal(await page.evaluate(()=>testVehicle.sockets.length),0,'no unsolicited connection');
         await page.locator('#connectBtn').click();
+        assert.equal(await page.locator('#target_url').inputValue(),'ws://127.0.0.1:5763');
         assert.equal(await page.locator('#signing_passphrase').inputValue(),'');
         await page.locator('#signing_passphrase').fill('test-signing');
         await page.locator('#send_heartbeat').uncheck();
@@ -131,8 +132,24 @@ const { chromium } = require('playwright');
         await page.locator('#Close').click();
         await page.locator('#armBtn').click();
         assert.equal(await page.evaluate(()=>testVehicle.sent.length),count,'no commands sent after disconnect');
+        await page.evaluate(()=>localStorage.clear());
+        await page.unroute('**/SimpleGCS/config.js');
+        await page.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:
+            'window.SIMPLEGCS_CONFIG = {defaultUrl:"wss://relay.example.org/mavlink"};'}));
+        await page.reload();
+        await page.waitForFunction(()=>window.AppSettings);
+        assert.equal(await page.evaluate(()=>testVehicle.sockets.length),0,'configured default does not auto-connect');
+        await page.locator('#connectBtn').click();
+        assert.equal(await page.locator('#target_url').inputValue(),'wss://relay.example.org/mavlink');
+        assert.equal(await page.locator('#signing_passphrase').inputValue(),'');
+        await page.evaluate(()=>{localStorage.setItem('gcs.url','wss://saved.example.org/mavlink');localStorage.setItem('gcs.passphrase','test-signing');});
+        await page.reload();
+        await page.waitForFunction(()=>testVehicle.sockets.length===1);
+        await page.locator('#connectBtn').click();
+        assert.equal(await page.locator('#target_url').inputValue(),'wss://saved.example.org/mavlink','saved URL overrides deployment default');
+        assert.equal(await page.evaluate(()=>testVehicle.sockets[0].url),'wss://saved.example.org/mavlink');
         assert.deepEqual(errors,[]);
-        console.log('PASS: browser signing, discovery, circle fence, mission, video panel, arm/disarm, mode, long press, ACK errors, reconnect and disconnect');
+        console.log('PASS: browser signing, discovery, circle fence, mission, video panel, arm/disarm, mode, long press, ACK errors, reconnect, disconnect and deployment defaults');
     } finally {
         await context?.close();await browser?.close();server.close();
     }
