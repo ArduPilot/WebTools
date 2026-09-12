@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.cjs",
+    "test:video": "node tests/video-browser.cjs"
   },
   "engines": { "node": ">=22.13" },
   "devDependencies": {

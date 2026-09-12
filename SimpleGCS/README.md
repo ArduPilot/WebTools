@@ -22,7 +22,9 @@ a saved URL takes priority. A configured default alone does not connect until
 the user presses Connect. Signing credentials are entered in the dialog.
 The saved connection is restored on reload. Commands and file requests wait
 for an ArduPilot heartbeat to identify the vehicle. The first discovered
-vehicle is selected until disconnect.
+vehicle is selected until disconnect. If automatic mission fetching is enabled,
+failed downloads retry after five seconds without overlapping transfers. Mission
+layers are cleared on disconnect; replies from the previous connection are ignored.
 
 The relay must preserve MAVLink source system/component IDs for commands and
 FTP replies. Relay authentication and vehicle signing are separate settings;
@@ -36,7 +38,11 @@ OpenStreetMap is the default map. Google Maps is optional: copy
 `config.example.js` to the ignored `config.js`, or enter a browser API key in
 Settings. Restrict that key to the intended website origins. The video panel
 supports a configured MediaMTX WebRTC or HLS endpoint; its host, path and viewer
-credentials can be changed in the panel's Settings.
+credentials can be changed in the panel's Settings. WebRTC uses MediaMTX's
+JavaScript WHEP reader to send those credentials in signaling requests, including
+when opening a separate video window. The server must allow the GCS website's
+origin through `webrtcAllowOrigins`. The badge reports connecting, actual playback
+and errors; failed WebRTC sessions reconnect automatically until the player closes.
 
 ## Repeatable simulator check
 
@@ -53,7 +59,7 @@ and mission/fence files, and inspect any pre-arm failures before testing.
 3. Arm, select Loiter, and verify both changes in returned telemetry.
 4. Hold a map point for at least 600 ms, comfortably inside the fence. Confirm
    GUIDED mode, the returned target marker and movement toward the target.
-   Dragging the map should not send a target. Rejected commands appear in
+   Dragging or using multiple fingers on the map should not send a target. Rejected commands appear in
    Messages and in a toast.
 5. Select Loiter and disarm. Disconnect and reconnect, reload the page, and
    confirm telemetry and fence downloads resume.
@@ -118,7 +124,20 @@ npm test
 npm ci
 npx playwright install chromium
 npm run test:browser
+npm run test:video
 ```
+
+The video test checks authenticated signaling, visible authentication failures,
+and cleanup in both the inset and separate window without a vehicle connection.
+For a playback integration check, publish a test stream to a local MediaMTX with
+read credentials `viewer` / `fixture-view`, then run:
+
+```sh
+SIMPLEGCS_WHEP_TEST_URL=http://127.0.0.1:18889/stream/whep npm run test:video
+```
+
+This additionally requires decoded video frames in both players. Both browser
+suites can attach to an existing Chrome with `SIMPLEGCS_CDP_URL`.
 
 The unit suite needs no installed npm dependencies. Checked-in wire fixtures
 are generated independently by pymavlink; regeneration requires pymavlink:

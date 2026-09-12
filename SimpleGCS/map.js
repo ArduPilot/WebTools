@@ -286,6 +286,7 @@
             const el = this.map.getContainer();
             let pressTimer = null, startPt = null, lastPt = null, activeId = null;
             const HOLD_MS = 600, MOVE_PX_TOL = 10;
+            const pointers = new Set();
 
             const clearAll = () => {
                 if (pressTimer) {
@@ -296,7 +297,14 @@
                 startPt = lastPt = null;
             };
 
+            window.addEventListener("pointerdown", (ev) => {
+                // A second finger cancels the entire gesture, including the first
+                // finger's timer. Do not start another hold until all are lifted.
+                pointers.add(ev.pointerId);
+                if (pointers.size > 1) clearAll();
+            }, { capture: true });
             el.addEventListener("pointerdown", (ev) => {
+                if (pointers.size > 1) return;
                 if (ev.button !== 0 || ev.target.closest(".leaflet-control, #video-panel, button, input, select, textarea, a")) return;
                 if (ev.pointerType === "touch") ev.preventDefault();
 
@@ -327,11 +335,17 @@
 
             // Child map layers can redraw under the pointer during a hold.
             // Only leaving the map itself should cancel the gesture.
-            ["pointerup", "pointercancel", "pointerleave"].forEach(t =>
-                el.addEventListener(t, (ev) => {
+            el.addEventListener("pointerleave", (ev) => {
+                if (ev.pointerId === activeId) clearAll();
+            });
+            // Releases can occur outside the map after a drag or pinch.
+            ["pointerup", "pointercancel"].forEach(t =>
+                window.addEventListener(t, (ev) => {
+                    pointers.delete(ev.pointerId);
                     if (ev.pointerId === activeId) clearAll();
-                }, { passive: false })
+                })
             );
+            window.addEventListener("blur", () => { pointers.clear(); clearAll(); });
         },
 
         // Target cleanup timer

@@ -1001,11 +1001,6 @@ if (lagMs > 3000) {
                 Fence.onConnected(ws);
                 Mission.onConnected(ws);
 
-                if (AppSettings.autoFetchMission) {
-                    try {
-                        setTimeout(() => Mission.fetch(true), 10);
-                    } catch {}
-                }
             }
 
             if (m._header.srcSystem !== vehSysId || m._header.srcComponent !== vehCompId) return;

@@ -13,12 +13,13 @@
         wpLayers: [],
 
         fetched: false,
-        retryTimer: null
+        retryTimer: null,
+        pending: false,
+        generation: 0
     };
 
     const FETCH_TAG = 'mission'; // used for de-duping queued FTP jobs
 
-    function log(...a){ try{ console.log('[Mission]', ...a); } catch{} }
     function toast(msg){ try{ State.toast && State.toast(msg); } catch{} }
 
     function clearLayers() {
@@ -30,19 +31,17 @@
         State.wpLayers = [];
     }
 
-    function stopRetry(){ if (State.retryTimer) { clearInterval(State.retryTimer); State.retryTimer = null; } }
+    function stopRetry() {
+        clearTimeout(State.retryTimer);
+        State.retryTimer = null;
+    }
 
-    function startRetry(){
+    function scheduleRetry() {
         stopRetry();
-        State.fetched = false;
-        fetchMission(true);
-        State.retryTimer = setInterval(() => {
-            if (!State.fetched && State.ws) {
-                log('Retrying mission fetch…');
-                fetchMission(true);
-            } else if (State.fetched) {
-                stopRetry();
-            }
+        if (!State.ws || State.fetched || !window.AppSettings?.autoFetchMission) return;
+        State.retryTimer = setTimeout(() => {
+            State.retryTimer = null;
+            if (window.AppSettings?.autoFetchMission) fetchMission(true);
         }, 5000);
     }
 
@@ -102,10 +101,21 @@
 
     function fetchMission(silent=false) {
         if (!State.ws) { if (!silent) toast('Not connected'); return; }
+        if (State.pending) return;
+        stopRetry();
+        State.pending = true;
+        State.fetched = false;
+        const generation = State.generation;
         if (!silent) toast('Fetching mission…');
         // Use FTPManager with de-dupe + 5s watchdog.
         FTPManager.getFile('@MISSION/mission.dat', (data) => {
-            if (!data) { if (!silent) toast('Failed to fetch mission'); return; }
+            if (generation !== State.generation) return;
+            State.pending = false;
+            if (!data) {
+                if (!silent) toast('Failed to fetch mission');
+                scheduleRetry();
+                return;
+            }
             try {
 	            const items = State.parser.parseMission(data);
                 if (items) {
@@ -119,6 +129,7 @@
                 console.warn('Mission parse error', e);
                 if (!silent) toast('Mission parse error');
             }
+            if (!State.fetched) scheduleRetry();
         }, { tag: FETCH_TAG, dropQueuedTag: true, dropQueuedPath: true, timeoutMs: 5000 });
     }
 
@@ -131,12 +142,18 @@
             return API;
         },
         onConnected(ws) {
+            API.onDisconnected();
             State.ws = ws;
-            //startRetry();
+            if (window.AppSettings?.autoFetchMission) fetchMission(true);
         },
         onDisconnected(){
             stopRetry();
             State.ws = null;
+            State.generation++;
+            State.pending = false;
+            State.fetched = false;
+            FTPManager.cancelQueuedByTag(FETCH_TAG);
+            clearLayers();
         },
         fetch: (silent=false) => fetchMission(silent),
         clear: () => clearLayers()

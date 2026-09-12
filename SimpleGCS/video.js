@@ -21,7 +21,8 @@
             this.el = null;
             this.hls = null;
             this.videoEl = null;
-            this.currentIframe = null;
+            this.webRTCPlayer = null;
+            this.hlsRetryTimer = null;
             this.liveTimer = null;
             this.liveBadgeEl = null;
             this.isWebRTC = false;
@@ -33,50 +34,6 @@
 
         _webrtcUrl() {
             return `${this.scheme}://${this.host}:${this.wrtcPort}/${this.path}/`;
-        }
-
-        _createWebRTCHTML() {
-            const baseUrl = this._webrtcUrl();
-            const auth = (this.user && this.pass) ? btoa(`${this.user}:${this.pass}`) : '';
-
-            return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { margin: 0; padding: 0; background: #000; overflow: hidden; }
-    iframe { width: 100%; height: 100vh; border: 0; }
-  </style>
-</head>
-<body>
-  <iframe id="webrtc-frame" allow="autoplay; fullscreen"></iframe>
-  <script>
-    const frame = document.getElementById('webrtc-frame');
-    const baseUrl = ${JSON.stringify(baseUrl).replace(/</g, '\\u003c')};
-    const auth = '${auth}';
-
-    // Set up the iframe with auth headers if needed
-    if (auth) {
-      fetch(baseUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Basic ' + auth
-        },
-        credentials: 'include'
-      }).then(() => {
-        // After auth, load the WebRTC page
-        frame.src = baseUrl;
-      }).catch(() => {
-        // If auth fails, try without
-        frame.src = baseUrl;
-      });
-    } else {
-      frame.src = baseUrl;
-    }
-  </script>
-</body>
-</html>`;
         }
 
         open() {
@@ -219,35 +176,21 @@
 
         _useWebRTC() {
             this._cleanup();
-
-            const iframe = document.createElement("iframe");
-
-            // Use data URL to avoid embedded credentials restriction
-            const htmlContent = this._createWebRTCHTML();
-            const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-            iframe.src = dataUrl;
-
-            iframe.style.cssText = "border:0; width:100%; height:100%; background:#000;";
-            iframe.allow = "autoplay; fullscreen";
-
-            // Prevent auth prompts by handling load errors gracefully
-            iframe.onload = () => {
-                console.log("WebRTC iframe loaded successfully");
-            };
-
-            iframe.onerror = (e) => {
-                console.warn("WebRTC iframe load error:", e);
-                // Don't show user-visible errors, just log them
-            };
-
-            this.bodyEl.insertBefore(iframe, this.bodyEl.firstChild);
-            this.currentIframe = iframe;
+            const video = document.createElement("video");
+            video.style.cssText = "width:100%; height:100%; background:#000;";
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+            video.controls = true;
+            this.bodyEl.insertBefore(video, this.bodyEl.firstChild);
+            this.videoEl = video;
             this.isWebRTC = true;
+            this._updateUI("WebRTC", "#b36b00", "#81c784");
+            this.webRTCPlayer = new WebRTCPlayer(video, this.liveBadgeEl, this._webRTCOptions());
+        }
 
-            this._updateUI("WebRTC", "#4caf50", "#81c784");
-
-            // Start monitoring connection
-            this._startConnectionMonitor();
+        _webRTCOptions() {
+            return {url: this._webrtcUrl() + "whep", user: this.user, pass: this.pass};
         }
 
         _useHLS() {
@@ -339,7 +282,8 @@
                         this._useWebRTC();
                     } else {
                         console.log(`HLS retry ${this.hlsRetryCount}/${this.maxHLSRetries}`);
-                        setTimeout(() => this._playStableHLS(), 2000);
+                        clearTimeout(this.hlsRetryTimer);
+                        this.hlsRetryTimer = setTimeout(() => this._playStableHLS(), 2000);
                     }
                 }
             });
@@ -365,32 +309,11 @@
             }
         }
 
-        _startConnectionMonitor() {
-            this._stopConnectionMonitor();
-
-            // Simple connection monitoring for WebRTC
-            if (this.isWebRTC && this.currentIframe) {
-                this.connectionTimer = setInterval(() => {
-                    // Basic iframe health check
-                    try {
-                        if (!this.currentIframe || !this.currentIframe.parentNode) {
-                            this._stopConnectionMonitor();
-                        }
-                    } catch (e) {
-                        console.warn("WebRTC connection issue:", e);
-                    }
-                }, 5000);
-            }
-        }
-
-        _stopConnectionMonitor() {
-            if (this.connectionTimer) {
-                clearInterval(this.connectionTimer);
-                this.connectionTimer = null;
-            }
-        }
-
         _cleanup() {
+            clearTimeout(this.hlsRetryTimer);
+            this.hlsRetryTimer = null;
+            this.webRTCPlayer?.close();
+            this.webRTCPlayer = null;
             // Clean up video element and HLS
             if (this.hls) {
                 try { this.hls.destroy(); } catch {}
@@ -401,18 +324,25 @@
                 this.videoEl.parentNode.removeChild(this.videoEl);
                 this.videoEl = null;
             }
-
-            // Clean up iframe
-            if (this.currentIframe && this.currentIframe.parentNode) {
-                this.currentIframe.parentNode.removeChild(this.currentIframe);
-                this.currentIframe = null;
-            }
-
-            this._stopConnectionMonitor();
         }
 
         openNewWindow() {
-            window.open(this._webrtcUrl(), "_blank", "noopener,noreferrer");
+            // Exchange credentials with our own player page, never in its URL.
+            const options = this._webRTCOptions();
+            const popup = window.open(new URL("video.html", document.baseURI), "_blank");
+            if (!popup) return;
+            const cleanup = () => {
+                window.removeEventListener("message", ready);
+                clearTimeout(timer);
+            };
+            const ready = event => {
+                if (event.source !== popup || event.origin !== location.origin ||
+                    event.data !== "simplegcs-video-ready") return;
+                popup.postMessage({type: "simplegcs-video-config", options}, location.origin);
+                cleanup();
+            };
+            const timer = setTimeout(cleanup, 30000);
+            window.addEventListener("message", ready);
         }
 
         openSettings() {
@@ -425,6 +355,10 @@
             this.path = path;
             this.user = user;
             this.pass = pass;
+            localStorage.setItem("video.host", host);
+            localStorage.setItem("video.path", path);
+            localStorage.setItem("video.user", user);
+            localStorage.setItem("video.pass", pass);
 
             if (this.el) {
                 // Restart current protocol
