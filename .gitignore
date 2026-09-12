@@ -1,1 +1,4 @@
 .vscode/*
+
+# Node test dependencies
+node_modules/

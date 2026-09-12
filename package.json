@@ -1,0 +1,13 @@
+{
+  "name": "ardupilot-webtools-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "engines": { "node": ">=22.13" },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "ws": "8.18.3"
+  }
+}

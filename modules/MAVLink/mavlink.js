@@ -13,12 +13,12 @@ const isNode = typeof process !== 'undefined' &&
 
 // Handle jspack dependency
 let jspack;
+let jspackReady;
 if (isNode) {
-    jspack = (global && global.jspack) || require("jspack").jspack;
+    jspack = (global && global.jspack) || new (require("./local_modules/jspack/jspack.js").default)();
 } else {
-    import("./local_modules/jspack/jspack.js").then((mod) => {
-    jspack = new mod.default()
-    }).catch((e) => {
+    jspackReady = import("./local_modules/jspack/jspack.js").then((mod) => {
+        jspack = new mod.default();
     });
 }
 
@@ -18972,6 +18972,7 @@ mavlink20.map = {
 // Special mavlink message to capture malformed data packets for debugging
 mavlink20.messages.bad_data = function(data, reason) {
     this._id = mavlink20.MAVLINK_MSG_ID_BAD_DATA;
+    this._name = 'BAD_DATA';
     this._data = data;
     this._reason = reason;
     this._msgbuf = data;
@@ -18981,7 +18982,7 @@ mavlink20.messages.bad_data.prototype = new mavlink20.message;
 //  MAVLink signing state class
 MAVLinkSigning = function MAVLinkSigning(object){
         this.secret_key = new Uint8Array();
-        this.timestamp = 1;
+        this.timestamp = Math.max(0, Math.floor((Date.now() - Date.UTC(2015, 0, 1)) * 100));
         this.link_id = 0;
         this.sign_outgoing = false; // todo false this
         this.allow_unsigned_callback = undefined;
@@ -19091,7 +19092,7 @@ MAVLink20Processor.prototype.parsePrefix = function() {
         var badPrefix = this.buf[0];
         var idx1 = this.buf.indexOf(mavlink20.PROTOCOL_MARKER_V1);
         var idx2 = this.buf.indexOf(mavlink20.PROTOCOL_MARKER_V2);
-        if (idx1 == -1) {
+        if (idx1 == -1 || (idx2 != -1 && idx2 < idx1)) {
             idx1 = idx2;
         }
         if (idx1 == -1 && idx2 == -1) {
@@ -19116,7 +19117,7 @@ MAVLink20Processor.prototype.parseLength = function() {
     if( this.buf.length >= 3 ) {
         var unpacked = jspack.Unpack('BBB', this.buf.slice(0, 3));
         var magic = unpacked[0]; // stx ie fd or fe etc
-        this.expected_length = unpacked[1] + mavlink20.HEADER_LEN + 2 // length of message + header + CRC (ie non-signed length)
+        this.expected_length = unpacked[1] + (magic === mavlink20.PROTOCOL_MARKER_V1 ? 6 : mavlink20.HEADER_LEN) + 2 // length of message + header + CRC (ie non-signed length)
         this.incompat_flags = unpacked[2];
         // mavlink2 only..  in mavlink1, incompat_flags var above is actually the 'seq', but for this test its ok.
         if ((magic == mavlink20.PROTOCOL_MARKER_V2 ) && ( this.incompat_flags & mavlink20.MAVLINK_IFLAG_SIGNED )){
@@ -19168,7 +19169,7 @@ MAVLink20Processor.prototype.parsePayload = function() {
     // If we have enough bytes to try and read it, read it.  
     //  shortest packet is header+checksum(2) with no payload, so we need at least that many 
     //  but once we have a longer 'expected length' we have to read all of it. 
-    if(( this.expected_length >= mavlink20.HEADER_LEN+2) && (this.buf.length >= this.expected_length) ) { 
+    if(( this.expected_length >= 8) && (this.buf.length >= this.expected_length) ) {
 
         // Slice off the expected packet length, reset expectation to be to find a header.
         var mbuf = this.buf.slice(0, this.expected_length);
@@ -19245,7 +19246,7 @@ MAVLink20Processor.prototype.check_signature = function(msgbuf, srcSystem, srcCo
     // see if the timestamp is acceptable
 
     // we'll use a STRING containing these three things in it as a unique key eg: '0,1,1'
-    stream_key = new Array(link_id,srcSystem,srcComponent).toString();
+    var stream_key = new Array(link_id,srcSystem,srcComponent).toString();
 
     if (stream_key in this.signing.stream_timestamps){
     if (timestamp <= this.signing.stream_timestamps[stream_key]){
@@ -19260,8 +19261,6 @@ MAVLink20Processor.prototype.check_signature = function(msgbuf, srcSystem, srcCo
         //console.log('bad new stream ', timestamp/(100.0*1000*60*60*24*365), this.signing.timestamp/(100.0*1000*60*60*24*365))
         return false
     }
-    this.signing.stream_timestamps[stream_key] = timestamp;
-    //console.log('new stream',this.signing.stream_timestamps)
     }
 
     // just the last 6 of 13 available are the actual sig . ie excluding the linkid(1) and timestamp(6)
@@ -19285,6 +19284,7 @@ MAVLink20Processor.prototype.check_signature = function(msgbuf, srcSystem, srcCo
     if (!signaturesMatch) {
         return false;
     }
+    this.signing.stream_timestamps[stream_key] = timestamp;
     //# the timestamp we next send with is the max of the received timestamp and
     //# our current timestamp
     this.signing.timestamp = Math.max(this.signing.timestamp, timestamp+1);
@@ -19318,7 +19318,7 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
         seq = unpacked[2];
         srcSystem = unpacked[3];
         srcComponent = unpacked[4];
-        msgID = unpacked[5];
+        msgId = unpacked[5];
         incompat_flags = 0;
         compat_flags = 0;
         header_len = 6;
@@ -19328,8 +19328,12 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
         throw new Error('Unable to unpack MAVLink header: ' + e.message);
     }
 
-    if (magic != this.protocol_marker) {
+    if (magic != mavlink20.PROTOCOL_MARKER_V1 && magic != mavlink20.PROTOCOL_MARKER_V2) {
         throw new Error("Invalid MAVLink prefix ("+magic+")");
+    }
+
+    if (incompat_flags & ~mavlink20.MAVLINK_IFLAG_SIGNED) {
+        throw new Error('Unsupported MAVLink incompatibility flags');
     }
 
     // is packet supposed to be signed?
@@ -19362,7 +19366,7 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
     }
 
     // here's the common chunks of packet we want to work with below..
-    var payloadBuf = msgbuf.slice(mavlink20.HEADER_LEN, -(signature_len+2)); // the remaining bit between the header and the crc
+    var payloadBuf = msgbuf.slice(header_len, -(signature_len+2)); // the remaining bit between the header and the crc
     var crcCheckBuf = msgbuf.slice(1, -(signature_len+2)); // the part uses to calculate the crc - ie between the magic and signature,
 
     // decode the payload
@@ -19514,7 +19518,7 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
     }
 
     m._signed = sig_ok;
-    if (m._signed) { m._link_id = msgbuf[-13]; }
+    if (m._signed) { m._link_id = msgbuf[msgbuf.length - 13]; }
  
     m._msgbuf = msgbuf;
     m._payload = payloadBuf;
@@ -19524,6 +19528,8 @@ MAVLink20Processor.prototype.decode = function(msgbuf) {
     return m;
 }
 
+
+mavlink20.ready = jspackReady || Promise.resolve();
 
 // Browser and Node.js compatible module exports
 if (!isNode) {
