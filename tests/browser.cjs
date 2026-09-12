@@ -185,6 +185,12 @@ const paramFixture = require('./fixtures/params.json');
         await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
         assert.equal(await page.evaluate(()=>testVehicle.sent.filter(m=>m.command===192).length),repositionCount,'pinch cannot reposition');
         await touchSession.detach();
+        await page.evaluate(()=>{
+            const control=document.querySelector('.leaflet-control-zoom');
+            control.addEventListener('pointerup',event=>event.stopPropagation(),{once:true});
+            control.dispatchEvent(new PointerEvent('pointerdown',{pointerId:77,bubbles:true,button:0}));
+            control.dispatchEvent(new PointerEvent('pointerup',{pointerId:77,bubbles:true,button:0}));
+        });
         await page.mouse.move(box.x+box.width/2+30,box.y+box.height/2+30);
         await page.mouse.down();await page.waitForTimeout(750);await page.mouse.up();
         await page.waitForFunction(()=>document.querySelector('#mode-value').textContent==='GUIDED'&&MapManager.targetMarker);

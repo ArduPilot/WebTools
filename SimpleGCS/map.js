@@ -343,7 +343,7 @@
                 window.addEventListener(t, (ev) => {
                     pointers.delete(ev.pointerId);
                     if (ev.pointerId === activeId) clearAll();
-                })
+                }, { capture: true })
             );
             window.addEventListener("blur", () => { pointers.clear(); clearAll(); });
         },
