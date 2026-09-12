@@ -143,8 +143,13 @@
 
   <script src="config.js"></script>
 
-  <!-- Before util.js loads, check for stored key -->
+  <!-- Apply deployment settings before the application loads. -->
   <script>
+    const configuredTitle = window.SIMPLEGCS_CONFIG?.title;
+    if (typeof configuredTitle === "string" && configuredTitle.trim()) {
+      document.title = configuredTitle.trim();
+    }
+
     // Try to load API key from: config.js → localStorage → empty
     window.GMAPS_API_KEY = window.GMAPS_API_KEY ||
     localStorage.getItem('gcs.gmaps.apikey') ||
