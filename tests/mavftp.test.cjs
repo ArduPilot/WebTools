@@ -186,3 +186,52 @@ test('cancellation reports failure once and ignores a late open ACK', t => {
     h.ftp.cancel();h.ftp.cancel();assert.equal(calls,1);assert.equal(h.reply(open,[1,0,0,0]),false);
     t.mock.timers.tick(10000);assert.equal(calls,1);
 });
+
+for (const size of [0,1,239,240,1600]) {
+    test(`upload ${size} bytes waits for every write and close ACK`,t=>{
+        const h=harness(t);const bytes=Uint8Array.from({length:size},(_,i)=>i&255);let result;
+        h.ftp.putFile('out.bin',bytes,d=>result=d);const create=h.sent.shift();assert.equal(create.opcode,6);h.reply(create);
+        const received=new Uint8Array(size);
+        for(;;) {
+            const req=h.sent.shift();assert.ok(req);assert.equal(result,undefined);
+            if(req.opcode===1){h.reply(req);break;}
+            assert.equal(req.opcode,7);received.set(req.payload,req.offset);h.reply(req);
+        }
+        assert.equal(result,size);assert.deepEqual(received,bytes);assert.equal(h.sent.length,0);assert.equal(h.ftp.timeoutCheckInterval,null);
+    });
+}
+test('upload retries exact bytes and sequence; stale, wrong-offset and foreign replies do not advance',t=>{
+    const h=harness(t);let result;h.ftp.putFile('out',new Uint8Array(300),d=>result=d);
+    const create=h.sent.shift();t.mock.timers.tick(3000);const retry=h.sent.shift();assert.deepEqual(retry,create);
+    h.reply(create);const write=h.sent.shift();assert.equal(h.reply(create),false);assert.equal(h.reply(write,[],{offset:1}),false);
+    const bad={...write,session:(write.session+1)&255};assert.equal(h.reply(bad),false);
+    t.mock.timers.tick(3000);assert.deepEqual(h.sent.shift(),write);h.reply(write);const next=h.sent.shift();h.reply(next);
+    const close=h.sent.shift();t.mock.timers.tick(3000);assert.deepEqual(h.sent.shift(),close);assert.equal(result,undefined);h.reply(close);assert.equal(result,300);
+});
+for(const stage of ['create','write','close','timeout','cancel']) {
+    test(`upload failure at ${stage} finishes once without success`,t=>{
+        const h=harness(t);let calls=0,result;h.ftp.putFile('out',new Uint8Array(1),d=>{calls++;result=d;});let req=h.sent.shift();
+        if(stage!=='create'&&stage!=='timeout'&&stage!=='cancel'){h.reply(req);req=h.sent.shift();}
+        if(stage==='close'){h.reply(req);req=h.sent.shift();}
+        if(stage==='timeout'){for(let i=0;i<7;i++)t.mock.timers.tick(3000);}else if(stage==='cancel')h.ftp.cancel();else h.reply(req,[1],{nack:true});
+        assert.equal(result,null);assert.equal(calls,1);h.reply(req);assert.equal(calls,1);
+    });
+}
+for(const estimate of [80,400]) {
+    test(`virtual file ignores size estimate ${estimate} but waits for EOF and missing fixed-size blocks`,t=>{
+        const h=harness(t),bytes=Uint8Array.from({length:170},(_,i)=>i);let result;
+        h.ftp.getFile('@PARAM/param.pck',d=>result=d,{sizeIsEstimate:true,fixedReadSize:true});
+        const create=h.sent.shift(),size=Buffer.alloc(4);size.writeUInt32LE(estimate);h.reply(create,size);
+        const burst=h.sent.shift();h.reply(burst,bytes.subarray(0,80),{offset:0});
+        // Lose the middle block and the short final block. EOF alone cannot
+        // report success, even when the advertised estimate was too small.
+        assert.equal(result,undefined);h.reply(burst,[6],{offset:170,nack:true});
+        const gaps=h.sent.splice(0);assert.deepEqual(gaps.map(g=>g.size),[80,80]);
+        for(const req of gaps)h.reply(req,bytes.subarray(req.offset,req.offset+req.size));
+        assert.deepEqual(result,bytes);
+    });
+}
+test('virtual file can grow beyond its estimate and exact-size files still reject extra data',t=>{
+    const h=harness(t);let result;h.ftp.getFile('@PARAM/param.pck',d=>result=d,{sizeIsEstimate:true});const create=h.sent.shift(),size=Buffer.alloc(4);size.writeUInt32LE(10);h.reply(create,size);const req=h.sent.shift();
+    const bytes=new Uint8Array(20).fill(7);h.reply(req,bytes,{offset:0});assert.equal(result,undefined);h.reply(req,[6],{offset:20,nack:true});assert.deepEqual(result,bytes);
+});

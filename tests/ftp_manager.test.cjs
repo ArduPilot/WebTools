@@ -8,7 +8,8 @@ function setup(t) {
     const instances=[];
     class FakeFTP {
         constructor(){this.calls=[];instances.push(this)}
-        getFile(path,cb){this.calls.push({path,cb});this.cb=cb}
+        getFile(path,cb,options){this.calls.push({path,cb,options});this.cb=cb}
+        putFile(path,data,cb){this.calls.push({path,data,cb});this.cb=cb}
         cancel(){const cb=this.cb;this.cb=null;cb?.(null)}
         handleMessage(m){return m.valid===true}
         complete(data){const cb=this.cb;this.cb=null;cb?.(data)}
@@ -60,4 +61,11 @@ test('deduplication notifies canceled queued jobs and preserves the active one',
 
 test('requests without a discovered vehicle complete with failure',t=>{
     const {manager}=setup(t);manager.setLink({}, {}, -1,-1);let result;manager.getFile('a',d=>result=d);assert.equal(result,null);assert.equal(manager.isBusy(),false);
+});
+
+test('uploads share the queue with virtual-file downloads and wait for completion',t=>{
+    const {manager,ftp}=setup(t);const data=new Uint8Array([1,2]);const results=[];
+    manager.putFile('upload',data,d=>results.push(d));manager.getFile('params',d=>results.push(d),{sizeIsEstimate:true,fixedReadSize:true});
+    assert.equal(ftp.calls[0].data,data);assert.equal(ftp.calls.length,1);ftp.complete(2);
+    assert.equal(ftp.calls[1].options.sizeIsEstimate,true);assert.equal(ftp.calls[1].options.fixedReadSize,true);ftp.complete(data);assert.deepEqual(results,[2,data]);
 });

@@ -1,4 +1,4 @@
-// Read-only MAVLink FTP client. Replies are correlated with the vehicle,
+// MAVLink FTP client with acknowledged downloads and uploads. Replies are correlated with the vehicle,
 // session and request so delayed packets cannot complete a later transfer.
 class MAVFTP {
     constructor(mavlink, ws) {
@@ -29,6 +29,8 @@ class MAVFTP {
         this.currentFile = null;
         this.callback = null;
         this.timeoutCheckInterval = null;
+        this.pendingWrite = null;
+        this.uploadBuffer = null;
         this.pendingOpenFile = null;
         this.pendingBurstRead = null;
         this.pendingReads = new Map();
@@ -100,6 +102,7 @@ class MAVFTP {
 
     checkTimeouts() {
         try {
+            if (!this.retry(this.pendingWrite, this.openFileTimeout, this.maxOpenRetries)) return;
             if (!this.retry(this.pendingOpenFile, this.openFileTimeout, this.maxOpenRetries)) return;
             if (!this.retry(this.pendingBurstRead, this.burstReadTimeout, this.maxBurstRetries)) return;
             for (const request of this.pendingReads.values()) {
@@ -110,7 +113,7 @@ class MAVFTP {
         }
     }
 
-    getFile(filename, callback) {
+    getFile(filename, callback, options = {}) {
         this.cancel();
         const bytes = new TextEncoder().encode(filename);
         if (!bytes.length || bytes.length > this.MAX_PAYLOAD || bytes.includes(0)) {
@@ -121,6 +124,10 @@ class MAVFTP {
         this.currentFile = filename;
         this.callback = callback;
         this.fileSize = 0;
+        this.sizeIsEstimate = options.sizeIsEstimate === true;
+        this.fixedReadSize = options.fixedReadSize === true;
+        this.actualSize = null;
+        this.highestReceivedOffset = 0;
         this.fileBuffer = null;
         this.readGaps = [];
         this.pendingReads.clear();
@@ -132,6 +139,49 @@ class MAVFTP {
         }
     }
 
+    // Stop-and-wait writes retain their sequence on retry. Wait for the close
+    // ACK too: virtual files such as @PARAM apply their contents on close.
+    putFile(filename, data, callback) {
+        this.cancel();
+        const name = new TextEncoder().encode(filename);
+        if (!name.length || name.length > this.MAX_PAYLOAD || name.includes(0) ||
+            !(data instanceof Uint8Array) || data.length > this.maxFileSize) {
+            callback(null);
+            return;
+        }
+        this.session = (this.session + 1) & 255;
+        this.currentFile = filename;
+        this.callback = callback;
+        this.uploadBuffer = data.slice();
+        this.uploadOffset = 0;
+        try {
+            this.pendingWrite = this.request(this.OP.CreateFile, 0, name.length, name);
+            this.timeoutCheckInterval = setInterval(() => this.checkTimeouts(), 250);
+        } catch (e) { this.complete(null); }
+    }
+
+    handleWrite(op) {
+        const request = this.pendingWrite;
+        if (!request || op.req_opcode !== request.opcode ||
+            op.seq !== ((request.seq + 1) & 65535)) return false;
+        if (op.opcode === this.OP.Nack) { this.complete(null); return true; }
+        if (op.offset !== request.offset) return false;
+        if (request.opcode === this.OP.TerminateSession) {
+            const size = this.uploadBuffer.length;
+            this.currentFile = null; // Already closed; don't send another close.
+            this.complete(size);
+            return true;
+        }
+        if (request.opcode === this.OP.WriteFile) this.uploadOffset += request.size;
+        if (this.uploadOffset === this.uploadBuffer.length) {
+            this.pendingWrite = this.request(this.OP.TerminateSession, 0, 0);
+        } else {
+            const bytes = this.uploadBuffer.subarray(this.uploadOffset, this.uploadOffset + this.MAX_PAYLOAD);
+            this.pendingWrite = this.request(this.OP.WriteFile, this.uploadOffset, bytes.length, bytes);
+        }
+        return true;
+    }
+
     // Clear state before invoking callers, which may immediately start another file.
     complete(data) {
         const callback = this.callback;
@@ -140,6 +190,8 @@ class MAVFTP {
         this.currentFile = null;
         clearInterval(this.timeoutCheckInterval);
         this.timeoutCheckInterval = null;
+        this.pendingWrite = null;
+        this.uploadBuffer = null;
         this.pendingOpenFile = this.pendingBurstRead = null;
         this.pendingReads.clear();
         this.fileBuffer = null;
@@ -160,6 +212,7 @@ class MAVFTP {
         const op = this.parseOp(m.payload);
         if (!op || op.session !== this.session || (op.opcode !== this.OP.Ack && op.opcode !== this.OP.Nack)) return false;
         try {
+            if (this.uploadBuffer) return this.handleWrite(op);
             if (op.req_opcode === this.OP.OpenFileRO) {
                 const request = this.pendingOpenFile;
                 if (!request || op.seq !== ((request.seq + 1) & 65535)) return false;
@@ -169,7 +222,7 @@ class MAVFTP {
                 if (this.fileSize > this.maxFileSize) { this.complete(null); return true; }
                 this.pendingOpenFile = null;
                 this.fileBuffer = new Uint8Array(this.fileSize);
-                if (!this.fileSize) { this.complete(this.fileBuffer); return true; }
+                if (!this.fileSize && !this.sizeIsEstimate) { this.complete(this.fileBuffer); return true; }
                 this.readGaps = [{ offset: 0, length: this.fileSize }];
                 this.pendingBurstRead = this.request(this.OP.BurstReadFile, 0, this.burstSize);
                 return true;
@@ -181,18 +234,26 @@ class MAVFTP {
                     if (op.size !== 1 || op.payload[0] !== this.ERR.EndOfFile) {
                         this.complete(null);
                     } else {
+                        if (this.sizeIsEstimate) {
+                            // Virtual parameter files only advertise an estimate.
+                            // The EOF offset bounds the file; still recover every
+                            // missing byte below it before reporting completion.
+                            if (op.offset < this.highestReceivedOffset || op.offset < this.pendingBurstRead.offset || op.offset > this.maxFileSize) return false;
+                            this.actualSize = op.offset;
+                            this.resizeFile(op.offset);
+                        }
                         this.pendingBurstRead = null;
                         this.checkReadSend();
                     }
                     return true;
                 }
                 if (!this.storeData(op)) return false;
-                if (!this.readGaps.length) { this.complete(this.fileBuffer); return true; }
+                if (!this.readGaps.length && (!this.sizeIsEstimate || this.actualSize !== null)) { this.complete(this.fileBuffer); return true; }
                 this.pendingBurstRead.sentTime = Date.now();
                 this.pendingBurstRead.retries = 0;
                 const nextOffset = op.offset + op.size;
                 if (op.burst_complete && nextOffset > this.pendingBurstRead.offset) {
-                    if (nextOffset >= this.fileSize) {
+                    if (nextOffset >= this.fileSize && !this.sizeIsEstimate) {
                         this.pendingBurstRead = null;
                         this.checkReadSend();
                     } else {
@@ -218,9 +279,22 @@ class MAVFTP {
         return false;
     }
 
+    resizeFile(size) {
+        const oldSize = this.fileSize;
+        const buffer = new Uint8Array(size);
+        buffer.set(this.fileBuffer.subarray(0, size));
+        this.fileBuffer = buffer;
+        this.fileSize = size;
+        if (size > oldSize) this.readGaps.push({offset:oldSize,length:size-oldSize});
+        else this.readGaps = this.readGaps.filter(g=>g.offset<size).map(g=>({offset:g.offset,length:Math.min(g.length,size-g.offset)}));
+    }
+
     storeData(op) {
         const end = op.offset + op.size;
-        if (!op.size || end > this.fileSize) return false;
+        if (!op.size || end > this.maxFileSize) return false;
+        if (end > this.fileSize && this.sizeIsEstimate && this.actualSize === null) this.resizeFile(end);
+        if (end > this.fileSize) return false;
+        this.highestReceivedOffset = Math.max(this.highestReceivedOffset, end);
         this.fileBuffer.set(op.payload, op.offset);
         const missing = [];
         for (const gap of this.readGaps) {
@@ -244,7 +318,7 @@ class MAVFTP {
                 if (pending) { offset = pending.offset + pending.size; continue; }
                 if (this.pendingReads.size >= this.maxConcurrentReads) return;
                 const nextPending = [...this.pendingReads.values()].filter(r => r.offset > offset).map(r => r.offset);
-                const size = Math.min(this.burstSize, end - offset, ...nextPending.map(o => o - offset));
+                const size = this.fixedReadSize ? this.burstSize : Math.min(this.burstSize, end - offset, ...nextPending.map(o => o - offset));
                 const request = this.request(this.OP.ReadFile, offset, size);
                 this.pendingReads.set(request.seq, request);
                 offset += size;

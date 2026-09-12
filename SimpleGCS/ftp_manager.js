@@ -28,7 +28,10 @@
         if (!ftp) { finish(job, null); return; }
         current = job;
         armTimeout(job);
-        try { ftp.getFile(job.path, data => finish(job, data)); }
+        try {
+            if (job.data) ftp.putFile(job.path, job.data, data => finish(job, data));
+            else ftp.getFile(job.path, data => finish(job, data), job.options);
+        }
         catch (e) { finish(job, null); }
     }
 
@@ -68,7 +71,11 @@
         getFile(path, cb, opts = {}) {
             if (opts.dropQueuedTag && opts.tag) dropQueued(job => job.tag === opts.tag);
             if (opts.dropQueuedPath) dropQueued(job => job.path === path);
-            queue.push({ path, cb, tag: opts.tag, timeoutMs: opts.timeoutMs });
+            queue.push({ path, cb, tag: opts.tag, timeoutMs: opts.timeoutMs, options: opts });
+            pump();
+        },
+        putFile(path, data, cb, opts = {}) {
+            queue.push({ path, data, cb, timeoutMs: opts.timeoutMs });
             pump();
         },
         cancelQueuedByTag(tag) { dropQueued(job => job.tag === tag); },

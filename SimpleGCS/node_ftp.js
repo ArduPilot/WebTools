@@ -50,7 +50,7 @@ ws.on('message', data => {
             started = true;
             ftp.targetSystem = msg._header.srcSystem;
             ftp.targetComponent = msg._header.srcComponent;
-            ftp.getFile(path, data => finish(data));
+            ftp.getFile(path, data => finish(data), {sizeIsEstimate:path.startsWith('@PARAM/'), fixedReadSize:path.startsWith('@PARAM/')});
         } else if (msg._name === 'FILE_TRANSFER_PROTOCOL' && Math.random() * 100 >= lossPercent) {
             ftp.handleMessage(msg);
         }
