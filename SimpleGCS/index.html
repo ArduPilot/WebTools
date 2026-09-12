@@ -117,7 +117,16 @@
         <br>
 
         <label for="signing_passphrase">Signing passphrase</label>
-        <input id="signing_passphrase" type="password" placeholder="Enter passphrase" style="width:100%;">
+        <div style="display:flex; gap:.4em; align-items:center;">
+          <input id="signing_passphrase" type="password" placeholder="Enter passphrase" style="flex:1; min-width:0;">
+          <button id="toggle_signing_passphrase" type="button" aria-label="Show signing passphrase" aria-controls="signing_passphrase" aria-pressed="false" title="Show signing passphrase" style="display:flex; align-items:center; justify-content:center; width:40px; height:40px; flex-shrink:0; cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+              <circle cx="12" cy="12" r="3"/>
+              <path class="eye-slash" d="m3 3 18 18"/>
+            </svg>
+          </button>
+        </div>
 
         <br><br>
         <input id="connection_button" type="button" value="Connect">

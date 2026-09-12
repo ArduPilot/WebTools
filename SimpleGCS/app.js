@@ -682,6 +682,17 @@
         const urlInput = tipDiv.querySelector("#target_url");
         const hbCheckbox = tipDiv.querySelector("#send_heartbeat");
         const passphraseInput = tipDiv.querySelector("#signing_passphrase");
+        const passphraseToggle = tipDiv.querySelector("#toggle_signing_passphrase");
+        function showPassphrase(visible) {
+            passphraseInput.type = visible ? "text" : "password";
+            const label = visible ? "Hide signing passphrase" : "Show signing passphrase";
+            passphraseToggle.setAttribute("aria-label", label);
+            passphraseToggle.setAttribute("aria-pressed", String(visible));
+            passphraseToggle.title = label;
+            passphraseToggle.querySelector(".eye-slash").style.display = visible ? "none" : "";
+        }
+        passphraseToggle.onclick = () => showPassphrase(passphraseInput.type === "password");
+        tip.setProps({ onHide: () => showPassphrase(false) });
         const connectBtnDialog = tipDiv.querySelector("#connection_button");
         const disconnectBtn = tipDiv.querySelector("#disconnection_button");
         const sysInput = tipDiv.querySelector("#system_id");
