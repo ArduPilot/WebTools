@@ -45,10 +45,16 @@ const paramFixture = require('./fixtures/params.json');
                 }
                 emit(msg) {
                     const data=Uint8Array.from(msg.pack(this.rx));this.rx.seq=(this.rx.seq+1)&255;
+                    if(msg._name==='HEARTBEAT'&&msg.autopilot===3)state.lastHeartbeatPacket=Array.from(data);
                     this.onmessage?.({data:data.buffer});
                 }
                 telemetry() {
-                    if(this.readyState!==1)return;
+                    if(this.readyState!==1||state.holdTelemetry)return;
+                    if(state.silent) {
+                        const system=this.rx.srcSystem;this.rx.srcSystem=99;
+                        this.emit(new mavlink20.messages.heartbeat(6,8,0,0,4,3));
+                        this.rx.srcSystem=system;return;
+                    }
                     this.emit(new mavlink20.messages.heartbeat(11,3,state.armed?137:9,state.mode,4,3));
                     this.emit(new mavlink20.messages.global_position_int(1000,-350000000,1490000000,500000,0,100,0,0,9000));
                     if(state.target)this.emit(new mavlink20.messages.position_target_global_int(1000,0,65016,state.target.x,state.target.y,500,0,0,0,0,0,0,0,0));
@@ -66,6 +72,7 @@ const paramFixture = require('./fixtures/params.json');
                     }
                     if(msg._name==='FILE_TRANSFER_PROTOCOL') {
                         const req=this.codec.parseOp(msg.payload);
+                        if(req.opcode===2)this.ftpPath='';
                         if(req.opcode===4||req.opcode===6)this.ftpPath=new TextDecoder().decode(req.payload).replace(/\0.*$/, '');
                         let bytes=new Uint8Array(48);const v=new DataView(bytes.buffer);
                         v.setUint16(0,0x763d,true);v.setUint16(2,1,true);v.setUint16(8,1,true);
@@ -92,11 +99,15 @@ const paramFixture = require('./fixtures/params.json');
                         setTimeout(()=>{if(this.readyState===1)this.emit(new mavlink20.messages.file_transfer_protocol(0,msg._header.srcSystem,msg._header.srcComponent,Array.from(body)));},0);
                     }
                 }
-                close() {this.readyState=3;clearInterval(this.timer);setTimeout(()=>this.onclose?.({code:1000,reason:''}),0);}
+                close(code=1000) {
+                    if(code!==1000&&(code<3000||code>4999))throw new DOMException('Invalid close code','InvalidAccessError');
+                    (state.closeCodes ||= []).push(code);
+                    this.readyState=3;clearInterval(this.timer);setTimeout(()=>this.onclose?.({code:1000,reason:''}),0);}
             }
             window.WebSocket=VehicleSocket;
         }, {paramsHex:paramFixture.hex,paramOffsets:paramFixture.offsets});
         const page = await context.newPage();
+        await page.clock.install();
         const errors=[];page.on('pageerror', e=>errors.push(e.message));
         await page.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:''}));
         await page.route('**/Parameters/**/apm.pdef.json',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({Rover:{
@@ -106,6 +117,10 @@ const paramFixture = require('./fixtures/params.json');
         }})}));
         await page.goto(`http://127.0.0.1:${server.address().port}/SimpleGCS/`);
         await page.waitForFunction(()=>window.AppSettings);
+        await page.evaluate(()=>{
+            window.testToasts=[];const original=GCSUtils.toast;
+            GCSUtils.toast=(text,...args)=>{testToasts.push(text);return original(text,...args);};
+        });
         assert.equal(await page.evaluate(()=>testVehicle.sockets.length),0,'no unsolicited connection');
         await page.locator('#connectBtn').click();
         assert.equal(await page.locator('#target_url').inputValue(),'ws://127.0.0.1:5763');
@@ -123,10 +138,21 @@ const paramFixture = require('./fixtures/params.json');
         await page.route('**:8889/**',route=>route.fulfill({contentType:'text/html',body:'Video endpoint fixture'}));
         await page.evaluate(()=>VideoPanel.open());
         await page.locator('#video-panel').waitFor();
+        const centerBeforeVideo=await page.evaluate(()=>MapManager.map.getCenter());
+        const inset=await page.locator('#video-panel').boundingBox();
+        await page.mouse.move(inset.x+20,inset.y+18);await page.mouse.down();await page.mouse.move(inset.x-30,inset.y-32,{steps:5});await page.mouse.up();
+        const movedInset=await page.locator('#video-panel').boundingBox();assert.ok(movedInset.x<inset.x-40);
+        assert.deepEqual(await page.evaluate(()=>MapManager.map.getCenter()),centerBeforeVideo,'video drag must not pan the map');
+        await page.mouse.move(movedInset.x+movedInset.width-6,movedInset.y+movedInset.height-6);
+        await page.mouse.down();await page.mouse.move(movedInset.x+movedInset.width-46,movedInset.y+movedInset.height+24,{steps:5});await page.mouse.up();
+        const resizedInset=await page.locator('#video-panel').boundingBox();
+        assert.ok(resizedInset.width<movedInset.width-30&&resizedInset.height>movedInset.height+20,'mouse can resize video');
         await page.evaluate(()=>VideoPanel.close());
         assert.equal(await page.locator('#video-panel').count(),0);
         await page.locator('#menuBtn').click();
         await page.getByText('Settings',{exact:true}).click();
+        await page.getByLabel('Show Grid',{exact:true}).check();
+        assert.equal(await page.evaluate(()=>localStorage.getItem('gcs.display.showGrid')),'1');
         await page.getByRole('button',{name:'Parameters',exact:true}).click();
         const parameterDialog=page.getByRole('dialog',{name:'Parameters',exact:true});
         await page.waitForFunction(()=>document.querySelectorAll('.mavparam-row').length===6);
@@ -173,6 +199,12 @@ const paramFixture = require('./fixtures/params.json');
         await page.waitForFunction(()=>document.querySelector('#mode-value').textContent==='LOITER');
         await page.evaluate(()=>MapManager.map.setZoom(19, {animate:false}));
         const box=await page.locator('#map').boundingBox();
+        const beforePopup=await page.evaluate(()=>testVehicle.sent.filter(m=>m.command===192).length);
+        await page.evaluate(()=>L.popup().setLatLng(MapManager.map.getCenter()).setContent('<span id="popup-test">Fence details</span>').openOn(MapManager.map));
+        const popupText=await page.locator('#popup-test').boundingBox();
+        await page.mouse.move(popupText.x+5,popupText.y+5);await page.mouse.down();await page.waitForTimeout(750);await page.mouse.up();
+        assert.equal(await page.evaluate(()=>testVehicle.sent.filter(m=>m.command===192).length),beforePopup,'holding popup text cannot reposition');
+        await page.evaluate(()=>MapManager.map.closePopup());
         const touchSession=await context.newCDPSession(page);
         const finger1={x:Math.round(box.x+box.width/2),y:Math.round(box.y+box.height/2),id:1};
         const finger2={...finger1,x:finger1.x+80,id:2};
@@ -184,7 +216,6 @@ const paramFixture = require('./fixtures/params.json');
         await page.waitForTimeout(750);
         await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
         assert.equal(await page.evaluate(()=>testVehicle.sent.filter(m=>m.command===192).length),repositionCount,'pinch cannot reposition');
-        await touchSession.detach();
         await page.evaluate(()=>{
             const control=document.querySelector('.leaflet-control-zoom');
             control.addEventListener('pointerup',event=>event.stopPropagation(),{once:true});
@@ -201,6 +232,12 @@ const paramFixture = require('./fixtures/params.json');
         await page.evaluate(()=>testVehicle.reject=true);
         await page.locator('#armBtn').click();
         await page.getByText('CMD COMPONENT_ARM_DISARM: DENIED',{exact:true}).waitFor();
+        const commandsBeforeConfirm=await page.evaluate(()=>testVehicle.sent.filter(m=>m._name==='COMMAND_INT').length);
+        for(const label of ['ForceArm','ForceDisarm','Reboot']) {
+            page.once('dialog',dialog=>dialog.dismiss());
+            await page.locator('#menuBtn').click();await page.getByText(label,{exact:true}).click();
+        }
+        assert.equal(await page.evaluate(()=>testVehicle.sent.filter(m=>m._name==='COMMAND_INT').length),commandsBeforeConfirm,'cancelled confirmations send nothing');
         await page.locator('#connectBtn').click();
         await page.evaluate(()=>window.staleClose=testVehicle.sockets.at(-1).onclose);
         await page.locator('#connection_button').click();
@@ -234,14 +271,14 @@ const paramFixture = require('./fixtures/params.json');
             await page.waitForTimeout(1100);
             assert.ok(await page.evaluate(sent=>testVehicle.sent.slice(sent).every(m=>m._name!=='HEARTBEAT'),previous.sent),'draft heartbeat checkbox is not applied');
         }
-        await signingInput.fill('updated-test-signing');
-        await page.evaluate(()=>testVehicle.passphrase='updated-test-signing');
+        await signingInput.fill(' updated-test-signing ');
+        await page.evaluate(()=>testVehicle.passphrase=' updated-test-signing ');
         await page.locator('#connection_button').click();
         // Opening the editor again before onopen must also survive that callback.
         await page.locator('#connectBtn').click();
         await page.waitForFunction(()=>testVehicle.sockets.at(-1).readyState===1&&testVehicle.sockets.at(-1).url==='wss://edited.example.org/mavlink');
         assert.equal(await signingInput.isVisible(),true);
-        assert.equal(await page.evaluate(()=>localStorage.getItem('gcs.passphrase')),'updated-test-signing');
+        assert.equal(await page.evaluate(()=>localStorage.getItem('gcs.passphrase')),' updated-test-signing ');
         await page.waitForFunction(()=>testVehicle.sent.some(m=>m._name==='HEARTBEAT'&&m._header.srcSystem===202&&m._header.srcComponent===33));
         console.log('PASS: desktop/mobile reconnect preserves draft, focus, selection and visibility; Connect applies new signing, URL, IDs and heartbeat settings');
         await page.setViewportSize({width:1280,height:900});
@@ -250,6 +287,7 @@ const paramFixture = require('./fixtures/params.json');
         await page.locator('#Close').click();
         await page.locator('#armBtn').click();
         assert.equal(await page.evaluate(()=>testVehicle.sent.length),count,'no commands sent after disconnect');
+        assert.equal(await page.evaluate(()=>testToasts.at(-1)),'Waiting for vehicle connection','no false ARM sent toast');
         await page.evaluate(()=>localStorage.clear());
         await page.unroute('**/SimpleGCS/config.js');
         await page.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:
@@ -266,6 +304,47 @@ const paramFixture = require('./fixtures/params.json');
         await page.locator('#connectBtn').click();
         assert.equal(await page.locator('#target_url').inputValue(),'wss://saved.example.org/mavlink','saved URL overrides deployment default');
         assert.equal(await page.evaluate(()=>testVehicle.sockets[0].url),'wss://saved.example.org/mavlink');
+        await page.locator('#Close').click();
+        // A shared relay can keep emitting packets after the selected boat dies.
+        await page.waitForFunction(()=>MapManager.vehicleMarker);
+        const countBeforeStall=await page.evaluate(()=>testVehicle.sockets.length);
+        await page.evaluate(()=>testVehicle.silent=true);
+        await page.clock.runFor(4000);
+        assert.equal(await page.locator('#link-status').innerText(),'Telemetry stale');
+        await page.clock.runFor(14500);
+        assert.ok(await page.evaluate(n=>testVehicle.sockets.length>n,countBeforeStall));
+        assert.ok(await page.evaluate(()=>testVehicle.closeCodes.includes(4000)),'stall uses a browser-valid close code');
+        assert.equal(await page.evaluate(()=>MapManager.vehicleMarker),null);
+        assert.equal(await page.evaluate(()=>Object.values(MapManager.map._layers).some(l=>l._fenceType)),false,'old fence cleared');
+        assert.equal(await page.locator('#armed-pill').innerText(),'—');
+        await page.evaluate(()=>testVehicle.silent=false);await page.clock.runFor(1000);
+        await page.waitForFunction(()=>MapManager.vehicleMarker);assert.equal(await page.locator('#link-status').innerText(),'Live');
+        console.log('PASS: foreign relay traffic cannot mask stale telemetry; browser-valid stall close reconnects and clears old vehicle/fence data');
+        await page.evaluate(()=>{testVehicle.replayPacket=testVehicle.lastHeartbeatPacket;testVehicle.holdTelemetry=true;testVehicle.sockets.at(-1).close();});
+        await page.clock.runFor(2200);
+        const beforeReplay=await page.evaluate(()=>testVehicle.sent.length);
+        await page.evaluate(()=>testVehicle.sockets.at(-1).onmessage({data:Uint8Array.from(testVehicle.replayPacket).buffer}));
+        assert.equal(await page.evaluate(()=>testVehicle.sent.length),beforeReplay,'captured heartbeat cannot rediscover a vehicle after reconnect');
+        assert.equal(await page.locator('#link-status').innerText(),'Waiting for vehicle');
+        await page.evaluate(()=>testVehicle.holdTelemetry=false);await page.clock.runFor(1000);
+        assert.equal(await page.locator('#link-status').innerText(),'Live');
+        console.log('PASS: replayed signed telemetry stays rejected across reconnect; fresh telemetry recovers');
+        // Run raw CDP drag gestures after the browser's normal tap checks.
+        await page.evaluate(()=>VideoPanel.open());
+        await page.setViewportSize({width:390,height:844});
+        await page.waitForFunction(()=>{const r=document.querySelector('#video-panel').getBoundingClientRect();return r.left>=0&&r.right<=390;});
+        const mobileInset=await page.locator('#video-panel').boundingBox();assert.ok(mobileInset.x>=0&&mobileInset.x+mobileInset.width<=390);
+        const videoTouch=await context.newCDPSession(page);
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:mobileInset.x+15,y:mobileInset.y+15,id:1}]});
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:mobileInset.x+15,y:mobileInset.y-35,id:1}]});
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+        assert.ok((await page.locator('#video-panel').boundingBox()).y<mobileInset.y-40,'touch can drag video');
+        const touchResize=await page.locator('#video-panel').boundingBox();
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:touchResize.x+touchResize.width-6,y:touchResize.y+touchResize.height-6,id:1}]});
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:touchResize.x+touchResize.width-26,y:touchResize.y+touchResize.height+24,id:1}]});
+        await videoTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+        const touchResized=await page.locator('#video-panel').boundingBox();assert.ok(touchResized.width<touchResize.width-15&&touchResized.height>touchResize.height+20,'touch can resize video');
+        await page.evaluate(()=>VideoPanel.close());await page.setViewportSize({width:1280,height:900});
         assert.deepEqual(errors,[]);
         console.log('PASS: browser signing, discovery, circle fence, mission, video panel, arm/disarm, mode, long press, ACK errors, reconnect, disconnect and deployment defaults');
     } finally {

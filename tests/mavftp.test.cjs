@@ -17,7 +17,7 @@ function harness(t) {
     ftp.targetComponent = 1;
     function reply(request, payload = [], opts = {}) {
         const bytes = Uint8Array.from(payload);
-        const body = ftp.packOp((request.seq + 1) & 65535, request.session,
+        const body = ftp.packOp(opts.seq ?? ((request.seq + 1) & 65535), request.session,
             opts.nack ? ftp.OP.Nack : ftp.OP.Ack, bytes.length, request.opcode,
             opts.complete ?? 0, opts.offset ?? request.offset, bytes);
         const msg = new mav.messages.file_transfer_protocol(0,255,190,Array.from(body));
@@ -234,4 +234,67 @@ for(const estimate of [80,400]) {
 test('virtual file can grow beyond its estimate and exact-size files still reject extra data',t=>{
     const h=harness(t);let result;h.ftp.getFile('@PARAM/param.pck',d=>result=d,{sizeIsEstimate:true});const create=h.sent.shift(),size=Buffer.alloc(4);size.writeUInt32LE(10);h.reply(create,size);const req=h.sent.shift();
     const bytes=new Uint8Array(20).fill(7);h.reply(req,bytes,{offset:0});assert.equal(result,undefined);h.reply(req,[6],{offset:20,nack:true});assert.deepEqual(result,bytes);
+});
+
+for (const droppedData of [false, true]) for (const startSeq of [0,65534]) {
+    test(`ArduPilot cached single-packet burst: loss=${droppedData}, sequence=${startSeq}`,t=>{
+        const h=harness(t), expected=Uint8Array.from([10,20,30,40]);
+        h.ftp.seq=startSeq;
+        let result, cached, closed=false;
+        h.ftp.getFile('small-fence.dat',data=>result=data);
+        // GCS_FTP caches the last reply, even when that packet was dropped.
+        const respond=(request,payload,opts={})=>{
+            cached={request,payload,opts,seq:opts.seq??((request.seq+1)&65535)};
+            h.reply(request,payload,opts);
+        };
+        for(let steps=0;h.sent.length&&steps<20;steps++) {
+            const request=h.sent.shift();
+            if(cached && request.session===cached.request.session && ((request.seq+1)&65535)===cached.seq) {
+                h.reply(cached.request,cached.payload,cached.opts);continue;
+            }
+            if(request.opcode===h.ftp.OP.OpenFileRO) respond(request,[4,0,0,0]);
+            else if(request.opcode===h.ftp.OP.BurstReadFile) {
+                if(!droppedData)respond(request,expected);
+                respond(request,[6],{seq:(request.seq+2)&65535,offset:4,nack:true,complete:1});
+            } else if(request.opcode===h.ftp.OP.ReadFile) respond(request,expected);
+            else if(request.opcode===h.ftp.OP.TerminateSession) {closed=true;respond(request,[]);}
+            else assert.fail(`unexpected request ${request.opcode}`);
+        }
+        assert.deepEqual(result,expected,'gap recovery must escape the cached EOF');
+        assert.equal(closed,true,'TerminateSession must reach the server');
+    });
+}
+
+test('burst reply sequence wraps and reordered replies never move it backwards',t=>{
+    const h=harness(t);h.ftp.seq=65533;const burst=h.open(240,()=>{});
+    h.reply(burst,new Uint8Array(80),{offset:80,seq:0});
+    assert.equal(h.ftp.seq,1);
+    h.reply(burst,new Uint8Array(80),{offset:0,seq:65535});
+    assert.equal(h.ftp.seq,1);
+    h.reply(burst,new Uint8Array(80),{offset:160,seq:1});
+    assert.equal(h.sent.at(-1).seq,2);
+});
+
+test('non-EOF burst NAK fails once, preserving server sequence for close',t=>{
+    const h=harness(t);let result='pending',calls=0;const burst=h.open(160,d=>{result=d;calls++;});
+    h.reply(burst,[h.ftp.ERR.FailErrno,5],{nack:true,seq:12});
+    assert.equal(result,null);assert.equal(calls,1);assert.equal(h.sent.at(-1).seq,13);
+});
+
+test('estimated-file EOF below received data or above the size limit is ignored',t=>{
+    const h=harness(t);h.ftp.getFile('param.pck',()=>{}, {sizeIsEstimate:true});
+    h.reply(h.sent.shift(),[160,0,0,0]);const burst=h.sent.shift();
+    h.reply(burst,new Uint8Array(80),{offset:80});
+    assert.equal(h.reply(burst,[6],{nack:true,offset:80,seq:300}),false);
+    assert.equal(h.reply(burst,[6],{nack:true,offset:h.ftp.maxFileSize+1,seq:300}),false);
+    assert.equal(h.ftp.actualSize,null);assert.ok(h.ftp.pendingBurstRead);
+});
+
+test('reset sessions retries lost ACKs and completes before any file opens',t=>{
+    const h=harness(t);let result;h.ftp.resetSessions(ok=>result=ok);
+    const request=h.sent.shift();assert.equal(request.opcode,h.ftp.OP.ResetSessions);
+    t.mock.timers.tick(3000);assert.equal(h.sent.shift().seq,request.seq);
+    h.reply({...request,seq:(request.seq-1)&65535});assert.equal(result,undefined);
+    h.reply(request);assert.equal(result,true);assert.equal(h.ftp.timeoutCheckInterval,null);
+    assert.equal(h.sent.length,0,'reset does not terminate an unrelated session');
 });

@@ -25,6 +25,8 @@
         fetched: false,
         retryTimer: null,
         enabled: true,
+        pending: false,
+        generation: 0,
     };
 
     const FETCH_TAG = 'fence'; // used for de-duping queued FTP jobs
@@ -92,21 +94,13 @@
         });
     }
 
-    function stopRetry(){ if (State.retryTimer) { clearInterval(State.retryTimer); State.retryTimer = null; } }
-
-    function startRetry(){
+    function stopRetry() { clearTimeout(State.retryTimer); State.retryTimer = null; }
+    function scheduleRetry() {
         stopRetry();
-        State.fetched = false;
-        // immediate attempt
-        fetchFence(true);
-        // then retry until fetched
-        State.retryTimer = setInterval(() => {
-            if (!State.fetched && State.ws) {
-                log('Retrying fence fetch…');
-                fetchFence(true);
-            } else if (State.fetched) {
-                stopRetry();
-            }
+        if (!State.ws || State.fetched || window.AppSettings?.autoFetchFence === false) return;
+        State.retryTimer = setTimeout(() => {
+            State.retryTimer = null;
+            if (window.AppSettings?.autoFetchFence !== false) fetchFence(true);
         }, 5000);
     }
 
@@ -115,12 +109,19 @@
             if (!silent) toast('Not connected');
             return;
         }
+        if (State.pending) return;
+        State.pending = true;
+        State.fetched = false;
+        stopRetry();
+        const generation = State.generation;
         if (!silent) toast('Fetching fence…');
         // Use FTPManager with de-dupe + 5s watchdog. This prevents stacking retries.
         FTPManager.getFile('@MISSION/fence.dat', (data) => {
-            if (!data) { if (!silent) toast('Failed to fetch fence'); return; }
+            if (generation !== State.generation) return;
+            State.pending = false;
+            if (!data) { if (!silent) toast('Failed to fetch fence'); scheduleRetry(); return; }
             try {
-		        const fences = State.parser.parseFence(data);
+                const fences = State.parser.parseFence(data);
                 if (fences) {
                     displayFences(fences);
                     log(`Loaded ${fences.length} fence items`);
@@ -134,6 +135,7 @@
                 console.warn('Fence parse error', e);
                 if (!silent) toast('Fence parse error');
             }
+            if (!State.fetched) scheduleRetry();
         }, { tag: FETCH_TAG, dropQueuedTag: true, dropQueuedPath: true, timeoutMs: 5000 });
     }
 
@@ -142,16 +144,22 @@
             State.map = map; State.MAVLink = MAVLink;
             if (toast) State.toast = toast;
             State.sendCommandInt = sendCommandInt;
-	        State.parser = new MissionParser();
+            State.parser = new MissionParser();
             return API;
         },
         onConnected(ws){
+            API.onDisconnected();
             State.ws = ws;
-            if (window.AppSettings ? AppSettings.autoFetchFence : true) startRetry();
+            if (window.AppSettings?.autoFetchFence !== false) fetchFence(true);
         },
         onDisconnected(){
             stopRetry();
             State.ws = null;
+            State.generation++;
+            State.pending = State.fetched = false;
+            State.enabled = true;
+            FTPManager.cancelQueuedByTag(FETCH_TAG);
+            displayFences([]);
         },
         fetch: (silent=false) => fetchFence(silent),
         clear(){ displayFences([]); },

@@ -98,3 +98,31 @@ and payload; replies must match addressing, session, opcode, sequence and offset
 Failure or cancellation returns `null`; a close ACK returns the uploaded byte
 count, including zero for empty files. The caller should verify virtual-file
 application, as `MAVParam` does. Transfers are limited to 64 MiB by default.
+
+
+## Regenerating MAVLink
+
+The message definitions in `mavlink.js` are generated, but its runtime includes
+local browser/Node loading adaptations and protocol corrections. Do not replace
+the file blindly with mavgen output. `runtime-fixes.patch` records the stream
+parsing and signing corrections relative to the pre-fix runtime: MAVLink 1 header
+length, resynchronization to either version's marker, the 60-second new-stream
+window and advancing replay timestamps only after a valid signature.
+
+After regenerating, retain the environment-loading adaptations, apply or port
+that patch, and run `npm test` and both browser suites from the repository root.
+`git apply --check modules/MAVLink/runtime-fixes.patch` detects incompatible or
+already-patched runtime output; review those differences instead of forcing it.
+The independent wire fixtures and signing-boundary tests must continue to pass.
+
+Burst replies consume FTP sequence numbers. The next new request advances beyond
+the newest accepted reply using 16-bit serial arithmetic, while retries keep
+their original request sequence. Tests model ArduPilot's cached-reply behavior,
+including a lost single-packet burst and wrap from 65535 to zero.
+
+`FTPManager` resets this GCS identity's ArduPilot sessions when establishing a new
+link, waiting for the reset ACK before starting queued file transfers. Reset
+requests retry with their original sequence; unsupported or unacknowledged resets
+fall back to normal file operations after completion/failure. Using distinct GCS
+identities avoids resetting another instance's session. The standalone client
+exposes `resetSessions(callback)` for callers managing their own link lifecycle.

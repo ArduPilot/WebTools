@@ -11,7 +11,7 @@
 	    retryTimer: null,
 	    retryInterval: 15000, // 15 seconds
 	    errorCount: 0,
-	    maxConsecutiveErrors: 50, // Stop after 5 consecutive failures
+	    maxConsecutiveErrors: 50, // Stop after 50 consecutive failures
 	    opts: {
 	        autoCenterFirstFix: true,
 	        accuracyStyle: {

@@ -35,7 +35,13 @@
     // Messages dictionary
     let messages = {};
     // Track pending command ACKs (by MAV_CMD id)
-    const PendingAcks = new Set();
+    const PendingAcks = new CommandAcks({report: (command, result) => {
+        if (result === "ACCEPTED") return;
+        const text = `CMD ${mavCmdName(command)}: ${result}`;
+        StatusLog.push(mavlink20.MAV_SEVERITY_ERROR, text);
+        window.GCSUtils.toast(text, 3000);
+    }});
+    const signingStreams = new Map();
 
     // Human-readable names for common MAV_CMDs we send
     function mavCmdName(id) {
@@ -68,9 +74,9 @@
     let telemetry = {
         batteryPct: null,
         currentA: null,
-        speed: 0,
+        speed: null,
         lastUpdate: 0,
-        armed: false,
+        armed: null,
         modeName: "—",
         numSats: null
     };
@@ -156,10 +162,10 @@
     const connectBtn = document.getElementById("connectBtn");
 
     // --- Command helpers ---
-    function sendCommandInt(cmd, params = []) {
+    function sendCommandInt(cmd, params = [], sentText = `${mavCmdName(cmd)} sent`) {
         if (!ws || ws.readyState !== WebSocket.OPEN || vehSysId < 1) {
             window.GCSUtils.toast("Waiting for vehicle connection");
-            return;
+            return false;
         }
 
         const payload = new mavlink20.messages.command_int(
@@ -172,111 +178,64 @@
             params[4] || 0, params[5] || 0, params[6] || 0
         );
 
-        const pkt = payload.pack(MAVLink);
-        try { PendingAcks.add(cmd); } catch {}
-        ws.send(Uint8Array.from(pkt));
-        MAVLink.seq = (MAVLink.seq + 1) % 256;
+        return PendingAcks.submit(cmd, () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) throw new Error("Disconnected");
+            const pkt = payload.pack(MAVLink);
+            ws.send(Uint8Array.from(pkt));
+            MAVLink.seq = (MAVLink.seq + 1) % 256;
+            window.GCSUtils.toast(sentText);
+        });
     }
 
-    function sendSetMode(mode) {
-        if (!ws || ws.readyState !== WebSocket.OPEN || vehSysId < 1) {
-            window.GCSUtils.toast("Waiting for vehicle connection");
-            return;
+    function sendSetMode(mode, label) {
+        if (VehicleType.mavType !== mavlink20.MAV_TYPE_GROUND_ROVER &&
+            VehicleType.mavType !== mavlink20.MAV_TYPE_SURFACE_BOAT) {
+            window.GCSUtils.toast("Mode controls require a connected boat or rover");
+            return false;
         }
-        sendCommandInt(mavlink20.MAV_CMD_DO_SET_MODE, [
-            mavlink20.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            mode
-        ]);
+        return sendCommandInt(mavlink20.MAV_CMD_DO_SET_MODE, [
+            mavlink20.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, mode
+        ], `${label} sent`);
     }
 
     function sendReboot() {
-        sendCommandInt(mavlink20.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, [1]);
+        if (confirm("Reboot the connected vehicle?")) {
+            sendCommandInt(mavlink20.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, [1]);
+        }
     }
 
     function sendForceDisarm() {
-        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [0, 21196]);
+        if (confirm("Force disarm immediately? This bypasses normal disarm checks.")) {
+            sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [0, 21196]);
+        }
     }
 
     function sendForceArm() {
-        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [1, 21196]);
+        if (confirm("Force arm? This bypasses pre-arm checks and may start the motors.")) {
+            sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [1, 21196]);
+        }
     }
 
     // --- Telemetry Display ---
-    function initTelemetryDisplay() {
-        const toolbar = document.getElementById("toolbar");
-        const telemetryDiv = document.createElement("div");
-        telemetryDiv.id = "telemetry";
-        telemetryDiv.style.cssText = `
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 8px;
-            margin: 10px 0;
-            font-size: 11px;
-            text-align: center;
-            color: #fff;
-            width: calc(var(--barW) - 12px);
-        `;
+    function setTelemetryStatus(text, stale) {
+        document.getElementById("link-status").textContent = text;
+        document.getElementById("telemetry").classList.toggle("stale", stale);
+        MapManager.vehicleMarker?.setOpacity(stale ? 0.4 : 1);
+    }
 
-        // Status display
-        const statusDiv = document.createElement("div");
-        statusDiv.id = "status-display";
-        statusDiv.style.cssText = "margin-bottom: 8px;";
-        statusDiv.innerHTML = `
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;">
-                <span></span>
-                <span id="armed-pill" style="
-                    padding:1px 4px; border-radius:999px; font-weight:500;
-                    background:#9e9e9e; color:#111;">DISARM</span>
-            </div>
-            <div style="opacity:0.8">MODE: <span id="mode-value" style="font-weight:700">—</span></div>
-        `;
-        telemetryDiv.prepend(statusDiv);
-
-        // Battery display
-        const batteryDiv = document.createElement("div");
-        batteryDiv.id = "battery-display";
-        batteryDiv.style.cssText = "margin-bottom: 6px;";
-        batteryDiv.innerHTML = `
-            <div style="opacity: 0.7; margin-bottom: 2px;">BATTERY</div>
-            <div id="battery-value" style="font-size: 14px; font-weight: bold;">---%</div>
-            <div id="current-value" style="font-size: 12px; opacity: 0.85;">--- A</div>
-        `;
-
-        // Speed display
-        const speedDiv = document.createElement("div");
-        speedDiv.id = "speed-display";
-        speedDiv.innerHTML = `
-            <div style="opacity: 0.7; margin-bottom: 2px;">SPEED</div>
-            <div id="speed-value" style="font-size: 14px; font-weight: bold;">--- knots</div>
-        `;
-        // GPS display
-        const gpsDiv = document.createElement("div");
-        gpsDiv.id = "gps-display";
-        gpsDiv.style.cssText = "margin-top: 6px;";
-        gpsDiv.innerHTML = `
-            <div style="opacity: 0.7; margin-bottom: 2px;">GPS</div>
-            <div id="gps-sats-value" style="font-size: 14px; font-weight: bold;">— sats</div>
-        `;
-
-        // LTE display
-        const lteDiv = document.createElement("div");
-        lteDiv.id = "lte-display";
-        lteDiv.style.cssText = "margin-top: 6px;";
-        lteDiv.innerHTML = `
-            <div style="opacity:.7; margin-bottom:2px;">LTE</div>
-            <div id="lte-carrier" style="font-size:13px; font-weight:600;">—</div>
-            <div id="lte-rsrp" style="font-size:12px; opacity:.85;">— dBm</div>
-        `;
-
-        telemetryDiv.appendChild(batteryDiv);
-        telemetryDiv.appendChild(speedDiv);
-        telemetryDiv.appendChild(gpsDiv);
-        telemetryDiv.appendChild(lteDiv);
-
-        const spacer = toolbar.querySelector('div[style*="flex:1"]');
-        toolbar.insertBefore(telemetryDiv, spacer);
-        const gpsWrapInit = document.getElementById("gps-display");
-        if (gpsWrapInit) gpsWrapInit.style.display = AppSettings.showGPSNumSats ? "block" : "none";
+    function resetVehicleData() {
+        PendingAcks.clear();
+        messages = {};
+        vehSysId = vehCompId = -1;
+        VehicleType.mavType = null;
+        VehicleType.cls = "plane";
+        telemetry = {batteryPct: null, currentA: null, speed: null,
+            lastUpdate: 0, armed: null, modeName: "—", numSats: null};
+        MapManager.clearVehicle();
+        updateTelemetryDisplay();
+        document.getElementById("lte-carrier").textContent = "—";
+        document.getElementById("lte-rsrp").textContent = "— dBm";
+        setTelemetryStatus("Disconnected", true);
     }
 
     function updateTelemetryDisplay() {
@@ -313,7 +272,7 @@
 
         // Speed
         if (speedEl) {
-            if (telemetry.speed >= 0) {
+            if (telemetry.speed !== null && telemetry.speed >= 0) {
                 const speedKnots = 1.94384449 * telemetry.speed;
                 speedEl.textContent = `${speedKnots.toFixed(1)} knots`;
             } else {
@@ -323,7 +282,10 @@
 
         // Armed status
         if (armedEl) {
-            if (telemetry.armed) {
+            if (telemetry.armed === null) {
+                armedEl.textContent = "—";
+                armedEl.style.background = "#9e9e9e";
+            } else if (telemetry.armed) {
                 armedEl.textContent = "ARMED";
                 armedEl.style.background = "#81c784";
             } else {
@@ -518,78 +480,78 @@
 
     // Settings dialog
     function openSettingsTip(anchorEl) {
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "display:flex; flex-direction:column; gap:12px; min-width:280px;";
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex; flex-direction:column; gap:12px; min-width:280px;";
 
-    // Map tiles section
-    const tilesSection = document.createElement("div");
-    tilesSection.innerHTML = `<label style="display:block; font-weight:600; margin-bottom:4px;">Map Tiles</label>`;
-    const select = document.createElement("select");
-    select.style.cssText = "width:100%; padding:6px;";
+        // Map tiles section
+        const tilesSection = document.createElement("div");
+        tilesSection.innerHTML = `<label style="display:block; font-weight:600; margin-bottom:4px;">Map Tiles</label>`;
+        const select = document.createElement("select");
+        select.style.cssText = "width:100%; padding:6px;";
 
-    const allProviders = [
-        ["osm", "OpenStreetMap (default)"],
-        ["opentopomap", "OpenTopoMap"],
-        ["carto-light", "Carto Light"],
-        ["carto-dark", "Carto Dark"],
-        ["esri-world-imagery", "Esri World Imagery (Satellite)"],
-        ["au-ga-topo", "Australia — Geoscience Topographic"],
-        ["uk-os-opendata", "UK — Ordnance Survey OpenData"],
-        ["google", "Google Maps (Roadmap)"],
-        ["google-terrain", "Google Maps (Terrain)"],
-        ["google-satellite", "Google Maps (Satellite)"],
-        ["google-hybrid", "Google Maps (Hybrid)"]
-    ];
+        const allProviders = [
+            ["osm", "OpenStreetMap (default)"],
+            ["opentopomap", "OpenTopoMap"],
+            ["carto-light", "Carto Light"],
+            ["carto-dark", "Carto Dark"],
+            ["esri-world-imagery", "Esri World Imagery (Satellite)"],
+            ["au-ga-topo", "Australia — Geoscience Topographic"],
+            ["uk-os-opendata", "UK — Ordnance Survey OpenData"],
+            ["google", "Google Maps (Roadmap)"],
+            ["google-terrain", "Google Maps (Terrain)"],
+            ["google-satellite", "Google Maps (Satellite)"],
+            ["google-hybrid", "Google Maps (Hybrid)"]
+        ];
 
-    // Filter out Google options if no API key
-    const hasGoogleKey = window.GMAPS_API_KEY && window.GMAPS_API_KEY.length > 0;
-    const availableProviders = allProviders.filter(([val]) =>
-        hasGoogleKey || !val.startsWith('google')
-    );
+        // Filter out Google options if no API key
+        const hasGoogleKey = window.GMAPS_API_KEY && window.GMAPS_API_KEY.length > 0;
+        const availableProviders = allProviders.filter(([val]) =>
+            hasGoogleKey || !val.startsWith('google')
+        );
 
-    availableProviders.forEach(([val, label]) => {
-        const opt = document.createElement("option");
-        opt.value = val;
-        opt.textContent = label;
-        if (AppSettings.tiles === val) opt.selected = true;
-        select.appendChild(opt);
-    });
+        availableProviders.forEach(([val, label]) => {
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = label;
+            if (AppSettings.tiles === val) opt.selected = true;
+            select.appendChild(opt);
+        });
 
-    // If current setting is Google but no key, switch to OSM
-    if (!hasGoogleKey && AppSettings.tiles.startsWith('google')) {
-        AppSettings.tiles = 'osm';
-        MapManager.applyTileProvider();
-    }
+        // If current setting is Google but no key, switch to OSM
+        if (!hasGoogleKey && AppSettings.tiles.startsWith('google')) {
+            AppSettings.tiles = 'osm';
+            MapManager.applyTileProvider();
+        }
 
-    // Apply tile changes immediately
-    select.onchange = () => {
-        AppSettings.tiles = select.value;
-        MapManager.applyTileProvider();
-    };
+        // Apply tile changes immediately
+        select.onchange = () => {
+            AppSettings.tiles = select.value;
+            MapManager.applyTileProvider();
+        };
 
-    tilesSection.appendChild(select);
+        tilesSection.appendChild(select);
 
-    // Add API key configuration section
-    const apiSection = document.createElement("div");
-    apiSection.innerHTML = `
-        <label style="display:block; font-weight:600; margin-bottom:4px;">Google Maps API Key</label>
-        <input type="text" id="gmaps-key-input" placeholder="Enter API key (optional)"
-               style="width:100%; padding:6px; margin-bottom:4px;">
-        <small style="opacity:0.7; font-size:11px;">
-            Leave empty to use only free tile sources.
-            <a href="https://developers.google.com/maps/documentation/javascript/get-api-key"
-               target="_blank" style="color:#1976d2;">Get a key</a>
-        </small>
-    `;
+        // Add API key configuration section
+        const apiSection = document.createElement("div");
+        apiSection.innerHTML = `
+            <label style="display:block; font-weight:600; margin-bottom:4px;">Google Maps API Key</label>
+            <input type="text" id="gmaps-key-input" placeholder="Enter API key (optional)"
+                   style="width:100%; padding:6px; margin-bottom:4px;">
+            <small style="opacity:0.7; font-size:11px;">
+                Leave empty to use only free tile sources.
+                <a href="https://developers.google.com/maps/documentation/javascript/get-api-key"
+                   target="_blank" style="color:#1976d2;">Get a key</a>
+            </small>
+        `;
 
-    const keyInput = apiSection.querySelector('#gmaps-key-input');
-    keyInput.value = window.GMAPS_API_KEY || '';
-    keyInput.onchange = () => {
-        const newKey = keyInput.value.trim();
-        localStorage.setItem('gcs.gmaps.apikey', newKey);
-        window.GMAPS_API_KEY = newKey;
-        window.GCSUtils.toast("API key saved. Refresh page to apply.");
-    };
+        const keyInput = apiSection.querySelector('#gmaps-key-input');
+        keyInput.value = window.GMAPS_API_KEY || '';
+        keyInput.onchange = () => {
+            const newKey = keyInput.value.trim();
+            localStorage.setItem('gcs.gmaps.apikey', newKey);
+            window.GMAPS_API_KEY = newKey;
+            window.GCSUtils.toast("API key saved. Refresh page to apply.");
+        };
 
         // Display options section
         const displaySection = document.createElement("div");
@@ -610,6 +572,7 @@
         };
 
         const showGrid = mkChk("show-grid", "Show Grid", MetricGrid.enabled || false, (e) => {
+            AppSettings.showGrid = e.target.checked;
             if (e.target.checked) {
                 MetricGrid.on();
             } else {
@@ -658,7 +621,7 @@
         parametersBtn.className = "btn small";
         parametersBtn.textContent = "Parameters";
         parametersBtn.onclick = () => { tip.hide(); parameterUI.open(); };
-        wrap.append(parametersBtn, tilesSection, displaySection, autoSection, closeBtn);
+        wrap.append(parametersBtn, tilesSection, apiSection, displaySection, autoSection, closeBtn);
 
         const tip = tippy(anchorEl, {
             content: wrap,
@@ -666,7 +629,8 @@
             trigger: "manual",
             theme: "light-border",
             appendTo: () => document.body,
-            placement: "right-start"
+            placement: "right-start",
+            onHidden(instance) { instance.destroy(); }
         });
         tip.show();
     }
@@ -709,12 +673,12 @@
         const sysInput = tipDiv.querySelector("#system_id");
         const compInput = tipDiv.querySelector("#component_id");
 
-        // Random IDs to avoid collisions
+        // Standard GCS system ID, with a separate component ID for each browser.
         function rand100_200() {
             return Math.floor(Math.random() * 101) + 100;
         }
-        sysInput.value = rand100_200();
-        compInput.value = rand100_200();
+        sysInput.value = localStorage.getItem("gcs.systemId") || window.SIMPLEGCS_CONFIG?.defaultSystemId || 255;
+        compInput.value = localStorage.getItem("gcs.componentId") || window.SIMPLEGCS_CONFIG?.defaultComponentId || rand100_200();
 
         const LS_KEYS = {
             url: "gcs.url",
@@ -731,7 +695,7 @@
             const cid = parseInt(compInput.value || "190", 10);
             return {
                 url: urlInput.value.trim(),
-                passphrase: passphraseInput.value.trim(),
+                passphrase: passphraseInput.value,
                 systemId: (sid >= 1 && sid <= 255) ? sid : 255,
                 componentId: (cid >= 0 && cid <= 255) ? cid : 190,
                 sendHeartbeat: hbCheckbox.checked
@@ -761,16 +725,18 @@
                 if (lagMs > 15000) {
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         try { console.warn("No MAVLink for 15s; forcing reconnect");
-                              ws.close(1011, "link stall");
+                              ws.close(4000, "link stall");
                             } catch (e) {}
                     }
                     return; // onclose will schedule reconnect and reset UI
                 }
-if (lagMs > 3000) {
+                if (lagMs > 3000) {
+                    setTelemetryStatus(vehSysId < 1 ? "Waiting for vehicle" : "Telemetry stale", true);
                     const secs = Math.round(lagMs / 1000);
                     connectBtn.style.background = "#e53935";
                     connectBtn.textContent = `Connect (${secs}s)`;
-                } else {
+                } else if (vehSysId > 0) {
+                    setTelemetryStatus("Live", false);
                     connectBtn.style.background = "#00c853";
                     connectBtn.textContent = "Connect";
                 }
@@ -821,12 +787,14 @@ if (lagMs > 3000) {
             intentionalDisconnect = false;
             MAVLink.buf = new Uint8Array();
             MAVLink.expected_length = mavlink20.HEADER_LEN;
-            MAVLink.signing.stream_timestamps = {};
             MAVLink.signing.timestamp = Math.max(MAVLink.signing.timestamp,
                 Math.floor((Date.now() - Date.UTC(2015, 0, 1)) * 100));
             const pass = settings.passphrase;
             MAVLink.signing.secret_key = pass ? mavlink20.sha256(new TextEncoder().encode(pass)) : new Uint8Array();
             MAVLink.signing.sign_outgoing = pass.length > 0;
+            const signingContext = settings.url + ":" + Array.from(MAVLink.signing.secret_key).join(",");
+            if (!signingStreams.has(signingContext)) signingStreams.set(signingContext, {});
+            MAVLink.signing.stream_timestamps = signingStreams.get(signingContext);
 
             setConnState("connecting");
             const socket = new WebSocket(settings.url);
@@ -835,8 +803,8 @@ if (lagMs > 3000) {
 
             ws.onopen = () => {
                 if (ws !== socket) return;
-                setConnState("connected");
-                reconnectAttempts = 0;
+                setConnState("connecting");
+                setTelemetryStatus("Waiting for vehicle", true);
                 if (reconnectTimer) {
                     clearTimeout(reconnectTimer);
                     reconnectTimer = null;
@@ -855,7 +823,7 @@ if (lagMs > 3000) {
             ws.onclose = (event) => {
                 if (ws !== socket) return;
                 ws = null;
-                vehSysId = vehCompId = -1;
+                resetVehicleData();
                 console.log("WebSocket closed:", event.code, event.reason);
 
                 if (hbInterval) {
@@ -885,7 +853,7 @@ if (lagMs > 3000) {
             if (reconnectTimer || intentionalDisconnect) return;
 
             reconnectAttempts++;
-            const delay = 2000;
+            const delay = Math.min(30000, 2000 * 2 ** Math.min(reconnectAttempts - 1, 4));
 
             reconnectTimer = setTimeout(() => {
                 reconnectTimer = null;
@@ -914,9 +882,7 @@ if (lagMs > 3000) {
                 oldSocket.onopen = oldSocket.onclose = oldSocket.onerror = oldSocket.onmessage = null;
                 try { oldSocket.close(); } catch {}
             }
-            vehSysId = vehCompId = -1;
-            PendingAcks.clear();
-            messages = {};
+            resetVehicleData();
             Fence.onDisconnected();
             Mission.onDisconnected();
             FTPManager.clearLink();
@@ -945,6 +911,8 @@ if (lagMs > 3000) {
 
             const settings = readConnectionSettings();
             localStorage.setItem(LS_KEYS.url, settings.url);
+            localStorage.setItem("gcs.systemId", settings.systemId);
+            localStorage.setItem("gcs.componentId", settings.componentId);
             const pass = settings.passphrase;
             if (pass.length) {
                 localStorage.setItem(LS_KEYS.pass, pass);
@@ -973,8 +941,6 @@ if (lagMs > 3000) {
             const m = MAVLink.parseChar(null);
             if (m === null) break;
             if (m._id == -1 || !m._header) continue;
-
-            lastRxMs = Date.now();
 
             // Update messages dictionary
             if (!(m._header.srcSystem in messages)) {
@@ -1025,6 +991,9 @@ if (lagMs > 3000) {
         }
 
         if (m._header.srcSystem !== vehSysId || m._header.srcComponent !== vehCompId) return;
+        lastRxMs = Date.now();
+        reconnectAttempts = 0;
+        setTelemetryStatus("Live", false);
 
         // GLOBAL_POSITION_INT - position and speed
         if (m._name === "GLOBAL_POSITION_INT") {
@@ -1062,7 +1031,7 @@ if (lagMs > 3000) {
         // GPS status
         if (m._name === "GPS_RAW_INT" || m._name === "GPS2_RAW") {
             if (typeof m.satellites_visible === "number") {
-                telemetry.numSats = m.satellites_visible;
+                telemetry.numSats = m.satellites_visible === 255 ? null : m.satellites_visible;
                 updateTelemetryDisplay();
             }
         }
@@ -1088,18 +1057,8 @@ if (lagMs > 3000) {
         if (m._name === "COMMAND_ACK") {
             if (gcsSystemId == m.target_system &&
                 gcsComponentId == m.target_component) {
-                // Optional: check we were expecting this command
-                if (PendingAcks.has(m.command)) {
-                    if (m.result !== mavlink20.MAV_RESULT_IN_PROGRESS) {
-                        PendingAcks.delete(m.command);
-                        if (m.result !== mavlink20.MAV_RESULT_ACCEPTED) {
-                            const msg = `CMD ${mavCmdName(m.command)}: ${mavResultName(m.result)}`;
-                            // Log to STATUSTEXT panel and show a bottom-of-map toast
-                            try { StatusLog.push(mavlink20.MAV_SEVERITY_ERROR ?? 3, msg); } catch {}
-                            try { window.GCSUtils.toast(msg, 3000); } catch {}
-                        }
-                    }
-                }
+                PendingAcks.acknowledge(m.command, mavResultName(m.result),
+                    m.result === mavlink20.MAV_RESULT_IN_PROGRESS);
             }
         }
 
@@ -1111,23 +1070,19 @@ if (lagMs > 3000) {
 
     // --- Button Event Handlers ---
     armBtn.onclick = () => {
-        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [1]);
-        window.GCSUtils.toast("ARM sent");
+        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [1], "ARM sent");
     };
 
     disarmBtn.onclick = () => {
-        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [0]);
-        window.GCSUtils.toast("DISARM sent");
+        sendCommandInt(mavlink20.MAV_CMD_COMPONENT_ARM_DISARM, [0], "DISARM sent");
     };
 
     rtlBtn.onclick = () => {
-        sendSetMode(window.GCSUtils.roverModes.RTL);
-        window.GCSUtils.toast("RTL sent");
+        sendSetMode(window.GCSUtils.roverModes.RTL, "RTL");
     };
 
     loiterBtn.onclick = () => {
-        sendSetMode(window.GCSUtils.roverModes.LOITER);
-        window.GCSUtils.toast("LOITER sent");
+        sendSetMode(window.GCSUtils.roverModes.LOITER, "LOITER");
     };
 
     recenterBtn.onclick = () => {
@@ -1141,11 +1096,10 @@ if (lagMs > 3000) {
             0, mavlink20.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE, 0, 0,
             lat * 1e7, lng * 1e7, 0
         ]);
-        window.GCSUtils.toast("DO_REPOSITION sent");
     });
 
     // --- Initialize Everything ---
-    initTelemetryDisplay();
+    updateTelemetryDisplay();
     initMenuButton();
     initConnection();
 

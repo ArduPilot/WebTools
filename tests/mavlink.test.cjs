@@ -102,3 +102,20 @@ test('a short MAVLink1 packet is parsed without waiting for a MAVLink2 header', 
     const decoded=parser().parseBuffer(Uint8Array.from(bytes));
     assert.equal(decoded[0]._name,'MISSION_CLEAR_ALL');assert.equal(decoded[0].target_system,255);
 });
+
+test('noise resynchronizes to the earliest MAVLink1 or MAVLink2 marker',()=>{
+    for(const frames of [[fixtures.v1,fixtures.messages[0].hex],[fixtures.messages[0].hex,fixtures.v1]]) {
+        const result=parser().parseBuffer(Buffer.concat([Buffer.from([1,2,3]),...frames.map(hex=>Buffer.from(hex,'hex'))]));
+        assert.deepEqual(result.filter(m=>m._name!=='BAD_DATA').map(m=>m._name),['HEARTBEAT','HEARTBEAT']);
+    }
+});
+
+test('new signing stream accepts exactly the 60-second boundary and rejects older packets',()=>{
+    const key=Uint8Array.from({length:32},(_,i)=>i);
+    const packet=Buffer.from(fixtures.signed,'hex');
+    for(const age of [6000000,6000001]) {
+        const rx=parser();rx.signing.secret_key=key;rx.signing.timestamp=1000000000000+age;
+        if(age===6000000)assert.equal(rx.decode(packet)._name,'HEARTBEAT');
+        else assert.throws(()=>rx.decode(packet),/signature/);
+    }
+});

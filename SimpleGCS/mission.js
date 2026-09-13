@@ -45,58 +45,35 @@
         }, 5000);
     }
 
-    // Robustly extract lat/lngs from common fence/mission parse output,
-    // filtering invalids and the [0,0] sentinel.
-    function extractLatLngs(items) {
-        const pts = [];
-        const addIfValid = (lat, lng) => {
-            const la = Number(lat);
-            const ln = Number(lng);
-            if (!Number.isFinite(la) || !Number.isFinite(ln)) return;
-            if (la < -90 || la > 90 || ln < -180 || ln > 180) return;
-            // Filter exact [0,0] (after numeric coercion)
-            if (la === 0 && ln === 0) return;
-            pts.push([la, ln]);
-        };
-
-        const tryObj = (obj) => {
-	        var lat = obj.x * 1.0e-7;
-	        var lng = obj.y * 1.0e-7;
-	        addIfValid(lat, lng);
-        };
-
-        items.forEach(tryObj);
-
-        return pts;
-    }
+    // Match AP_Mission::stored_in_location. Other commands (for example
+    // NAV_SCRIPT_TIME) store arguments in x/y, not geographic coordinates.
+    const locationCommands = new Set([
+        'NAV_WAYPOINT', 'NAV_LOITER_UNLIM', 'NAV_LOITER_TURNS', 'NAV_LOITER_TIME',
+        'NAV_LAND', 'NAV_TAKEOFF', 'NAV_CONTINUE_AND_CHANGE_ALT', 'NAV_LOITER_TO_ALT',
+        'NAV_SPLINE_WAYPOINT', 'NAV_GUIDED_ENABLE', 'DO_SET_HOME', 'DO_RETURN_PATH_START',
+        'DO_LAND_START', 'DO_GO_AROUND', 'DO_SET_ROI_LOCATION', 'DO_SET_ROI',
+        'NAV_VTOL_TAKEOFF', 'NAV_VTOL_LAND', 'NAV_PAYLOAD_PLACE', 'NAV_ARC_WAYPOINT'
+    ].map(name => mavlink20['MAV_CMD_' + name]).filter(Number.isInteger));
+    const globalFrames = new Set([0, 3, 5, 6, 10, 11]);
 
     function renderMission(items) {
         clearLayers();
-        const pts = extractLatLngs(items);
-        if (!pts.length) {
-            toast('No mission points found');
-            return;
-        }
-
-        // Path polyline
-        State.pathLayer = L.polyline(pts, { color: '#2196f3', weight: 3, opacity: 0.9 }).addTo(State.map);
-
-        // Waypoint markers with indices (defensive guard against any residuals)
-        pts.forEach((ll, idx) => {
-            if (!ll || !Number.isFinite(ll[0]) || !Number.isFinite(ll[1])) return;
-            if (ll[0] === 0 && ll[1] === 0) return;
-            const mk = L.circleMarker(ll, {
-                radius: 5,
-                color: '#0d47a1',
-                fillColor: '#64b5f6',
-                fillOpacity: 0.9,
-                weight: 2
+        const points = items.filter(item => locationCommands.has(item.command) && globalFrames.has(item.frame))
+            .map(item => ({seq: item.seq, lat: item.x * 1e-7, lng: item.y * 1e-7}))
+            .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng) &&
+                Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 && (p.lat !== 0 || p.lng !== 0));
+        if (!points.length) { toast('No mission points found'); return; }
+        State.pathLayer = L.polyline(points.map(p => [p.lat, p.lng]), {
+            color: '#2196f3', weight: 3, opacity: 0.9
+        }).addTo(State.map);
+        for (const p of points) {
+            const marker = L.circleMarker([p.lat, p.lng], {
+                radius: 5, color: '#0d47a1', fillColor: '#64b5f6', fillOpacity: 0.9, weight: 2
             }).addTo(State.map);
-            mk.bindTooltip(`${idx}`, { permanent: true, direction: 'top', className: 'mission-wp-label' });
-            State.wpLayers.push(mk);
-        });
-
-        toast(`Loaded mission with ${pts.length} points`);
+            marker.bindTooltip(String(p.seq), {permanent: true, direction: 'top', className: 'mission-wp-label'});
+            State.wpLayers.push(marker);
+        }
+        toast(`Loaded mission with ${points.length} points`);
     }
 
     function fetchMission(silent=false) {
@@ -117,7 +94,7 @@
                 return;
             }
             try {
-	            const items = State.parser.parseMission(data);
+                const items = State.parser.parseMission(data);
                 if (items) {
                     renderMission(items);
                     State.fetched = true;

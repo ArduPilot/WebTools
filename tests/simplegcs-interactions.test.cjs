@@ -73,8 +73,8 @@ function mission(t, auto=true) {
     t.mock.timers.enable({apis:['setTimeout']});
     const calls=[], layers=new Set();
     const window={AppSettings:{autoFetchMission:auto}};
-    const layer=()=>({addTo(){layers.add(this);return this;},bindTooltip(){}});
-    const context={window,setTimeout,clearTimeout,console:{warn(){}},
+    const layer=()=>({addTo(){layers.add(this);return this;},bindTooltip(text){this.tooltip=text;}});
+    const context={window,setTimeout,clearTimeout,console:{warn(){}},mavlink20:{MAV_CMD_NAV_WAYPOINT:16},
         FTPManager:{getFile(path,cb){calls.push({path,cb});},cancelQueuedByTag(){}},
         MissionParser:class {parseMission(data){if(data==='bad')throw Error('malformed');return data;}},
         L:{polyline:layer,circleMarker:layer}};
@@ -84,7 +84,7 @@ function mission(t, auto=true) {
     api.onConnected({});
     return {api,calls,layers,settings:window.AppSettings};
 }
-const points=[{x:-350000000,y:1490000000}];
+const points=[{command:16,frame:0,seq:4,x:-350000000,y:1490000000}];
 
 test('automatic mission download retries failures without overlapping pending transfers', t => {
     const {api,calls,layers}=mission(t);
@@ -116,4 +116,32 @@ test('malformed missions retry; an empty mission completes and clears the overla
     calls[1].cb(points);assert.equal(layers.size,2);
     api.fetch();calls[2].cb([]);assert.equal(layers.size,0);
     t.mock.timers.tick(10000);assert.equal(calls.length,3);
+});
+
+test('a second finger cancels the timer while both fingers remain down',t=>{
+    const {send,commands}=gesture(t);send('pointerdown',1);t.mock.timers.tick(500);
+    send('pointerdown',2);t.mock.timers.tick(200);assert.equal(commands.length,0);
+    send('pointerup',2);t.mock.timers.tick(700);assert.equal(commands.length,0);
+});
+
+test('mission skips script arguments and local coordinates, preserving actual sequence labels',t=>{
+    const {calls,layers}=mission(t);
+    calls[0].cb([{command:42702,frame:0,seq:0,x:-350000000,y:1490000000},
+        {command:16,frame:1,seq:1,x:-350000000,y:1490000000},...points]);
+    assert.equal(layers.size,2);
+    const marker=[...layers].find(l=>l.tooltip!==undefined);assert.equal(marker.tooltip,'4');
+});
+
+test('fence disconnect clears overlays and invalidates in-flight downloads',t=>{
+    t.mock.timers.enable({apis:['setTimeout']});
+    const calls=[],layers=new Set(),window={AppSettings:{autoFetchFence:true}};
+    const context={window,setTimeout,clearTimeout,console:{log(){},warn(){}},mavlink20:{MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:5003},
+        FTPManager:{getFile(path,cb){calls.push(cb);},cancelQueuedByTag(){}},
+        MissionParser:class{parseFence(){return [{type:5003,lat:-35,lng:149,radius:10}];}},
+        L:{circle:()=>({addTo(){layers.add(this);return this;},bindPopup(){}})}};
+    vm.runInNewContext(fs.readFileSync('SimpleGCS/fence.js','utf8'),context);
+    const api=window.Fence;api.init({map:{removeLayer:l=>layers.delete(l)}});api.onConnected({});
+    calls[0]([1]);assert.equal(layers.size,1);api.fetch();api.onDisconnected();assert.equal(layers.size,0);
+    api.onConnected({});calls[1]([1]);assert.equal(layers.size,0);
+    calls[2](null);api.onDisconnected();t.mock.timers.tick(10000);assert.equal(calls.length,3);
 });

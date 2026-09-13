@@ -5,8 +5,8 @@
             this.video = video;
             this.status = status;
             this.closed = false;
-            this.onPlaying = () => this.setStatus('WebRTC · Live', '#4caf50');
-            this.onWaiting = () => this.setStatus('WebRTC · Buffering', '#b36b00');
+            this.onPlaying = () => { if (video.srcObject) this.setStatus('WebRTC · Live', '#4caf50'); };
+            this.onWaiting = () => { if (video.srcObject) this.setStatus('WebRTC · Buffering', '#b36b00'); };
             video.addEventListener('playing', this.onPlaying);
             video.addEventListener('waiting', this.onWaiting);
             this.setStatus('WebRTC · Connecting', '#b36b00');
@@ -16,7 +16,7 @@
                     onError: error => {
                         if (this.closed) return;
                         video.srcObject = null;
-                        this.setStatus(`WebRTC · ${String(error)}`, '#b3261e');
+                        this.showError(error);
                     },
                     onTrack: event => {
                         if (this.closed) return;
@@ -27,10 +27,19 @@
                     }
                 });
             } catch (error) {
-                this.setStatus(`WebRTC · ${String(error)}`, '#b3261e');
+                this.showError(error);
             }
             this.onPageHide = () => this.close();
             window.addEventListener('pagehide', this.onPageHide);
+        }
+
+        showError(error) {
+            const detail = String(error);
+            let message = /401|403|unauthorized/i.test(detail) ? "Authentication failed. Check video settings." :
+                /404|stream not found/i.test(detail) ? "Stream not found. Check video settings." :
+                "Unable to play video. Check the connection and video settings.";
+            if (/retrying/i.test(detail)) message += " Retrying…";
+            this.setStatus(`WebRTC · ${message}`, '#b3261e');
         }
 
         setStatus(text, color) {

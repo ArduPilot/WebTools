@@ -30,3 +30,24 @@ only an estimate, including fixed-size recovery reads and lost final packets.
 Browser tests exercise the parameter editor at desktop and phone viewport sizes,
 including metadata search, edits, read-only fields, resets, file save/import,
 and touch-operated bitmask controls.
+
+
+PR review regressions additionally cover ArduPilot's cached burst replies with
+loss and sequence wrap, the signing new-stream boundary and mixed-version
+resynchronization. `commands.test.cjs` covers immediate sends, multiple
+outstanding ACKs, denials, timeouts, progress and disconnect cancellation. Grid tests
+compare CSS-pixel coordinates at DPR 1/2/3. Interaction tests cover mission
+command/frame filtering, original sequence labels, stale fence/mission replies,
+and both fingers remaining down during a cancelled hold.
+
+The browser suite validates real popup exclusions and normal long press, force
+command confirmation cancellation, stale-vehicle detection amid foreign relay
+traffic, browser-valid stall close codes, signing replay rejection across
+reconnect, connection drafts, and mouse/touch video dragging. The mock WebSocket
+rejects invalid close codes. `npm run test:video` covers authenticated signaling,
+hidden/closed player cleanup, native-HLS fallback, settings cancellation and an
+optional local MediaMTX stream (see the SimpleGCS README).
+
+Session-reset tests verify retry correlation, queue gating, and ignoring a reset
+ACK from an older link. Review validation also removes individual fixes in
+isolated copies and verifies that the targeted regression tests fail.

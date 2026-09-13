@@ -12,7 +12,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- GoogleMutant plugin -->
-  <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
+  <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.16.0/dist/Leaflet.GoogleMutant.js" integrity="sha384-NVeApJLhFaaKalRqZ2xBNeRECGMKMkF5VMTDJtXWk2g0Tq+5Jo1N7CZjhL3gQSFW" crossorigin="anonymous"></script>
 
   <!-- UI: Tippy (same libs you already use) -->
   <script src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
@@ -38,7 +38,7 @@
       padding: var(--gap) 6px; gap: var(--gap);
     }
     .btn {
-      width: calc(var(--barW) - 12px); height: var(--btnH);
+      width: calc(var(--barW) - 12px); height: var(--btnH); flex-shrink: 0;
       border-radius: 14px; border: 0; font-weight: 700; color: #111;
       background: #eaeaea; display: flex; align-items: center; justify-content: center;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
@@ -50,6 +50,16 @@
     .btn.primary { background:#4caf50; }
     .btn.success { background:#81c784; }
     .btn.small { height: 40px; font-size: 12px; }
+
+    #telemetry { background: #ffffff19; border-radius: 8px; padding: 8px 4px; font-size: 11px;
+      text-align: center; width: calc(var(--barW) - 12px); box-sizing: border-box; }
+    #telemetry > div { margin-bottom: 6px; }
+    #telemetry strong { font-size: 13px; }
+    #telemetry.stale > div:not(#link-status) { opacity: .45; }
+    #link-status { color: #81c784; overflow-wrap: anywhere; }
+    #telemetry.stale #link-status { color: #ffd54f; }
+    #armed-pill { display: inline-block; padding: 1px 4px; border-radius: 999px; color: #111; }
+    #toolbar { overflow-y: auto; }
 
     /* Map */
     #map { width: 100%; height: 100%; }
@@ -87,6 +97,17 @@
       <button id="disarmBtn" class="btn danger">DISARM</button>
       <button id="rtlBtn" class="btn warn">RTL</button>
       <button id="loiterBtn" class="btn warn">Loiter</button>
+      <div id="telemetry" class="stale">
+        <div id="link-status" role="status">Disconnected</div>
+        <div id="status-display">
+          <span id="armed-pill">—</span>
+          <div>MODE: <strong id="mode-value">—</strong></div>
+        </div>
+        <div id="battery-display"><div>BATTERY</div><strong id="battery-value">---%</strong><div id="current-value">--- A</div></div>
+        <div id="speed-display"><div>SPEED</div><strong id="speed-value">--- knots</strong></div>
+        <div id="gps-display"><div>GPS</div><strong id="gps-sats-value">— sats</strong></div>
+        <div id="lte-display"><div>LTE</div><strong id="lte-carrier">—</strong><div id="lte-rsrp">— dBm</div></div>
+      </div>
       <div style="flex:1"></div>
       <button id="recenterBtn" class="btn small">Recenter</button>
       <button id="connectBtn" class="btn small">Connect</button>
@@ -139,7 +160,7 @@
   </template>
 
   <!-- HLS for browsers without native HLS (Chrome/Firefox/Android) -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js" integrity="sha384-cciJ0zi8d1uMKC2zJd7jvPY4HQt7W4ByUI/FlMkltvBi31aW61rcpVBhpmW8/NwX" crossorigin="anonymous"></script>
 
   <script src="config.js"></script>
 
@@ -173,6 +194,7 @@
   <script src="map.js"></script>
 
   <!-- Main application -->
+  <script src="commands.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

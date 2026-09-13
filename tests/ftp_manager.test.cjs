@@ -3,11 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-function setup(t) {
+function setup(t, deferReset=false) {
     t.mock.timers.enable({apis:['setTimeout'],now:1000});
     const instances=[];
     class FakeFTP {
         constructor(){this.calls=[];instances.push(this)}
+        resetSessions(cb){this.resets=(this.resets||0)+1;this.resetCb=cb;if(!deferReset)cb(true)}
         getFile(path,cb,options){this.calls.push({path,cb,options});this.cb=cb}
         putFile(path,data,cb){this.calls.push({path,data,cb});this.cb=cb}
         cancel(){const cb=this.cb;this.cb=null;cb?.(null)}
@@ -68,4 +69,13 @@ test('uploads share the queue with virtual-file downloads and wait for completio
     manager.putFile('upload',data,d=>results.push(d));manager.getFile('params',d=>results.push(d),{sizeIsEstimate:true,fixedReadSize:true});
     assert.equal(ftp.calls[0].data,data);assert.equal(ftp.calls.length,1);ftp.complete(2);
     assert.equal(ftp.calls[1].options.sizeIsEstimate,true);assert.equal(ftp.calls[1].options.fixedReadSize,true);ftp.complete(data);assert.deepEqual(results,[2,data]);
+});
+
+test('new link resets remote FTP sessions before starting queued transfers',t=>{
+    const {manager,ftp,instances,link}=setup(t,true);assert.equal(ftp.resets,1);
+    manager.getFile('waiting',()=>{});assert.equal(ftp.calls.length,0);
+    ftp.resetCb(true);assert.equal(ftp.calls[0].path,'waiting');
+    manager.setLink(link,{},43,1);const next=instances.at(-1);assert.equal(next.resets,1);
+    manager.getFile('new-link',()=>{});ftp.resetCb(true);assert.equal(next.calls.length,0,'old reset ACK cannot release the new link');
+    next.resetCb(true);assert.equal(next.calls[0].path,'new-link');
 });

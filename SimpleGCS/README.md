@@ -16,6 +16,7 @@ Open `http://127.0.0.1:8000/SimpleGCS/`. Press **Connect**, enter your MAVLink
 WebSocket relay's `ws://` or `wss://` address and optional signing passphrase,
 then press **Connect** in the dialog. HTTPS pages need a `wss://` endpoint.
 Signing is configured independently of the optional 1 Hz GCS heartbeat.
+Passphrases are used exactly as entered, including leading/trailing spaces.
 Copy `config.example.js` to the ignored `config.js` to set a deployment's
 `window.SIMPLEGCS_CONFIG.defaultUrl`. This prefills Connect for new browsers;
 a saved URL takes priority. A configured default alone does not connect until
@@ -24,13 +25,26 @@ The saved connection is restored on reload. Background reconnects use the last
 submitted settings and leave the connection dialog and its unfinished edits open.
 Press **Connect** to apply edited settings. Commands and file requests wait
 for an ArduPilot heartbeat to identify the vehicle. The first discovered
-vehicle is selected until disconnect. If automatic mission fetching is enabled,
+vehicle is selected until disconnect. Only packets from that selected autopilot
+refresh link health. After three seconds without them the telemetry is marked
+stale; after fifteen seconds the socket is closed and reconnected. Retries back
+off from two to thirty seconds until vehicle traffic resumes. On disconnect,
+vehicle/target/fence/mission layers and telemetry are cleared; the first position
+from the next vehicle recentres the map. Signing replay watermarks are retained
+for each endpoint/key during the lifetime of the page, including reconnects. If automatic mission fetching is enabled,
 failed downloads retry after five seconds without overlapping transfers. Mission
 layers are cleared on disconnect; replies from the previous connection are ignored.
 
 The relay must preserve MAVLink source system/component IDs for commands and
 FTP replies. Relay authentication and vehicle signing are separate settings;
-configure them according to the relay's forwarding behavior.
+configure them according to the relay's forwarding behavior. The GCS system ID
+defaults to 255; the component ID is initially random. Both are editable in
+Connection Settings and saved when Connect is pressed. Deployment defaults can
+also be set in `config.js`. Give simultaneous GCS instances distinct identities.
+If changing the system ID, configure the vehicle's `MAV_GCS_SYSID` and, if used,
+`MAV_GCS_SYSID_HI` range to include it. This matters for `FS_GCS_ENABLE` and
+`MAV_OPTIONS`/GCS system-ID enforcement; see the connected firmware's parameter
+definitions. A GCS heartbeat must be enabled if that failsafe is required.
 
 Connection settings, including the signing passphrase, are stored in this
 browser's local storage. Use a browser profile appropriate for vehicle access.
@@ -154,3 +168,20 @@ Chrome already running in Xephyr, set `SIMPLEGCS_CDP_URL` to its local DevTools
 HTTP endpoint. Alternatively set `CHROME_PATH` to an installed Chrome binary.
 See `tests/` for packet, signing, FTP recovery, mission parsing, queue lifecycle
 and browser interaction coverage.
+
+
+## Commands and video
+
+Ordinary map long press still sends a guided target after 600 ms. ForceArm,
+ForceDisarm and Reboot ask for confirmation. Rover mode buttons reject other
+vehicle types instead of sending Rover mode numbers to them. Each command sends immediately, with a missing ACK reported after five seconds.
+Multiple outstanding commands retain their ACK accounting; because MAVLink ACKs
+carry no request ID, reports identify the command type rather than assigning an
+ACK to particular parameter values. Commands are not automatically retried.
+“Sent” notifications occur only on send.
+
+Hiding or closing video stops playback and retries. Dragging and resizing support
+mouse and touch without panning the map. Protected HLS uses Hls.js to attach the
+configured credentials; browsers without suitable HLS support use authenticated
+WebRTC. Canceling video settings leaves the saved configuration intact. The HLS
+and GoogleMutant dependencies use pinned versions with integrity hashes.

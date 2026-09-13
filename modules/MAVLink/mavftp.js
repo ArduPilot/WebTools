@@ -29,6 +29,7 @@ class MAVFTP {
         this.currentFile = null;
         this.callback = null;
         this.timeoutCheckInterval = null;
+        this.pendingReset = null;
         this.pendingWrite = null;
         this.uploadBuffer = null;
         this.pendingOpenFile = null;
@@ -82,6 +83,14 @@ class MAVFTP {
         return seq;
     }
 
+    // Burst replies consume sequence numbers too. Stay beyond the newest
+    // accepted reply so ArduPilot won't mistake our next request for a retry.
+    // Serial-number arithmetic also handles wrap and reordered burst packets.
+    advanceSequence(replySeq) {
+        const next = (replySeq + 1) & 65535;
+        if (((next - this.seq) & 65535) < 32768) this.seq = next;
+    }
+
     request(opcode, offset, size, payload = null) {
         const request = { opcode, offset, size, payload, seq: this.seq, retries: 0, sentTime: Date.now() };
         this.sendOp(opcode, size, 0, 0, offset, payload, request.seq);
@@ -102,6 +111,7 @@ class MAVFTP {
 
     checkTimeouts() {
         try {
+            if (!this.retry(this.pendingReset, this.openFileTimeout, this.maxOpenRetries)) return;
             if (!this.retry(this.pendingWrite, this.openFileTimeout, this.maxOpenRetries)) return;
             if (!this.retry(this.pendingOpenFile, this.openFileTimeout, this.maxOpenRetries)) return;
             if (!this.retry(this.pendingBurstRead, this.burstReadTimeout, this.maxBurstRetries)) return;
@@ -111,6 +121,17 @@ class MAVFTP {
         } catch (e) {
             this.complete(null);
         }
+    }
+
+    // ArduPilot scopes ResetSessions to this GCS identity and channel. Use it
+    // when establishing a link before opening files, including after reconnect.
+    resetSessions(callback) {
+        this.cancel();
+        this.callback = callback;
+        try {
+            this.pendingReset = this.request(this.OP.ResetSessions, 0, 0);
+            this.timeoutCheckInterval = setInterval(() => this.checkTimeouts(), 250);
+        } catch (error) { this.complete(null); }
     }
 
     getFile(filename, callback, options = {}) {
@@ -190,6 +211,7 @@ class MAVFTP {
         this.currentFile = null;
         clearInterval(this.timeoutCheckInterval);
         this.timeoutCheckInterval = null;
+        this.pendingReset = null;
         this.pendingWrite = null;
         this.uploadBuffer = null;
         this.pendingOpenFile = this.pendingBurstRead = null;
@@ -206,12 +228,18 @@ class MAVFTP {
     terminateSession() { this.cancel(); }
 
     handleMessage(m) {
-        if (this.currentFile === null || m?._name !== 'FILE_TRANSFER_PROTOCOL' ||
+        if ((this.currentFile === null && !this.pendingReset) || m?._name !== 'FILE_TRANSFER_PROTOCOL' ||
             m._header?.srcSystem !== this.targetSystem || m._header?.srcComponent !== this.targetComponent ||
             m.target_system !== this.MAVLink.srcSystem || m.target_component !== this.MAVLink.srcComponent) return false;
         const op = this.parseOp(m.payload);
         if (!op || op.session !== this.session || (op.opcode !== this.OP.Ack && op.opcode !== this.OP.Nack)) return false;
         try {
+            if (this.pendingReset) {
+                if (op.req_opcode !== this.OP.ResetSessions ||
+                    op.seq !== ((this.pendingReset.seq + 1) & 65535)) return false;
+                this.complete(op.opcode === this.OP.Ack ? true : null);
+                return true;
+            }
             if (this.uploadBuffer) return this.handleWrite(op);
             if (op.req_opcode === this.OP.OpenFileRO) {
                 const request = this.pendingOpenFile;
@@ -231,9 +259,12 @@ class MAVFTP {
             if (op.req_opcode === this.OP.BurstReadFile) {
                 if (!this.pendingBurstRead) return false;
                 if (op.opcode === this.OP.Nack) {
-                    if (op.size !== 1 || op.payload[0] !== this.ERR.EndOfFile) {
+                    if (op.size < 1) return false;
+                    if (op.payload[0] !== this.ERR.EndOfFile) {
+                        this.advanceSequence(op.seq);
                         this.complete(null);
                     } else {
+                        if (op.size !== 1) return false;
                         if (this.sizeIsEstimate) {
                             // Virtual parameter files only advertise an estimate.
                             // The EOF offset bounds the file; still recover every
@@ -242,12 +273,14 @@ class MAVFTP {
                             this.actualSize = op.offset;
                             this.resizeFile(op.offset);
                         }
+                        this.advanceSequence(op.seq);
                         this.pendingBurstRead = null;
                         this.checkReadSend();
                     }
                     return true;
                 }
                 if (!this.storeData(op)) return false;
+                this.advanceSequence(op.seq);
                 if (!this.readGaps.length && (!this.sizeIsEstimate || this.actualSize !== null)) { this.complete(this.fileBuffer); return true; }
                 this.pendingBurstRead.sentTime = Date.now();
                 this.pendingBurstRead.retries = 0;

@@ -26,7 +26,8 @@ test('WebRTC badge becomes live only on playback; errors clear stale video',()=>
     assert.match(status.textContent,/Connecting/);
     listeners.get('playing')();assert.match(status.textContent,/Live/);
     listeners.get('waiting')();assert.match(status.textContent,/Buffering/);
-    config.onError('unauthorized');assert.match(status.textContent,/unauthorized/);assert.equal(video.srcObject,null);
+    config.onError('unauthorized');assert.match(status.textContent,/Authentication failed/);assert.equal(video.srcObject,null);
+    listeners.get('waiting')();listeners.get('playing')();assert.match(status.textContent,/Authentication failed/);
 });
 
 test('closing or leaving the page releases playback and ignores late callbacks',()=>{

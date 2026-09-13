@@ -50,27 +50,49 @@ const {chromium} = require('playwright');
         const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
         await page.goto(`http://127.0.0.1:${server.address().port}/`);
         await page.evaluate(()=>VideoPanel.open());
-        await page.getByText(/WebRTC · .*401/).waitFor();
+        await page.getByText(/WebRTC · Authentication failed/).waitFor();
         assert.equal(await page.locator('#video-panel iframe').count(),0);
         const auth='Basic '+Buffer.from('viewer:fixture-view').toString('base64');
         assert.ok(requests.some(r=>r.method==='POST'));
         assert.ok(requests.filter(r=>['OPTIONS','POST'].includes(r.method)).every(r=>r.auth===auth));
+        // Hiding must release streams/retries too, and showing must reconnect.
+        await page.evaluate(()=>VideoPanel.toggle());
+        let hiddenCount=requests.length;await page.waitForTimeout(2300);
+        assert.equal(requests.length,hiddenCount,'hidden player does not retry');
+        await page.evaluate(()=>VideoPanel.open());await page.getByText(/WebRTC · Authentication failed/).waitFor();
+        // Native HLS advertises support but cannot attach configured credentials.
+        await page.evaluate(()=>{
+            window.originalCanPlayType=HTMLMediaElement.prototype.canPlayType;
+            HTMLMediaElement.prototype.canPlayType=()=> 'probably';
+            window.Hls={isSupported:()=>false};
+        });
+        await page.getByRole('button',{name:'Switch to HLS'}).click();
+        await page.getByText(/WebRTC · Authentication failed/).waitFor();
+        assert.equal(await page.locator('video').getAttribute('src'),null,'protected stream never uses unauthenticated native HLS');
+        await page.evaluate(()=>{HTMLMediaElement.prototype.canPlayType=originalCanPlayType;delete window.Hls;});
+        // Cancelling any settings prompt must leave every saved value unchanged.
+        const saved=await page.evaluate(()=>JSON.stringify(localStorage));
+        let prompts=0;
+        const cancelSettings=async dialog=>{prompts++;if(prompts<3)await dialog.accept(dialog.defaultValue());else await dialog.dismiss();};
+        page.on('dialog',cancelSettings);await page.getByRole('button',{name:'Settings',exact:true}).click();
+        page.off('dialog',cancelSettings);assert.equal(prompts,3);
+        assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),saved);
         await page.evaluate(()=>VideoPanel.close());
         let count=requests.length;await page.waitForTimeout(2300);
         assert.equal(requests.length,count,'closing cancels reconnect');
         const popupPromise=context.waitForEvent('page');
         await page.evaluate(()=>VideoPanel.openNewWindow());
         const popup=await popupPromise;popup.on('pageerror',e=>errors.push(e.message));
-        await popup.getByText(/WebRTC · .*401/).waitFor();
+        await popup.getByText(/WebRTC · Authentication failed/).waitFor();
         assert.equal(await popup.evaluate(()=>opener),null);
         assert.equal(new URL(popup.url()).pathname,'/video.html');
         assert.equal(new URL(popup.url()).search,'','credentials are never put in the URL');
         await popup.close();
         count=requests.length;await page.waitForTimeout(2300);assert.equal(requests.length,count);
-        console.log('PASS: inset and new-window authentication, visible 401 errors and retry cancellation');
+        console.log('PASS: video authentication, hide/close cleanup, native-HLS fallback and cancelled settings');
         if(endpoint) {
             await page.evaluate(()=>VideoPanel.open());
-            await page.getByText(/WebRTC · .*401/).waitFor();
+            await page.getByText(/WebRTC · Authentication failed/).waitFor();
             reject=false;
             await page.waitForFunction(()=>document.querySelector('video')?.getVideoPlaybackQuality().totalVideoFrames>3);
             await page.getByText('WebRTC · Live',{exact:true}).waitFor();

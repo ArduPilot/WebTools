@@ -43,8 +43,8 @@
             wrap.id = "video-panel";
 
             // Responsive sizing for mobile
-            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const screenWidth = window.innerWidth || document.documentElement.clientWidth;
+            const isMobile = window.matchMedia("(max-width: 600px)").matches || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const screenWidth = document.getElementById("map")?.clientWidth || window.innerWidth || document.documentElement.clientWidth;
             const screenHeight = window.innerHeight || document.documentElement.clientHeight;
 
             let width, height, right, bottom;
@@ -70,7 +70,7 @@
             ].join("");
 
             const bar = document.createElement("div");
-            bar.style.cssText = "height:36px; background:#222; display:flex; align-items:center; padding:0 8px; gap:8px; cursor:move;";
+            bar.style.cssText = "min-height:36px; background:#222; display:flex; flex-wrap:wrap; align-items:center; padding:0 8px; gap:4px; cursor:move;";
             const title = document.createElement("div");
             title.textContent = "Video";
             title.style.cssText = "font-weight:600; flex:1;";
@@ -94,7 +94,7 @@
             bar.append(title, protocolBtn, popBtn, cfgBtn, closeBtn);
 
             const body = document.createElement("div");
-            body.style.cssText = "position:relative; flex:1; display:flex;";
+            body.style.cssText = "position:relative; flex:1; display:flex; min-height:0; min-width:0;";
 
             // Status badge
             const statusBadge = document.createElement("div");
@@ -113,24 +113,41 @@
             // Store reference to protocol button
             this.protocolBtn = protocolBtn;
 
-            // drag
-            let drag = null;
-            bar.addEventListener("mousedown", (e) => { drag = { x:e.clientX, y:e.clientY, left:wrap.offsetLeft, top:wrap.offsetTop }; e.preventDefault(); });
-            document.addEventListener("mousemove", (e) => {
-                if (!drag) return; const dx = e.clientX - drag.x; const dy = e.clientY - drag.y;
-                wrap.style.left = (drag.left + dx) + "px"; wrap.style.top = (drag.top + dy) + "px";
-                wrap.style.right = "auto"; wrap.style.bottom = "auto";
+            // Keep video controls and gestures from panning the map behind it.
+            for (const type of ["pointerdown", "mousedown", "touchstart", "wheel", "click", "dblclick", "contextmenu"]) {
+                wrap.addEventListener(type, event => event.stopPropagation(), {passive: true});
+            }
+            const gesture = (handle, update) => {
+                let start = null;
+                handle.style.touchAction = "none";
+                handle.addEventListener("pointerdown", event => {
+                    if (event.button !== 0 || event.target.closest("button")) return;
+                    start = {id: event.pointerId, x: event.clientX, y: event.clientY,
+                        left: wrap.offsetLeft, top: wrap.offsetTop, width: wrap.offsetWidth, height: wrap.offsetHeight};
+                    handle.setPointerCapture(event.pointerId);
+                    if (event.pointerType !== "touch") event.preventDefault();
+                });
+                handle.addEventListener("pointermove", event => {
+                    if (!start || event.pointerId !== start.id) return;
+                    update(start, event.clientX - start.x, event.clientY - start.y);
+                });
+                for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+                    handle.addEventListener(type, event => {
+                        if (event.pointerId !== start?.id) return;
+                        start = null;
+                        if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+                    });
+                }
+            };
+            gesture(bar, (start, dx, dy) => {
+                wrap.style.left = Math.max(0, Math.min(this.el.parentElement.clientWidth - 80, start.left + dx)) + "px";
+                wrap.style.top = Math.max(0, Math.min(this.el.parentElement.clientHeight - 36, start.top + dy)) + "px";
+                wrap.style.right = wrap.style.bottom = "auto";
             });
-            document.addEventListener("mouseup", () => { drag = null; });
-
-            // resize
-            let rez = null;
-            grip.addEventListener("mousedown", (e) => { rez = { x:e.clientX, y:e.clientY, w:wrap.offsetWidth, h:wrap.offsetHeight }; e.preventDefault(); });
-            document.addEventListener("mousemove", (e) => {
-                if (!rez) return; const dx = e.clientX - rez.x; const dy = e.clientY - rez.y;
-                wrap.style.width = Math.max(280, rez.w + dx) + "px"; wrap.style.height = Math.max(160, rez.h + dy) + "px";
+            gesture(grip, (start, dx, dy) => {
+                wrap.style.width = Math.max(280, start.width + dx) + "px";
+                wrap.style.height = Math.max(160, start.height + dy) + "px";
             });
-            document.addEventListener("mouseup", () => { rez = null; });
 
             this.el = wrap;
             this.bodyEl = body;
@@ -147,8 +164,8 @@
         _handleResize() {
             if (!this.el) return;
 
-            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const screenWidth = window.innerWidth || document.documentElement.clientWidth;
+            const isMobile = window.matchMedia("(max-width: 600px)").matches || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const screenWidth = document.getElementById("map")?.clientWidth || window.innerWidth || document.documentElement.clientWidth;
 
             if (isMobile) {
                 const newWidth = Math.min(screenWidth - 24, 380);
@@ -157,12 +174,10 @@
                 this.el.style.width = newWidth + 'px';
                 this.el.style.height = newHeight + 'px';
 
-                // Keep it on screen
-                const currentRight = parseInt(this.el.style.right) || 12;
-                if (currentRight + newWidth > screenWidth) {
-                    this.el.style.right = '12px';
-                    this.el.style.left = 'auto';
-                }
+                // Re-anchor after rotation or switching to a narrow viewport.
+                this.el.style.right = '12px';
+                this.el.style.bottom = '12px';
+                this.el.style.left = this.el.style.top = 'auto';
             }
         }
 
@@ -177,7 +192,7 @@
         _useWebRTC() {
             this._cleanup();
             const video = document.createElement("video");
-            video.style.cssText = "width:100%; height:100%; background:#000;";
+            video.style.cssText = "width:100%; height:100%; object-fit:contain; background:#000;";
             video.autoplay = true;
             video.playsInline = true;
             video.muted = true;
@@ -195,9 +210,10 @@
 
         _useHLS() {
             this._cleanup();
+            this.hlsRetryCount = 0;
 
             const video = document.createElement("video");
-            video.style.cssText = "width:100%; height:100%; background:#000;";
+            video.style.cssText = "width:100%; height:100%; object-fit:contain; background:#000;";
             video.autoplay = true;
             video.playsInline = true;
             video.muted = true;
@@ -216,26 +232,23 @@
         _playStableHLS() {
             const url = this._hlsUrl();
 
-            // Store credentials
-            localStorage.setItem("video.user", this.user || "");
-            localStorage.setItem("video.pass", this.pass || "");
-            localStorage.setItem("video.host", this.host || "");
-            localStorage.setItem("video.path", this.path || "");
+            const auth = this.user ? "Basic " + btoa(`${this.user}:${this.pass}`) : null;
 
             if (location.protocol === "https:" && url.startsWith("http://")) {
                 this._useWebRTC(); // Fallback to WebRTC
                 return;
             }
 
-            // Try native HLS first (Safari/iOS)
-            if (this.videoEl && this.videoEl.canPlayType && this.videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+            // Native HLS cannot attach Authorization headers. Use Hls.js for
+            // protected streams, or fall back to authenticated WebRTC on iOS.
+            if (!auth && this.videoEl && this.videoEl.canPlayType && this.videoEl.canPlayType("application/vnd.apple.mpegurl")) {
                 this.videoEl.src = url;
                 this.videoEl.play().catch(e => console.warn("Play failed:", e));
                 return;
             }
 
             // Use HLS.js with stable, non-aggressive settings
-            if (!window.Hls) {
+            if (!window.Hls || !Hls.isSupported()) {
                 this._useWebRTC(); // Fallback to WebRTC
                 return;
             }
@@ -244,8 +257,6 @@
                 try { this.hls.destroy(); } catch {}
                 this.hls = null;
             }
-
-            const auth = (this.user && this.pass) ? "Basic " + btoa(`${this.user}:${this.pass}`) : null;
 
             // Stable HLS configuration - prioritize stability over latency
             const hls = new Hls({
@@ -274,6 +285,7 @@
             });
 
             hls.on(Hls.Events.ERROR, (_evt, data) => {
+                if (this.hls !== hls) return;
                 console.warn("HLS Error:", data);
                 if (data && data.fatal) {
                     this.hlsRetryCount++;
@@ -289,13 +301,14 @@
             });
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                if (this.hls !== hls || !this.videoEl) return;
                 this.videoEl.play().catch(e => console.warn("Play failed:", e));
                 this.hlsRetryCount = 0; // Reset retry count on success
             });
 
+            this.hls = hls;
             hls.loadSource(url);
             hls.attachMedia(this.videoEl);
-            this.hls = hls;
         }
 
         _updateUI(protocol, badgeColor, buttonColor) {
@@ -320,8 +333,11 @@
                 this.hls = null;
             }
 
-            if (this.videoEl && this.videoEl.parentNode) {
-                this.videoEl.parentNode.removeChild(this.videoEl);
+            if (this.videoEl) {
+                this.videoEl.pause();
+                this.videoEl.removeAttribute("src");
+                this.videoEl.load();
+                this.videoEl.remove();
                 this.videoEl = null;
             }
         }
@@ -346,10 +362,15 @@
         }
 
         openSettings() {
-            const host = prompt("MediaMTX host", this.host) || this.host;
-            const path = prompt("Path", this.path) || this.path;
-            const user = prompt("Viewer username", this.user || "") || "";
-            const pass = prompt("Viewer password", this.pass || "") || "";
+            const host = prompt("MediaMTX host", this.host);
+            if (host === null) return;
+            const path = prompt("Path", this.path);
+            if (path === null) return;
+            const user = prompt("Viewer username", this.user || "");
+            if (user === null) return;
+            const pass = prompt("Viewer password", this.pass || "");
+            if (pass === null) return;
+            if (!host.trim() || !path.trim()) return;
 
             this.host = host;
             this.path = path;
@@ -360,7 +381,7 @@
             localStorage.setItem("video.user", user);
             localStorage.setItem("video.pass", pass);
 
-            if (this.el) {
+            if (this.el && this.el.style.display !== "none") {
                 // Restart current protocol
                 if (this.isWebRTC) {
                     this._useWebRTC();
@@ -371,10 +392,15 @@
         }
 
         show() {
-            if (this.el) this.el.style.display = "flex";
+            if (this.el && this.el.style.display === "none") {
+                this.el.style.display = "flex";
+                if (this.isWebRTC) this._useWebRTC();
+                else this._useHLS();
+            }
         }
 
         hide() {
+            this._cleanup();
             if (this.el) this.el.style.display = "none";
         }
 

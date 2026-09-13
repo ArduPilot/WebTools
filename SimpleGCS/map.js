@@ -238,6 +238,15 @@
             }
         },
 
+        clearVehicle() {
+            if (this.vehicleMarker) this.map.removeLayer(this.vehicleMarker);
+            this.vehicleMarker = null;
+            this.appliedVehClass = null;
+            this.lastHeadingDeg = null;
+            this.map._movedOnce = false;
+            this.clearTargetPosition();
+        },
+
         updateVehicleHeading(yawRad) {
             let deg = yawRad * 180 / Math.PI;
             deg = (deg + 360) % 360;
@@ -305,7 +314,7 @@
             }, { capture: true });
             el.addEventListener("pointerdown", (ev) => {
                 if (pointers.size > 1) return;
-                if (ev.button !== 0 || ev.target.closest(".leaflet-control, #video-panel, button, input, select, textarea, a")) return;
+                if (ev.button !== 0 || ev.target.closest(".leaflet-control, .leaflet-popup, #video-panel, button, input, select, textarea, a")) return;
                 if (ev.pointerType === "touch") ev.preventDefault();
 
                 activeId = ev.pointerId;
