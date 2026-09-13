@@ -38,12 +38,13 @@
       padding: var(--gap) 6px; gap: var(--gap);
     }
     .btn {
-      width: calc(var(--barW) - 12px); height: var(--btnH); flex-shrink: 0;
+      height: var(--btnH); padding: 0 12px; flex-shrink: 0;
       border-radius: 14px; border: 0; font-weight: 700; color: #111;
       background: #eaeaea; display: flex; align-items: center; justify-content: center;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
       font-size: 14px; cursor: pointer;
     }
+    #toolbar .btn { width: calc(var(--barW) - 12px); padding: 0; }
     .btn:active { transform: scale(.98); }
     .btn.warn { background:#ffd54f; }
     .btn.danger { background:#ff8a80; }

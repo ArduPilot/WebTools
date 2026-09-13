@@ -536,7 +536,7 @@
         apiSection.innerHTML = `
             <label style="display:block; font-weight:600; margin-bottom:4px;">Google Maps API Key</label>
             <input type="text" id="gmaps-key-input" placeholder="Enter API key (optional)"
-                   style="width:100%; padding:6px; margin-bottom:4px;">
+                   style="box-sizing:border-box; width:100%; padding:6px; margin-bottom:4px;">
             <small style="opacity:0.7; font-size:11px;">
                 Leave empty to use only free tile sources.
                 <a href="https://developers.google.com/maps/documentation/javascript/get-api-key"
@@ -630,6 +630,9 @@
             theme: "light-border",
             appendTo: () => document.body,
             placement: "right-start",
+            popperOptions: {
+                modifiers: [{name: "preventOverflow", options: {altAxis: true, tether: false}}]
+            },
             onHidden(instance) { instance.destroy(); }
         });
         tip.show();
