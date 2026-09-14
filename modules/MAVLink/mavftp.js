@@ -27,6 +27,7 @@ class MAVFTP {
         this.maxConcurrentReads = 5;
         this.maxFileSize = 64 * 1024 * 1024;
         this.currentFile = null;
+        this.sessionOpen = false;
         this.callback = null;
         this.timeoutCheckInterval = null;
         this.pendingReset = null;
@@ -123,8 +124,8 @@ class MAVFTP {
         }
     }
 
-    // ArduPilot scopes ResetSessions to this GCS identity and channel. Use it
-    // when establishing a link before opening files, including after reconnect.
+    // Explicit administrative reset only. ArduPilot <=4.6 does not scope this
+    // to the GCS identity, so it may close another client's active file.
     resetSessions(callback) {
         this.cancel();
         this.callback = callback;
@@ -187,7 +188,9 @@ class MAVFTP {
             op.seq !== ((request.seq + 1) & 65535)) return false;
         if (op.opcode === this.OP.Nack) { this.complete(null); return true; }
         if (op.offset !== request.offset) return false;
+        if (request.opcode === this.OP.CreateFile) this.sessionOpen = true;
         if (request.opcode === this.OP.TerminateSession) {
+            this.sessionOpen = false;
             const size = this.uploadBuffer.length;
             this.currentFile = null; // Already closed; don't send another close.
             this.complete(size);
@@ -206,7 +209,8 @@ class MAVFTP {
     // Clear state before invoking callers, which may immediately start another file.
     complete(data) {
         const callback = this.callback;
-        const active = this.currentFile !== null;
+        const active = this.sessionOpen;
+        this.sessionOpen = false;
         this.callback = null;
         this.currentFile = null;
         clearInterval(this.timeoutCheckInterval);
@@ -245,6 +249,7 @@ class MAVFTP {
                 const request = this.pendingOpenFile;
                 if (!request || op.seq !== ((request.seq + 1) & 65535)) return false;
                 if (op.opcode === this.OP.Nack) { this.complete(null); return true; }
+                this.sessionOpen = true;
                 if (op.size !== 4) return false;
                 this.fileSize = new DataView(op.payload.buffer, op.payload.byteOffset, 4).getUint32(0, true);
                 if (this.fileSize > this.maxFileSize) { this.complete(null); return true; }

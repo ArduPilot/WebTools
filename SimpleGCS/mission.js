@@ -52,8 +52,10 @@
         'NAV_LAND', 'NAV_TAKEOFF', 'NAV_CONTINUE_AND_CHANGE_ALT', 'NAV_LOITER_TO_ALT',
         'NAV_SPLINE_WAYPOINT', 'NAV_GUIDED_ENABLE', 'DO_SET_HOME', 'DO_RETURN_PATH_START',
         'DO_LAND_START', 'DO_GO_AROUND', 'DO_SET_ROI_LOCATION', 'DO_SET_ROI',
-        'NAV_VTOL_TAKEOFF', 'NAV_VTOL_LAND', 'NAV_PAYLOAD_PLACE', 'NAV_ARC_WAYPOINT'
+        'NAV_VTOL_TAKEOFF', 'NAV_VTOL_LAND', 'NAV_PAYLOAD_PLACE'
     ].map(name => mavlink20['MAV_CMD_' + name]).filter(Number.isInteger));
+    // NAV_ARC_WAYPOINT is not yet in the bundled MAVLink definitions.
+    locationCommands.add(36);
     const globalFrames = new Set([0, 3, 5, 6, 10, 11]);
 
     function renderMission(items) {

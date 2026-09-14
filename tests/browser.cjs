@@ -35,7 +35,7 @@ const paramFixture = require('./fixtures/params.json');
                     setTimeout(async()=>{
                         await mavlink20.ready;
                         if(this.readyState===3)return;
-                        this.rx=new MAVLink20Processor(null,42,1);
+                        this.rx=new MAVLink20Processor(null,state.vehicleSystem||42,1);
                         this.rx.signing.secret_key=mavlink20.sha256(new TextEncoder().encode(state.passphrase));
                         this.rx.signing.sign_outgoing=true;
                         this.codec=new MAVFTP(this.rx,{send(){}});
@@ -102,7 +102,9 @@ const paramFixture = require('./fixtures/params.json');
                 close(code=1000) {
                     if(code!==1000&&(code<3000||code>4999))throw new DOMException('Invalid close code','InvalidAccessError');
                     (state.closeCodes ||= []).push(code);
-                    this.readyState=3;clearInterval(this.timer);setTimeout(()=>this.onclose?.({code:1000,reason:''}),0);}
+                    clearInterval(this.timer);
+                    if(state.hangClose){this.readyState=2;return;}
+                    this.readyState=3;setTimeout(()=>this.onclose?.({code:1000,reason:''}),0);}
             }
             window.WebSocket=VehicleSocket;
         }, {paramsHex:paramFixture.hex,paramOffsets:paramFixture.offsets});
@@ -288,6 +290,10 @@ const paramFixture = require('./fixtures/params.json');
         await page.locator('#armBtn').click();
         assert.equal(await page.evaluate(()=>testVehicle.sent.length),count,'no commands sent after disconnect');
         assert.equal(await page.evaluate(()=>testToasts.at(-1)),'Waiting for vehicle connection','no false ARM sent toast');
+        for(const id of ['rtlBtn','loiterBtn']) {
+            await page.locator('#'+id).click();
+            assert.equal(await page.evaluate(()=>testToasts.at(-1)),'Waiting for vehicle connection');
+        }
         await page.evaluate(()=>localStorage.clear());
         await page.unroute('**/SimpleGCS/config.js');
         await page.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:
@@ -308,18 +314,30 @@ const paramFixture = require('./fixtures/params.json');
         // A shared relay can keep emitting packets after the selected boat dies.
         await page.waitForFunction(()=>MapManager.vehicleMarker);
         const countBeforeStall=await page.evaluate(()=>testVehicle.sockets.length);
-        await page.evaluate(()=>testVehicle.silent=true);
+        const operatorView=await page.evaluate(()=>{
+            MapManager.map.setView([-34.5,148.5],12,{animate:false});
+            testVehicle.silent=true;testVehicle.hangClose=true;
+            window.deadSocket=testVehicle.sockets.at(-1);window.deadClose=deadSocket.onclose;
+            return {center:MapManager.map.getCenter(),zoom:MapManager.map.getZoom()};
+        });
         await page.clock.runFor(4000);
         assert.equal(await page.locator('#link-status').innerText(),'Telemetry stale');
         await page.clock.runFor(14500);
-        assert.ok(await page.evaluate(n=>testVehicle.sockets.length>n,countBeforeStall));
+        assert.equal(await page.evaluate(()=>testVehicle.sockets.length),countBeforeStall+1,'reconnect starts within 18.5 seconds without a close event');
+        assert.equal(await page.evaluate(()=>deadSocket.readyState),2,'dead socket still waits for its closing handshake');
+        await page.evaluate(()=>deadClose({code:1006,reason:'late dead-peer timeout'}));
+        assert.equal(await page.evaluate(()=>testVehicle.sockets.at(-1).readyState),1,'late close cannot tear down the replacement');
         assert.ok(await page.evaluate(()=>testVehicle.closeCodes.includes(4000)),'stall uses a browser-valid close code');
         assert.equal(await page.evaluate(()=>MapManager.vehicleMarker),null);
         assert.equal(await page.evaluate(()=>Object.values(MapManager.map._layers).some(l=>l._fenceType)),false,'old fence cleared');
         assert.equal(await page.locator('#armed-pill').innerText(),'—');
         await page.evaluate(()=>testVehicle.silent=false);await page.clock.runFor(1000);
         await page.waitForFunction(()=>MapManager.vehicleMarker);assert.equal(await page.locator('#link-status').innerText(),'Live');
-        console.log('PASS: foreign relay traffic cannot mask stale telemetry; browser-valid stall close reconnects and clears old vehicle/fence data');
+        assert.deepEqual(await page.evaluate(()=>({center:MapManager.map.getCenter(),zoom:MapManager.map.getZoom()})),operatorView,'same-vehicle reconnect preserves pan and zoom');
+        await page.evaluate(()=>{testVehicle.hangClose=false;testVehicle.vehicleSystem=43;testVehicle.sockets.at(-1).close();});
+        await page.clock.runFor(2500);await page.waitForFunction(()=>MapManager.vehicleMarker);
+        assert.equal(await page.evaluate(()=>MapManager.map.getZoom()),16,'different vehicle recenters');
+        console.log('PASS: dead-peer reconnect starts promptly, ignores late close, clears stale data, preserves same-vehicle view and recenters a different vehicle');
         await page.evaluate(()=>{testVehicle.replayPacket=testVehicle.lastHeartbeatPacket;testVehicle.holdTelemetry=true;testVehicle.sockets.at(-1).close();});
         await page.clock.runFor(2200);
         const beforeReplay=await page.evaluate(()=>testVehicle.sent.length);
@@ -329,6 +347,31 @@ const paramFixture = require('./fixtures/params.json');
         await page.evaluate(()=>testVehicle.holdTelemetry=false);await page.clock.runFor(1000);
         assert.equal(await page.locator('#link-status').innerText(),'Live');
         console.log('PASS: replayed signed telemetry stays rejected across reconnect; fresh telemetry recovers');
+        // Even a duplicated tab with copied sessionStorage must get a distinct
+        // component ID. Web Locks reserve IDs across pages of this origin.
+        await page.locator('#connectBtn').click();
+        const originalComponent=Number(await page.locator('#component_id').inputValue());
+        await page.locator('#Close').click();
+        const sibling=await context.newPage();
+        await sibling.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:''}));
+        await sibling.addInitScript(id=>sessionStorage.setItem('gcs.componentId',id),String(originalComponent));
+        await sibling.goto(page.url());
+        await sibling.waitForFunction(()=>testVehicle.sockets.length>0);
+        await sibling.locator('#connectBtn').click();
+        const siblingComponent=Number(await sibling.locator('#component_id').inputValue());
+        assert.notEqual(siblingComponent,originalComponent,'copied per-tab settings cannot duplicate an active identity');
+        await sibling.locator('#connection_button').click();
+        assert.equal(await sibling.evaluate(()=>sessionStorage.getItem('gcs.componentId')),String(siblingComponent));
+        assert.equal(await sibling.evaluate(()=>localStorage.getItem('gcs.componentId')),null,'component identity is not shared via localStorage');
+        await sibling.close();
+        assert.ok(await page.evaluate(()=>testVehicle.sent.filter(m=>m._name==='FILE_TRANSFER_PROTOCOL').every(m=>m.payload[3]!==2)),'connections and reconnects never reset other FTP sessions');
+        // Explicit disconnect requests a fresh view on the next connection.
+        await page.evaluate(()=>MapManager.map.setView([-34.5,148.5],12,{animate:false}));
+        await page.locator('#connectBtn').click();await page.locator('#disconnection_button').click();
+        await page.locator('#connection_button').click();await page.clock.runFor(1000);
+        await page.waitForFunction(()=>MapManager.vehicleMarker);
+        assert.equal(await page.evaluate(()=>MapManager.map.getZoom()),16,'explicit disconnect resets centering');
+        console.log('PASS: duplicated tabs use independent MAVLink identities; explicit disconnect recenters on the next connection');
         // Run raw CDP drag gestures after the browser's normal tap checks.
         await page.evaluate(()=>VideoPanel.open());
         await page.setViewportSize({width:390,height:844});

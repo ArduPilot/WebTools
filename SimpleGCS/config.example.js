@@ -11,7 +11,10 @@ window.SIMPLEGCS_CONFIG = {
     // ArduPilot normally recognizes system 255 for its GCS heartbeat failsafe.
     // If changed, configure MAV_GCS_SYSID / MAV_GCS_SYSID_HI on the vehicle too.
     defaultSystemId: 255,
-    // defaultComponentId: 190 // Otherwise randomly chosen, then saved on Connect.
+    // Preferred per-tab component ID; defaults to random 1–255.
+    // Saved in sessionStorage on Connect. A busy ID moves to the next free
+    // ID where Web Locks are supported; other devices need distinct IDs.
+    // defaultComponentId: 190
 };
 
 // Optional Google Maps browser API key. Leave empty to use OpenStreetMap.

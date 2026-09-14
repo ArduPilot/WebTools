@@ -298,3 +298,49 @@ test('reset sessions retries lost ACKs and completes before any file opens',t=>{
     h.reply(request);assert.equal(result,true);assert.equal(h.ftp.timeoutCheckInterval,null);
     assert.equal(h.sent.length,0,'reset does not terminate an unrelated session');
 });
+
+for (const operation of ['download','upload']) {
+    for (const failure of ['rejected','timeout','cancel']) {
+        test(`${operation} ${failure} before open ACK never terminates another client's legacy session`,t=>{
+            const h=harness(t);let result;h.ftp.maxOpenRetries=0;
+            if(operation==='download')h.ftp.getFile('ours',d=>result=d);
+            else h.ftp.putFile('ours',new Uint8Array([1]),d=>result=d);
+            const open=h.sent.shift();
+            // ArduPilot 4.6 has one file shared by all GCS identities. Its
+            // terminate handler checks only the FTP session byte, not owner.
+            let otherFileOpen=true;
+            if(failure==='rejected')h.reply(open,[h.ftp.ERR.Fail],{nack:true});
+            else if(failure==='timeout')t.mock.timers.tick(3000);
+            else h.ftp.cancel();
+            for(const request of h.sent) {
+                if([h.ftp.OP.ResetSessions,h.ftp.OP.TerminateSession].includes(request.opcode) && request.session===open.session)otherFileOpen=false;
+            }
+            assert.equal(result,null);assert.equal(otherFileOpen,true);
+            assert.equal(h.sent.length,0,'no cleanup request without an acknowledged open');
+        });
+    }
+}
+for(const operation of ['download','upload']) {
+    test(`${operation} cancellation after an open ACK releases its own session`,t=>{
+        const h=harness(t);
+        if(operation==='download')h.open(80,()=>{});
+        else {h.ftp.putFile('ours',new Uint8Array([1]),()=>{});h.reply(h.sent.shift());}
+        h.sent.length=0;h.ftp.cancel();
+        assert.equal(h.sent.length,1);assert.equal(h.sent[0].opcode,h.ftp.OP.TerminateSession);
+    });
+}
+test('OpenFileRO reply sequence wraps from 65535 to zero and rejects stale replies',t=>{
+    const h=harness(t);h.ftp.seq=65535;let result;
+    h.ftp.getFile('empty',d=>result=d);const open=h.sent.shift();assert.equal(open.seq,65535);
+    assert.equal(h.reply(open,[0,0,0,0],{seq:65535}),false);assert.equal(result,undefined);
+    assert.equal(h.reply(open,[0,0,0,0],{seq:0}),true);assert.deepEqual(result,new Uint8Array());
+});
+test('ReadFile reply sequence wraps to zero, including retry after packet loss',t=>{
+    const h=harness(t);let result;const burst=h.open(3,d=>result=d);
+    // The EOF leaves a gap. Place its recovery request at the wrap boundary.
+    h.ftp.seq=65535;h.reply(burst,[6],{nack:true,offset:3,seq:65534});
+    const gap=h.sent.shift();assert.equal(gap.opcode,h.ftp.OP.ReadFile);assert.equal(gap.seq,65535);
+    t.mock.timers.tick(1000);assert.equal(h.sent.shift().seq,65535);
+    assert.equal(h.reply(gap,[7,8,9],{seq:65535}),false);assert.equal(result,undefined);
+    assert.equal(h.reply(gap,[7,8,9],{seq:0}),true);assert.deepEqual(result,Uint8Array.from([7,8,9]));
+});

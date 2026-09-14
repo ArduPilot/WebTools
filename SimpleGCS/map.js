@@ -243,7 +243,6 @@
             this.vehicleMarker = null;
             this.appliedVehClass = null;
             this.lastHeadingDeg = null;
-            this.map._movedOnce = false;
             this.clearTargetPosition();
         },
 

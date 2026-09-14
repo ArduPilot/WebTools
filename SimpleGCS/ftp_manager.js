@@ -5,7 +5,6 @@
     let current = null;
     let queue = [];
     let link = null;
-    let ready = false;
 
     function finish(job, data) {
         if (job.completed) return;
@@ -24,7 +23,7 @@
     }
 
     function pump() {
-        if (current || !queue.length || (ftp && !ready)) return;
+        if (current || !queue.length) return;
         const job = queue.shift();
         if (!ftp) { finish(job, null); return; }
         current = job;
@@ -56,22 +55,14 @@
             ftp = new MAVFTP(MAVLink, ws);
             ftp.targetSystem = sysId;
             ftp.targetComponent = compId;
-            const next = ftp;
-            next.resetSessions(ok => {
-                if (ftp !== next) return;
-                // Older servers may not implement reset. Normal file operations
-                // still report their own failures if reset was not acknowledged.
-                if (!ok) console.warn("FTP session reset was not acknowledged");
-                ready = true;
-                pump();
-            });
+            // Do not reset sessions here: ArduPilot <=4.6 can close another
+            // client's file. Start requests immediately with their watchdogs.
         },
         clearLink() {
             const previous = ftp;
             const canceled = queue;
             queue = [];
             ftp = link = null;
-            ready = false;
             previous?.cancel();
             for (const job of canceled) finish(job, null);
         },

@@ -48,6 +48,11 @@ rejects invalid close codes. `npm run test:video` covers authenticated signaling
 hidden/closed player cleanup, native-HLS fallback, settings cancellation and an
 optional local MediaMTX stream (see the SimpleGCS README).
 
-Session-reset tests verify retry correlation, queue gating, and ignoring a reset
-ACK from an older link. Review validation also removes individual fixes in
+FTP tests verify explicit reset retry correlation, immediate watchdogs without
+link-setup resets, and no TerminateSession before an acknowledged open/create.
+OpenFileRO and ReadFile replies are exercised across sequence 65535 → 0.
+Browser tests keep a dead peer in CLOSING, check prompt reconnect and late-close
+isolation, preserve the same vehicle's pan/zoom, and recenter after a vehicle change
+or explicit disconnect. A duplicated tab with copied session storage must acquire
+a different component ID. Review validation also removes individual fixes in
 isolated copies and verifies that the targeted regression tests fail.

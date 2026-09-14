@@ -27,6 +27,7 @@
     let reconnectAttempts = 0;
     let intentionalDisconnect = false;
     let lastConnectionSettings = null;
+    let mapVehicleIdentity = null;
 
     // Link health tracking
     let lastRxMs = 0;
@@ -188,6 +189,10 @@
     }
 
     function sendSetMode(mode, label) {
+        if (!ws || ws.readyState !== WebSocket.OPEN || vehSysId < 1) {
+            window.GCSUtils.toast("Waiting for vehicle connection");
+            return false;
+        }
         if (VehicleType.mavType !== mavlink20.MAV_TYPE_GROUND_ROVER &&
             VehicleType.mavType !== mavlink20.MAV_TYPE_SURFACE_BOAT) {
             window.GCSUtils.toast("Mode controls require a connected boat or rover");
@@ -639,7 +644,8 @@
     }
 
     // --- Connection Management ---
-    function initConnection() {
+    async function initConnection() {
+        connectBtn.disabled = true;
         const button = connectBtn;
         const tipDiv = document.createElement("div");
         tipDiv.appendChild(document.importNode(
@@ -676,12 +682,32 @@
         const sysInput = tipDiv.querySelector("#system_id");
         const compInput = tipDiv.querySelector("#component_id");
 
-        // Standard GCS system ID, with a separate component ID for each browser.
-        function rand100_200() {
-            return Math.floor(Math.random() * 101) + 100;
+        // Keep the GCS system ID stable, but give each tab its own component.
+        // Web Locks also prevent a duplicated tab inheriting an active ID.
+        let componentLease = null;
+        async function claimComponentId(preferred) {
+            if (componentLease?.id === preferred || !navigator.locks) return preferred;
+            for (let offset = 0; offset < 255; offset++) {
+                const id = 1 + (preferred - 1 + offset) % 255;
+                const lease = await new Promise((resolve, reject) => {
+                    navigator.locks.request(`simplegcs.component.${id}`, {ifAvailable: true}, lock => {
+                        if (!lock) { resolve(null); return; }
+                        return new Promise(release => resolve({id, release}));
+                    }).catch(reject);
+                });
+                if (lease) {
+                    componentLease?.release();
+                    componentLease = lease;
+                    return id;
+                }
+            }
+            throw new Error("All GCS component IDs are in use. Close an unused GCS tab.");
         }
+        const preferredComponent = Number(sessionStorage.getItem("gcs.componentId") ||
+            window.SIMPLEGCS_CONFIG?.defaultComponentId) ||
+            (1 + crypto.getRandomValues(new Uint32Array(1))[0] % 255);
         sysInput.value = localStorage.getItem("gcs.systemId") || window.SIMPLEGCS_CONFIG?.defaultSystemId || 255;
-        compInput.value = localStorage.getItem("gcs.componentId") || window.SIMPLEGCS_CONFIG?.defaultComponentId || rand100_200();
+        compInput.value = await claimComponentId(Number.isInteger(preferredComponent) && preferredComponent >= 1 && preferredComponent <= 255 ? preferredComponent : 190);
 
         const LS_KEYS = {
             url: "gcs.url",
@@ -700,7 +726,7 @@
                 url: urlInput.value.trim(),
                 passphrase: passphraseInput.value,
                 systemId: (sid >= 1 && sid <= 255) ? sid : 255,
-                componentId: (cid >= 0 && cid <= 255) ? cid : 190,
+                componentId: (cid >= 1 && cid <= 255) ? cid : 190,
                 sendHeartbeat: hbCheckbox.checked
             };
         }
@@ -726,12 +752,13 @@
 
                 // If we've had no MAVLink packets for >15s, force a reconnect
                 if (lagMs > 15000) {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        try { console.warn("No MAVLink for 15s; forcing reconnect");
-                              ws.close(4000, "link stall");
-                            } catch (e) {}
-                    }
-                    return; // onclose will schedule reconnect and reset UI
+                    console.warn("No MAVLink for 15s; forcing reconnect");
+                    // A dead peer can leave close() waiting for a 60-second
+                    // handshake timeout. Detach and reconnect immediately.
+                    disconnect(false, 4000, "link stall");
+                    setConnState("error");
+                    scheduleReconnect();
+                    return;
                 }
                 if (lagMs > 3000) {
                     setTelemetryStatus(vehSysId < 1 ? "Waiting for vehicle" : "Telemetry stale", true);
@@ -825,28 +852,10 @@
 
             ws.onclose = (event) => {
                 if (ws !== socket) return;
-                ws = null;
-                resetVehicleData();
                 console.log("WebSocket closed:", event.code, event.reason);
-
-                if (hbInterval) {
-                    clearInterval(hbInterval);
-                    hbInterval = null;
-                }
-
-                Fence.onDisconnected();
-                Mission.onDisconnected();
-                FTPManager.clearLink();
-                disconnectParameters();
-                stopLinkHealthMonitor();
-
-                if (!intentionalDisconnect) {
-                    setConnState("error");
-                    scheduleReconnect();
-                } else {
-                    setConnState("");
-                    window.GCSUtils.toast("Disconnected");
-                }
+                disconnect(false);
+                setConnState("error");
+                scheduleReconnect();
             };
 
             ws.onmessage = event => { if (ws === socket) handleMessage(event); };
@@ -866,7 +875,7 @@
             }, delay);
         }
 
-        function disconnect(intentional = true) {
+        function disconnect(intentional = true, closeCode = 1000, closeReason = "") {
             intentionalDisconnect = intentional;
 
             if (reconnectTimer) {
@@ -877,13 +886,14 @@
             if (intentional) {
                 reconnectAttempts = 0;
                 lastConnectionSettings = null;
+                mapVehicleIdentity = null;
             }
 
             const oldSocket = ws;
             ws = null;
             if (oldSocket) {
                 oldSocket.onopen = oldSocket.onclose = oldSocket.onerror = oldSocket.onmessage = null;
-                try { oldSocket.close(); } catch {}
+                try { oldSocket.close(closeCode, closeReason); } catch {}
             }
             resetVehicleData();
             Fence.onDisconnected();
@@ -905,7 +915,7 @@
             MapManager.clearTargetPosition();
         }
 
-        connectBtnDialog.onclick = () => {
+        connectBtnDialog.onclick = async () => {
             if (!urlInput.checkValidity()) {
                 window.GCSUtils.toast("Enter ws:// or wss:// URL");
                 urlInput.focus();
@@ -913,9 +923,17 @@
             }
 
             const settings = readConnectionSettings();
+            connectBtnDialog.disabled = true;
+            try {
+                settings.componentId = await claimComponentId(settings.componentId);
+                compInput.value = settings.componentId;
+            } catch (error) {
+                window.GCSUtils.toast(error.message);
+                return;
+            } finally { connectBtnDialog.disabled = false; }
             localStorage.setItem(LS_KEYS.url, settings.url);
             localStorage.setItem("gcs.systemId", settings.systemId);
-            localStorage.setItem("gcs.componentId", settings.componentId);
+            sessionStorage.setItem("gcs.componentId", settings.componentId);
             const pass = settings.passphrase;
             if (pass.length) {
                 localStorage.setItem(LS_KEYS.pass, pass);
@@ -933,6 +951,7 @@
 
         // Reconnect only to an explicitly saved endpoint.
         if (localStorage.getItem(LS_KEYS.url)) connect(readConnectionSettings());
+        connectBtn.disabled = false;
     }
 
     // --- Message Handling ---
@@ -966,6 +985,9 @@
         // HEARTBEAT - vehicle discovery and status
         if (m._name === "HEARTBEAT" && m.autopilot == mavlink20.MAV_AUTOPILOT_ARDUPILOTMEGA) {
             if (vehSysId < 1) {
+                const identity = `${lastConnectionSettings.url}:${m._header.srcSystem}:${m._header.srcComponent}`;
+                if (identity !== mapVehicleIdentity) MapManager.map._movedOnce = false;
+                mapVehicleIdentity = identity;
                 vehSysId = m._header.srcSystem;
                 vehCompId = m._header.srcComponent;
                 FTPManager.setLink(MAVLink, ws, vehSysId, vehCompId);
@@ -1104,7 +1126,7 @@
     // --- Initialize Everything ---
     updateTelemetryDisplay();
     initMenuButton();
-    initConnection();
+    await initConnection();
 
     // Start LTE update timer
     setInterval(updateLTE, 1000);

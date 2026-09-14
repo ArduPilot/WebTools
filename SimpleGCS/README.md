@@ -38,16 +38,19 @@ layers are cleared on disconnect; replies from the previous connection are ignor
 The relay must preserve MAVLink source system/component IDs for commands and
 FTP replies. Relay authentication and vehicle signing are separate settings;
 configure them according to the relay's forwarding behavior. The GCS system ID
-defaults to 255; the component ID is initially random. Both are editable in
-Connection Settings and saved when Connect is pressed. Deployment defaults can
-also be set in `config.js`. Give simultaneous GCS instances distinct identities.
+defaults to 255; the component ID is initially random from 1–255. Both are editable
+in Connection Settings. Connect saves the system ID across this browser and the
+component ID for this tab only. Where Web Locks are available, tabs reserve their
+component IDs; a duplicated tab or an ID already in use gets the next free ID.
+Deployment defaults can also be set in `config.js`. Different devices cannot
+coordinate these reservations; give simultaneous GCS instances distinct identities.
 If changing the system ID, configure the vehicle's `MAV_GCS_SYSID` and, if used,
 `MAV_GCS_SYSID_HI` range to include it. This matters for `FS_GCS_ENABLE` and
 `MAV_OPTIONS`/GCS system-ID enforcement; see the connected firmware's parameter
 definitions. A GCS heartbeat must be enabled if that failsafe is required.
 
 Connection settings, including the signing passphrase, are stored in this
-browser's local storage. Use a browser profile appropriate for vehicle access.
+browser's local storage, except for the per-tab component ID in session storage. Use a browser profile appropriate for vehicle access.
 No deployment endpoint or signing/video credentials are built into the app.
 
 OpenStreetMap is the default map. Google Maps is optional: copy
@@ -93,7 +96,18 @@ node SimpleGCS/node_ftp.js "$WS_URL" "$SIGNING_PASSPHRASE" \
 MAVFTP transfers are limited to 64 MiB by default. They validate
 reply addressing, session, request sequence and bounds, retry lost requests,
 and recover missing ranges using ordinary reads. Completion requires every
-byte advertised by OpenFileRO, including missing final burst packets.
+byte advertised by OpenFileRO, including missing final burst packets. Connections
+do not automatically reset FTP sessions: on ArduPilot 4.6 and older that can close
+another client's file. Cleanup only terminates a session after its open was
+acknowledged. An unanswered open may leave a file until the server's idle timeout;
+retry the fetch if the server is busy. Older firmware supports only one active
+FTP transfer, even when clients use different GCS identities.
+
+After 15 seconds without telemetry from the selected vehicle, SimpleGCS clears
+stale data and schedules a reconnect without waiting for the old socket's closing
+handshake. Automatic reconnects to the same endpoint and vehicle preserve the
+operator's pan and zoom. A different vehicle or an explicit disconnect resets
+initial centering.
 
 ## Parameters
 

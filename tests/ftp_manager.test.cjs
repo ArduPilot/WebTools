@@ -3,12 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-function setup(t, deferReset=false) {
+function setup(t) {
     t.mock.timers.enable({apis:['setTimeout'],now:1000});
     const instances=[];
     class FakeFTP {
         constructor(){this.calls=[];instances.push(this)}
-        resetSessions(cb){this.resets=(this.resets||0)+1;this.resetCb=cb;if(!deferReset)cb(true)}
+        resetSessions(){throw Error("Automatic resets can abort another client on ArduPilot <=4.6")}
         getFile(path,cb,options){this.calls.push({path,cb,options});this.cb=cb}
         putFile(path,data,cb){this.calls.push({path,data,cb});this.cb=cb}
         cancel(){const cb=this.cb;this.cb=null;cb?.(null)}
@@ -71,11 +71,11 @@ test('uploads share the queue with virtual-file downloads and wait for completio
     assert.equal(ftp.calls[1].options.sizeIsEstimate,true);assert.equal(ftp.calls[1].options.fixedReadSize,true);ftp.complete(data);assert.deepEqual(results,[2,data]);
 });
 
-test('new link resets remote FTP sessions before starting queued transfers',t=>{
-    const {manager,ftp,instances,link}=setup(t,true);assert.equal(ftp.resets,1);
-    manager.getFile('waiting',()=>{});assert.equal(ftp.calls.length,0);
-    ftp.resetCb(true);assert.equal(ftp.calls[0].path,'waiting');
-    manager.setLink(link,{},43,1);const next=instances.at(-1);assert.equal(next.resets,1);
-    manager.getFile('new-link',()=>{});ftp.resetCb(true);assert.equal(next.calls.length,0,'old reset ACK cannot release the new link');
-    next.resetCb(true);assert.equal(next.calls[0].path,'new-link');
+test('new links start FTP immediately without resetting another client or delaying the watchdog',t=>{
+    const {manager,ftp,instances,link}=setup(t);const results=[];
+    manager.getFile('waiting',d=>results.push(d),{timeoutMs:1000});
+    assert.equal(ftp.calls[0].path,'waiting');
+    t.mock.timers.tick(1000);assert.deepEqual(results,[null]);
+    manager.setLink(link,{},43,1);const next=instances.at(-1);
+    manager.getFile('new-link',()=>{});assert.equal(next.calls[0].path,'new-link');
 });

@@ -120,9 +120,10 @@ the newest accepted reply using 16-bit serial arithmetic, while retries keep
 their original request sequence. Tests model ArduPilot's cached-reply behavior,
 including a lost single-packet burst and wrap from 65535 to zero.
 
-`FTPManager` resets this GCS identity's ArduPilot sessions when establishing a new
-link, waiting for the reset ACK before starting queued file transfers. Reset
-requests retry with their original sequence; unsupported or unacknowledged resets
-fall back to normal file operations after completion/failure. Using distinct GCS
-identities avoids resetting another instance's session. The standalone client
-exposes `resetSessions(callback)` for callers managing their own link lifecycle.
+`FTPManager` starts transfers immediately without an automatic session reset.
+ArduPilot 4.6 and older share one FTP file across clients; a reset could close
+another client's file regardless of GCS identity. `MAVFTP` only terminates a file
+whose open/create was acknowledged, including during cancellation and errors.
+If an open ACK is lost and retries fail, leave cleanup to the server's idle timeout.
+The explicit `resetSessions(callback)` API remains for callers that control all
+clients or know the server scopes resets by GCS identity (ArduPilot 4.7+).

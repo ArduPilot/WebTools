@@ -145,3 +145,10 @@ test('fence disconnect clears overlays and invalidates in-flight downloads',t=>{
     api.onConnected({});calls[1]([1]);assert.equal(layers.size,0);
     calls[2](null);api.onDisconnected();t.mock.timers.tick(10000);assert.equal(calls.length,3);
 });
+
+test('arc waypoint endpoints render even when the bundled dialect lacks their constant',t=>{
+    const {calls,layers}=mission(t);
+    calls[0].cb([{command:36,frame:6,seq:7,x:-350000000,y:1490000000}]);
+    assert.equal(layers.size,2);
+    assert.equal([...layers].find(l=>l.tooltip!==undefined).tooltip,'7');
+});
