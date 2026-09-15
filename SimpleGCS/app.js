@@ -685,7 +685,8 @@
         // Keep the GCS system ID stable, but give each tab its own component.
         // Web Locks also prevent a duplicated tab inheriting an active ID.
         let componentLease = null;
-        async function claimComponentId(preferred) {
+        let connectionAttempt = 0;
+        async function claimComponentId(preferred, attempt) {
             if (componentLease?.id === preferred || !navigator.locks) return preferred;
             for (let offset = 0; offset < 255; offset++) {
                 const id = 1 + (preferred - 1 + offset) % 255;
@@ -695,6 +696,10 @@
                         return new Promise(release => resolve({id, release}));
                     }).catch(reject);
                 });
+                if (attempt !== connectionAttempt) {
+                    lease?.release();
+                    return null;
+                }
                 if (lease) {
                     componentLease?.release();
                     componentLease = lease;
@@ -707,7 +712,7 @@
             window.SIMPLEGCS_CONFIG?.defaultComponentId) ||
             (1 + crypto.getRandomValues(new Uint32Array(1))[0] % 255);
         sysInput.value = localStorage.getItem("gcs.systemId") || window.SIMPLEGCS_CONFIG?.defaultSystemId || 255;
-        compInput.value = await claimComponentId(Number.isInteger(preferredComponent) && preferredComponent >= 1 && preferredComponent <= 255 ? preferredComponent : 190);
+        compInput.value = Number.isInteger(preferredComponent) && preferredComponent >= 1 && preferredComponent <= 255 ? preferredComponent : 190;
 
         const LS_KEYS = {
             url: "gcs.url",
@@ -809,7 +814,27 @@
             }, 1000);
         }
 
+        function validateConnectionUrl(value) {
+            try {
+                const url = new URL(value);
+                if ((url.protocol === "ws:" || url.protocol === "wss:") && !url.href.includes("#")) return;
+            } catch {}
+            throw new Error("Enter a ws:// or wss:// URL without a fragment (#).");
+        }
+
         function connect(settings) {
+            // Validate saved settings as well as new edits. Constructor errors
+            // must leave the editor usable, without an automatic retry loop.
+            let socket;
+            try {
+                validateConnectionUrl(settings.url);
+                socket = new WebSocket(settings.url);
+            } catch (error) {
+                disconnect(false);
+                setConnState("error");
+                window.GCSUtils.toast(`Cannot open connection: ${error.message}`);
+                return false;
+            }
             disconnect(false);
             gcsSystemId = MAVLink.srcSystem = settings.systemId;
             gcsComponentId = MAVLink.srcComponent = settings.componentId;
@@ -827,7 +852,6 @@
             MAVLink.signing.stream_timestamps = signingStreams.get(signingContext);
 
             setConnState("connecting");
-            const socket = new WebSocket(settings.url);
             ws = socket;
             ws.binaryType = "arraybuffer";
 
@@ -859,6 +883,7 @@
             };
 
             ws.onmessage = event => { if (ws === socket) handleMessage(event); };
+            return true;
         }
 
         function scheduleReconnect() {
@@ -884,6 +909,8 @@
             }
 
             if (intentional) {
+                connectionAttempt++;
+                connectBtnDialog.disabled = false;
                 reconnectAttempts = 0;
                 lastConnectionSettings = null;
                 mapVehicleIdentity = null;
@@ -916,42 +943,47 @@
         }
 
         connectBtnDialog.onclick = async () => {
-            if (!urlInput.checkValidity()) {
-                window.GCSUtils.toast("Enter ws:// or wss:// URL");
-                urlInput.focus();
-                return;
-            }
-
             const settings = readConnectionSettings();
+            const attempt = ++connectionAttempt;
             connectBtnDialog.disabled = true;
             try {
-                settings.componentId = await claimComponentId(settings.componentId);
+                validateConnectionUrl(settings.url);
+                settings.componentId = await claimComponentId(settings.componentId, attempt);
+                if (attempt !== connectionAttempt) return;
                 compInput.value = settings.componentId;
+                if (!connect(settings)) return;
+                localStorage.setItem(LS_KEYS.url, settings.url);
+                localStorage.setItem("gcs.systemId", settings.systemId);
+                sessionStorage.setItem("gcs.componentId", settings.componentId);
+                if (settings.passphrase.length) {
+                    localStorage.setItem(LS_KEYS.pass, settings.passphrase);
+                } else {
+                    localStorage.removeItem(LS_KEYS.pass);
+                }
+                tip.hide();
             } catch (error) {
-                window.GCSUtils.toast(error.message);
-                return;
-            } finally { connectBtnDialog.disabled = false; }
-            localStorage.setItem(LS_KEYS.url, settings.url);
-            localStorage.setItem("gcs.systemId", settings.systemId);
-            sessionStorage.setItem("gcs.componentId", settings.componentId);
-            const pass = settings.passphrase;
-            if (pass.length) {
-                localStorage.setItem(LS_KEYS.pass, pass);
-            } else {
-                localStorage.removeItem(LS_KEYS.pass);
+                if (attempt === connectionAttempt) window.GCSUtils.toast(error.message);
+            } finally {
+                if (attempt === connectionAttempt) connectBtnDialog.disabled = false;
             }
-
-            tip.hide();
-            connect(settings);
         };
 
         disconnectBtn.onclick = () => {
             disconnect(true);
         };
 
-        // Reconnect only to an explicitly saved endpoint.
-        if (localStorage.getItem(LS_KEYS.url)) connect(readConnectionSettings());
-        connectBtn.disabled = false;
+        // Install the editor's handlers before any fallible asynchronous work,
+        // so a failed reservation or saved URL can be corrected in this dialog.
+        const attempt = ++connectionAttempt;
+        try {
+            const componentId = await claimComponentId(Number(compInput.value), attempt);
+            if (attempt !== connectionAttempt) return;
+            compInput.value = componentId;
+            // Reconnect only to an explicitly saved endpoint.
+            if (localStorage.getItem(LS_KEYS.url)) connect(readConnectionSettings());
+        } catch (error) {
+            if (attempt === connectionAttempt) window.GCSUtils.toast(error.message);
+        } finally { connectBtn.disabled = false; }
     }
 
     // --- Message Handling ---

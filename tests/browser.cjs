@@ -31,6 +31,7 @@ const paramFixture = require('./fixtures/params.json');
             class VehicleSocket {
                 static CONNECTING=0;static OPEN=1;static CLOSING=2;static CLOSED=3;
                 constructor(url) {
+                    if(state.rejectSocket)throw new DOMException('Connection blocked by browser','SecurityError');
                     this.url=url;this.readyState=0;state.sockets.push(this);
                     setTimeout(async()=>{
                         await mavlink20.ready;
@@ -364,7 +365,7 @@ const paramFixture = require('./fixtures/params.json');
         assert.equal(await sibling.evaluate(()=>sessionStorage.getItem('gcs.componentId')),String(siblingComponent));
         assert.equal(await sibling.evaluate(()=>localStorage.getItem('gcs.componentId')),null,'component identity is not shared via localStorage');
         await sibling.close();
-        assert.ok(await page.evaluate(()=>testVehicle.sent.filter(m=>m._name==='FILE_TRANSFER_PROTOCOL').every(m=>m.payload[3]!==2)),'connections and reconnects never reset other FTP sessions');
+        assert.ok(await page.evaluate(()=>testVehicle.sent.filter(m=>m._name==='FILE_TRANSFER_PROTOCOL').every(m=>m.payload.charCodeAt(3)!==2)),'connections and reconnects never reset other FTP sessions');
         // Explicit disconnect requests a fresh view on the next connection.
         await page.evaluate(()=>MapManager.map.setView([-34.5,148.5],12,{animate:false}));
         await page.locator('#connectBtn').click();await page.locator('#disconnection_button').click();
@@ -372,6 +373,75 @@ const paramFixture = require('./fixtures/params.json');
         await page.waitForFunction(()=>MapManager.vehicleMarker);
         assert.equal(await page.evaluate(()=>MapManager.map.getZoom()),16,'explicit disconnect resets centering');
         console.log('PASS: duplicated tabs use independent MAVLink identities; explicit disconnect recenters on the next connection');
+        // Faults during startup and Connect must leave a working editor.
+        // Use separate pages so their storage and locks can be controlled.
+        for(const failure of ['fragment','constructor','lock-rejected','lock-exhausted']) {
+            const faultPage=await context.newPage();
+            const faultErrors=[];faultPage.on('pageerror',error=>faultErrors.push(error.message));
+            await faultPage.route('**/SimpleGCS/config.js',route=>route.fulfill({contentType:'text/javascript',body:failure==='constructor'?'testVehicle.rejectSocket=true;':''}));
+            await faultPage.addInitScript(failure=>{
+                localStorage.setItem('gcs.url',failure==='fragment'?'ws://127.0.0.1:5763/#fragment':'ws://127.0.0.1:5763');
+                localStorage.setItem('gcs.passphrase','test-signing');
+                window.lockMode=failure;
+                const request=navigator.locks.request.bind(navigator.locks);
+                navigator.locks.request=(name,options,callback)=>{
+                    if(window.lockMode==='lock-rejected')return Promise.reject(new DOMException('Lock access denied','SecurityError'));
+                    if(window.lockMode==='lock-exhausted')return Promise.resolve(callback(null));
+                    return request(name,options,callback);
+                };
+            },failure);
+            await faultPage.goto(page.url());
+            await faultPage.waitForFunction(()=>window.AppSettings&&!document.querySelector('#connectBtn').disabled);
+            await faultPage.locator('#connectBtn').click();
+            assert.equal(await faultPage.locator('#connection_button').isEnabled(),true,`${failure} leaves Connect usable`);
+            assert.equal(await faultPage.evaluate(()=>testVehicle.sockets.length),0);
+            await faultPage.evaluate(()=>{window.lockMode='normal';testVehicle.rejectSocket=false;});
+            for(const invalid of ['ws://127.0.0.1:5763/#fragment','ws://127.0.0.1:5763/#','ws://','https://example.org']) {
+                const before=await faultPage.evaluate(()=>({url:localStorage.getItem('gcs.url'),sockets:testVehicle.sockets.length}));
+                await faultPage.locator('#target_url').fill(invalid);await faultPage.locator('#connection_button').click();
+                assert.deepEqual(await faultPage.evaluate(()=>({url:localStorage.getItem('gcs.url'),sockets:testVehicle.sockets.length})),before,'invalid URL cannot overwrite settings or open a socket');
+                assert.equal(await faultPage.locator('#target_url').isVisible(),true);
+            }
+            await faultPage.locator('#target_url').fill('ws://127.0.0.1:5763');
+            await faultPage.locator('#connection_button').click();
+            await faultPage.waitForFunction(()=>MapManager.vehicleMarker);
+            assert.deepEqual(faultErrors,[],`${failure} is handled without an unhandled rejection`);
+            await faultPage.close();
+        }
+        // Disconnect cancels an outstanding reservation, including its eventual
+        // lease, even if a newer Connect completes before the old one resolves.
+        await page.locator('#connectBtn').click();
+        const oldId=Number(await page.locator('#component_id').inputValue());
+        const delayedId=oldId===254?253:254;
+        await page.evaluate(id=>{
+            const request=navigator.locks.request.bind(navigator.locks);
+            window.delayedLeaseReleased=false;
+            navigator.locks.request=(name,options,callback)=>{
+                if(name!==`simplegcs.component.${id}`)return request(name,options,callback);
+                return new Promise(resolve=>{window.grantDelayedLease=()=>resolve(callback({name}));}).then(()=>window.delayedLeaseReleased=true);
+            };
+        },delayedId);
+        const beforePending=await page.evaluate(()=>testVehicle.sockets.length);
+        await page.locator('#component_id').fill(String(delayedId));
+        await page.locator('#connection_button').click();
+        await page.waitForFunction(()=>window.grantDelayedLease);
+        await page.locator('#disconnection_button').click();
+        await page.evaluate(()=>grantDelayedLease());
+        await page.waitForFunction(()=>window.delayedLeaseReleased);
+        assert.equal(await page.evaluate(()=>testVehicle.sockets.length),beforePending,'Disconnect prevents a delayed Connect from opening a socket');
+        assert.equal(await page.locator('#connection_button').isEnabled(),true);
+        assert.equal(await page.evaluate(()=>sessionStorage.getItem('gcs.componentId')),String(oldId),'cancelled attempt cannot persist its ID');
+        // Repeat with a new Connect before the cancelled reservation completes.
+        await page.evaluate(()=>{window.delayedLeaseReleased=false;window.grantDelayedLease=null;});
+        await page.locator('#connection_button').click();await page.waitForFunction(()=>window.grantDelayedLease);
+        await page.locator('#disconnection_button').click();
+        await page.locator('#component_id').fill(String(oldId));await page.locator('#connection_button').click();
+        await page.waitForFunction(()=>MapManager.vehicleMarker);
+        const afterNewConnect=await page.evaluate(()=>testVehicle.sockets.length);
+        await page.evaluate(()=>grantDelayedLease());await page.waitForFunction(()=>window.delayedLeaseReleased);
+        assert.equal(await page.evaluate(()=>testVehicle.sockets.length),afterNewConnect);
+        assert.equal(await page.evaluate(()=>sessionStorage.getItem('gcs.componentId')),String(oldId));
+        console.log('PASS: invalid saved URLs, constructor/lock failures and cancelled pending Connect recover without clearing storage; stale leases are released');
         // Run raw CDP drag gestures after the browser's normal tap checks.
         await page.evaluate(()=>VideoPanel.open());
         await page.setViewportSize({width:390,height:844});
