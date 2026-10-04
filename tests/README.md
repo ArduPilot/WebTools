@@ -1,6 +1,6 @@
 # SimpleGCS protocol tests
 
-`npm test` runs deterministic Node tests without external services. The
+`pnpm test` runs deterministic Node tests without external services. The
 `fixtures/mavlink.json` wire bytes come from pymavlink, covering every telemetry
 message consumed by SimpleGCS plus heartbeat, COMMAND_INT, COMMAND_ACK,
 MISSION_ITEM_INT and FILE_TRANSFER_PROTOCOL. Signing fixtures have a fixed test
@@ -16,7 +16,7 @@ stale sessions, malformed replies, limits and reentrant completion.
 late callbacks. `browser.cjs` exercises the real UI with signed simulated
 telemetry and FTP replies, including circle rendering and mouse long-press.
 
-Browser tests need `npm ci` and Playwright Chromium (or `CHROME_PATH` /
+Browser tests need `pnpm install --frozen-lockfile` and Playwright Chromium (or `CHROME_PATH` /
 `SIMPLEGCS_CDP_URL`). They still load the page's external map/UI resources.
 The live SITL procedure is documented in `SimpleGCS/README.md`; it requires an
 explicitly selected simulator and relay and is not part of unattended tests.
@@ -44,7 +44,7 @@ The browser suite validates real popup exclusions and normal long press, force
 command confirmation cancellation, stale-vehicle detection amid foreign relay
 traffic, browser-valid stall close codes, signing replay rejection across
 reconnect, connection drafts, and mouse/touch video dragging. The mock WebSocket
-rejects invalid close codes. `npm run test:video` covers authenticated signaling,
+rejects invalid close codes. `pnpm test:video` covers authenticated signaling,
 hidden/closed player cleanup, native-HLS fallback, settings cancellation and an
 optional local MediaMTX stream (see the SimpleGCS README).
 

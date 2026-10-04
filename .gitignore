@@ -5,3 +5,9 @@ node_modules/
 
 # Local deployment backups
 backup/
+
+# Portal build and staged legacy runtime assets
+apps/*/.legacy-assets/
+apps/*/dist/
+apps/*/.wrangler/
+apps/*/worker-configuration.d.ts

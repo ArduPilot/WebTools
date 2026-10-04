@@ -1,12 +1,19 @@
 {
   "name": "ardupilot-webtools-tests",
   "private": true,
+  "packageManager": "pnpm@10.23.0",
   "scripts": {
+    "dev": "pnpm --filter portal dev",
+    "typecheck": "pnpm --filter portal typecheck",
+    "lint": "pnpm --filter portal lint",
     "test": "node --test tests/*.test.cjs",
     "test:browser": "node tests/browser.cjs",
-    "test:video": "node tests/video-browser.cjs"
+    "test:video": "node tests/video-browser.cjs",
+    "test:portal": "node --test apps/portal/tests/*.test.cjs",
+    "build": "pnpm --filter portal build",
+    "preview": "pnpm --filter portal preview"
   },
-  "engines": { "node": ">=22.13" },
+  "engines": { "node": ">=24 <25" },
   "devDependencies": {
     "playwright": "1.63.0",
     "ws": "8.18.3"

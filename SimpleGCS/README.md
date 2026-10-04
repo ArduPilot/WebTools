@@ -88,7 +88,7 @@ and mission/fence files, and inspect any pre-arm failures before testing.
 The optional Node helper accepts reply loss from 0 to 100 percent:
 
 ```sh
-npm ci
+pnpm install --frozen-lockfile
 node SimpleGCS/node_ftp.js "$WS_URL" "$SIGNING_PASSPHRASE" \
     @MISSION/fence.dat /tmp/fence.dat 30
 ```
@@ -147,14 +147,14 @@ See `modules/MAVLink/README.md` for integration outside SimpleGCS.
 
 ## Tests
 
-From the repository root, using Node 22.13 or later:
+From the repository root, using Node 24 LTS and pnpm 10.23.0:
 
 ```sh
-npm test
-npm ci
-npx playwright install chromium
-npm run test:browser
-npm run test:video
+pnpm install --frozen-lockfile
+pnpm test
+pnpm exec playwright install chromium
+pnpm test:browser
+pnpm test:video
 ```
 
 The video test checks authenticated signaling, visible authentication failures,
@@ -163,7 +163,7 @@ For a playback integration check, publish a test stream to a local MediaMTX with
 read credentials `viewer` / `fixture-view`, then run:
 
 ```sh
-SIMPLEGCS_WHEP_TEST_URL=http://127.0.0.1:18889/stream/whep npm run test:video
+SIMPLEGCS_WHEP_TEST_URL=http://127.0.0.1:18889/stream/whep pnpm test:video
 ```
 
 This additionally requires decoded video frames in both players. Both browser
