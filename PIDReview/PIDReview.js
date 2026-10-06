@@ -108,7 +108,8 @@ function reset() {
     const types = ["PIDP",   "PIDR",   "PIDY",
                    "PIQP",   "PIQR",   "PIQY",
                    "RATE_R", "RATE_P", "RATE_Y",
-                   "PIDS", "PIDA"]
+                   "PIDS", "PIDA",
+                   "ANG_Roll", "ANG_Pitch", "ANG_Yaw"]
     for (const type of types) {
         let ele = document.getElementById("type_" + type)
         ele.disabled = true
@@ -618,7 +619,7 @@ function add_param_sets() {
     item.appendChild(document.createTextNode("Show"))
     set_cell_style(item)
 
-    const names = get_PID_param_names(PID.params.prefix)
+    const names = PID.param_getter(PID.params.prefix)
     for (const [name, param] of Object.entries(names)) {
         let item = document.createElement("th")
         header.appendChild(item)
@@ -711,15 +712,18 @@ function add_param_sets() {
     document.getElementById("Spec_Act").disabled = false
     document.getElementById("Spec_Out").disabled = false
 
-    // Only have others from a full PID log
-    const have_all = PID.id[0] !== "RATE"
-    document.getElementById("PIDX_Err").disabled = !have_all
+    // Full PID logs have Err, P, I, D, FF; ANG has only Err; RATE has none
+    const is_ANG = PID.id[0] === "ANG"
+    const have_all = PID.id[0] !== "RATE" && !is_ANG
+    const have_err = have_all || is_ANG
+
+    document.getElementById("PIDX_Err").disabled = !have_err
     document.getElementById("PIDX_P").disabled = !have_all
     document.getElementById("PIDX_I").disabled = !have_all
     document.getElementById("PIDX_D").disabled = !have_all
     document.getElementById("PIDX_FF").disabled = !have_all
 
-    document.getElementById("Spec_Err").disabled = !have_all
+    document.getElementById("Spec_Err").disabled = !have_err
     document.getElementById("Spec_P").disabled = !have_all
     document.getElementById("Spec_I").disabled = !have_all
     document.getElementById("Spec_D").disabled = !have_all
@@ -731,8 +735,10 @@ function add_param_sets() {
     document.getElementById("Spec_DFF").disabled = !have_DFF
 
     // Uncheck any that are disabled
-    if (!have_all) {
+    if (!have_err) {
         document.getElementById("PIDX_Err").checked = false
+    }
+    if (!have_all) {
         document.getElementById("PIDX_P").checked = false
         document.getElementById("PIDX_I").checked = false
         document.getElementById("PIDX_D").checked = false
@@ -742,14 +748,14 @@ function add_param_sets() {
         document.getElementById("PIDX_DFF").checked = false
     }
 
-    // Change to Out on spectrogram if disabled option is set
-    const disabled_checked = document.getElementById("Spec_Err").checked ||
-                             document.getElementById("Spec_P").checked ||
-                             document.getElementById("Spec_I").checked ||
-                             document.getElementById("Spec_D").checked ||
-                             document.getElementById("Spec_FF").checked ||
-                             document.getElementById("Spec_DFF").checked
-    if ((!have_all || !have_DFF) && disabled_checked) {
+    // Change to Out on spectrogram if the selected option is now disabled
+    const disabled_checked = (!have_err && document.getElementById("Spec_Err").checked) ||
+                             (!have_all && (document.getElementById("Spec_P").checked ||
+                                           document.getElementById("Spec_I").checked ||
+                                           document.getElementById("Spec_D").checked ||
+                                           document.getElementById("Spec_FF").checked)) ||
+                             (!have_DFF && document.getElementById("Spec_DFF").checked)
+    if (disabled_checked) {
         document.getElementById("Spec_Out").checked = true
     }
 
@@ -1308,7 +1314,7 @@ function time_range_changed() {
 }
 
 function get_PID_param_names(prefix) {
-    return { 
+    return {
         KP: {
             title: "KP",
             name: prefix + "P",
@@ -1367,6 +1373,16 @@ function get_PID_param_names(prefix) {
         Slew_max: {
             title: "Slew Max",
             name: prefix + "SMAX",
+            decimalPlaces: 4,
+        }
+    }
+}
+
+function get_ANG_param_names(prefix) {
+    return {
+        KP: {
+            title: "KP",
+            name: prefix + "P",
             decimalPlaces: 4,
         }
     }
@@ -1466,26 +1482,32 @@ async function load(log_file) {
 
         case 2: // Copter
             PID_log_messages = [
-                {id: ["PIDR"],      prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
-                {id: ["PIDP"],      prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
-                {id: ["PIDY"],      prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "R"], prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "P"], prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "Y"], prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits }
+                {id: ["PIDR"],         prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIDP"],         prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIDY"],         prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "R"],    prefixes: ["ATC_RAT_RLL_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "P"],    prefixes: ["ATC_RAT_PIT_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "Y"],    prefixes: ["ATC_RAT_YAW_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["ANG", "Roll"],  prefixes: ["ATC_ANG_RLL_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
+                {id: ["ANG", "Pitch"], prefixes: ["ATC_ANG_PIT_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
+                {id: ["ANG", "Yaw"],   prefixes: ["ATC_ANG_YAW_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
             ]
             break
 
         case 3: // Plane
             PID_log_messages = [
-                {id: ["PIDR"],      prefixes: ["RLL_RATE_"],    unitScale: 1.0,     units: degUnits },
-                {id: ["PIDP"],      prefixes: ["PTCH_RATE_"],   unitScale: 1.0,     units: degUnits },
-                {id: ["PIDY"],      prefixes: ["YAW_RATE_"],    unitScale: 1.0,     units: degUnits },
-                {id: ["PIQR"],      prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
-                {id: ["PIQP"],      prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
-                {id: ["PIQY"],      prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "R"], prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "P"], prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits },
-                {id: ["RATE", "Y"], prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits },
+                {id: ["PIDR"],         prefixes: ["RLL_RATE_"],    unitScale: 1.0,     units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIDP"],         prefixes: ["PTCH_RATE_"],   unitScale: 1.0,     units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIDY"],         prefixes: ["YAW_RATE_"],    unitScale: 1.0,     units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIQR"],         prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIQP"],         prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["PIQY"],         prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "R"],    prefixes: ["Q_A_RAT_RLL_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "P"],    prefixes: ["Q_A_RAT_PIT_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["RATE", "Y"],    prefixes: ["Q_A_RAT_YAW_"], unitScale: rad2deg, units: degUnits, param_getter: get_PID_param_names },
+                {id: ["ANG", "Roll"],  prefixes: ["Q_A_ANG_RLL_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
+                {id: ["ANG", "Pitch"], prefixes: ["Q_A_ANG_PIT_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
+                {id: ["ANG", "Yaw"],   prefixes: ["Q_A_ANG_YAW_"], unitScale: 1.0,     units: "deg",    param_getter: get_ANG_param_names },
             ]
             break
 
@@ -1513,7 +1535,7 @@ async function load(log_file) {
         PID_log_messages[i].params = { prefix: null, sets: [] }
         for (const prefix of PID_log_messages[i].prefixes) {
 
-            const names = get_PID_param_names(prefix)
+            const names = PID_log_messages[i].param_getter(prefix)
 
             let param_values = { start_time: 0 }
             for (const name in names) {
@@ -1579,6 +1601,7 @@ async function load(log_file) {
         const log_msg = log.get(id)
 
         const is_RATE_msg = id === "RATE"
+        const is_ANG_msg = id === "ANG"
 
         const time = TimeUS_to_seconds(log_msg.TimeUS)
 
@@ -1591,7 +1614,21 @@ async function load(log_file) {
                 if (PID_log_messages[i].sets[batch.param_set] == null) {
                     PID_log_messages[i].sets[batch.param_set] = []
                 }
-                if (is_RATE_msg) {
+                if (is_ANG_msg) {
+                    const axis_name = PID_log_messages[i].id[1]  // "Roll", "Pitch", or "Yaw"
+                    const tar_data = Array.from(log_msg["Des" + axis_name].slice(batch.batch_start, batch.batch_end))
+                    const act_data = Array.from(log_msg[axis_name].slice(batch.batch_start, batch.batch_end))
+                    const err_data = array_sub(tar_data, act_data)
+                    // Output is angle P gain * error, giving the commanded rate target (deg/s)
+                    const kp = PID_log_messages[i].params.sets[batch.param_set].KP ?? 0
+                    PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
+                                                                     sample_rate: batch.sample_rate,
+                                                                     Tar: tar_data,
+                                                                     Act: act_data,
+                                                                     Err: err_data,
+                                                                     Out: array_scale(err_data, kp) })
+
+                } else if (is_RATE_msg) {
                     const axis_prefix = PID_log_messages[i].id[1]
                     // Note that is not quite the same, PID logs report the filtered target value where as RATE gets the raw
                     PID_log_messages[i].sets[batch.param_set].push({ time: time.slice(batch.batch_start, batch.batch_end),
