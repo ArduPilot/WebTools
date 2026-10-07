@@ -701,6 +701,22 @@ function load_log(log_file) {
     function get_param(name, allow_change) {
         return get_param_value(PARM, name, allow_change)
     }
+    console.log("PARM", PARM)
+
+    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
+    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
+
+    // Read from log into HTML box
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 0; i < HNotch_params.length; i++) {
+        for (const param of Object.values(HNotch_params[i])) {
+            // Set harmonic bitmask size
+            if (param.endsWith("HMNCS")) {
+                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
+                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
+            }
+        }
+    }
 
     if ("SIDS" in log.messageTypes) {
         sid_sets.axis = []
@@ -766,25 +782,6 @@ function load_log(log_file) {
         flight_data.layout.xaxis.autorange = false
     }
 
-    // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
-    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
-
-    // Read from log into HTML box
-    const HNotch_params = get_HNotch_param_names()
-    for (let i = 0; i < HNotch_params.length; i++) {
-        for (const param of Object.values(HNotch_params[i])) {
-            // Set harmonic bitmask size
-            if (param.endsWith("HMNCS")) {
-                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
-                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
-            }
-            const value = get_param(param)
-            if (value != null) {
-                parameter_set_value(param, value)
-            }
-        }
-    }
-
     if ("MSG" in log.messageTypes) {
         const msg_text = log.get("MSG", "Message")
         for (let k=0;k<msg_text.length;k++) {
@@ -823,10 +820,22 @@ function setup_FFT_data() {
         document.getElementById("type_Pilot_Ctrlr").disabled = false
     }
 
-    const pid_params = get_PID_param_names(vehicle_type)
     function get_param(name, allow_change) {
         return get_param_value(PARM, name, allow_change)
     }
+
+    // Read from log into HTML box
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 0; i < HNotch_params.length; i++) {
+        for (const param of Object.values(HNotch_params[i])) {
+            const value = get_param(param)
+            if (value != null) {
+                parameter_set_value(param, value)
+            }
+        }
+    }
+
+    const pid_params = get_PID_param_names(vehicle_type)
 
     for (let i = 0; i < pid_params.length; i++) {
         for (const param of Object.values(pid_params[i])) {
@@ -1051,7 +1060,7 @@ function update_PID_filters() {
         if (NEF_num > 0 && NEF_num != NTF_num) {
             document.getElementById('FILT' + NEF_num).style.display = 'block';
         }
-}
+    }
 }
 
 // Determine the frequency response from log data
