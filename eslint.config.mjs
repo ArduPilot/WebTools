@@ -166,8 +166,9 @@ export default [
     languageOptions: { ecmaVersion: 'latest', sourceType: 'script', globals: globals.browser },
     rules: {
       ...js.configs.recommended.rules,
-      // Top-level names are page globals used by other scripts and by on…="" handlers.
-      'no-unused-vars': ['error', { vars: 'local' }],
+      // Top-level names are page globals used by other scripts and by on…="" handlers. Unused
+      // parameters are kept to match callback and method signatures.
+      'no-unused-vars': ['error', { vars: 'local', args: 'none' }],
       // A script's own top-level names are also page globals; only flag redeclaration in a file.
       'no-redeclare': ['error', { builtinGlobals: false }],
       // Errors are deliberately ignored with an empty catch, e.g. when removing a map layer.
