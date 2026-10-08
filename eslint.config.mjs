@@ -31,8 +31,12 @@ const LIBRARY_GLOBALS = {
   'tabulator': ['Tabulator'],
   'luxon': ['luxon'],
   'matrix.umd': ['mlMatrix'],
-  'fft.js/': ['FFTJS']
+  'fft.js/': ['FFTJS'],
+  'marked': ['marked'],
+  'dompurify': ['DOMPurify']
 }
+
+const libraryGlobals = (src) => LIBRARY_GLOBALS[Object.keys(LIBRARY_GLOBALS).find((key) => src.toLowerCase().includes(key))]
 
 function htmlPages(dir) {
   const out = []
@@ -43,6 +47,19 @@ function htmlPages(dir) {
     else if (entry.name.endsWith('.html')) out.push(path)
   }
   return out
+}
+
+// Globals an ES module gets from `import 'https://…/library.js'` side-effect imports.
+function moduleImportGlobals(source) {
+  let ast
+  try {
+    ast = espree.parse(source, { ecmaVersion: 'latest', sourceType: 'module' })
+  } catch {
+    return []
+  }
+  return ast.body
+    .filter((node) => node.type === 'ImportDeclaration' && node.specifiers.length === 0)
+    .flatMap((node) => libraryGlobals(node.source.value) ?? [])
 }
 
 // Names a classic script adds to the page's global scope.
@@ -78,18 +95,26 @@ const scriptTags = (text) => [...text.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/sc
 
 const pages = htmlPages(root).map((path) => {
   const scripts = []
+  const modules = []
   const names = []
   for (const tag of scriptTags(readFileSync(path, 'utf8'))) {
-    if (tag.module) continue // ES modules do not add page globals
+    if (tag.module) {
+      // ES modules see the page globals but do not add to them.
+      if (tag.src !== undefined && !/^(https?:)?\/\//.test(tag.src)) {
+        const file = resolve(dirname(path), tag.src.split('?')[0])
+        if (existsSync(file)) modules.push(relative(root, file))
+      }
+      continue
+    }
     if (tag.src === undefined) {
       names.push(...scriptGlobals(tag.body))
       continue
     }
     const remote = /^(https?:)?\/\//.test(tag.src)
     if (remote || /(^|\/)modules\//.test(tag.src)) {
-      const library = Object.keys(LIBRARY_GLOBALS).find((key) => tag.src.toLowerCase().includes(key))
+      const library = libraryGlobals(tag.src)
       if (library) {
-        names.push(...LIBRARY_GLOBALS[library])
+        names.push(...library)
         continue
       }
     }
@@ -99,7 +124,7 @@ const pages = htmlPages(root).map((path) => {
     scripts.push(relative(root, file))
     names.push(...scriptGlobals(readFileSync(file, 'utf8')))
   }
-  return { page: relative(root, path), scripts, names }
+  return { page: relative(root, path), scripts, modules, names }
 })
 
 export default [
@@ -127,9 +152,17 @@ export default [
     }
   },
   // Each page's HTML and scripts see every global the page's scripts declare.
-  ...pages.map(({ page, scripts, names }) => ({
-    files: [page, ...scripts],
+  ...pages.map(({ page, scripts, modules, names }) => ({
+    files: [page, ...scripts, ...modules],
     languageOptions: { globals: Object.fromEntries(names.map((name) => [name, 'writable'])) }
+  })),
+  // Scripts a page loads with type="module".
+  ...pages.flatMap(({ modules }) => modules).map((file) => ({
+    files: [file],
+    languageOptions: {
+      sourceType: 'module',
+      globals: Object.fromEntries(moduleImportGlobals(readFileSync(file, 'utf8')).map((name) => [name, 'readonly']))
+    }
   })),
   // Command-line scripts run with Node rather than loaded by a page.
   { files: ['SimpleGCS/cli_test.js', 'SimpleGCS/node_ftp.js'], languageOptions: { globals: globals.node } }
