@@ -1,4 +1,5 @@
 var ardupilotModule
+var SCurveLog
 const import_done = new Promise((resolve) => {
     WPNavModule().then((Module) => {
         ardupilotModule = Module
