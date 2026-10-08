@@ -107,7 +107,11 @@ export default [
     ignores: [
       'modules/**', // submodules and vendored libraries
       'backup/**', // local deployment backups
-      'Libraries/FileSaver.js' // vendored
+      'Libraries/FileSaver.js', // vendored
+      // Emscripten-generated glue
+      'KinematicTool/Ruckig/ruckig.js',
+      'KinematicTool/ardupilot/control.js',
+      'SCurveTool/ardupilot/wpnav.js'
     ]
   },
   {
