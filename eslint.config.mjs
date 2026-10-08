@@ -130,5 +130,7 @@ export default [
   ...pages.map(({ page, scripts, names }) => ({
     files: [page, ...scripts],
     languageOptions: { globals: Object.fromEntries(names.map((name) => [name, 'writable'])) }
-  }))
+  })),
+  // Command-line scripts run with Node rather than loaded by a page.
+  { files: ['SimpleGCS/cli_test.js', 'SimpleGCS/node_ftp.js'], languageOptions: { globals: globals.node } }
 ]
