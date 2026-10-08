@@ -20,7 +20,7 @@ function bin_count(time_in, size, bin_width, total) {
     function bin_index(time, bin_width) {
         const len = time.length
         let ret = new Array(len)
-        for (i = 0; i < len; i++) {
+        for (let i = 0; i < len; i++) {
             ret[i] = Math.floor(time[i] / bin_width)
         }
         return ret
@@ -694,7 +694,7 @@ function reset() {
                          margin: { b: 10, l: 50, r: 50, t: 10 },
                          }
 
-    plot = document.getElementById("log_stats")
+    let plot = document.getElementById("log_stats")
     Plotly.purge(plot)
     Plotly.newPlot(plot, log_stats.data, log_stats.layout, {displaylogo: false});
     plot_visibility(plot, true)
