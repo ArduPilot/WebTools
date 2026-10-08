@@ -141,7 +141,7 @@ async function connectIfNeeded() {
         try {
             // Instantiate OpenAI client
             openai = new OpenAI({apiKey, dangerouslyAllowBrowser: true});
-        } catch (error) {
+        } catch {
             throw new Error('Could not connect to OpenAI');
         }
     }

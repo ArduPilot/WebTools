@@ -128,7 +128,7 @@ function refine(vn, ve, vd, u, Wn, We, k, iters, tol) {
         }
         let step
         try { step = mlMatrix.solve(new mlMatrix.Matrix(JtJ), mlMatrix.Matrix.columnVector(Jtr)).to1DArray() }
-        catch (e) { break }   // singular normal equations
+        catch { break }   // singular normal equations
         p = [p[0]-step[0], p[1]-step[1], p[2]-step[2]]
         if (Math.hypot(step[0], step[1], step[2]) < tol) break
     }
@@ -149,7 +149,7 @@ function refine(vn, ve, vd, u, Wn, We, k, iters, tol) {
     const sigma2 = rss / dof
     let cov = [[NaN,NaN,NaN],[NaN,NaN,NaN],[NaN,NaN,NaN]]
     try { cov = mlMatrix.inverse(new mlMatrix.Matrix(JtJ)).to2DArray().map((row) => row.map((v) => v * sigma2)) }
-    catch (e) { /* singular JtJ -> covariance stays NaN */ }
+    catch { /* singular JtJ -> covariance stays NaN */ }
     return { Wn: p[0], We: p[1], k: p[2], residual_rms: Math.sqrt(rss / n), cov }
 }
 

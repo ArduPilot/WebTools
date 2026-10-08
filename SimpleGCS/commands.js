@@ -15,7 +15,7 @@
             this.pending.set(command, entries);
             this.armTimeout(command, entry);
             try { send(); return true; }
-            catch (error) {
+            catch {
                 this.remove(command, entry);
                 this.report(command, 'not sent');
                 return false;
