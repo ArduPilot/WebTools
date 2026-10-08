@@ -90,7 +90,7 @@ function setup_kinematic_plots() {
         showlegend: true
     }
 
-    plot = document.getElementById("snap_plot")
+    let plot = document.getElementById("snap_plot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, snap_plot.data, snap_plot.layout, { displaylogo: false })
 
@@ -468,7 +468,7 @@ async function replot()
     wp_pos_plot.layout.scene.yaxis["range"] = [ax_min, ax_max];
     wp_pos_plot.layout.scene.zaxis["range"] = [ax_min, ax_max];
 
-    plot = document.getElementById("waypoint_plot")
+    let plot = document.getElementById("waypoint_plot")
     Plotly.newPlot(plot, wp_pos_plot.data, wp_pos_plot.layout, { displaylogo: false })
 
     plot_scurves();
