@@ -169,7 +169,9 @@ export default [
       // Top-level names are page globals used by other scripts and by on…="" handlers.
       'no-unused-vars': ['error', { vars: 'local' }],
       // A script's own top-level names are also page globals; only flag redeclaration in a file.
-      'no-redeclare': ['error', { builtinGlobals: false }]
+      'no-redeclare': ['error', { builtinGlobals: false }],
+      // Errors are deliberately ignored with an empty catch, e.g. when removing a map layer.
+      'no-empty': ['error', { allowEmptyCatch: true }]
     }
   },
   // Each page's HTML and scripts see every global the page's scripts declare.
