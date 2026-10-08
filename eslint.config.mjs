@@ -92,10 +92,14 @@ function scriptGlobals(source) {
     if (node.type === 'VariableDeclaration') {
       for (const d of node.declarations) if (d.id.type === 'Identifier') names.push(d.id.name)
     }
-    // A top-level `name = value` without a declaration creates a global.
-    if (node.type === 'ExpressionStatement' && node.expression.type === 'AssignmentExpression' &&
-        node.expression.left.type === 'Identifier') {
-      names.push(node.expression.left.name)
+    // A top-level `name = value` without a declaration, or `this.name = value` (this is the global
+    // object at the top of a classic script), creates a global.
+    if (node.type === 'ExpressionStatement' && node.expression.type === 'AssignmentExpression') {
+      const left = node.expression.left
+      if (left.type === 'Identifier') names.push(left.name)
+      if (left.type === 'MemberExpression' && left.object.type === 'ThisExpression' && !left.computed) {
+        names.push(left.property.name)
+      }
     }
   }
   // Scripts wrapped in a function publish globals as `window.name = …`.
