@@ -268,7 +268,7 @@ function setup_plots() {
                                 xaxis: { title: {text: time_scale_label } },
                                 yaxis: { title: {text: "deg / s" } }}
 
-    var plot = document.getElementById("TimeInputs")
+    plot = document.getElementById("TimeInputs")
     Plotly.purge(plot)
     Plotly.newPlot(plot, TimeInputs.data, TimeInputs.layout, {displaylogo: false})
 
