@@ -124,7 +124,7 @@ function update_axis()
 {
     const axi = document.querySelector('input[name="axis"]:checked').value
     switch (axi) {
-        case "R":
+        case "R": {
             document.getElementById("roll_params").hidden = false
             document.getElementById("pitch_params").hidden = true
             const rateLimit = parseFloat(document.getElementById("RLL2SRV_RMAX").value)
@@ -135,6 +135,7 @@ function update_axis()
                 timeConstant: parseFloat(document.getElementById("RLL2SRV_TCONST").value),
                 angleP: parseFloat(document.getElementById("RLL_ANGLE_P").value)
             }
+        }
 
         case "P":
             document.getElementById("roll_params").hidden = true
