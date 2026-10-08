@@ -233,10 +233,10 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     var chained = 1;
     var composite_notches = 1;
     if (opts & 1) {
-        dbl = true;
+        let dbl = true;
         composite_notches = 2;
     } else if (opts & 16) {
-        triple = true;
+        let triple = true;
         composite_notches = 3;
     }
 
@@ -728,7 +728,7 @@ function load() {
         }
     }
 
-    plot = document.getElementById("Bode")
+    let plot = document.getElementById("Bode")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false});
 
@@ -936,10 +936,10 @@ function save_parameters() {
 async function load_parameters(file) {
     var text = await file.text();
     var lines = text.split('\n');
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i];
         line = line.replace("Q_A_RAT_","ATC_RAT_");
-        v = line.split(/[\s,=\t]+/);
+        let v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];
