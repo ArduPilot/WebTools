@@ -3679,7 +3679,7 @@ async function initial_load() {
 
 function save_text(text, file_postfix) {
 
-    let log_file_name = document.getElementById("fileItem").value.replace(/.*[\/\\]/, '')
+    let log_file_name = document.getElementById("fileItem").value.replace(/.*[/\\]/, '')
     if (log_file_name.length == 0) {
         // May not have a file name if loaded with "open in"
         log_file_name = "log"
