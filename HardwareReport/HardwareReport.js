@@ -123,6 +123,7 @@ async function check_release(hash, paragraph) {
     paragraph.appendChild(document.createElement("br"))
 
     // Try and find hash in AP repo, this should find dev builds
+    let request
     try {
         request = await octokitRequest('GET /repos/:owner/:repo/commits/' + hash, {
             owner: 'ArduPilot',
@@ -1663,7 +1664,7 @@ function update_minimal_config() {
             input.checked = false
         }
 
-        const title_string = present_params.join([separator = ', '])
+        const title_string = present_params.join(', ')
         input.setAttribute('title', title_string)
 
         let label = input.labels[0]
@@ -3221,7 +3222,7 @@ function reset() {
         input.disabled = false
         input.setAttribute("data-params", params)
 
-        const title_string = params.join([separator = ', '])
+        const title_string = params.join(', ')
         input.setAttribute('title', title_string)
 
         let label = input.labels[0]
