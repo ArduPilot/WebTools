@@ -1,0 +1,102 @@
+{
+  "AILogAnalyzer/logAnalyzer.js": {
+    "no-unused-vars": {
+      "count": 3
+    }
+  },
+  "AirspeedFit/airspeedfit.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "AnalyticTune/AnalyticTune.js": {
+    "no-undef": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 4
+    }
+  },
+  "DFULoader/dfu-util.js": {
+    "no-undef": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 5
+    }
+  },
+  "DFULoader/dfu.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "DFULoader/dfuse.js": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "FilterReview/tracking/ESC.js": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "FilterTool/filters.js": {
+    "no-undef": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "HardwareReport/HardwareReport.js": {
+    "no-duplicate-case": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "Libraries/ParameterMetadata.js": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "LogFinder/LogFinder.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "PIDReview/PIDReview.js": {
+    "no-unused-vars": {
+      "count": 3
+    }
+  },
+  "SimpleGCS/video.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "SysID/SysID.js": {
+    "no-undef": {
+      "count": 3
+    },
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "SysID/index.html": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "TelemetryDashboard/TelemetryDashboard.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "ThrustExpo/ThrustExpo.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  }
+}
