@@ -474,14 +474,14 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 5) {
-        var rpm = get_form("RPM2");
+        rpm = get_form("RPM2");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 3) {
         if (opts & 2) {
             chained = get_form("NUM_MOTORS");
         }
-        var rpm = get_form("ESC_RPM");
+        rpm = get_form("ESC_RPM");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     for (var n=0;n<8;n++) {
@@ -1346,9 +1346,9 @@ function update_PID_filters() {
     if (vehicle_type == "ArduCopter") {
         var ele_prefix = "";
     } else if (vehicle_type == "ArduPlane_VTOL") {
-        var ele_prefix = "Q";
+        ele_prefix = "Q";
     } else if (vehicle_type == "ArduPlane_FW") {
-        var ele_prefix = "FW";
+        ele_prefix = "FW";
     }
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
@@ -1944,37 +1944,37 @@ function save_parameters() {
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_vehicle_plt_prefix()) && page_axis == "Yaw") {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_rate_param_prefix())) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_angle_param_prefix())) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value
             NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
-                    var value = inputs[v].value;
+                    value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
             }
             if (NTF_num > 0 && NEF_num != NTF_num) {
                 if (name.startsWith("FILT" + NTF_num + "_")) {
-                    var value = inputs[v].value;
+                    value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
             }
             if (name.startsWith("INS_")) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith("SCHED_")) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
         }
