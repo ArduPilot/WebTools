@@ -33,8 +33,24 @@ const LIBRARY_GLOBALS = {
   'matrix.umd': ['mlMatrix'],
   'fft.js/': ['FFTJS'],
   'marked': ['marked'],
-  'dompurify': ['DOMPurify']
+  'dompurify': ['DOMPurify'],
+  'osmtogeojson': ['osmtogeojson']
 }
+
+// Scripts that publish their globals at run time from inside a function, so cannot be read statically.
+const RUNTIME_GLOBALS = {
+  // `for (const key of Object.keys(api)) global[key] = api[key]`
+  'AirspeedFit/airspeedfit_core.js': [
+    'SSL_AIR_DENSITY', 'ISA_GAS_CONSTANT', 'ISA_LAPSE_RATE', 'DEFAULT_Q_WIND', 'isa_temperature_at_alt_c',
+    'air_temperature_c', 'eas2tas', 'density_altitude_m', 'auto_window', 'refine', 'calibrate',
+    'wind_smoother', 'calibrate_combined', 'course_spread_deg'
+  ],
+  'modules/MAVLink/mavparam.js': ['MAVParam', 'MAVParamDefinitions'], // Object.assign(root, {…})
+  'modules/MAVLink/mavparam-ui.js': ['MAVParamUI'] // root.MAVParamUI = …
+}
+
+// Scripts that also run under Node and use CommonJS behind a `typeof module` check.
+const DUAL_SCRIPTS = ['AirspeedFit/airspeedfit_core.js', 'SimpleGCS/commands.js']
 
 const libraryGlobals = (src) => LIBRARY_GLOBALS[Object.keys(LIBRARY_GLOBALS).find((key) => src.toLowerCase().includes(key))]
 
@@ -84,6 +100,10 @@ function scriptGlobals(source) {
   }
   // Scripts wrapped in a function publish globals as `window.name = …`.
   for (const [, name] of source.matchAll(/\bwindow\.([A-Za-z_$][\w$]*)\s*=[^=]/g)) names.push(name)
+  // Libraries loaded with `import('https://…')` add their globals when they arrive.
+  for (const [, , src] of source.matchAll(/\bimport\(\s*(["'])(https?:\/\/[^"']+)\1\s*\)/g)) {
+    names.push(...(libraryGlobals(src) ?? []))
+  }
   return names
 }
 
@@ -121,8 +141,9 @@ const pages = htmlPages(root).map((path) => {
     if (remote) continue
     const file = resolve(dirname(path), tag.src.split('?')[0])
     if (!existsSync(file)) continue
-    scripts.push(relative(root, file))
-    names.push(...scriptGlobals(readFileSync(file, 'utf8')))
+    const rel = relative(root, file)
+    scripts.push(rel)
+    names.push(...scriptGlobals(readFileSync(file, 'utf8')), ...(RUNTIME_GLOBALS[rel] ?? []))
   }
   return { page: relative(root, path), scripts, modules, names }
 })
@@ -164,6 +185,7 @@ export default [
       globals: Object.fromEntries(moduleImportGlobals(readFileSync(file, 'utf8')).map((name) => [name, 'readonly']))
     }
   })),
+  { files: DUAL_SCRIPTS, languageOptions: { globals: globals.commonjs } },
   // Command-line scripts run with Node rather than loaded by a page.
   { files: ['SimpleGCS/cli_test.js', 'SimpleGCS/node_ftp.js'], languageOptions: { globals: globals.node } }
 ]
