@@ -760,7 +760,7 @@ async function exportVideo() {
     console.log(`Export took: ${exportTime.toFixed(2)}s, ${exportFPS.toFixed(2)} FPS, ${(timeRatio * 100).toFixed(2)}% realtime`)
 
     // Reset widgets to match video preview
-    setWidgetTime(video.currentTime)
+    setWidgetTime(document.getElementById('video').currentTime)
 }
 
 function seekTo(video, time) {
@@ -895,7 +895,7 @@ function widget_dropped(event, previousWidget, newWidget) {
         copy.loadLog()
     }
 
-    setWidgetTime(video.currentTime)
+    setWidgetTime(document.getElementById('video').currentTime)
 
     // If the widget was removed from the palette grid then reload it
     if (previousWidget.grid === palette) {
@@ -995,7 +995,7 @@ function load_widgets(target_grid, widgets) {
         widget.loadLog()
     }
 
-    setWidgetTime(video.currentTime)
+    setWidgetTime(document.getElementById('video').currentTime)
 }
 
 function load_layout(grid_layout, widgets) {
