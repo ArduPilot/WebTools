@@ -265,6 +265,7 @@ async function generate_fence(feature, name) {
     let text = 'QGC WPL 110\n'
     let points = 1
     for (let i = 0; i<len; i++) {
+        let poly_type, circle_type
         if (i == 0) {
             // first point is always inclusion
             poly_type = 5001
@@ -405,10 +406,10 @@ function polygon_intersects_sweep(x, y) {
     // list of lines in polygon
     const num_nodes = x.length
 
-    lines = new Array(num_nodes)
-    event_que = new Array(2*num_nodes)
+    let lines = new Array(num_nodes)
+    let event_que = new Array(2*num_nodes)
     for (let i = 0; i<num_nodes; i++) {
-        j = i+1
+        let j = i+1
         if (j >= num_nodes) {
             j = 0
         }
@@ -423,7 +424,7 @@ function polygon_intersects_sweep(x, y) {
     }
 
     event_que.sort((a, b) => { return a[0] - b[0] })
-    active = []
+    let active = []
     for (const event of event_que) {
         if (event[2]) {
             // adding new line, intersect with active items

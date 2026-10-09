@@ -70,7 +70,7 @@ function param_to_string(value)
     const float_val = Math.fround(value)
 
     const significant_figures = [7,8,9]
-    for (figures of significant_figures) {
+    for (let figures of significant_figures) {
         // Convert to a string with the given number of figures
         // This gives the value we want, but with trailing zeros
         const string_val = float_val.toPrecision(figures)

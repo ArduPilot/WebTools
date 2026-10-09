@@ -364,7 +364,7 @@
 
   let params = []
   var inputs = document.getElementsByTagName("input");
-  for (param of inputs) {
+  for (const param of inputs) {
       if (param.id.startsWith("ATC_") || param.id.startsWith("PSC") || param.id.startsWith("WP_")) {
           params.push(param.id)
       }

@@ -188,7 +188,7 @@ function setup_table(logs) {
                 const text = get_param_download_text(params)
 
                 // make sure there are no slashes in file name
-                let log_file_name = log.info.name.replace(/.*[\/\\]/, '')
+                let log_file_name = log.info.name.replace(/.*[/\\]/, '')
 
                 // Replace the file extension
                 const file_name = (log_file_name.substr(0, log_file_name.lastIndexOf('.')) || log_file_name) + ".param"

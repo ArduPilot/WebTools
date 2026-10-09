@@ -419,7 +419,7 @@ function reset() {
     parameter_set_disable("SCHED_LOOP_RATE", true)
     const notch_params = get_HNotch_param_names()
     for (let i = 0; i < notch_params.length; i++) {
-        for (param of Object.values(notch_params[i])) {
+        for (let param of Object.values(notch_params[i])) {
             parameter_set_disable(param, true)
         }
     }
@@ -453,7 +453,7 @@ function reset() {
         check.checked = true
     }
 
-    check = document.getElementById("SpecNotchShowLogged")
+    let check = document.getElementById("SpecNotchShowLogged")
     check.disabled = true
     check.checked = false
 
@@ -630,7 +630,7 @@ function setup_plots() {
         }
     }
 
-    var plot = document.getElementById("FFTPlot")
+    plot = document.getElementById("FFTPlot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false})
 
@@ -1022,7 +1022,7 @@ function find_start_index(time) {
     const start_time = parseFloat(document.getElementById("TimeStart").value)
 
     var start_index = 0
-    for (j = 0; j<time.length; j++) {
+    for (let j = 0; j<time.length; j++) {
         // Move forward start index while time is less than start time
         if (time[j] < start_time) {
             start_index = j
@@ -1036,7 +1036,7 @@ function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
     var end_index = 0
-    for (j = 0; j<time.length-1; j++) {
+    for (let j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
             end_index = j + 1
@@ -1330,9 +1330,9 @@ function redraw_post_estimate_and_bode() {
         let alias = get_alias_obj(Gyro_batch[i].FFT)
 
         // Get indexes for the lines to be plotted
-        X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
-        Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
-        Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
+        let X_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 0)
+        let Y_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 1)
+        let Z_plot_index = get_FFT_data_index(Gyro_batch[i].sensor_num, 2, 2)
 
         // Apply aliasing and selected scale, set to y axis
         fft_plot.data[X_plot_index].y = amplitude_scale.scale(alias.apply_amp(corrected_x))
@@ -1550,7 +1550,7 @@ function redraw_Spectrogram() {
     const num_bins = Spectrogram.data[0].y.length
     Spectrogram.data[0].z = new Array(len)
     let index = 0
-    for (j = 0; j<len; j++) {
+    for (let j = 0; j<len; j++) {
         if (skip_flag[j] == true) {
             // Add null Z values, this results in a blank section in the plot
             Spectrogram.data[0].z[j] = new Array(num_bins)
@@ -1987,9 +1987,9 @@ function save_parameters() {
 async function load_parameters(file) {
     var text = await file.text()
     var lines = text.split('\n')
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i]
-        v = line.split(/[\s,=\t]+/)
+        let v = line.split(/[\s,=\t]+/)
         if (v.length >= 2) {
             var vname = v[0]
             var value = v[1]

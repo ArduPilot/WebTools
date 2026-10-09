@@ -233,10 +233,8 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     var chained = 1;
     var composite_notches = 1;
     if (opts & 1) {
-        dbl = true;
         composite_notches = 2;
     } else if (opts & 16) {
-        triple = true;
         composite_notches = 3;
     }
 
@@ -264,14 +262,14 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 5) {
-        var rpm = get_form("RPM2");
+        rpm = get_form("RPM2");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 3) {
         if (opts & 2) {
             chained = get_form("NUM_MOTORS");
         }
-        var rpm = get_form("ESC_RPM");
+        rpm = get_form("ESC_RPM");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     for (var n=0;n<8;n++) {
@@ -728,7 +726,7 @@ function load() {
         }
     }
 
-    plot = document.getElementById("Bode")
+    let plot = document.getElementById("Bode")
     Plotly.purge(plot)
     Plotly.newPlot(plot, Bode.data, Bode.layout, {displaylogo: false});
 
@@ -936,10 +934,10 @@ function save_parameters() {
 async function load_parameters(file) {
     var text = await file.text();
     var lines = text.split('\n');
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i];
         line = line.replace("Q_A_RAT_","ATC_RAT_");
-        v = line.split(/[\s,=\t]+/);
+        let v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];

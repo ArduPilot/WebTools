@@ -265,7 +265,7 @@ async function load_param_inputs(param_doc, param_names) {
         }
 
 
-        for (param of param_names) {
+        for (let param of param_names) {
             let metadata = recursive_search(data, param)
             if (metadata == null) {
                 console.log(`No metadata for ${param}`)
