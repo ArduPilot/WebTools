@@ -14,7 +14,7 @@
       "count": 1
     },
     "no-unused-vars": {
-      "count": 4
+      "count": 2
     }
   },
   "DFULoader/dfu-util.js": {
@@ -42,9 +42,6 @@
   },
   "FilterTool/filters.js": {
     "no-undef": {
-      "count": 2
-    },
-    "no-unused-vars": {
       "count": 2
     }
   },
@@ -79,9 +76,6 @@
   "SysID/SysID.js": {
     "no-undef": {
       "count": 3
-    },
-    "no-unused-vars": {
-      "count": 2
     }
   },
   "SysID/index.html": {

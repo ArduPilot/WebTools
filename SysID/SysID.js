@@ -724,13 +724,11 @@ async function run_SS_ID(parser) {
             const G = 9.81
             if (outputValues.compensations[i] == "Roll") {
                 for (let j = 0; j < data_arr.length; j++) {
-                    let temp_data = data_arr[j]
                     data_arr[j] = data_arr[j] + (Math.PI/180) * mult * G * ang_data_arr[att_ind1 + j]
                 }
             }
             if (outputValues.compensations[i] == "Pitch") {
                 for (let j = 0; j < data_arr.length; j++) {
-                    let temp_data = data_arr[j]
                     data_arr[j] = data_arr[j] - (Math.PI/180) * mult * G * ang_data_arr[att_ind1 + j]
                 }
             }
