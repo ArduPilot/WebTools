@@ -693,7 +693,7 @@ These params can then be saved and loaded into the autopilot without the need fo
 
     let params = ["SCHED_LOOP_RATE", "INS_GYRO_FILTER"]
     const HNotch_params = get_HNotch_param_names()
-    for (Hnotch of HNotch_params) {
+    for (const Hnotch of HNotch_params) {
         params.push(...Object.values(Hnotch))
     }
 
