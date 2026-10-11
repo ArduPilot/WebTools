@@ -148,10 +148,5 @@
     "no-unused-vars": {
       "count": 1
     }
-  },
-  "VideoOverlay/VideoOverlay.js": {
-    "no-undef": {
-      "count": 3
-    }
   }
 }
