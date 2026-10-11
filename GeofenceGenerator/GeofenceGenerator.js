@@ -265,6 +265,7 @@ async function generate_fence(feature, name) {
     let text = 'QGC WPL 110\n'
     let points = 1
     for (let i = 0; i<len; i++) {
+        let poly_type, circle_type
         if (i == 0) {
             // first point is always inclusion
             poly_type = 5001
