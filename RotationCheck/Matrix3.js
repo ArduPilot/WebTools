@@ -71,7 +71,7 @@ function Matrix3() {
         let y = v.y
         let z = v.z
 
-        const HALF_SQRT_2 = 0.70710678118654752440084436210485
+        const HALF_SQRT_2 = 0.7071067811865476
 
         let tmp
         switch (rotation) {
