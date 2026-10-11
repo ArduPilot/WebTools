@@ -187,7 +187,7 @@ function Quaternion() {
 
     // Get rotation from ArduPilot numbering
     this.from_rotation = function(rotation) {
-        const HALF_SQRT_2 = 0.70710678118654752440084436210485
+        const HALF_SQRT_2 = 0.7071067811865476
         const HALF_SQRT_2_PlUS_SQRT_2 = 0.92387953251128673848313610506011 // sqrt(2 + sqrt(2)) / 2
         const HALF_SQRT_2_MINUS_SQTR_2 = 0.38268343236508972626808144923416 // sqrt(2 - sqrt(2)) / 2
         const HALF_SQRT_HALF_TIMES_TWO_PLUS_SQRT_TWO = 0.65328148243818828788676000840496 // sqrt((2 + sqrt(2))/2) / 2
