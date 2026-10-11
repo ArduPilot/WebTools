@@ -630,7 +630,7 @@ function setup_plots() {
         }
     }
 
-    var plot = document.getElementById("FFTPlot")
+    plot = document.getElementById("FFTPlot")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false})
 
