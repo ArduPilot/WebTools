@@ -96,19 +96,9 @@
       "count": 1
     }
   },
-  "Libraries/DecodeDevID.js": {
-    "no-undef": {
-      "count": 10
-    }
-  },
-  "Libraries/Param_Helpers.js": {
-    "no-undef": {
-      "count": 2
-    }
-  },
   "Libraries/ParameterMetadata.js": {
     "no-undef": {
-      "count": 5
+      "count": 1
     }
   },
   "LogFinder/LogFinder.js": {
