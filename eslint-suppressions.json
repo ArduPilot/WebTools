@@ -92,13 +92,7 @@
     "no-duplicate-case": {
       "count": 2
     },
-    "no-undef": {
-      "count": 42
-    },
     "no-unused-vars": {
-      "count": 1
-    },
-    "no-useless-escape": {
       "count": 1
     }
   },
