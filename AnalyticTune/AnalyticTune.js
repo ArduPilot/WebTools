@@ -443,10 +443,10 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     var chained = 1;
     var composite_notches = 1;
     if (opts & 1) {
-        dbl = true;
+        let dbl = true;
         composite_notches = 2;
     } else if (opts & 16) {
-        triple = true;
+        let triple = true;
         composite_notches = 3;
     }
 
@@ -1076,7 +1076,7 @@ function load_log(log_file) {
 
         sid_sets.tstart = []
         sid_sets.tend = []
-        j = 0
+        let j = 0
         sid_sets.tstart[j] = SIDD_time[0]
         for (let k=1;k<SIDD_time.length;k++) {
             if (SIDD_time[k]-SIDD_time[k-1] > 0.5) {
@@ -1145,7 +1145,7 @@ function load_log(log_file) {
     if ("MSG" in log.messageTypes) {
         const msg_text = log.get("MSG", "Message")
         for (let k=0;k<msg_text.length;k++) {
-            parts = msg_text[k].split(" ")
+            let parts = msg_text[k].split(" ")
             if (parts[0] == "ArduPlane") {
                 if (sid_sets.axis[0] > 19) {
                     vehicle_type = "ArduPlane_FW"
@@ -1282,7 +1282,7 @@ function setup_FFT_data() {
                                     meta: meta_prefix + plot_types[1],
                                     hovertemplate: "" }
 
-    plot = document.getElementById("FFTPlotMag")
+    let plot = document.getElementById("FFTPlotMag")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
 
@@ -1688,11 +1688,11 @@ function load_vtol_time_history_data(t_start, t_end, axis) {
     PilotInputData = array_scale(PilotInputData, 0.01745)
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
-    DRBInputData = PilotInputData
-    DRBRespData = array_sub(AttData, DRBInputData)
+    let DRBInputData = PilotInputData
+    let DRBRespData = array_sub(AttData, DRBInputData)
 
-    SysBLInputData = ActInputData
-    SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
+    let SysBLInputData = ActInputData
+    let SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
 
 
     var data = {
@@ -1800,11 +1800,11 @@ function load_fw_time_history_data(t_start, t_end, axis) {
     PilotInputData = array_scale(PilotInputData, 0.01745)
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
-    DRBInputData = PilotInputData
-    DRBRespData = array_sub(AttData, DRBInputData)
+    let DRBInputData = PilotInputData
+    let DRBRespData = array_sub(AttData, DRBInputData)
 
-    SysBLInputData = ActInputData
-    SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
+    let SysBLInputData = ActInputData
+    let SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
 
 
     var data = {
@@ -1991,10 +1991,10 @@ function save_parameters() {
 async function load_parameters(file) {
     var text = await file.text();
     var lines = text.split('\n');
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i];
 //        line = line.replace("Q_A_RAT_","ATC_RAT_");
-        v = line.split(/[\s,=\t]+/);
+        let v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];
@@ -2415,7 +2415,7 @@ function add_sid_sets() {
 
 function update_time_range() {
 
-    for (j=0; j<sid_sets.axis.length;j++){
+    for (let j=0; j<sid_sets.axis.length;j++){
         var id_name = "set_selection_" + j
         if (document.getElementById(id_name).checked) {
             document.getElementById("starttime").value = sid_sets.tstart[j]
