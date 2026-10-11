@@ -88,11 +88,6 @@
       "count": 2
     }
   },
-  "GeofenceGenerator/GeofenceGenerator.js": {
-    "no-undef": {
-      "count": 30
-    }
-  },
   "HardwareReport/HardwareReport.js": {
     "no-duplicate-case": {
       "count": 2
