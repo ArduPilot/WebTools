@@ -364,7 +364,7 @@ ArduPilot 4.2 filter setup.
 
   let params = ["SCHED_LOOP_RATE"]
   var inputs = document.getElementsByTagName("input");
-  for (param of inputs) {
+  for (const param of inputs) {
       if (param.id.startsWith("INS_") || param.id.startsWith("ATC_")) {
           params.push(param.id)
       }
