@@ -1247,6 +1247,17 @@ function select_body_frame_attitude() {
     }
 }
 
+// Solve Ax = B, returns null if there is no unique solution
+// This happens if the data does not vary enough, for example a compass that logs the same value every time
+function solve(A, B) {
+    try {
+        return mlMatrix.solve(A, B)
+    } catch (e) {
+        console.warn("MAGFit: fit failed: " + e.message)
+        return null
+    }
+}
+
 function fit() {
 
     const start = performance.now()
@@ -1503,18 +1514,26 @@ function fit() {
                 }
             }
 
-            // Solve
-            let params = mlMatrix.solve(A, B2)
-
-            // Extract params
-            let offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
-
+            // Params carried between the fits
+            let offsets
             let motor
-            if (fit_mot) {
-                motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
-            }
+            let scale
 
-            Object.assign(fit.offsets, evaluate_fit({offsets, motor, fit_type: fit.type }))
+            // Solve
+            let params = solve(A, B2)
+            if (params == null) {
+                fit.offsets.valid = false
+            } else {
+
+                // Extract params
+                offsets = [ params.get(0,0), params.get(1,0), params.get(2,0) ]
+
+                if (fit_mot) {
+                    motor = [params.get(3,0), params.get(4,0), params.get(5,0)]
+                }
+
+                Object.assign(fit.offsets, evaluate_fit({offsets, motor, fit_type: fit.type }))
+            }
 
 
             // Just fitting offsets and scale, possibly with motor correction
@@ -1534,18 +1553,22 @@ function fit() {
             }
 
             // Solve
-            params = mlMatrix.solve(A, B)
+            params = solve(A, B)
+            if (params == null) {
+                fit.scale.valid = false
+            } else {
 
-            // Extract params
-            let scale = params.get(3,0)
+                // Extract params
+                scale = params.get(3,0)
 
-            // Remove scale from offsets
-            offsets = array_scale([ params.get(0,0), params.get(1,0), params.get(2,0) ], 1 / scale)
+                // Remove scale from offsets
+                offsets = array_scale([ params.get(0,0), params.get(1,0), params.get(2,0) ], 1 / scale)
 
-            if (fit_mot) {
-                motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
+                if (fit_mot) {
+                    motor = [params.get(4,0), params.get(5,0), params.get(6,0)]
+                }
+                Object.assign(fit.scale, evaluate_fit({offsets, scale, motor, fit_type: fit.type }))
             }
-            Object.assign(fit.scale, evaluate_fit({offsets, scale, motor, fit_type: fit.type }))
 
             // Fitting offsets and iron matrix, possibly with motor correction
 
@@ -1565,31 +1588,35 @@ function fit() {
             }
 
             // Solve
-            params = mlMatrix.solve(A, B)
+            params = solve(A, B)
+            if (params == null) {
+                fit.iron.valid = false
+            } else {
 
-            // Extract params
-            let diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
-            let off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
+                // Extract params
+                let diagonals =     [ params.get(3,0), params.get(4,0), params.get(5,0) ]
+                let off_diagonals = [ params.get(6,0), params.get(7,0), params.get(8,0) ]
 
-            // Remove iron correction from offsets
-            const iron = new mlMatrix.Matrix([
-                [diagonals[0],     off_diagonals[0], off_diagonals[1]],
-                [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
-                [off_diagonals[1], off_diagonals[2], diagonals[2]]
-            ])
-            const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
-            offsets = Array.from(uncorrected_offsets.mmul(mlMatrix.inverse(iron)).data[0])
+                // Remove iron correction from offsets
+                const iron = new mlMatrix.Matrix([
+                    [diagonals[0],     off_diagonals[0], off_diagonals[1]],
+                    [off_diagonals[0], diagonals[1],     off_diagonals[2]], 
+                    [off_diagonals[1], off_diagonals[2], diagonals[2]]
+                ])
+                const uncorrected_offsets = new mlMatrix.Matrix([[params.get(0,0), params.get(1,0), params.get(2,0)]])
+                offsets = Array.from(uncorrected_offsets.mmul(mlMatrix.inverse(iron)).data[0])
 
-            // Normalize iron matrix into scale param
-            scale = array_mean(diagonals)
-            diagonals = array_scale(diagonals, 1 / scale)
-            off_diagonals = array_scale(off_diagonals, 1 / scale)
+                // Normalize iron matrix into scale param
+                scale = array_mean(diagonals)
+                diagonals = array_scale(diagonals, 1 / scale)
+                off_diagonals = array_scale(off_diagonals, 1 / scale)
 
-            if (fit_mot) {
-                motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
+                if (fit_mot) {
+                    motor = [params.get(9,0), params.get(10,0), params.get(11,0)]
+                }
+
+                Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor, fit_type: fit.type}))
             }
-
-            Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor, fit_type: fit.type}))
 
             // Disable selection of invalid fits
             // select the first valid none motor fit by default
