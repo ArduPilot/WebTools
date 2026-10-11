@@ -760,7 +760,7 @@ function find_start_index(time) {
     const start_time = parseFloat(document.getElementById("TimeStart").value)
 
     var start_index = 0
-    for (j = 0; j<time.length; j++) {
+    for (let j = 0; j<time.length; j++) {
         // Move forward start index while time is less than start time
         if (time[j] < start_time) {
             start_index = j
@@ -774,7 +774,7 @@ function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
     var end_index = 0
-    for (j = 0; j<time.length-1; j++) {
+    for (let j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
             end_index = j + 1
@@ -1116,10 +1116,10 @@ function get_body_frame_ef(quaternion) {
 
     const len = quaternion.q1.length
 
-    ret = { x: new Array(len), y: new Array(len), z: new Array(len) }
+    let ret = { x: new Array(len), y: new Array(len), z: new Array(len) }
 
     let q = new Quaternion()
-    for (i = 0; i < len; i++) {
+    for (let i = 0; i < len; i++) {
 
         // Invert and load into helper
         q.q1 =  quaternion.q1[i]
