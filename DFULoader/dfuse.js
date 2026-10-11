@@ -41,11 +41,11 @@ var dfuse = {};
 
         let contiguousSegmentRegex = /\/\s*(0x[0-9a-fA-F]{1,8})\s*\/(\s*[0-9]+\s*\*\s*[0-9]+\s?[ BKM]\s*[abcdefg]\s*,?\s*)+/g;
         let contiguousSegmentMatch;
-        while (contiguousSegmentMatch = contiguousSegmentRegex.exec(segmentString)) {
+        while ((contiguousSegmentMatch = contiguousSegmentRegex.exec(segmentString))) {
             let segmentRegex = /([0-9]+)\s*\*\s*([0-9]+)\s?([ BKM])\s*([abcdefg])\s*,?\s*/g;
             let startAddress = parseInt(contiguousSegmentMatch[1], 16);
             let segmentMatch;
-            while (segmentMatch = segmentRegex.exec(contiguousSegmentMatch[0])) {
+            while ((segmentMatch = segmentRegex.exec(contiguousSegmentMatch[0]))) {
                 let segment = {}
                 let sectorCount = parseInt(segmentMatch[1], 10);
                 let sectorSize = parseInt(segmentMatch[2]) * sectorMultipliers[segmentMatch[3]];
