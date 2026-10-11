@@ -114,16 +114,6 @@
       "count": 3
     }
   },
-  "SCurveTool/SCurveTool.js": {
-    "no-undef": {
-      "count": 21
-    }
-  },
-  "SCurveTool/index.html": {
-    "no-undef": {
-      "count": 5
-    }
-  },
   "SimpleGCS/commands.js": {
     "no-unused-vars": {
       "count": 1
