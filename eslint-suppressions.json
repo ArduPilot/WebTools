@@ -177,11 +177,6 @@
       "count": 3
     }
   },
-  "RotationCheck/Matrix3.js": {
-    "no-loss-of-precision": {
-      "count": 1
-    }
-  },
   "SCurveTool/SCurveTool.js": {
     "no-undef": {
       "count": 21
