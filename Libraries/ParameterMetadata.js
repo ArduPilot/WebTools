@@ -188,13 +188,18 @@ async function load_param_inputs(param_doc, param_names) {
                 }
             }
 
+            let columns = 3
+            if ("bitmaskColumns" in param.dataset) {
+                columns = parseInt(param.dataset.bitmaskColumns)
+            }
+
             paragraph.appendChild(document.createElement('br'))
-            let bit_count = 0
+            let bit_count = 1
             for (const [bit, desc] of Object.entries(metadata.Bitmask)) {
-                if (bit_count > 2) {
+                if (bit_count > columns) {
                     // New line after 3 items
                     paragraph.appendChild(document.createElement('br'))
-                    bit_count = 0
+                    bit_count = 1
                 }
                 bit_count++
 
