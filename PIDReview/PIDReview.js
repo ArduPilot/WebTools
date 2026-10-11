@@ -558,7 +558,7 @@ function find_start_index(time) {
     const start_time = parseFloat(document.getElementById("TimeStart").value)
 
     var start_index = 0
-    for (j = 0; j<time.length; j++) {
+    for (let j = 0; j<time.length; j++) {
         // Move forward start index while time is less than start time
         if (time[j] < start_time) {
             start_index = j
@@ -572,7 +572,7 @@ function find_end_index(time) {
     const end_time = parseFloat(document.getElementById("TimeEnd").value)
 
     var end_index = 0
-    for (j = 0; j<time.length-1; j++) {
+    for (let j = 0; j<time.length-1; j++) {
         // Move forward end index while time is less than end time
         if (time[j] <= end_time) {
             end_index = j + 1
@@ -1011,7 +1011,7 @@ function redraw_Spectrogram() {
         // Setup z data
         const len = skip_flag.length
         let index = 0
-        for (j = 0; j<len; j++) {
+        for (let j = 0; j<len; j++) {
             if (skip_flag[j] == true) {
                 // Add null Z values, this results in a blank section in the plot
                 Spectrogram.data[0].z.push(new Array(num_bins))
@@ -1684,8 +1684,8 @@ async function load(log_file) {
     }
 
     // Update ranges of start and end time
-    start_time = Math.floor(PID_log_messages.start_time)
-    end_time = Math.ceil(PID_log_messages.end_time)
+    let start_time = Math.floor(PID_log_messages.start_time)
+    let end_time = Math.ceil(PID_log_messages.end_time)
 
     var start_input = document.getElementById("TimeStart")
     start_input.disabled = false;
