@@ -468,10 +468,16 @@ function reset() {
     const HNotch_params = get_HNotch_param_names()
     for (let i = 0; i < HNotch_params.length; i++) {
         for (const param of Object.values(HNotch_params[i])) {
+            let found = false
             for (const default_val of defaults) {
                 if (param.endsWith(default_val.name)) {
                     parameter_set_value(param, default_val.value)
+                    found = true
+                    break
                 }
+            }
+            if (!found) {
+                parameter_set_value(param, 0)
             }
         }
     }
@@ -1837,7 +1843,8 @@ function get_HNotch_param_names() {
                   ref: prefix[i] + "REF",
                   min_ratio: prefix[i] + "FM_RAT",
                   harmonics: prefix[i] + "HMNCS",
-                  options: prefix[i] + "OPTS"}
+                  options: prefix[i] + "OPTS",
+                  esc_mask: prefix[i] + "ESCMSK"}
     }
     return ret
 }
