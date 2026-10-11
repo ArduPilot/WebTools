@@ -104,9 +104,6 @@
   "LogFinder/LogFinder.js": {
     "no-unused-vars": {
       "count": 1
-    },
-    "no-useless-escape": {
-      "count": 1
     }
   },
   "PIDReview/PIDReview.js": {
