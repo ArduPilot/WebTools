@@ -10,9 +10,12 @@ import html from 'eslint-plugin-html'
 import globals from 'globals'
 import * as espree from 'espree'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 
 const root = import.meta.dirname
+
+// Repo-relative path with forward slashes: ESLint's `files` patterns do not match Windows separators.
+const repoPath = (file) => relative(root, file).split(sep).join('/')
 
 // Globals of libraries that are minified or loaded from a CDN, keyed by a fragment of the script
 // src. These files are not read.
@@ -126,7 +129,7 @@ const pages = htmlPages(root).map((path) => {
       // ES modules see the page globals but do not add to them.
       if (tag.src !== undefined && !/^(https?:)?\/\//.test(tag.src)) {
         const file = resolve(dirname(path), tag.src.split('?')[0])
-        if (existsSync(file)) modules.push(relative(root, file))
+        if (existsSync(file)) modules.push(repoPath(file))
       }
       continue
     }
@@ -145,11 +148,11 @@ const pages = htmlPages(root).map((path) => {
     if (remote) continue
     const file = resolve(dirname(path), tag.src.split('?')[0])
     if (!existsSync(file)) continue
-    const rel = relative(root, file)
+    const rel = repoPath(file)
     scripts.push(rel)
     names.push(...scriptGlobals(readFileSync(file, 'utf8')), ...(RUNTIME_GLOBALS[rel] ?? []))
   }
-  return { page: relative(root, path), scripts, modules, names }
+  return { page: repoPath(path), scripts, modules, names }
 })
 
 export default [
