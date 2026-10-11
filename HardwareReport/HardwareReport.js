@@ -92,7 +92,7 @@ async function check_release(hash, paragraph) {
 
     // Search tags for matching hash
     let found_tag = false
-    for (tag of ArduPilot_GitHub_tags) {
+    for (let tag of ArduPilot_GitHub_tags) {
         if (tag.object.sha.startsWith(hash)) {
             // Add link to tag
             if (found_tag) {
@@ -171,7 +171,7 @@ async function check_release(hash, paragraph) {
         paragraph.appendChild(document.createTextNode("Branches @ HEAD: "))
 
         let found_branch = false
-        for (branch of request.data) {
+        for (let branch of request.data) {
             if (found_branch) {
                 paragraph.appendChild(document.createTextNode(", "))
             }
@@ -1703,9 +1703,9 @@ function load_params(log) {
 function load_param_file(text) {
     var lines = text.split('\n')
     params = {}
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i];
-        v = line.split(/[\s,=\t]+/)
+        let v = line.split(/[\s,=\t]+/)
         if (v.length >= 2) {
             var name = v[0]
             var value = v[1]
@@ -2903,7 +2903,7 @@ async function load_log(log_file) {
 
         document.getElementById("Stack").hidden = false
 
-        plot = document.getElementById("stack_mem")
+        let plot = document.getElementById("stack_mem")
         plot_visibility(plot, false)
         Plotly.purge(plot)
         Plotly.newPlot(plot, stack_mem.data, stack_mem.layout, {displaylogo: false});
@@ -2975,7 +2975,7 @@ async function load_log(log_file) {
         const time = TimeUS_to_seconds(DSF.TimeUS)
 
         // Dropped packets
-        plot = document.getElementById("log_dropped")
+        let plot = document.getElementById("log_dropped")
         plot_visibility(plot, false)
 
         log_dropped.data[0].x = time
@@ -3004,7 +3004,7 @@ async function load_log(log_file) {
     if (stats) {
         document.getElementById("log_stats_header").hidden = false
 
-        plot = document.getElementById("log_stats")
+        let plot = document.getElementById("log_stats")
         plot_visibility(plot, false)
 
         log_stats.data[0].labels = []
@@ -3102,7 +3102,7 @@ async function load_log(log_file) {
         }
 
         if (clock_drift.data.length > 0) {
-            plot = document.getElementById("clock_drift")
+            let plot = document.getElementById("clock_drift")
 
             // Set range such that only bad drift will show
             const time_range_ms = (end_us - start_us) * 0.001
