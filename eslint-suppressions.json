@@ -1,0 +1,243 @@
+{
+  "AILogAnalyzer/logAnalyzer.js": {
+    "no-case-declarations": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 4
+    },
+    "preserve-caught-error": {
+      "count": 5
+    }
+  },
+  "AirspeedFit/airspeedfit.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "AirspeedFit/airspeedfit_core.js": {
+    "no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "AnalyticTune/AnalyticTune.js": {
+    "no-redeclare": {
+      "count": 11
+    },
+    "no-undef": {
+      "count": 76
+    },
+    "no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 6
+    }
+  },
+  "AnalyticTune/index.html": {
+    "no-undef": {
+      "count": 12
+    }
+  },
+  "DFULoader/dfu-util.js": {
+    "no-prototype-builtins": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 6
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "DFULoader/dfu.js": {
+    "no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "DFULoader/dfuse.js": {
+    "no-cond-assign": {
+      "count": 2
+    },
+    "no-undef": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "FilterReview/FilterReview.js": {
+    "no-redeclare": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 36
+    }
+  },
+  "FilterReview/index.html": {
+    "no-undef": {
+      "count": 2
+    }
+  },
+  "FilterReview/tracking/ESC.js": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "FilterTool/filters.js": {
+    "no-redeclare": {
+      "count": 2
+    },
+    "no-undef": {
+      "count": 16
+    }
+  },
+  "FilterTool/index.html": {
+    "no-undef": {
+      "count": 4
+    }
+  },
+  "GeofenceGenerator/GeofenceGenerator.js": {
+    "no-undef": {
+      "count": 30
+    }
+  },
+  "HardwareReport/HardwareReport.js": {
+    "no-duplicate-case": {
+      "count": 2
+    },
+    "no-undef": {
+      "count": 42
+    },
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "KinematicTool/plane/KinematicTool.js": {
+    "no-case-declarations": {
+      "count": 1
+    }
+  },
+  "Libraries/DecodeDevID.js": {
+    "no-undef": {
+      "count": 10
+    }
+  },
+  "Libraries/Param_Helpers.js": {
+    "no-undef": {
+      "count": 2
+    }
+  },
+  "Libraries/ParameterMetadata.js": {
+    "no-undef": {
+      "count": 5
+    }
+  },
+  "LogFinder/LogFinder.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "MAGFit/magfit.js": {
+    "no-undef": {
+      "count": 25
+    }
+  },
+  "MAGFit/quaternion.js": {
+    "no-loss-of-precision": {
+      "count": 1
+    }
+  },
+  "PIDReview/PIDReview.js": {
+    "no-redeclare": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 22
+    },
+    "no-unused-vars": {
+      "count": 3
+    }
+  },
+  "RotationCheck/Matrix3.js": {
+    "no-loss-of-precision": {
+      "count": 1
+    }
+  },
+  "SCurveTool/SCurveTool.js": {
+    "no-undef": {
+      "count": 21
+    }
+  },
+  "SCurveTool/index.html": {
+    "no-undef": {
+      "count": 5
+    }
+  },
+  "SimpleGCS/commands.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "SimpleGCS/ftp_manager.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "SimpleGCS/video.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "StreamStats/StreamStats.js": {
+    "no-undef": {
+      "count": 9
+    }
+  },
+  "SysID/SysID.js": {
+    "no-undef": {
+      "count": 27
+    }
+  },
+  "SysID/index.html": {
+    "no-undef": {
+      "count": 132
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "TelemetryDashboard/TelemetryDashboard.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "ThrustExpo/ThrustExpo.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "VideoOverlay/VideoOverlay.js": {
+    "no-undef": {
+      "count": 3
+    }
+  }
+}
