@@ -202,11 +202,6 @@
       "count": 1
     }
   },
-  "StreamStats/StreamStats.js": {
-    "no-undef": {
-      "count": 9
-    }
-  },
   "SysID/SysID.js": {
     "no-undef": {
       "count": 27
