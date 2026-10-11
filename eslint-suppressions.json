@@ -110,12 +110,6 @@
     }
   },
   "PIDReview/PIDReview.js": {
-    "no-redeclare": {
-      "count": 1
-    },
-    "no-undef": {
-      "count": 22
-    },
     "no-unused-vars": {
       "count": 3
     }
