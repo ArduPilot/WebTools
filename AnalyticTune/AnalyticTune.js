@@ -831,6 +831,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const nef_num = get_form(param_prefix + "NEF")
     var nef_freq = 0.0
     if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
+    let PID_H_TOT
     if (nef_num > 0 && nef_freq > 0.0) {
         var E_notch_filter = []
         E_notch_filter.push(new NotchFilterusingQ(PID_rate, nef_freq, get_form("FILT" + nef_num + "_NOTCH_Q"), get_form("FILT" + nef_num + "_NOTCH_ATT")))
@@ -860,6 +861,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const ntf_num = get_form(param_prefix + "NTF")
     var ntf_freq = 0.0
     if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
+    let TGT_FILT_H
     if (ntf_num > 0 && ntf_freq > 0.0) {
         var T_notch_filter = []
         T_notch_filter.push(new NotchFilterusingQ(PID_rate, ntf_freq, get_form("FILT" + ntf_num + "_NOTCH_Q"), get_form("FILT" + ntf_num + "_NOTCH_ATT")))
@@ -1544,6 +1546,7 @@ function calculate_freq_resp() {
     var H_att_ff_pred
     var H_pilot_pred
     var H_DRB_pred
+    var H_att_nff_pred
     var H_att_bl_pred
     var H_rate_bl_pred
     var H_sys_bl_pred
