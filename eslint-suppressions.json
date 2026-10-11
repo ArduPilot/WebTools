@@ -78,19 +78,6 @@
       "count": 1
     }
   },
-  "FilterReview/FilterReview.js": {
-    "no-redeclare": {
-      "count": 1
-    },
-    "no-undef": {
-      "count": 36
-    }
-  },
-  "FilterReview/index.html": {
-    "no-undef": {
-      "count": 2
-    }
-  },
   "FilterReview/tracking/ESC.js": {
     "no-undef": {
       "count": 1
