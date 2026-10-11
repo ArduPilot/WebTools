@@ -482,6 +482,8 @@ function reset() {
         }
     }
 
+    have_INS_RAW_LOG_OPT = false;
+
 }
 
 // Setup plots with no data
@@ -766,6 +768,8 @@ function re_calc() {
     calculate_transfer_function()
 
     redraw()
+
+    update_hidden_params()
 
     const end = performance.now()
     console.log(`Re-calc took: ${end - start} ms`)
@@ -1851,8 +1855,6 @@ function get_HNotch_param_names() {
 
 function load_filters() {
 
-    update_filter_version()
-
     filters = []
     const HNotch_params = get_HNotch_param_names()
 
@@ -1873,6 +1875,27 @@ function load_filters() {
     }
 }
 
+// Update hidden parameters
+function update_hidden_params() {
+    const HNotch_params = get_HNotch_param_names()
+    const filter_version = get_filter_version()
+    const show_esc_mask = filter_version >= 4
+
+    for (let i = 0; i < HNotch_params.length; i++) {
+        // Show/hide ESCMSK based on filter version
+        const esc_mask_elem = document.getElementById(HNotch_params[i].esc_mask)
+        if (esc_mask_elem != null) {
+            esc_mask_elem.parentElement.style.display = show_esc_mask ? "" : "none"
+            if (!show_esc_mask) {
+                parameter_set_value(HNotch_params[i].esc_mask, 0)
+            }
+        }
+
+        // Set harmonic bitmask size based on firmware capability
+        set_bitmask_size(HNotch_params[i].harmonics, (have_INS_RAW_LOG_OPT || filter_version >= 3) ? 32 : 8)
+    }
+}
+
 // Update filter params extra info
 function filter_param_read() {
     const HNotch_params = get_HNotch_param_names()
@@ -1886,6 +1909,8 @@ function filter_param_read() {
             }
         }
     }
+
+    update_hidden_params()
 
     document.getElementById('calculate_filters').disabled = false
 
@@ -2011,19 +2036,13 @@ async function load_parameters(file) {
 }
 
 // Get selected filter version
-let filter_version
+let have_INS_RAW_LOG_OPT = false
 const supported_filter_versions = [1, 2, 3, 4]
 function get_filter_version() {
-    return filter_version
-}
-
-// Update the filter vesion from user buttons
-function update_filter_version() {
     for (const version of supported_filter_versions) {
         const version_radio_button = document.getElementById("filter_version_" + version)
         if (version_radio_button.checked) {
-            filter_version = version
-            return
+            return version
         }
     }
 }
@@ -2463,17 +2482,12 @@ async function load(log_file) {
     document.getElementById("SpecNotchShowLogged").disabled = !show_logged_notch
 
     // Use presence of raw log options param to work out if 8 or 16 harmonics are avalable
-    const have_16_harmonics = get_param("INS_RAW_LOG_OPT") != null
+    have_INS_RAW_LOG_OPT = get_param("INS_RAW_LOG_OPT") != null
 
     // Read from log into HTML box
     const HNotch_params = get_HNotch_param_names()
     for (let i = 0; i < HNotch_params.length; i++) {
         for (const param of Object.values(HNotch_params[i])) {
-            // Set harmonic bitmask size
-            if (param.endsWith("HMNCS")) {
-                // Although only 16 harmonic are supported the underlying param type was changed to 32bit
-                set_bitmask_size(param, have_16_harmonics ? 32 : 8)
-            }
             const value = get_param(param)
             if (value != null) {
                 parameter_set_value(param, value)
