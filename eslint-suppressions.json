@@ -1,13 +1,10 @@
 {
   "AILogAnalyzer/logAnalyzer.js": {
-    "no-case-declarations": {
-      "count": 1
-    },
     "no-unused-vars": {
-      "count": 4
+      "count": 3
     },
     "preserve-caught-error": {
-      "count": 5
+      "count": 4
     }
   },
   "AirspeedFit/airspeedfit.js": {
