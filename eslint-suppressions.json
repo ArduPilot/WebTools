@@ -128,11 +128,6 @@
       "count": 1
     }
   },
-  "KinematicTool/plane/KinematicTool.js": {
-    "no-case-declarations": {
-      "count": 1
-    }
-  },
   "Libraries/DecodeDevID.js": {
     "no-undef": {
       "count": 10
