@@ -1618,11 +1618,14 @@ function fit() {
                 Object.assign(fit.iron, evaluate_fit({offsets, scale, diagonals, off_diagonals, motor, fit_type: fit.type}))
             }
 
-            // Disable selection of invalid fits
+            // Disable and deselect invalid fits
             // select the first valid none motor fit by default
             let show_fit
             for (const key of Object.keys(fit_types)) {
                 fit[key].show.disabled = !fit[key].valid
+                if (!fit[key].valid) {
+                    fit[key].show.checked = false
+                }
                 if (fit[key].valid && (show_fit == null)) {
                     show_fit = fit[key].show
                 }
