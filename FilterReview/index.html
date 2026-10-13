@@ -11,6 +11,7 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
 <script type="text/javascript" src="FilterReview.js"></script>
+<script type="text/javascript" src="AutoFit.js"></script>
 
 <script type="text/javascript" src="tracking/Atmosphere_model.js"></script>
 <script type="text/javascript" src="tracking/BaseClass.js"></script>
@@ -468,6 +469,11 @@ These params can then be saved and loaded into the autopilot without the need fo
 <fieldset style="width:532px">
     <legend>First Notch Filter</legend>
     <p>
+        <input type="button" id="auto_fit" value="Auto fit" onclick="auto_fit()"
+        data-tippy-content="Set up this notch from the log. Uses ESC telemetry if logged, otherwise per motor throttle, checks the noise peaks follow it and sets the harmonics and attenuation from how far the peaks stand out from the noise floor. Uses the selected analysis time.">
+        <span id="auto_fit_info"></span>
+    </p>
+    <p>
         <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0" style="width: 100px" onchange="filter_param_read()"/>
     </p>
     <p>
@@ -688,6 +694,7 @@ These params can then be saved and loaded into the autopilot without the need fo
 
     // Load tool tips
     tippy('#TT')
+    tippy('#auto_fit')
 
     tippy('#TT_Pre', { content: "Logged IMU spectrum prior to application of filters. Double click to show/hide all."})
     tippy('#TT_Post', { content: "Logged IMU spectrum including application of filters. Double click to show/hide all."})
