@@ -123,13 +123,10 @@
   },
   "SysID/SysID.js": {
     "no-undef": {
-      "count": 27
+      "count": 3
     }
   },
   "SysID/index.html": {
-    "no-undef": {
-      "count": 132
-    },
     "no-unused-vars": {
       "count": 1
     }
