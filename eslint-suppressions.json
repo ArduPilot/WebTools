@@ -78,11 +78,6 @@
       "count": 1
     }
   },
-  "FilterReview/tracking/ESC.js": {
-    "no-undef": {
-      "count": 1
-    }
-  },
   "FilterTool/filters.js": {
     "no-undef": {
       "count": 2
