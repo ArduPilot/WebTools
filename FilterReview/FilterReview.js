@@ -443,7 +443,7 @@ function reset() {
     }
 
     // Reset FFT plot notch selection
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < num_notches; i++) {
         let check = document.getElementById("Notch" + (i+1) + "Show")
         check.disabled = true
         check.checked = false
@@ -492,6 +492,8 @@ var fft_plot = {}
 var Bode = {}
 var flight_data = {}
 const max_num_harmonics = 16
+const num_notches = 4
+const notch_dash = ["solid", "dot", "dash", "dashdot"]
 function setup_plots() {
 
     const time_scale_label = "Time (s)"
@@ -610,9 +612,9 @@ function setup_plots() {
     }
 
     // Add tracking lines
-    // Two harmonic notch filters each with upto 8 harmonics
-    for (let i=0;i<2;i++) {
-        let dash = (i == 0) ? "solid" : "dot"
+    // Harmonic notch filters each with upto 16 harmonics
+    for (let i=0;i<num_notches;i++) {
+        let dash = notch_dash[i]
         for (let j=0;j<max_num_harmonics;j++) {
             // Mean line
             fft_plot.layout.shapes.push({
@@ -692,10 +694,10 @@ function setup_plots() {
     }]
 
     // Add tracking lines
-    // Two harmonic notch filters each with upto 16 harmonics
-    for (let i=0;i<2;i++) {
+    // Harmonic notch filters each with upto 16 harmonics
+    for (let i=0;i<num_notches;i++) {
         let Group_name = "Notch " + (i+1)
-        let dash = (i == 0) ? "solid" : "dot"
+        let dash = notch_dash[i]
         for (let j=0;j<max_num_harmonics;j++) {
             let name = (j == 0) ? "Fundamental" : "Harmonic " + (j+1)
             Spectrogram.data.push({
@@ -712,9 +714,9 @@ function setup_plots() {
     }
 
     // Logged notch tacking
-    for (let i=0;i<2;i++) {
+    for (let i=0;i<num_notches;i++) {
         let Group_name = "Logged Notch " + (i+1)
-        let dash = (i == 0) ? "solid" : "dot"
+        let dash = notch_dash[i]
         for (let j=0;j<max_num_harmonics;j++) {
             let name = (j == 0) ? "Fundamental" : "Harmonic " + (j+1)
             Spectrogram.data.push({
@@ -724,7 +726,7 @@ function setup_plots() {
                 visible: false,
                 name: name,
                 meta: Group_name + "<br>" + name,
-                legendgroup: i+2,
+                legendgroup: i+num_notches,
                 legendgrouptitle: { text: "" }
             })
         }
@@ -1581,7 +1583,7 @@ function redraw_Spectrogram() {
     for (let i=0;i<filters.notch.length;i++) {
         // Plus one for the spectrogram plot
         const plot_offset = i * max_num_harmonics + 1
-        const logged_offset = max_num_harmonics * 2
+        const logged_offset = max_num_harmonics * num_notches
 
         // Hide all
         for (let j=0;j<max_num_harmonics;j++) {
@@ -1653,7 +1655,7 @@ function redraw_Spectrogram() {
             plot_data = build_plot_array(fundamental)
 
             const show_logged = document.getElementById("SpecNotchShowLogged").checked
-            const logged_offset = max_num_harmonics * 2
+            const logged_offset = max_num_harmonics * num_notches
             for (let j=0;j<max_num_harmonics;j++) {
                 if ((logged_tracking[i].harmonics & (1<<j)) == 0) {
                     continue
@@ -1680,7 +1682,7 @@ function update_hidden_spec(source) {
 
     // Offset by the total number of lines over
     const show_logged = document.getElementById("SpecNotchShowLogged").checked
-    const logged_offset = max_num_harmonics * 2
+    const logged_offset = max_num_harmonics * num_notches
 
     const plot_offset = notch_num * max_num_harmonics + 1
 
@@ -1711,7 +1713,7 @@ function update_logged_notch_hidden_spec(source) {
 
     // Offset by the total number of lines over
     const show_logged = source.checked
-    const logged_offset = max_num_harmonics * 2
+    const logged_offset = max_num_harmonics * num_notches
 
     for (let i=0;i<filters.notch.length;i++) {
         const plot_offset = i * max_num_harmonics + 1
@@ -1836,7 +1838,7 @@ function update_hidden(source) {
 }
 
 function get_HNotch_param_names() {
-    let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
+    let prefix = ["INS_HNTCH_", "INS_HNTC2_", "INS_HNTC3_", "INS_HNTC4_"]
     let ret = []
     for (let i = 0; i < prefix.length; i++) {
         ret[i] = {enable: prefix[i] + "ENABLE",
@@ -1851,6 +1853,19 @@ function get_HNotch_param_names() {
                   esc_mask: prefix[i] + "ESCMSK"}
     }
     return ret
+}
+
+// Show or hide a notch, the third and fourth notches are only available on some firmware
+function show_notch(index, show) {
+    const num = index + 1
+    const display = show ? "" : "none"
+    document.getElementById("Notch" + num + "Params").style.display = display
+    document.getElementById("Notch" + num + "ShowGroup").style.display = display
+    document.getElementById("SpecNotch" + num + "ShowGroup").style.display = display
+
+    // Hide the table holding the extra notches if none are shown
+    const any_shown = ["Notch3Params", "Notch4Params"].some((id) => document.getElementById(id).style.display != "none")
+    document.getElementById("ExtraNotches").style.display = any_shown ? "" : "none"
 }
 
 function load_filters() {
@@ -2028,6 +2043,14 @@ async function load_parameters(file) {
             if (parameter_set_value(vname, value)) {
                 console.log("set " + vname + "=" + value)
             }
+        }
+    }
+
+    // Show the third and fourth notches if they are in the file
+    const HNotch_params = get_HNotch_param_names()
+    for (let i = 2; i < HNotch_params.length; i++) {
+        if (text.includes(HNotch_params[i].enable)) {
+            show_notch(i, true)
         }
     }
 
@@ -2469,8 +2492,10 @@ async function load(log_file) {
                         new RPMTarget(log, 2, 5)]
 
     // Load logged notch fequencies for comparison
-    logged_tracking = [ new LoggedNotch(log, 0),
-                        new LoggedNotch(log, 1) ]
+    logged_tracking = []
+    for (let i = 0; i < num_notches; i++) {
+        logged_tracking.push(new LoggedNotch(log, i))
+    }
 
     // If log data is present allow user to show it
     let show_logged_notch = false
@@ -2493,6 +2518,11 @@ async function load(log_file) {
                 parameter_set_value(param, value)
             }
         }
+    }
+
+    // Only show the third and fourth notches if the firmware has them
+    for (let i = 2; i < HNotch_params.length; i++) {
+        show_notch(i, get_param(HNotch_params[i].enable) != null)
     }
 
     const other_params = ["INS_GYRO_FILTER", "SCHED_LOOP_RATE"]
@@ -2574,8 +2604,9 @@ async function load(log_file) {
     // Enable top level filter params
     parameter_set_disable("INS_GYRO_FILTER", false)
     parameter_set_disable("SCHED_LOOP_RATE", false)
-    parameter_set_disable("INS_HNTCH_ENABLE", false)
-    parameter_set_disable("INS_HNTC2_ENABLE", false)
+    for (const names of get_HNotch_param_names()) {
+        parameter_set_disable(names.enable, false)
+    }
 
     // Load filters from params
     filter_param_read()
