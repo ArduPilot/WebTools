@@ -130,7 +130,7 @@ var device = null;
                 let configValue = device.settings.configuration.configurationValue;
                 if (configDesc.bConfigurationValue == configValue) {
                     for (let desc of configDesc.descriptors) {
-                        if (desc.bDescriptorType == 0x21 && desc.hasOwnProperty("bcdDFUVersion")) {
+                        if (desc.bDescriptorType == 0x21 && Object.prototype.hasOwnProperty.call(desc, "bcdDFUVersion")) {
                             funcDesc = desc;
                             break;
                         }
@@ -543,7 +543,7 @@ var device = null;
                     if (status.state == dfu.dfuERROR) {
                         await device.clearStatus();
                     }
-                } catch (error) {
+                } catch {
                     device.logWarning("Failed to clear status");
                 }
                 await device.do_download(transferSize, firmwareFile, manifestationTolerant).then(
