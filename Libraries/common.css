@@ -13,8 +13,62 @@ table.header img.github {
     width: 60px;
 }
 
+/* Theme toggle added by theme.js, beside the GitHub links so it does not change the layout */
+table.header td:last-child {
+    position: relative;
+}
+.theme-toggle {
+    position: absolute;
+    top: 50%;
+    left: 75px;
+    transform: translateY(-50%);
+    white-space: nowrap;
+}
+
 /* Tool title, links back to the page */
 h1 a.title {
     color: #000000;
     text-decoration: none;
+}
+
+/* Dark theme, set by theme.js */
+html[data-theme="dark"] {
+    color-scheme: dark;
+    background-color: #181a1b;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] a:link {
+    color: #8ab4f8;
+}
+html[data-theme="dark"] a:visited {
+    color: #c58af9;
+}
+html[data-theme="dark"] h1 a.title {
+    color: inherit;
+}
+html[data-theme="dark"] img.github,
+html[data-theme="dark"] img[src$="question-circle.svg"] {
+    filter: invert(1);
+}
+html[data-theme="dark"] #loading {
+    background-color: #181a1b !important;
+}
+
+/* Plotly: replace its default colours, colours set by the tools are kept */
+html[data-theme="dark"] .js-plotly-plot .main-svg[style*="background: rgb(255, 255, 255)"] {
+    background: transparent !important;
+}
+html[data-theme="dark"] .js-plotly-plot rect[style*="fill: rgb(255, 255, 255)"] {
+    fill: transparent !important;
+}
+html[data-theme="dark"] .js-plotly-plot .infolayer text[style*="fill: rgb(68, 68, 68)"],
+html[data-theme="dark"] .js-plotly-plot [class*="axislayer"] text[style*="fill: rgb(68, 68, 68)"] {
+    fill: #e0e0e0 !important;
+}
+/* Grid colours are always derived from the background, so replace all of them */
+html[data-theme="dark"] .js-plotly-plot .gridlayer path {
+    stroke: #3a3a3a !important;
+}
+html[data-theme="dark"] .js-plotly-plot .zerolinelayer path[style*="stroke: rgb(68, 68, 68)"] {
+    stroke: #888 !important;
 }
