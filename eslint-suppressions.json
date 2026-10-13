@@ -12,13 +12,10 @@
   },
   "AirspeedFit/airspeedfit.js": {
     "no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "AirspeedFit/airspeedfit_core.js": {
-    "no-unused-vars": {
-      "count": 2
-    },
     "no-useless-assignment": {
       "count": 1
     }

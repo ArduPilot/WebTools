@@ -309,7 +309,7 @@ function baro_gnd_temp_at(log, t_seconds) {
     if (insts == null) return null
     const inst = (0 in insts) ? 0 : Number(Object.keys(insts)[0])
     let gt
-    try { gt = log.get_instance("BARO", inst, "GndTemp") } catch (e) { return null }
+    try { gt = log.get_instance("BARO", inst, "GndTemp") } catch { return null }
     if (gt == null || gt.length == 0) return null
     const time = TimeUS_to_seconds(log.get_instance("BARO", inst, "TimeUS"))
     const v = linear_interp(Array.from(gt), time, [t_seconds])[0]
