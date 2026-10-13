@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <title>ArduPilot SCurve plotter</title>
 <link rel="icon" href="../images/AP_favicon.png">
+<link rel="stylesheet" href="../Libraries/common.css">
 <script src="./ardupilot/wpnav.js"></script>
 <script type="text/javascript" src="SCurveTool.js"></script>
 <script type="text/javascript" src="../Libraries/FileSaver.js"></script>
@@ -19,19 +20,15 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
 </head>
-<table style="width:1200px"><tr><td>
+<table class="header"><tr><td>
   <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
 </td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" class="github"></a>
   <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" class="github"></a>
 </td></tr></table>
 
 <style>
-  div.plotly-notifier {
-    visibility: hidden;
-  }
-
   .params {
       width:330px;
       height:235px;
@@ -77,7 +74,7 @@
 </style>
 
 <table><tr><td style="width:1130px">
-  <h1 style="text-align:center; margin-block-end: 0.25em;"><a href="" style="color: #000000; text-decoration:none;">ArduPilot SCurve plotter</a></h1>
+  <h1 style="text-align:center; margin-block-end: 0.25em;"><a href="" class="title">ArduPilot SCurve plotter</a></h1>
 </td></tr></table>
 
 <body onload="initial_load(); update()">

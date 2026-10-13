@@ -1,0 +1,20 @@
+/* Styles shared by the tools */
+
+/* Hide Plotly notifications */
+div.plotly-notifier {
+    visibility: hidden;
+}
+
+/* Page header with the ArduPilot logo and GitHub links */
+table.header {
+    width: 1200px;
+}
+table.header img.github {
+    width: 60px;
+}
+
+/* Tool title, links back to the page */
+h1 a.title {
+    color: #000000;
+    text-decoration: none;
+}
