@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <title>ArduPilot Rotation Helper</title>
 <link rel="icon" href="../images/AP_favicon.png">
+<link rel="stylesheet" href="../Libraries/common.css">
 
 <script type="text/javascript" src="RotationCheck.js"></script>
 <script type="text/javascript" src="Matrix3.js"></script>
@@ -11,21 +12,16 @@
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 
 </head>
-<table style="width:1200px"><tr><td>
+<table class="header"><tr><td>
   <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
 </td><td>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" class="github"></a>
   <br>
-  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+  <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" class="github"></a>
 </td></tr></table>
 
-<style>
-  div.plotly-notifier {
-    visibility: hidden;
-  }
-</style>
 
-<h1><a href="" style="color: #000000; text-decoration:none;padding-left:10px;">ArduPilot Rotation Check</a></h1>
+<h1><a href="" class="title" style="padding-left:10px;">ArduPilot Rotation Check</a></h1>
 
 <body onload="reset(); update()">
 
