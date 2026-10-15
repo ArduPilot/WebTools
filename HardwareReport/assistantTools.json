@@ -1,0 +1,46 @@
+[
+  { "type": "file_search" },
+  { "type": "code_interpreter" },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_all_parameters",
+      "description": "Saves all parameters",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_changed_parameters",
+      "description": "Saves changed parameters",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_minimal_parameters",
+      "description": "Saves minimal parameters",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "required": []
+      }
+    }
+  }
+]
