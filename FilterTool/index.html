@@ -28,8 +28,12 @@
 
 <h1><a href="" style="color: #000000; text-decoration:none;">ArduPilot Filter Analysis</a></h1>
 
-The following form will display the attenuation and phase lag for an
-ArduPilot 4.2 filter setup.
+<p style="width:1150px; text-align:justify; margin-block-start: 0;">
+This tool shows the attenuation (noise reduction) and phase lag (delay) of an ArduPilot gyro filter setup, worked out from the parameters below. No log is needed: enter values by hand, use Load Parameters to read a parameter file, or use "Open in filter tool" in the <a href="../FilterReview">Filter Review</a> tool to bring across settings from a log.
+Dynamic notches are drawn where they would sit for the throttle, ESC RPM or RPM value entered in the box that appears below the notch settings for that tracking mode, so this can be changed to see how the notches move.
+The PIDs plot shows the response of the rate controller for each axis, with the gyro filters included when "Post" filtering is selected.
+Settings are remembered in this browser, and Get Link copies a link to share them.
+</p>
 <body onload="load(); update_all_hidden(); calculate_filter(); calculate_pid();">
 <div id="Bode" style="width:1200px;height:900px"></div>
 <p>
@@ -206,9 +210,9 @@ ArduPilot 4.2 filter setup.
 <h3><label id="PID_title">Title</label></h3>
 <div id="BodePID" style="width:1200px;height:900px"></div>
 <p>
-<input type="button" id="CalculateRoll" value="Caculate Roll" onclick="calculate_pid(this.id);">
-<input type="button" id="CalculatePitch" value="Caculate Pitch" onclick="calculate_pid(this.id);">
-<input type="button" id="CalculateYaw" value="Caculate Yaw" onclick="calculate_pid(this.id);">
+<input type="button" id="CalculateRoll" value="Calculate Roll" onclick="calculate_pid(this.id);">
+<input type="button" id="CalculatePitch" value="Calculate Pitch" onclick="calculate_pid(this.id);">
+<input type="button" id="CalculateYaw" value="Calculate Yaw" onclick="calculate_pid(this.id);">
 </p>
 <form id="PID_params" action="">
         <fieldset style="max-width:1200px">
