@@ -153,7 +153,8 @@ class ESCTarget extends NotchTarget {
         if (count == 0) {
             return
         }
-        return [this.get_target(config, sum / count)]
+        // Average is scaled by the reference value
+        return [this.get_target(config, (sum / count) * config.ref)]
     }
 
     get_target(config, freq) {
@@ -204,7 +205,8 @@ class ESCTarget extends NotchTarget {
         const len = avg.avg_freq.length
         let freq = new Array(len)
         for (let j = 0; j < len; j++) {
-            freq[j] = this.get_target(config, avg.avg_freq[j])
+            // Average is scaled by the reference value
+            freq[j] = this.get_target(config, avg.avg_freq[j] * config.ref)
         }
 
         return { freq:freq, time:avg.avg_time }
