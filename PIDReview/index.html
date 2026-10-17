@@ -248,8 +248,10 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
         Step Response
         <img id="TT_PID_StepResponse" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
             data-tippy-content="
-    Simulated PID response to a step input.
+    Closed loop step response estimated from the logged target and actual rates.
     Used to evaluate rise time, overshoot, damping, and stability.
+    Only parts of the flight where the target rate goes above 20 deg/s are used, so the analysis time needs some sharp stick inputs.
+    Grey lines are the estimate from each part, the coloured line is their mean.
     " />
     </h2>
 
@@ -257,6 +259,7 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
 </td></tr></table>
 
 <div id="step_plot" style="width:1200px;height:450px"></div>
+<p id="step_note" style="width:1200px; text-align:center" hidden>No step response: the target rate stayed below 20 deg/s in the analysis time. Select a section with some sharp stick inputs.</p>
 
 <table><tr><td style="width:1200px">
     <h2 style="text-align:center">
