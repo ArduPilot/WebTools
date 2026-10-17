@@ -132,6 +132,7 @@ function reset() {
         step_plot.data[i].x = []
         step_plot.data[i].y = []
     }
+    document.getElementById("step_note").hidden = true
     for (let i = 0; i < Spectrogram.data.length; i++) {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
@@ -1048,6 +1049,7 @@ function redraw_step() {
         step_plot.data[plot_index].x = []
         step_plot.data[plot_index].y = []
     }
+    document.getElementById("step_note").hidden = true
     if (valid_sets == 0) {
         Plotly.redraw("step_plot")
         return
@@ -1104,6 +1106,9 @@ function redraw_step() {
 
     // Pre-calculate inverse
     sn = array_inverse(sn)
+
+    // Count of sets with at least one step estimate
+    let sets_with_steps = 0
 
     // For each data set
     for (let j = 0; j < num_sets; j++) {
@@ -1189,6 +1194,7 @@ function redraw_step() {
                 // No good steps, skip this set
                 continue
             }
+            sets_with_steps += 1
 
             // Plot mean
             step_plot.data[plot_index+1].x = time
@@ -1200,6 +1206,9 @@ function redraw_step() {
         }
 
     }
+
+    // Explain an empty plot
+    document.getElementById("step_note").hidden = (sets_with_steps > 0)
 
     step_plot.layout.yaxis.range = [0, 2]
     step_plot.layout.yaxis.autorange = false
