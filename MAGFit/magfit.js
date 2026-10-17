@@ -784,7 +784,40 @@ function find_end_index(time) {
 }
 
 // Run all calculation steps
+// Update the expected earth field from the location inputs, return false if there is no valid location
+function update_earth_field() {
+    const Lat = parseFloat(document.getElementById("Lat").value)
+    const Lng = parseFloat(document.getElementById("Lng").value)
+    if (isNaN(Lat) || isNaN(Lng)) {
+        return false
+    }
+    if ((earth_field != null) && (earth_field.Lat === Lat) && (earth_field.Lng === Lng)) {
+        // No change
+        return true
+    }
+
+    const field = expected_earth_field_lat_lon(Lat, Lng)
+    if (field == null) {
+        return false
+    }
+    console.log("EF: " + field.vector[0] + ", " + field.vector[1] + ", " + field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
+
+    earth_field = field
+    earth_field.Lat = Lat
+    earth_field.Lng = Lng
+
+    // Expected body frame field must be re-calculated
+    source = null
+
+    return true
+}
+
 function calculate() {
+
+    if (!update_earth_field()) {
+        alert("Enter a valid latitude and longitude in the Location box")
+        return
+    }
 
     select_body_frame_attitude()
 
@@ -1652,7 +1685,7 @@ function calc_error(A, B) {
     return ret
 }
 
-function extractLatLon(log) {
+function extractLatLon(log, get_param) {
   var Lat, Lng
   if (("ORGN" in log.messageTypes) && ("instances" in log.messageTypes.ORGN) && (0 in log.messageTypes.ORGN.instances)) {
     const ORGN = log.get_instance("ORGN", 0)
@@ -1666,6 +1699,12 @@ function extractLatLon(log) {
     Lat = POS.Lat[POS.Lat.length-1] * 10**-7
     Lng = POS.Lng[POS.Lng.length-1] * 10**-7
     return [Lat, Lng]
+  }
+  // Recorded origin params, zero if not set
+  const origin_lat = get_param("AHRS_ORIGIN_LAT")
+  const origin_lng = get_param("AHRS_ORIGIN_LON")
+  if ((origin_lat != null) && (origin_lng != null) && ((origin_lat != 0) || (origin_lng != 0))) {
+    return [origin_lat, origin_lng]
   }
   return [Lat, Lng]
 }
@@ -1948,13 +1987,11 @@ async function load(log_file) {
     // Assume constant earth field
     // Use origin msg
     // Use last EKF origin for earth field
-    var [Lat, Lng] = extractLatLon(log)
-    earth_field = expected_earth_field_lat_lon(Lat, Lng)
-    if (earth_field == null) {
-        alert("Could not get earth field for Lat: " + Lat + " Lng: " + Lng)
-        return
-    }
-    console.log("EF: " + earth_field.vector[0] + ", " + earth_field.vector[1] + ", " + earth_field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
+    // If there is no location in the log it can be entered manually
+    var [Lat, Lng] = extractLatLon(log, get_param)
+    earth_field = null
+    document.getElementById("Lat").value = (Lat != null) ? Lat : ""
+    document.getElementById("Lng").value = (Lng != null) ? Lng : ""
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param("AHRS_EKF_TYPE")
@@ -2221,6 +2258,12 @@ async function load(log_file) {
 
             cal_fieldset.appendChild(fieldset)
         }
+    }
+
+    if (!update_earth_field()) {
+        alert("No location found in log, enter latitude and longitude in the Location box then click Calculate")
+        set_need_calc(true)
+        return
     }
 
     calculate()
