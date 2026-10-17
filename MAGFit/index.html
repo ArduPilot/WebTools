@@ -77,6 +77,20 @@ For best results use a flight log that covers as many orientations as possible. 
         </td>
         <td style="width: 10px;"></td>
         <td>
+            <fieldset style="width:200px;height:80px">
+                <legend>Location
+                    <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
+                    data-tippy-content='Location used to get the expected earth field from the World Magnetic Model. Filled in from the EKF origin or last position in the log, or from the AHRS_ORIGIN_LAT and AHRS_ORIGIN_LON parameters. If the log has no location, for example when flying without GPS, enter it here. The Calculate button must be clicked after any change of location.'
+                    data-tippy-maxWidth='750px'/>
+                </legend>
+                <label for="Lat">Latitude</label>
+                <input id="Lat" name="Lat" type="number" min="-90" max="90" step="any" onchange="set_need_calc(true)" style="width:90px"/><br><br>
+                <label for="Lng">Longitude</label>
+                <input id="Lng" name="Lng" type="number" min="-180" max="180" step="any" onchange="set_need_calc(true)" style="width:90px"/>
+            </fieldset>
+        </td>
+        <td style="width: 10px;"></td>
+        <td>
             <fieldset style="width:200px;height:80px" id="ATTITUDE">
                 <legend>Attitude source
                     <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
@@ -90,7 +104,7 @@ For best results use a flight log that covers as many orientations as possible. 
             <input id="fileItem" type="file" accept=".bin" onchange="readFile(this)"><br><br><br>
             <input type="button" id="calculate" value="Calculate" onclick="loading_call(() => { calculate(); })">
         </td>
-        <td style="width: 300px;"></td>
+        <td style="width: 90px;"></td>
         <td style="text-align:right; vertical-align:top">
             <input id="OpenIn" type="button" value="Open In" disabled><br><br><br>
             <img id="TT" src="../images/question-circle.svg" width="30px" 
