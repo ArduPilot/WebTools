@@ -1715,7 +1715,62 @@ function set_need_calc(b) {
     document.getElementById('SaveParams').disabled = b
 }
 
-function add_attitude_source(quaternion, name) {
+// Make a new attitude using the roll and pitch from quaternion and the yaw (deg) from another source.
+// Only the times where yaw is available are used, gaps of more than 1 second in the yaw are skipped.
+function replace_yaw(quaternion, yaw_time, yaw_deg) {
+    const yaw_len = yaw_time.length
+    if (yaw_len < 2) {
+        return
+    }
+
+    // Unwrap so yaw can be interpolated
+    let yaw = new Array(yaw_len)
+    yaw[0] = yaw_deg[0]
+    for (let i = 1; i < yaw_len; i++) {
+        let delta = yaw_deg[i] - yaw_deg[i-1]
+        delta -= 360 * Math.round(delta / 360)
+        yaw[i] = yaw[i-1] + delta
+    }
+
+    let ret = { time: [], q1: [], q2: [], q3: [], q4: [] }
+    let q = new Quaternion()
+    let yaw_index = 0
+    for (let i = 0; i < quaternion.time.length; i++) {
+        const time = quaternion.time[i]
+        if ((time < yaw_time[0]) || (time > yaw_time[yaw_len - 1])) {
+            continue
+        }
+        while ((yaw_index < yaw_len - 2) && (yaw_time[yaw_index + 1] < time)) {
+            yaw_index++
+        }
+        const dt = yaw_time[yaw_index + 1] - yaw_time[yaw_index]
+        if (dt > 1.0) {
+            continue
+        }
+        const ratio = (dt > 0) ? (time - yaw_time[yaw_index]) / dt : 0
+        const new_yaw = yaw[yaw_index] + (yaw[yaw_index + 1] - yaw[yaw_index]) * ratio
+
+        q.q1 = quaternion.q1[i]
+        q.q2 = quaternion.q2[i]
+        q.q3 = quaternion.q3[i]
+        q.q4 = quaternion.q4[i]
+        q.from_euler(q.get_euler_roll(), q.get_euler_pitch(), new_yaw * (Math.PI / 180))
+
+        ret.time.push(time)
+        ret.q1.push(q.q1)
+        ret.q2.push(q.q2)
+        ret.q3.push(q.q3)
+        ret.q4.push(q.q4)
+    }
+
+    if (ret.time.length < 2) {
+        return
+    }
+    return ret
+}
+
+// time_range is optional, if given the analysis time is limited to it when this source is selected
+function add_attitude_source(quaternion, name, time_range) {
 
     // Add check box for this attitude source
     let section = document.getElementById("ATTITUDE")
@@ -1730,6 +1785,15 @@ function add_attitude_source(quaternion, name) {
     radio.addEventListener('change', function() { 
         set_need_calc(true)
         source = null
+
+        if (time_range != null) {
+            // Limit analysis time to the period this source is valid for
+            let start = document.getElementById("TimeStart")
+            let end = document.getElementById("TimeEnd")
+            start.value = Math.min(Math.max(parseFloat(start.value), time_range[0]), time_range[1])
+            end.value = Math.max(Math.min(parseFloat(end.value), time_range[1]), time_range[0])
+            time_range_changed()
+        }
     })
 
     let label = document.createElement("label")
@@ -2064,6 +2128,53 @@ async function load(log_file) {
                 field.select.checked = true
             }
             body_frame_earth_field.push(field)
+
+            // EKF roll and pitch with yaw from the EKF's Gaussian sum filter (GSF) yaw estimator, this does not use the compass
+            if (("XKY0" in log.messageTypes) && ("instances" in log.messageTypes.XKY0) && (primary in log.messageTypes.XKY0.instances)) {
+                const time = TimeUS_to_seconds(log.get_instance("XKY0", primary, "TimeUS"))
+                const yaw = log.get_instance("XKY0", primary, "YC")
+                const yaw_sd = log.get_instance("XKY0", primary, "YCS")
+
+                // Use the same accuracy threshold as the EKF does for a yaw reset (GSF_YAW_ACCURACY_THRESHOLD_DEG)
+                // YCS is logged as sqrt(degrees(variance)) so convert the threshold to match
+                const threshold = Math.sqrt((15.0 * (Math.PI / 180))**2 * (180 / Math.PI))
+                let valid_time = []
+                let valid_yaw = []
+                for (let i = 0; i < time.length; i++) {
+                    if (yaw_sd[i] < threshold) {
+                        valid_time.push(time[i])
+                        valid_yaw.push(yaw[i])
+                    }
+                }
+
+                const GSF_quaternion = replace_yaw(quaternion, valid_time, valid_yaw)
+                if (GSF_quaternion != null) {
+                    const range = [GSF_quaternion.time[0], GSF_quaternion.time[GSF_quaternion.time.length - 1]]
+                    body_frame_earth_field.push(add_attitude_source(GSF_quaternion, "EKF 3 IMU " + (primary + 1) + " GSF yaw", range))
+                }
+            }
+
+            // EKF roll and pitch with yaw from GPS (for example moving baseline), yaw is logged as 0 when not available
+            if (("GPS" in log.messageTypes) && ("instances" in log.messageTypes.GPS)) {
+                for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+                    const time = TimeUS_to_seconds(log.get_instance("GPS", inst, "TimeUS"))
+                    const yaw = log.get_instance("GPS", inst, "Yaw")
+                    let valid_time = []
+                    let valid_yaw = []
+                    for (let i = 0; i < time.length; i++) {
+                        if (yaw[i] != 0) {
+                            valid_time.push(time[i])
+                            valid_yaw.push(yaw[i])
+                        }
+                    }
+
+                    const GPS_quaternion = replace_yaw(quaternion, valid_time, valid_yaw)
+                    if (GPS_quaternion != null) {
+                        const range = [GPS_quaternion.time[0], GPS_quaternion.time[GPS_quaternion.time.length - 1]]
+                        body_frame_earth_field.push(add_attitude_source(GPS_quaternion, "EKF 3 IMU " + (primary + 1) + " GPS " + (parseFloat(inst) + 1) + " yaw", range))
+                    }
+                }
+            }
         }
     }
 
