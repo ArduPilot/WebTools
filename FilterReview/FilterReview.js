@@ -274,6 +274,42 @@ function HarmonicNotchFilter(params) {
     return this
 }
 
+// Warn if raw data is missing for a large part of the analysis time
+function update_missing_data_warning() {
+    for (let i = 0; i < 3; i++) {
+        let missing = 0
+        if (Gyro_batch.type == "raw") {
+            for (let j = 0; j < Gyro_batch.length; j++) {
+                if ((Gyro_batch[j] == null) || (Gyro_batch[j].sensor_num != i)) {
+                    continue
+                }
+                missing = Math.max(missing, get_missing_fraction(Gyro_batch[j]))
+            }
+        }
+        let missing_label = document.getElementById("Gyro" + i + "_missing")
+        missing_label.hidden = missing < missing_data_warn_fraction
+        missing_label.lastElementChild.textContent = "Missing data: " + Math.round(missing * 100) + "% of analysis time"
+    }
+}
+
+// Fraction of analysis time that has no raw data, batches are split where data is missing
+const missing_data_warn_fraction = 0.1
+function get_missing_fraction(batches) {
+    const first = batches[0]
+    const last = batches[batches.length - 1]
+    const start = Math.max(parseFloat(document.getElementById("TimeStart").value), first.sample_time)
+    const end = Math.min(parseFloat(document.getElementById("TimeEnd").value), last.sample_time + (last.x.length / last.sample_rate))
+    if (!(end > start)) {
+        return 0
+    }
+    let covered = 0
+    for (const batch of batches) {
+        const batch_end = batch.sample_time + (batch.x.length / batch.sample_rate)
+        covered += Math.max(0, Math.min(end, batch_end) - Math.max(start, batch.sample_time))
+    }
+    return Math.max(0, 1 - (covered / (end - start)))
+}
+
 function run_batch_fft(data_set) {
     const num_batch = data_set.length
     const num_points = data_set[0].x.length
@@ -394,6 +430,7 @@ function reset() {
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
         document.getElementById("BodeGyroInst" + i).disabled = true
+        document.getElementById("Gyro" + i + "_missing").hidden = true
 
         let fieldset = document.getElementById("Gyro" + i)
         fieldset.style["border-color"] = "rgb(192, 192, 192)"
@@ -762,6 +799,8 @@ function re_calc() {
     const start = performance.now()
 
     calculate()
+
+    update_missing_data_warning()
 
     load_filters()
 
@@ -2689,6 +2728,8 @@ async function load(log_file) {
 
     // Calculate FFT
     calculate()
+
+    update_missing_data_warning()
 
     // Update transfer function from filter setting
     calculate_transfer_function()
