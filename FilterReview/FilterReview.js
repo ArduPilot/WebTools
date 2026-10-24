@@ -414,9 +414,6 @@ function reset() {
     document.getElementById("filter_version_1").checked = true
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
-    for (let i = 0; i < 3; i++) {
-        document.getElementById("Gyro" + i + "_missing").hidden = true
-    }
     document.getElementById("OpenFilterTool").disabled = true
     document.getElementById("SaveParams").disabled = true
     document.getElementById("LoadParams").disabled = true
@@ -433,6 +430,7 @@ function reset() {
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
         document.getElementById("BodeGyroInst" + i).disabled = true
+        document.getElementById("Gyro" + i + "_missing").hidden = true
 
         let fieldset = document.getElementById("Gyro" + i)
         fieldset.style["border-color"] = "rgb(192, 192, 192)"
