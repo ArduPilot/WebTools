@@ -1,0 +1,167 @@
+/**
+ * Schema-driven parameter definitions for SiK radios
+ * Supports different firmware variants via schema
+ */
+/** Common SiK parameters - 900MHz defaults where applicable */
+export const SIK_PARAM_SCHEMA = [
+    {
+        key: 'SERIAL_SPEED',
+        label: 'Serial Speed',
+        description: 'Baud rate for serial connection (57 = 57600)',
+        type: 'number',
+        min: 1,
+        max: 1152,
+        default: 57,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S1',
+    },
+    {
+        key: 'AIR_SPEED',
+        label: 'Air Speed',
+        description: 'RF data rate in kbps. Lower = longer range, less bandwidth. Supported: 2,4,8,16,19,24,32,48,64,96,128,192,250',
+        type: 'number',
+        min: 2,
+        max: 250,
+        default: 64,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S2',
+    },
+    {
+        key: 'NETID',
+        label: 'Network ID',
+        description: 'Must match on both radios (0-255)',
+        type: 'number',
+        min: 0,
+        max: 255,
+        default: 25,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S3',
+    },
+    {
+        key: 'TXPOWER',
+        label: 'TX Power (dBm)',
+        description: 'Transmit power. Supported: 1,2,5,8,11,14,17,20',
+        type: 'number',
+        min: 1,
+        max: 20,
+        default: 20,
+        requiresReboot: false,
+        category: 'basic',
+        register: 'S4',
+    },
+    {
+        key: 'ECC',
+        label: 'Error Correction',
+        description: 'Golay ECC. 0=off (recommended), 1=on. Some newer chips do not support ECC.',
+        type: 'enum',
+        options: [
+            { value: 0, label: 'Off' },
+            { value: 1, label: 'On' },
+        ],
+        default: 0,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S5',
+    },
+    {
+        key: 'MAVLINK',
+        label: 'MAVLink Mode',
+        description: '0=off, 1=frame+report, 2=low latency (RC_OVERRIDE priority)',
+        type: 'enum',
+        options: [
+            { value: 0, label: 'Off' },
+            { value: 1, label: 'MAVLINK' },
+            { value: 2, label: 'Low Latency' },
+        ],
+        default: 1,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S6',
+    },
+    {
+        key: 'MIN_FREQ',
+        label: 'Min Frequency (kHz)',
+        description: '900MHz: 895000, 433MHz: 414000',
+        type: 'number',
+        min: 414000,
+        max: 935000,
+        default: 915000,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S8',
+    },
+    {
+        key: 'MAX_FREQ',
+        label: 'Max Frequency (kHz)',
+        description: '900MHz: 928000 (US) or 935000, 433MHz: 454000',
+        type: 'number',
+        min: 414000,
+        max: 935000,
+        default: 928000,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S9',
+    },
+    {
+        key: 'NUM_CHANNELS',
+        label: 'Number of Channels',
+        description: 'Frequency hopping channels (1-50)',
+        type: 'number',
+        min: 1,
+        max: 50,
+        default: 50,
+        requiresReboot: true,
+        category: 'basic',
+        register: 'S10',
+    },
+    {
+        key: 'DUTY_CYCLE',
+        label: 'Duty Cycle (%)',
+        description: 'Max transmit time percentage. 100=normal, 0=receive only',
+        type: 'number',
+        min: 0,
+        max: 100,
+        default: 100,
+        requiresReboot: true,
+        category: 'advanced',
+        register: 'S11',
+    },
+    {
+        key: 'LBT_RSSI',
+        label: 'LBT RSSI',
+        description: 'Listen Before Talk threshold. 0=disabled, 25+=enabled',
+        type: 'number',
+        min: 0,
+        max: 255,
+        default: 0,
+        requiresReboot: true,
+        category: 'advanced',
+        register: 'S12',
+    },
+    {
+        key: 'MAX_WINDOW',
+        label: 'Max Window (ms)',
+        description: '33=low latency, 131=default (higher bandwidth)',
+        type: 'number',
+        min: 33,
+        max: 131,
+        default: 131,
+        requiresReboot: true,
+        category: 'advanced',
+        register: 'S15',
+    },
+];
+/** Map param key to S-register for AT commands */
+export function keyToRegister(key) {
+    return SIK_PARAM_SCHEMA.find((p) => p.key === key)?.register;
+}
+/** Map S-register to param key */
+export function registerToKey(reg) {
+    const r = reg.toUpperCase().replace(/^S/, '');
+    const def = SIK_PARAM_SCHEMA.find((p) => p.register === `S${r}`);
+    return def?.key;
+}
+//# sourceMappingURL=schema.js.map
