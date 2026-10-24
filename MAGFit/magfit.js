@@ -24,8 +24,8 @@ function setup_plots() {
     const time_scale_label = "Time (s)"
 
     // Setup flight data plot
-    const flight_data_plot = ["Roll", "Pitch", "Throttle", "Altitude"]
-    const flight_data_unit = ["deg",  "deg",   "",         "m"]
+    const flight_data_plot = ["Roll", "Pitch", "Throttle", "Altitude", "Yaw"]
+    const flight_data_unit = ["deg",  "deg",   "",         "m",        "deg"]
     flight_data.data = []
     for (let i=0;i<flight_data_plot.length;i++) {
         let axi = "y"
@@ -41,7 +41,7 @@ function setup_plots() {
 
     flight_data.layout = {
         xaxis: { title: {text: time_scale_label },
-                 domain: [0.07, 0.93],
+                 domain: [0.13, 0.93],
                  type: "linear", 
                  zeroline: false, 
                  showline: true, 
@@ -52,18 +52,18 @@ function setup_plots() {
     }
 
     // Set axis to match line colors
-    const flight_data_axis_pos = [0, 0.06, 0.94, 1]
+    const flight_data_axis_pos = [0, 0.06, 0.94, 1, 0.12]
+    const flight_data_axis_side = ["left", "left", "right", "right", "left"]
     for (let i=0;i<flight_data_plot.length;i++) {
         let axi = "yaxis"
         if (i > 0) {
             axi += (i+1)
         }
-        const side = i < 2 ? "left" : "right"
         flight_data.layout[axi] = {title: { text: flight_data_plot[i] },
                                             zeroline: false,
                                             showline: true,
                                             mirror: true,
-                                            side: side,
+                                            side: flight_data_axis_side[i],
                                             position: flight_data_axis_pos[i],
                                             color: plot_default_color(i) }
         if (i > 0) {
@@ -1778,11 +1778,28 @@ async function load(log_file) {
 
         flight_data.data[1].x = ATT_time
         flight_data.data[1].y = log.get("ATT", "Pitch")
+
+        // Break the yaw line where it wraps between 0 and 360 to avoid vertical lines
+        const ATT_yaw = log.get("ATT", "Yaw")
+        let yaw_time = []
+        let yaw = []
+        for (let i = 0; i < ATT_yaw.length; i++) {
+            if ((i > 0) && (Math.abs(ATT_yaw[i] - ATT_yaw[i-1]) > 180)) {
+                yaw_time.push(null)
+                yaw.push(null)
+            }
+            yaw_time.push(ATT_time[i])
+            yaw.push(ATT_yaw[i])
+        }
+        flight_data.data[4].x = yaw_time
+        flight_data.data[4].y = yaw
     } else {
         flight_data.data[0].x = null
         flight_data.data[0].y = null
         flight_data.data[1].x = null
         flight_data.data[1].y = null
+        flight_data.data[4].x = null
+        flight_data.data[4].y = null
     }
 
     if ("RATE" in log.messageTypes) {
