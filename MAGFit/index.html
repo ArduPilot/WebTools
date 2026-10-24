@@ -77,16 +77,23 @@ For best results use a flight log that covers as many orientations as possible. 
         </td>
         <td style="width: 10px;"></td>
         <td>
-            <fieldset style="width:200px;height:80px">
+            <fieldset style="width:200px;min-height:80px">
                 <legend>Location
                     <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
-                    data-tippy-content='Location used to get the expected earth field from the World Magnetic Model. Filled in from the EKF origin or last position in the log, or from the AHRS_ORIGIN_LAT and AHRS_ORIGIN_LON parameters. If the log has no location, for example when flying without GPS, enter it here. The Calculate button must be clicked after any change of location.'
+                    data-tippy-content='Location, altitude above sea level and date used to get the expected earth field from the World Magnetic Model (WMM2025). Location and altitude are filled in from the EKF origin or last position in the log, or from the AHRS_ORIGIN parameters. The date is taken from GPS time in the log, or is the current date if there is none. If the log has no location, for example when flying without GPS, enter it here. If the log has a position track, "Use position along flight" gets the earth field at the logged position throughout the flight rather than only at this location, this gives better results for long range flights. The Calculate button must be clicked after any change.'
                     data-tippy-maxWidth='750px'/>
                 </legend>
                 <label for="Lat">Latitude</label>
                 <input id="Lat" name="Lat" type="number" min="-90" max="90" step="any" onchange="set_need_calc(true)" style="width:90px"/><br><br>
                 <label for="Lng">Longitude</label>
-                <input id="Lng" name="Lng" type="number" min="-180" max="180" step="any" onchange="set_need_calc(true)" style="width:90px"/>
+                <input id="Lng" name="Lng" type="number" min="-180" max="180" step="any" onchange="set_need_calc(true)" style="width:90px"/><br><br>
+                <label for="Alt">Altitude (m)</label>
+                <input id="Alt" name="Alt" type="number" step="any" value="0" onchange="set_need_calc(true)" style="width:70px"/><br><br>
+                <label for="Date">Date</label>
+                <input id="Date" name="Date" type="date" onchange="set_need_calc(true)"/>
+                <br><br>
+                <input id="UseTrack" name="UseTrack" type="checkbox" onchange="set_need_calc(true)" disabled/>
+                <label for="UseTrack">Use position along flight</label>
             </fieldset>
         </td>
         <td style="width: 10px;"></td>
