@@ -136,6 +136,7 @@ function reset() {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
     }
+    show_step_stats([])
 
     document.getElementById("calculate").disabled = true
 
@@ -1027,6 +1028,120 @@ function redraw_Spectrogram() {
     Plotly.redraw("Spectrogram")
 }
 
+// Step response stats, relative to the final value
+const step_stats_end_time = 0.4
+const step_stats_final_start = 0.2
+const step_stats_final_min = 0.5
+const step_stats_final_max = 1.5
+function get_step_stats(time, response) {
+    // The end of the estimate is not used as it can turn up or down due to the method
+    const end_index = time.findIndex((t) => t > step_stats_end_time)
+    const len = (end_index > 0) ? end_index : response.length
+    const final_start = time.findIndex((t) => t >= step_stats_final_start)
+    if ((len < 20) || (final_start < 0) || (final_start >= len - 1)) {
+        return
+    }
+
+    // Final value is the mean of the response over the final window
+    let final = 0
+    for (let i = final_start; i < len; i++) {
+        final += response[i]
+    }
+    final /= len - final_start
+    if (!(final >= step_stats_final_min) || !(final <= step_stats_final_max)) {
+        // Estimate does not settle near 1, stats would be misleading
+        return { final, unreliable: true }
+    }
+
+    // Rise time from 10% to 90%
+    const i10 = response.findIndex((y) => y >= 0.1 * final)
+    const i90 = response.findIndex((y) => y >= 0.9 * final)
+    const rise_time = ((i10 >= 0) && (i90 >= 0) && (i90 < len)) ? time[i90] - time[i10] : null
+
+    // Peak and overshoot
+    let peak_index = 0
+    for (let i = 1; i < len; i++) {
+        if (response[i] > response[peak_index]) {
+            peak_index = i
+        }
+    }
+    const peak = response[peak_index]
+
+    // Overshoot only if the peak is before the final window, otherwise the response is still rising
+    const overshoot = (peak_index < final_start) ? Math.max(0, (peak - final) / final) * 100 : null
+
+    // Settling time, last time outside 5% of the final value, must settle before the end of the final window
+    let settling_index = 0
+    for (let i = len - 1; i >= 0; i--) {
+        if (Math.abs(response[i] - final) > 0.05 * final) {
+            settling_index = i + 1
+            break
+        }
+    }
+    const settling_time = (settling_index < len) ? time[settling_index] : null
+
+    return { final, rise_time, peak, peak_time: time[peak_index], overshoot, settling_time }
+}
+
+// Show table of step response stats
+function show_step_stats(stats) {
+    let div = document.getElementById("step_stats")
+    div.replaceChildren()
+    div.hidden = stats.length == 0
+    if (stats.length == 0) {
+        return
+    }
+
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
+    table.style.margin = "0 auto"
+    div.appendChild(table)
+
+    function add_cell(row, type, text, color) {
+        let cell = document.createElement(type)
+        cell.style.border = "1px solid #000"
+        cell.style.padding = "4px 8px"
+        if (color != null) {
+            cell.style.color = color
+        }
+        cell.appendChild(document.createTextNode(text))
+        row.appendChild(cell)
+    }
+    function ms(time) {
+        return (time == null) ? "-" : (time * 1000).toFixed(0) + " ms"
+    }
+
+    let header = document.createElement("tr")
+    table.appendChild(header)
+    for (const title of ["", "Rise time (10-90%)", "Peak", "Peak time", "Overshoot", "Settling time (5%)", "Final value"]) {
+        add_cell(header, "th", title)
+    }
+    for (const set of stats) {
+        let row = document.createElement("tr")
+        table.appendChild(row)
+        add_cell(row, "td", set.name, set.color)
+        if (set.unreliable) {
+            for (let i = 0; i < 5; i++) {
+                add_cell(row, "td", "-")
+            }
+            add_cell(row, "td", set.final.toFixed(2))
+            continue
+        }
+        add_cell(row, "td", ms(set.rise_time))
+        add_cell(row, "td", set.peak.toFixed(2))
+        add_cell(row, "td", ms(set.peak_time))
+        add_cell(row, "td", (set.overshoot == null) ? "-" : set.overshoot.toFixed(0) + " %")
+        add_cell(row, "td", (set.settling_time == null) ? "> " + ms(step_stats_end_time) : ms(set.settling_time))
+        add_cell(row, "td", set.final.toFixed(2))
+    }
+
+    let note = document.createElement("p")
+    note.style.margin = "4px 0 0 0"
+    note.style.textAlign = "center"
+    note.appendChild(document.createTextNode("Measured on the mean response up to " + ms(step_stats_end_time) + ", relative to its final value (mean from " + ms(step_stats_final_start) + " to " + ms(step_stats_end_time) + "). Not shown if the final value is not between " + step_stats_final_min + " and " + step_stats_final_max + ". Overshoot is not shown if the peak is in the final value window."))
+    div.appendChild(note)
+}
+
 // Redraw step response
 function redraw_step() {
     if ((PID_log_messages == null) || !PID_log_messages.have_data) {
@@ -1034,6 +1149,9 @@ function redraw_step() {
     }
 
     const PID = PID_log_messages[get_axis_index()]
+
+    // Stats for the mean step response of each set
+    let step_stats = []
 
     // Although we re-calculate the FFT, because were just using larger window overlap the original FFT can still be checked for validity
     const num_sets = PID.sets.length
@@ -1049,6 +1167,7 @@ function redraw_step() {
         step_plot.data[plot_index].y = []
     }
     if (valid_sets == 0) {
+        show_step_stats([])
         Plotly.redraw("step_plot")
         return
     }
@@ -1199,12 +1318,22 @@ function redraw_step() {
             step_plot.data[plot_index].visible = (valid_sets == 1)
         }
 
+        // Stats of the final mean for this set
+        if (mean_count > 0) {
+            const stats = get_step_stats(time, step_plot.data[plot_index+1].y)
+            if (stats != null) {
+                step_stats.push(Object.assign({ name: "Test " + (j+1), color: plot_default_color(j) }, stats))
+            }
+        }
+
     }
 
     step_plot.layout.yaxis.range = [0, 2]
     step_plot.layout.yaxis.autorange = false
 
     Plotly.redraw("step_plot")
+
+    show_step_stats(step_stats)
 
 } 
 
