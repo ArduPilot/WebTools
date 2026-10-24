@@ -1701,6 +1701,179 @@ function load_params(log) {
 
 }
 
+// Names for build types used in param_values.json and for display
+const vehicle_build_types = {
+    1:  { key: "ArduRover", name: "Rover" },
+    2:  { key: "ArduCopter", name: "Copter" },
+    3:  { key: "ArduPlane", name: "Plane" },
+    4:  { key: "AntennaTracker", name: "Antenna Tracker" },
+    7:  { key: "ArduSub", name: "Sub" },
+    12: { key: "Blimp", name: "Blimp" },
+    13: { key: "ArduCopter", name: "Helicopter" },
+}
+
+// Get the name of a param value from param_values.json, or the value if no name is found
+function get_param_value_name(vehicle_key, list, value) {
+    if ((vehicle_key in param_values) && (list in param_values[vehicle_key]) && (value in param_values[vehicle_key][list])) {
+        return param_values[vehicle_key][list][value]
+    }
+    return value.toString()
+}
+
+// Show vehicle and frame type
+function show_vehicle(build_type) {
+    if (!(build_type in vehicle_build_types)) {
+        return
+    }
+    const vehicle = vehicle_build_types[build_type]
+
+    let section = document.getElementById("VEHICLE")
+    section.hidden = false
+    section.previousElementSibling.hidden = false
+
+    let name = vehicle.name
+    let frame_params = []
+    switch (vehicle.key) {
+        case "ArduCopter":
+        case "ArduRover":
+            frame_params = ["FRAME_CLASS", "FRAME_TYPE"]
+            if ((vehicle.key == "ArduCopter") && [6, 11].includes(params.FRAME_CLASS)) {
+                // Single and dual helis don't use FRAME_TYPE
+                frame_params = ["FRAME_CLASS"]
+            }
+            break
+
+        case "ArduPlane":
+            if (("Q_ENABLE" in params) && (params.Q_ENABLE > 0)) {
+                name = "QuadPlane"
+                if (("Q_TILT_ENABLE" in params) && (params.Q_TILT_ENABLE > 0)) {
+                    name += ", tilt-rotor"
+                }
+                if (("Q_TAILSIT_ENABLE" in params) && (params.Q_TAILSIT_ENABLE > 0)) {
+                    name += ", tailsitter"
+                }
+                frame_params = ["Q_FRAME_CLASS", "Q_FRAME_TYPE"]
+            }
+            break
+
+        case "ArduSub":
+            frame_params = ["FRAME_CONFIG"]
+            break
+    }
+
+    section.appendChild(document.createTextNode(name))
+    for (const param of frame_params) {
+        if (!(param in params)) {
+            continue
+        }
+        section.appendChild(document.createElement("br"))
+        section.appendChild(document.createTextNode(param + ": " + get_param_value_name(vehicle.key, param, params[param])))
+    }
+}
+
+// Show configured output functions
+function show_outputs(build_type) {
+
+    // Use the names for this vehicle, if unknown use the first name found
+    let function_names
+    if ((build_type in vehicle_build_types) && (vehicle_build_types[build_type].key in param_values)) {
+        function_names = param_values[vehicle_build_types[build_type].key].SERVO_FUNCTION
+    } else {
+        function_names = {}
+        for (const values of Object.values(param_values)) {
+            function_names = Object.assign({}, values.SERVO_FUNCTION, function_names)
+        }
+    }
+
+    // DroneCAN drivers, check that the driver is assigned to a port and that it uses DroneCAN
+    let can_drivers = []
+    for (let driver = 1; driver <= 3; driver++) {
+        let assigned = false
+        for (let port = 1; port <= 3; port++) {
+            const name = "CAN_P" + port + "_DRIVER"
+            if ((name in params) && (params[name] == driver)) {
+                assigned = true
+            }
+        }
+        const prefix = "CAN_D" + driver + "_"
+        if (!assigned || !((prefix + "PROTOCOL") in params) || (params[prefix + "PROTOCOL"] != 1)) {
+            continue
+        }
+        can_drivers.push({
+            prefix,
+            esc: params[prefix + "UC_ESC_BM"] || 0,
+            esc_offset: params[prefix + "UC_ESC_OF"] || 0,
+            servo: params[prefix + "UC_SRV_BM"] || 0,
+            himark: ((params[prefix + "UC_OPTION"] || 0) & (1 << 6)) != 0
+        })
+    }
+
+    let outputs = []
+    for (let i = 1; i <= 32; i++) {
+        const name = "SERVO" + i + "_FUNCTION"
+        if (!(name in params) || (params[name] == 0)) {
+            continue
+        }
+        const value = params[name]
+        let func = (value in function_names) ? function_names[value] : "Unknown"
+        func += " (" + value + ")"
+
+        // GPIO outputs are never sent over CAN, ESCs are sent from the ESC offset and at most 20 of them
+        // Himark servos (UC_OPTION bit 6) only cover the first 17 outputs
+        let can = []
+        for (const driver of (value < 0) ? [] : can_drivers) {
+            const bit = 1 << (i - 1)
+            if ((driver.esc & bit) && ((i - 1) >= driver.esc_offset) && ((i - 1) < driver.esc_offset + 20)) {
+                can.push("DroneCAN ESC (" + driver.prefix + "UC_ESC_BM)")
+            }
+            if ((driver.servo & bit) && (!driver.himark || (i <= 17))) {
+                can.push("DroneCAN servo (" + driver.prefix + "UC_SRV_BM)")
+            }
+        }
+        outputs.push({ output: i, func, can: can.join(", ") })
+    }
+
+    if (outputs.length == 0) {
+        return
+    }
+
+    let section = document.getElementById("OUTPUTS")
+    section.hidden = false
+    section.previousElementSibling.hidden = false
+
+    const show_can = outputs.some((output) => output.can.length > 0)
+
+    let table = document.createElement("table")
+    table.style.borderCollapse = "collapse"
+    section.appendChild(table)
+
+    function add_cell(row, type, text) {
+        let cell = document.createElement(type)
+        cell.style.border = "1px solid #000"
+        cell.style.padding = "4px 8px"
+        cell.appendChild(document.createTextNode(text))
+        row.appendChild(cell)
+    }
+
+    let header = document.createElement("tr")
+    table.appendChild(header)
+    add_cell(header, "th", "Output")
+    add_cell(header, "th", "Function")
+    if (show_can) {
+        add_cell(header, "th", "Also sent over CAN")
+    }
+
+    for (const output of outputs) {
+        let row = document.createElement("tr")
+        table.appendChild(row)
+        add_cell(row, "td", output.output)
+        add_cell(row, "td", output.func)
+        if (show_can) {
+            add_cell(row, "td", output.can)
+        }
+    }
+}
+
 function load_param_file(text) {
     var lines = text.split('\n')
     params = {}
@@ -1715,6 +1888,9 @@ function load_param_file(text) {
     }
 
     load_params()
+
+    // Vehicle type is unknown from a param file
+    show_outputs(null)
 
 }
 
@@ -2635,6 +2811,9 @@ async function load_log(log_file) {
         }
     }
 
+    show_vehicle(version.build_type)
+    show_outputs(version.build_type)
+
     // Look for watchdog
     show_watchdog(log)
 
@@ -3179,6 +3358,7 @@ function reset() {
     setup_section(document.getElementById("warnings"))
     setup_section(document.getElementById("VER"))
     setup_section(document.getElementById("FC"))
+    setup_section(document.getElementById("VEHICLE"))
     setup_section(document.getElementById("WDOG"))
     setup_section(document.getElementById("InternalError"))
     setup_section(document.getElementById("IOMCU"))
@@ -3187,6 +3367,7 @@ function reset() {
     setup_section(document.getElementById("BARO"))
     setup_section(document.getElementById("ARSPD"))
     setup_section(document.getElementById("DroneCAN"))
+    setup_section(document.getElementById("OUTPUTS"))
     setup_section(document.getElementById("WAYPOINTS"))
     setup_section(document.getElementById("FILES"))
     setup_section(document.getElementById("GPS"))
@@ -3646,6 +3827,7 @@ function reset() {
 }
 
 let board_types = {}
+let param_values = {}
 async function initial_load() {
 
     function load_board_types(text) {
@@ -3667,7 +3849,13 @@ async function initial_load() {
         }
     }
 
-    return new Promise((resolve) => {
+    const param_values_loaded = fetch("param_values.json")
+        .then((res) => res.json())
+        .then((data) => { param_values = data })
+        // Without the names the numeric values are shown
+        .catch((error) => console.log(error))
+
+    const board_types_loaded = new Promise((resolve) => {
         fetch("board_types.txt")
             .then((res) => {
             return res.text()
@@ -3676,6 +3864,8 @@ async function initial_load() {
             resolve()
         });
     })
+
+    return Promise.all([board_types_loaded, param_values_loaded])
 }
 
 function save_text(text, file_postfix) {
