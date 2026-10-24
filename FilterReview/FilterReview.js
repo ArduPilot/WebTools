@@ -2228,6 +2228,21 @@ function load_from_batch(log, num_gyro, gyro_rate, get_param) {
     }
 }
 
+// Return true for each time at which the vehicle was armed, from ARM log messages
+function armed_mask(time, ARM) {
+    const mask = new Array(time.length)
+    let armed = false
+    let k = 0
+    for (let j = 0; j < time.length; j++) {
+        while ((k < ARM.TimeUS.length) && (ARM.TimeUS[k] <= time[j])) {
+            armed = ARM.ArmState[k] != 0
+            k++
+        }
+        mask[j] = armed
+    }
+    return mask
+}
+
 // Log from raw sensor logging
 function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
     Gyro_batch = []
@@ -2246,6 +2261,14 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
     if (post_filter && pre_post_filter) {
         alert("Both post and pre+post logging option selected")
         post_filter = false
+    }
+
+    // Logging may be rate limited while disarmed, the change in sample rate breaks the FFT.
+    // If so only use samples logged while armed, the gap where disarmed data is removed then splits the batches.
+    let ARM = null
+    const LOG_DARM_RATEMAX = get_param("LOG_DARM_RATEMAX", false)
+    if ((LOG_DARM_RATEMAX != null) && (LOG_DARM_RATEMAX > 0) && ("ARM" in log.messageTypes)) {
+        ARM = log.get("ARM")
     }
 
     // Load in a one massive batch, split for large gaps in log
@@ -2268,10 +2291,21 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
             continue
         }
 
-        const time = log.get_instance("GYR", inst, "SampleUS")
-        const GyrX = log.get_instance("GYR", inst, "GyrX")
-        const GyrY = log.get_instance("GYR", inst, "GyrY")
-        const GyrZ = log.get_instance("GYR", inst, "GyrZ")
+        let time = log.get_instance("GYR", inst, "SampleUS")
+        let GyrX = log.get_instance("GYR", inst, "GyrX")
+        let GyrY = log.get_instance("GYR", inst, "GyrY")
+        let GyrZ = log.get_instance("GYR", inst, "GyrZ")
+
+        if (ARM != null) {
+            const armed = armed_mask(time, ARM)
+            if (armed.includes(true)) {
+                const keep = (_, k) => armed[k]
+                time = time.filter(keep)
+                GyrX = GyrX.filter(keep)
+                GyrY = GyrY.filter(keep)
+                GyrZ = GyrZ.filter(keep)
+            }
+        }
 
         let sample_rate_sum = 0
         let sample_rate_count = 0
