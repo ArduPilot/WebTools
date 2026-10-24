@@ -445,17 +445,20 @@ These params can then be saved and loaded into the autopilot without the need fo
     </fieldset>
 </td>
 <td>
-    <fieldset style="width:428px;height:70px">
+    <fieldset style="width:428px;min-height:70px">
     <legend>Setup
         <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
         data-tippy-content='Recalculate filters after changing any parameters to update the estimated post filter spectrum. Save or load parameters to/from a param file.',
         data-tippy-maxWidth='750px'/>
     </legend>
     <p>
-        <input type="button" id="calculate_filters" value="Recalculate filters" onclick="loading_call(re_calc)">
+        <input type="button" id="calculate_filters" value="Recalculate filters" onclick="loading_call(recalculate_filters)">
         <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
         <button class="styleClass" id="LoadParams" onclick="document.getElementById('LoadParamsbase').click()">Load Parameters</button>
         <input type='file' id="LoadParamsbase" style="display:none" onchange="load_parameters(this.files[0]);">
+    </p>
+    <p id="EstimateHint" style="margin-block-start: 0" hidden>
+        Estimated post-filter lines are hidden. <input type="button" value="Show estimated" onclick="show_estimated()">
     </p>
     </fieldset>
 </td>
