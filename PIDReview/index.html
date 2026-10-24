@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <title>ArduPilot PID Review</title>
 <link rel="icon" href="../images/AP_favicon.png">
+<link rel="stylesheet" href="../Libraries/common.css">
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 <script src='../modules/fft.js/dist/fft.js'></script>
 <script type="text/javascript" src="PIDReview.js"></script>
@@ -18,16 +19,16 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
 </head>
-<table style="width:1200px"><tr><td>
+<table class="header"><tr><td>
     <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
 </td><td>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" style="width:60px"></a>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" class="github"></a>
     <br>
-    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" style="width:60px"></a>
+    <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" class="github"></a>
 </td></tr></table>
 
 <table><tr><td style="width:1200px">
-<h1 style="text-align:center"><a href="" style="color: #000000; text-decoration:none;">ArduPilot PID Review Tool</a></h1>
+<h1 style="text-align:center"><a href="" class="title">ArduPilot PID Review Tool</a></h1>
 </td></tr></table>
 
 <body>
@@ -37,11 +38,6 @@ This tool takes a .bin log with RATE or PID messages and shows the time and freq
 </p>
 
 
-<style>
-    div.plotly-notifier {
-        visibility: hidden;
-    }
-</style>
 
 <table>
 <tr>
