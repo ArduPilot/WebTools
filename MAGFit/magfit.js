@@ -794,7 +794,8 @@ function update_earth_field() {
         return false
     }
     const year = decimal_year(date)
-    if ((earth_field != null) && (earth_field.Lat === Lat) && (earth_field.Lng === Lng) && (earth_field.Alt === Alt) && (earth_field.year === year)) {
+    const use_track = document.getElementById("UseTrack").checked && (position_track != null)
+    if ((earth_field != null) && (earth_field.Lat === Lat) && (earth_field.Lng === Lng) && (earth_field.Alt === Alt) && (earth_field.year === year) && (earth_field.use_track === use_track)) {
         // No change
         return true
     }
@@ -810,6 +811,21 @@ function update_earth_field() {
     earth_field.Lng = Lng
     earth_field.Alt = Alt
     earth_field.year = year
+    earth_field.use_track = use_track
+
+    // Earth field along the flight track
+    earth_field.track = null
+    if (use_track) {
+        const len = position_track.time.length
+        let track = { time: position_track.time, x: new Array(len), y: new Array(len), z: new Array(len) }
+        for (let i = 0; i < len; i++) {
+            const vector = expected_earth_field(position_track.lat[i], position_track.lng[i], position_track.alt[i], year).vector
+            track.x[i] = vector[0]
+            track.y[i] = vector[1]
+            track.z[i] = vector[2]
+        }
+        earth_field.track = track
+    }
 
     // Expected body frame field must be re-calculated
     source = null
@@ -1150,13 +1166,37 @@ function check_orientation() {
     console.log(`Orientation check took: ${end - start} ms`);
 }
 
-function get_body_frame_ef(quaternion) {
+// Earth frame field at the given time, interpolated along the flight track if available
+function get_earth_field_vector(time, track_index) {
+    const track = earth_field.track
+    if (track == null) {
+        return earth_field.vector
+    }
+    const last = track.time.length - 1
+    if (time <= track.time[0]) {
+        return [track.x[0], track.y[0], track.z[0]]
+    }
+    if (time >= track.time[last]) {
+        return [track.x[last], track.y[last], track.z[last]]
+    }
+    while ((track_index.i < last - 1) && (track.time[track_index.i + 1] < time)) {
+        track_index.i++
+    }
+    const i = track_index.i
+    const ratio = (time - track.time[i]) / (track.time[i + 1] - track.time[i])
+    return [track.x[i] + (track.x[i + 1] - track.x[i]) * ratio,
+            track.y[i] + (track.y[i + 1] - track.y[i]) * ratio,
+            track.z[i] + (track.z[i + 1] - track.z[i]) * ratio]
+}
+
+function get_body_frame_ef(quaternion, time) {
 
     const len = quaternion.q1.length
 
     let ret = { x: new Array(len), y: new Array(len), z: new Array(len) }
 
     let q = new Quaternion()
+    let track_index = { i: 0 }
     for (let i = 0; i < len; i++) {
 
         // Invert and load into helper
@@ -1165,7 +1205,7 @@ function get_body_frame_ef(quaternion) {
         q.q3 = -quaternion.q3[i]
         q.q4 = -quaternion.q4[i]
 
-        const tmp = q.rotate(earth_field.vector)
+        const tmp = q.rotate(get_earth_field_vector(time[i], track_index))
 
         ret.x[i] = tmp[0]
         ret.y[i] = tmp[1]
@@ -1195,7 +1235,7 @@ function select_body_frame_attitude() {
     }
 
     // Calculate expected for this source
-    Object.assign(source, get_body_frame_ef(source.quaternion))
+    Object.assign(source, get_body_frame_ef(source.quaternion, source.quaternion.time))
 
     // Interpolate expected to logged compass and calculate error
     for (let i = 0; i < 3; i++) {
@@ -1275,7 +1315,7 @@ function select_body_frame_attitude() {
         }
 
         // Rotate earth field into body frame
-        MAG_Data[i].expected = get_body_frame_ef(MAG_Data[i].quaternion)
+        MAG_Data[i].expected = get_body_frame_ef(MAG_Data[i].quaternion, MAG_Data[i].time)
 
         // Error between existing calibration and expected
         MAG_Data[i].orig.error = calc_error(MAG_Data[i].expected, MAG_Data[i].orig)
@@ -1773,6 +1813,7 @@ var MAG_Data
 var fits
 var body_frame_earth_field
 var earth_field
+var position_track
 async function load(log_file) {
 
     // Make sure imports are fully loaded before starting
@@ -2018,6 +2059,36 @@ async function load(log_file) {
     document.getElementById("Lat").value = (Lat != null) ? Lat : ""
     document.getElementById("Lng").value = (Lng != null) ? Lng : ""
     document.getElementById("Alt").value = (Alt != null) ? Math.round(Alt) : 0
+
+    // Position along the flight, used to get the earth field throughout the flight rather than at a single location
+    position_track = null
+    if ("POS" in log.messageTypes) {
+        const POS_time = TimeUS_to_seconds(log.get("POS", "TimeUS"))
+        const POS_lat = log.get("POS", "Lat")
+        const POS_lng = log.get("POS", "Lng")
+        const POS_alt = log.get("POS", "Alt")
+        position_track = { time: [], lat: [], lng: [], alt: [] }
+        for (let i = 0; i < POS_time.length; i++) {
+            if ((POS_lat[i] == 0) && (POS_lng[i] == 0)) {
+                // No position yet
+                continue
+            }
+            // One point per second is plenty, the field changes slowly with position
+            const last = position_track.time.length - 1
+            if ((last >= 0) && (POS_time[i] - position_track.time[last] < 1.0)) {
+                continue
+            }
+            position_track.time.push(POS_time[i])
+            position_track.lat.push(POS_lat[i] * 10**-7)
+            position_track.lng.push(POS_lng[i] * 10**-7)
+            position_track.alt.push(POS_alt[i])
+        }
+        if (position_track.time.length < 2) {
+            position_track = null
+        }
+    }
+    document.getElementById("UseTrack").checked = position_track != null
+    document.getElementById("UseTrack").disabled = position_track == null
 
     // Date for magnetic model, use the current date if the log does not have GPS time
     const log_date = get_log_date(log) || new Date()
