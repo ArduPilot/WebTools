@@ -93,19 +93,22 @@ These params can then be saved and loaded into the autopilot without the need fo
                                             <ul>
                                             <li>Increasing window size increases frequency resolution and decreases temporal resolution. This is useful when looking at low frequencies, but due to the decreased temporal resolution longer hover flights are needed.</li>
                                             <li>Decreasing window size reduces frequency resolution and increases temporal resolution. This is useful when using the IMU Spectrogram to review notch tracking in dynamic flight.</li>
-                                            </ul>'
+                                            </ul>
+                                            With raw sensor logging the overlap between windows can also be changed. More overlap gives more windows to average, smoothing the spectrum and giving a finer time step in the IMU Spectrogram, at the cost of calculation time. Batch logging always uses 50%.'
                         data-tippy-maxWidth='750px'/>
                     </legend>
-                    <table>
+                    <table style="border-spacing: 0 2px">
                         <tr>
-                            <td style="width: 125px;">
-                                <label for="FFTWindow_per_batch">Windows per batch</label><br><br>
-                                <label for="FFTWindow_size">Windows size</label>
-                            </td>
-                            <td>
-                                <input id="FFTWindow_per_batch" name="FFTWindow_per_batch" type="number" min="1" step="1" value="1" onchange="clear_calculation()" style="width:50px"/><br><br>
-                                <input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="fft_window_size_inc(event); clear_calculation()" style="width:50px"/>
-                            </td>
+                            <td style="width: 125px;"><label for="FFTWindow_per_batch">Windows per batch</label></td>
+                            <td><input id="FFTWindow_per_batch" name="FFTWindow_per_batch" type="number" min="1" step="1" value="1" onchange="clear_calculation()" style="width:50px"/></td>
+                        </tr>
+                        <tr>
+                            <td><label for="FFTWindow_size">Windows size</label></td>
+                            <td><input id="FFTWindow_size" name="FFTWindow_size" type="number" min="1" step="1" value="1024" onchange="fft_window_size_inc(event); clear_calculation()" style="width:50px"/></td>
+                        </tr>
+                        <tr>
+                            <td><label for="FFTWindow_overlap">Overlap (%)</label></td>
+                            <td><input id="FFTWindow_overlap" name="FFTWindow_overlap" type="number" min="0" max="90" step="5" value="50" onchange="clear_calculation()" style="width:50px"/></td>
                         </tr>
                     </table>
                 </fieldset>

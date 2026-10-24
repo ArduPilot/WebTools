@@ -293,8 +293,16 @@ function run_batch_fft(data_set) {
     const sample_time = sample_rate_count / sample_rate_sum
 
 
-    // Hard code 50% overlap
-    const window_overlap = 0.5
+    // Overlap between windows, batch logs always use 50% so that the window size is a power of two for the windows per batch selections
+    let window_overlap = 0.5
+    if (Gyro_batch.type != "batch") {
+        const overlap_percent = parseFloat(document.getElementById("FFTWindow_overlap").value)
+        if (!(overlap_percent >= 0) || !(overlap_percent <= 90)) {
+            alert('Overlap must be between 0 and 90%')
+            throw new Error()
+        }
+        window_overlap = overlap_percent * 0.01
+    }
 
     var window_size
     if (Gyro_batch.type == "batch") {
@@ -369,6 +377,7 @@ function reset() {
 
     document.getElementById("FFTWindow_per_batch").disabled = true
     document.getElementById("FFTWindow_size").disabled = true
+    document.getElementById("FFTWindow_overlap").disabled = true
     document.getElementById("TimeStart").disabled = true
     document.getElementById("TimeEnd").disabled = true
 
@@ -2425,6 +2434,7 @@ async function load(log_file) {
     document.getElementById("log_type_raw").disabled = true
 
     document.getElementById("FFTWindow_size").disabled = use_batch
+    document.getElementById("FFTWindow_overlap").disabled = use_batch
     document.getElementById("FFTWindow_per_batch").disabled = !use_batch
 
 
