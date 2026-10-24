@@ -1635,6 +1635,20 @@ function show_param_changes(param_changes) {
     para.previousElementSibling.hidden = false
 }
 
+// Return the params from the list that match the minimal param names, a name ending in "*" matches any param with that prefix
+function match_minimal_params(names, param_names) {
+    let ret = []
+    for (const name of names) {
+        if (name.endsWith("*")) {
+            const prefix = name.slice(0, -1)
+            ret.push(...param_names.filter((param) => param.startsWith(prefix)))
+        } else if (param_names.includes(name)) {
+            ret.push(name)
+        }
+    }
+    return ret
+}
+
 function update_minimal_config() {
 
     if (Object.keys(params).length == 0) {
@@ -1651,9 +1665,8 @@ function update_minimal_config() {
         const input_params = input.getAttribute("data-params").split(',')
 
         let present_params = []
-        for (const param of input_params) {
-            if ((param in params) &&
-                !(changed && (param in defaults) && (params[param] == defaults[param]))) {
+        for (const param of match_minimal_params(input_params, Object.keys(params))) {
+            if (!(changed && (param in defaults) && (params[param] == defaults[param]))) {
                 present_params.push(param)
             }
         }
@@ -3347,6 +3360,15 @@ function reset() {
         setup_minimal_param("param_stream_" + i, SR_names.concat(MAV_names))
     }
 
+    // OSD, there are many params so match by prefix
+    setup_minimal_param("param_osd_general", ["OSD_*"])
+    for (let i = 1; i <= 4; i++) {
+        setup_minimal_param("param_osd_screen_" + i, ["OSD" + i + "_*"])
+    }
+    for (let i = 1; i <= 2; i++) {
+        setup_minimal_param("param_osd_param_screen_" + i, ["OSD" + (i + 4) + "_*"])
+    }
+
 
     // Pos offsets plot setup
     Sensor_Offset.data = []
@@ -3747,7 +3769,7 @@ function save_minimal_parameters() {
     let inputs = document.forms["params"].getElementsByTagName("input");
     for (let input of inputs) {
         if (input.checked == false) {
-            skip_params.push(...input.getAttribute("data-params").split(','))
+            skip_params.push(...match_minimal_params(input.getAttribute("data-params").split(','), Object.keys(params)))
         }
     }
 
