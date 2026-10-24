@@ -788,23 +788,28 @@ function find_end_index(time) {
 function update_earth_field() {
     const Lat = parseFloat(document.getElementById("Lat").value)
     const Lng = parseFloat(document.getElementById("Lng").value)
-    if (isNaN(Lat) || isNaN(Lng)) {
+    const Alt = parseFloat(document.getElementById("Alt").value)
+    const date = new Date(document.getElementById("Date").value)
+    if (isNaN(Lat) || isNaN(Lng) || isNaN(date.getTime())) {
         return false
     }
-    if ((earth_field != null) && (earth_field.Lat === Lat) && (earth_field.Lng === Lng)) {
+    const year = decimal_year(date)
+    if ((earth_field != null) && (earth_field.Lat === Lat) && (earth_field.Lng === Lng) && (earth_field.Alt === Alt) && (earth_field.year === year)) {
         // No change
         return true
     }
 
-    const field = expected_earth_field_lat_lon(Lat, Lng)
+    const field = expected_earth_field(Lat, Lng, Alt, year)
     if (field == null) {
         return false
     }
-    console.log("EF: " + field.vector[0] + ", " + field.vector[1] + ", " + field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng)
+    console.log("EF: " + field.vector[0] + ", " + field.vector[1] + ", " + field.vector[2] + " at Lat: " + Lat + " Lng: " + Lng + " Alt: " + Alt + " Year: " + year)
 
     earth_field = field
     earth_field.Lat = Lat
     earth_field.Lng = Lng
+    earth_field.Alt = Alt
+    earth_field.year = year
 
     // Expected body frame field must be re-calculated
     source = null
@@ -815,7 +820,7 @@ function update_earth_field() {
 function calculate() {
 
     if (!update_earth_field()) {
-        alert("Enter a valid latitude and longitude in the Location box")
+        alert("Enter a valid latitude, longitude and date in the Location box")
         return
     }
 
@@ -1685,28 +1690,48 @@ function calc_error(A, B) {
     return ret
 }
 
+// Return latitude, longitude (deg) and altitude (m)
 function extractLatLon(log, get_param) {
-  var Lat, Lng
+  var Lat, Lng, Alt
   if (("ORGN" in log.messageTypes) && ("instances" in log.messageTypes.ORGN) && (0 in log.messageTypes.ORGN.instances)) {
     const ORGN = log.get_instance("ORGN", 0)
     Lat = ORGN.Lat[ORGN.Lat.length-1] * 10**-7
     Lng = ORGN.Lng[ORGN.Lng.length-1] * 10**-7
-    return [Lat, Lng]
+    Alt = ORGN.Alt[ORGN.Alt.length-1]
+    return [Lat, Lng, Alt]
   }
   console.warn("no ORGN message found")
   if ("POS" in log.messageTypes) {
     const POS = log.get("POS")
     Lat = POS.Lat[POS.Lat.length-1] * 10**-7
     Lng = POS.Lng[POS.Lng.length-1] * 10**-7
-    return [Lat, Lng]
+    Alt = POS.Alt[POS.Alt.length-1]
+    return [Lat, Lng, Alt]
   }
   // Recorded origin params, zero if not set
   const origin_lat = get_param("AHRS_ORIGIN_LAT")
   const origin_lng = get_param("AHRS_ORIGIN_LON")
   if ((origin_lat != null) && (origin_lng != null) && ((origin_lat != 0) || (origin_lng != 0))) {
-    return [origin_lat, origin_lng]
+    return [origin_lat, origin_lng, get_param("AHRS_ORIGIN_ALT")]
   }
-  return [Lat, Lng]
+  return [Lat, Lng, Alt]
+}
+
+// Get date of log from GPS time, returns undefined if there is no GPS time
+function get_log_date(log) {
+  if (!("GPS" in log.messageTypes) || !("instances" in log.messageTypes.GPS)) {
+    return
+  }
+  for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+    const GWk = log.get_instance("GPS", inst, "GWk")
+    const GMS = log.get_instance("GPS", inst, "GMS")
+    for (let i = 0; i < GWk.length; i++) {
+      if (GWk[i] > 0) {
+        // GPS epoch is 6 January 1980, ignore leap seconds as only the date is needed
+        return new Date(Date.UTC(1980, 0, 6) + (GWk[i] * 604800 * 1000) + GMS[i])
+      }
+    }
+  }
 }
 
 // Enable/disable calculate and save params button
@@ -1988,10 +2013,15 @@ async function load(log_file) {
     // Use origin msg
     // Use last EKF origin for earth field
     // If there is no location in the log it can be entered manually
-    var [Lat, Lng] = extractLatLon(log, get_param)
+    var [Lat, Lng, Alt] = extractLatLon(log, get_param)
     earth_field = null
     document.getElementById("Lat").value = (Lat != null) ? Lat : ""
     document.getElementById("Lng").value = (Lng != null) ? Lng : ""
+    document.getElementById("Alt").value = (Alt != null) ? Math.round(Alt) : 0
+
+    // Date for magnetic model, use the current date if the log does not have GPS time
+    const log_date = get_log_date(log) || new Date()
+    document.getElementById("Date").value = log_date.toISOString().slice(0, 10)
 
     // Workout which attitude source to use, Note that this is not clever enough to deal with primary changing in flight
     const EKF_TYPE = get_param("AHRS_EKF_TYPE")
