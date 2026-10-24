@@ -443,10 +443,8 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     var chained = 1;
     var composite_notches = 1;
     if (opts & 1) {
-        dbl = true;
         composite_notches = 2;
     } else if (opts & 16) {
-        triple = true;
         composite_notches = 3;
     }
 
@@ -474,14 +472,14 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 5) {
-        var rpm = get_form("RPM2");
+        rpm = get_form("RPM2");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     if (mode == 3) {
         if (opts & 2) {
             chained = get_form("NUM_MOTORS");
         }
-        var rpm = get_form("ESC_RPM");
+        rpm = get_form("ESC_RPM");
         freq = Math.max(rpm/60.0,freq) * ref;
     }
     for (var n=0;n<8;n++) {
@@ -831,6 +829,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const nef_num = get_form(param_prefix + "NEF")
     var nef_freq = 0.0
     if (nef_num > 0) { nef_freq = get_form("FILT" + nef_num + "_NOTCH_FREQ") }
+    let PID_H_TOT
     if (nef_num > 0 && nef_freq > 0.0) {
         var E_notch_filter = []
         E_notch_filter.push(new NotchFilterusingQ(PID_rate, nef_freq, get_form("FILT" + nef_num + "_NOTCH_Q"), get_form("FILT" + nef_num + "_NOTCH_ATT")))
@@ -860,6 +859,7 @@ function calculate_predicted_TF(H_acft, sample_rate, window_size) {
     const ntf_num = get_form(param_prefix + "NTF")
     var ntf_freq = 0.0
     if (ntf_num > 0) { ntf_freq = get_form("FILT" + ntf_num + "_NOTCH_FREQ") }
+    let TGT_FILT_H
     if (ntf_num > 0 && ntf_freq > 0.0) {
         var T_notch_filter = []
         T_notch_filter.push(new NotchFilterusingQ(PID_rate, ntf_freq, get_form("FILT" + ntf_num + "_NOTCH_Q"), get_form("FILT" + ntf_num + "_NOTCH_ATT")))
@@ -1076,7 +1076,7 @@ function load_log(log_file) {
 
         sid_sets.tstart = []
         sid_sets.tend = []
-        j = 0
+        let j = 0
         sid_sets.tstart[j] = SIDD_time[0]
         for (let k=1;k<SIDD_time.length;k++) {
             if (SIDD_time[k]-SIDD_time[k-1] > 0.5) {
@@ -1145,7 +1145,7 @@ function load_log(log_file) {
     if ("MSG" in log.messageTypes) {
         const msg_text = log.get("MSG", "Message")
         for (let k=0;k<msg_text.length;k++) {
-            parts = msg_text[k].split(" ")
+            let parts = msg_text[k].split(" ")
             if (parts[0] == "ArduPlane") {
                 if (sid_sets.axis[0] > 19) {
                     vehicle_type = "ArduPlane_FW"
@@ -1282,7 +1282,7 @@ function setup_FFT_data() {
                                     meta: meta_prefix + plot_types[1],
                                     hovertemplate: "" }
 
-    plot = document.getElementById("FFTPlotMag")
+    let plot = document.getElementById("FFTPlotMag")
     Plotly.purge(plot)
     Plotly.newPlot(plot, fft_plot.data, fft_plot.layout, {displaylogo: false});
 
@@ -1346,9 +1346,9 @@ function update_PID_filters() {
     if (vehicle_type == "ArduCopter") {
         var ele_prefix = "";
     } else if (vehicle_type == "ArduPlane_VTOL") {
-        var ele_prefix = "Q";
+        ele_prefix = "Q";
     } else if (vehicle_type == "ArduPlane_FW") {
-        var ele_prefix = "FW";
+        ele_prefix = "FW";
     }
     for (let i = 1; i<9; i++) {    
         document.getElementById('FILT' + i).style.display = 'none';
@@ -1544,6 +1544,7 @@ function calculate_freq_resp() {
     var H_att_ff_pred
     var H_pilot_pred
     var H_DRB_pred
+    var H_att_nff_pred
     var H_att_bl_pred
     var H_rate_bl_pred
     var H_sys_bl_pred
@@ -1688,11 +1689,11 @@ function load_vtol_time_history_data(t_start, t_end, axis) {
     PilotInputData = array_scale(PilotInputData, 0.01745)
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
-    DRBInputData = PilotInputData
-    DRBRespData = array_sub(AttData, DRBInputData)
+    let DRBInputData = PilotInputData
+    let DRBRespData = array_sub(AttData, DRBInputData)
 
-    SysBLInputData = ActInputData
-    SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
+    let SysBLInputData = ActInputData
+    let SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
 
 
     var data = {
@@ -1800,11 +1801,11 @@ function load_fw_time_history_data(t_start, t_end, axis) {
     PilotInputData = array_scale(PilotInputData, 0.01745)
 
     // Pull Targ for input to Attitude Disturbance Rejection Transfer Function
-    DRBInputData = PilotInputData
-    DRBRespData = array_sub(AttData, DRBInputData)
+    let DRBInputData = PilotInputData
+    let DRBRespData = array_sub(AttData, DRBInputData)
 
-    SysBLInputData = ActInputData
-    SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
+    let SysBLInputData = ActInputData
+    let SysBLOutputData = array_sub(array_scale(PilotInputData, 1.0/0.01745), ActInputData)
 
 
     var data = {
@@ -1944,37 +1945,37 @@ function save_parameters() {
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_vehicle_plt_prefix()) && page_axis == "Yaw") {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_rate_param_prefix())) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith(get_angle_param_prefix())) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             NEF_num = document.getElementById(get_rate_param_prefix() + 'NEF').value
             NTF_num = document.getElementById(get_rate_param_prefix() + 'NTF').value
             if (NEF_num > 0) {
                 if (name.startsWith("FILT" + NEF_num + "_")) {
-                    var value = inputs[v].value;
+                    value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
             }
             if (NTF_num > 0 && NEF_num != NTF_num) {
                 if (name.startsWith("FILT" + NTF_num + "_")) {
-                    var value = inputs[v].value;
+                    value = inputs[v].value;
                     params += name + "," + param_to_string(value) + "\n";
                 }
             }
             if (name.startsWith("INS_")) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
             if (name.startsWith("SCHED_")) {
-                var value = inputs[v].value;
+                value = inputs[v].value;
                 params += name + "," + param_to_string(value) + "\n";
             }
         }
@@ -1991,10 +1992,10 @@ function save_parameters() {
 async function load_parameters(file) {
     var text = await file.text();
     var lines = text.split('\n');
-    for (i in lines) {
+    for (let i in lines) {
         var line = lines[i];
 //        line = line.replace("Q_A_RAT_","ATC_RAT_");
-        v = line.split(/[\s,=\t]+/);
+        let v = line.split(/[\s,=\t]+/);
         if (v.length >= 2) {
             var vname = v[0];
             var value = v[1];
@@ -2415,7 +2416,7 @@ function add_sid_sets() {
 
 function update_time_range() {
 
-    for (j=0; j<sid_sets.axis.length;j++){
+    for (let j=0; j<sid_sets.axis.length;j++){
         var id_name = "set_selection_" + j
         if (document.getElementById(id_name).checked) {
             document.getElementById("starttime").value = sid_sets.tstart[j]
