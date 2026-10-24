@@ -378,6 +378,7 @@ function reset() {
     document.getElementById("filter_version_1").checked = true
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
+    document.getElementById("EstimateHint").hidden = true
     document.getElementById("OpenFilterTool").disabled = true
     document.getElementById("SaveParams").disabled = true
     document.getElementById("LoadParams").disabled = true
@@ -1833,6 +1834,55 @@ function update_hidden(source) {
 
     Plotly.redraw("FFTPlot")
 
+    // Hide estimate hint once any estimate is shown
+    if (!document.getElementById("EstimateHint").hidden) {
+        update_estimate_hint()
+    }
+
+}
+
+// Get estimated post filter checkboxes that can be selected
+function get_estimate_checkboxes() {
+    let ret = []
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < axis.length; j++) {
+            const checkbox = document.getElementById("Gyro" + i + "PostEst" + axis[j])
+            if (!checkbox.disabled) {
+                ret.push({ checkbox, gyro: i, axis: axis[j] })
+            }
+        }
+    }
+    return ret
+}
+
+// Prompt to show the estimated post filter lines if they are all hidden
+function update_estimate_hint() {
+    const estimates = get_estimate_checkboxes()
+    const hidden = (estimates.length > 0) && !estimates.some((estimate) => estimate.checkbox.checked)
+    document.getElementById("EstimateHint").hidden = !hidden
+}
+
+// Show estimated post filter lines for the axes that are shown, or all if none are shown
+function show_estimated() {
+    const estimates = get_estimate_checkboxes()
+    let shown = estimates.filter((estimate) => {
+        const pre = document.getElementById("Gyro" + estimate.gyro + "Pre" + estimate.axis)
+        const post = document.getElementById("Gyro" + estimate.gyro + "Post" + estimate.axis)
+        return pre.checked || post.checked
+    })
+    if (shown.length == 0) {
+        shown = estimates
+    }
+    for (const estimate of shown) {
+        estimate.checkbox.checked = true
+        update_hidden(estimate.checkbox)
+    }
+}
+
+// Recalculate after filter parameter change
+function recalculate_filters() {
+    re_calc()
+    update_estimate_hint()
 }
 
 function get_HNotch_param_names() {
