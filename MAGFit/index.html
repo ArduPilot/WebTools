@@ -91,10 +91,10 @@ For best results use a flight log that covers as many orientations as possible. 
         </td>
         <td style="width: 10px;"></td>
         <td>
-            <fieldset style="width:200px;height:80px" id="ATTITUDE">
+            <fieldset style="width:200px;min-height:80px" id="ATTITUDE">
                 <legend>Attitude source
                     <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
-                    data-tippy-content='Select the attitude source that will be used for the MAGFit, this should best represent the true attitude of the vehicle, typically the default is fine, if you know there were EKF issues using DCM may give better results. The Calculate button must be clicked after any change of source.'
+                    data-tippy-content='Select the attitude source that will be used for the MAGFit, this should best represent the true attitude of the vehicle, typically the default is fine, if you know there were EKF issues using DCM may give better results. GSF yaw and GPS yaw use the EKF roll and pitch with yaw from the EKF&#39;s GSF yaw estimator or from a GPS that provides yaw, these do not use the compass so can be used if a bad compass has upset the EKF yaw. They are only available for part of the flight, selecting one limits the analysis time to that part. The Calculate button must be clicked after any change of source.'
                     data-tippy-maxWidth='750px'/>
                 </legend>
             </fieldset>
