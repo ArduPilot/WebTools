@@ -404,6 +404,7 @@ function setup_FFT_data() {
     TimeOutputs.layout.shapes = []
     fft_plot.data = []
     step_plot.data = []
+    document.getElementById("step_note").hidden = true
 
 
     // Add group for each param set
@@ -1048,6 +1049,8 @@ function redraw_step() {
         const plot_index = i*2
         step_plot.data[plot_index].x = []
         step_plot.data[plot_index].y = []
+        step_plot.data[plot_index+1].x = []
+        step_plot.data[plot_index+1].y = []
     }
     document.getElementById("step_note").hidden = true
     if (valid_sets == 0) {
@@ -1107,8 +1110,8 @@ function redraw_step() {
     // Pre-calculate inverse
     sn = array_inverse(sn)
 
-    // Count of sets with at least one step estimate
-    let sets_with_steps = 0
+    // True if there is at least one step estimate
+    let have_steps = false
 
     // For each data set
     for (let j = 0; j < num_sets; j++) {
@@ -1194,7 +1197,7 @@ function redraw_step() {
                 // No good steps, skip this set
                 continue
             }
-            sets_with_steps += 1
+            have_steps = true
 
             // Plot mean
             step_plot.data[plot_index+1].x = time
@@ -1207,8 +1210,13 @@ function redraw_step() {
 
     }
 
-    // Explain an empty plot
-    document.getElementById("step_note").hidden = (sets_with_steps > 0)
+    // Explain an empty plot, the threshold is in the units of the axis
+    let note = document.getElementById("step_note")
+    note.hidden = have_steps
+    note.textContent = "No step response: not enough of the analysis time has a target above 20 " + PID.units + "."
+    if (PID.units == "deg /s") {
+        note.textContent += " Select a section with some sharp stick inputs."
+    }
 
     step_plot.layout.yaxis.range = [0, 2]
     step_plot.layout.yaxis.autorange = false
