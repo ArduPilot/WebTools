@@ -235,6 +235,31 @@ function auto_fit_esc(esc_mask) {
         }
     }
 
+    // The notch tracks each motor separately, so also look for harmonics of each motor on its own. Motors at
+    // different speeds can spread the higher harmonics out in the mean spectrum. A harmonic is used if it
+    // stands out for the mean or for any one motor.
+    const multi_source = esc.get_num_motors() > 1
+    if (multi_source) {
+        const motor_config = { options: 2, ref: 1, freq: 0, esc_mask }
+        for (let motor = 0; motor < esc.get_num_motors(); motor++) {
+            const get_motor_tracked = (instance, index) => {
+                const freq = esc.get_interpolated_target_freq(instance, index, motor_config)
+                if ((freq == null) || !(freq[motor] >= auto_fit_rules.min_freq)) {
+                    return null
+                }
+                return freq[motor]
+            }
+            const motor_spectrum = auto_fit_order_spectrum(get_motor_tracked, spectrum.grid)
+            if (motor_spectrum.tracked.length == 0) {
+                continue
+            }
+            const motor_peaks = auto_fit_harmonic_peaks(motor_spectrum, 1)
+            for (let i = 0; i < peaks.length; i++) {
+                peaks[i].excess = Math.max(peaks[i].excess, motor_peaks[i].excess)
+            }
+        }
+    }
+
     const selection = auto_fit_select(peaks)
     if (selection == null) {
         return { error: "no noise peaks follow the ESC frequency" }
@@ -247,8 +272,7 @@ function auto_fit_esc(esc_mask) {
         freq: Math.round(low * auto_fit_rules.min_freq_ratio),
         ref: 1,
         min_ratio: 1,
-        multi_source: esc.get_num_motors() > 1,
-        num_sources: Math.max(1, esc.get_num_motors()),
+        multi_source,
         ...selection
     }
 }
@@ -346,7 +370,6 @@ function auto_fit_throttle() {
         ref: ref_rounded,
         min_ratio,
         multi_source: false,
-        num_sources: 1,
         ...selection
     }
 }
@@ -379,14 +402,25 @@ function auto_fit_num_sources(mode) {
     return Math.max(1, tracking_methods[3].get_num_motors() || 1)
 }
 
-// Number of notch filters the fitted notch and the second notch would use
+// Number of notch filters the fitted notch and the other notches would use
+// The firmware counts enabled notches, or all of them if FFT is enabled
 function auto_fit_notch_count(result, options) {
     let count = auto_fit_count_filters(result.harmonics, options, auto_fit_num_sources(result.mode))
 
-    const names = get_HNotch_param_names()[1]
-    if ((names != null) && (parameter_get_value(names.enable) > 0)) {
-        const mode = parameter_get_value(names.mode)
-        count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), auto_fit_num_sources(mode))
+    const counted = (enable) => (enable > 0) || Gyro_batch.fft_enabled
+    const all_names = get_HNotch_param_names()
+    for (let i = 1; i < all_names.length; i++) {
+        const names = all_names[i]
+        if (counted(parameter_get_value(names.enable))) {
+            count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), auto_fit_num_sources(parameter_get_value(names.mode)))
+        }
+    }
+
+    // Notches from the log that are not on the page
+    for (const notch of (Gyro_batch.log_notches || [])) {
+        if ((notch.num > all_names.length) && counted(notch.enable)) {
+            count += auto_fit_count_filters(notch.harmonics || 0, notch.options || 0, auto_fit_num_sources(notch.mode))
+        }
     }
     return count
 }
