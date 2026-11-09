@@ -132,6 +132,7 @@ function reset() {
         step_plot.data[i].x = []
         step_plot.data[i].y = []
     }
+    document.getElementById("step_note").hidden = true
     for (let i = 0; i < Spectrogram.data.length; i++) {
         Spectrogram.data[i].x = []
         Spectrogram.data[i].y = []
@@ -397,6 +398,7 @@ function get_FFT_data_index(set_num, plot_type) {
 function setup_FFT_data() {
 
     const PID = PID_log_messages[get_axis_index()]
+    document.getElementById("step_note").hidden = true
 
     // Clear existing data
     TimeInputs.layout.shapes = []
@@ -508,6 +510,7 @@ function clear_calculation() {
     }
     // Enable button to fix
     document.getElementById("calculate").disabled = false
+    document.getElementById("step_note").hidden = true
 
     for (let i = 0; i < PID_log_messages.length; i++) {
         if ((PID_log_messages[i] == null) || (PID_log_messages[i].sets == null)) {
@@ -1047,7 +1050,10 @@ function redraw_step() {
         const plot_index = i*2
         step_plot.data[plot_index].x = []
         step_plot.data[plot_index].y = []
+        step_plot.data[plot_index+1].x = []
+        step_plot.data[plot_index+1].y = []
     }
+    document.getElementById("step_note").hidden = true
     if (valid_sets == 0) {
         Plotly.redraw("step_plot")
         return
@@ -1104,6 +1110,9 @@ function redraw_step() {
 
     // Pre-calculate inverse
     sn = array_inverse(sn)
+
+    // True if there is at least one step estimate
+    let have_steps = false
 
     // For each data set
     for (let j = 0; j < num_sets; j++) {
@@ -1189,6 +1198,7 @@ function redraw_step() {
                 // No good steps, skip this set
                 continue
             }
+            have_steps = true
 
             // Plot mean
             step_plot.data[plot_index+1].x = time
@@ -1199,6 +1209,14 @@ function redraw_step() {
             step_plot.data[plot_index].visible = (valid_sets == 1)
         }
 
+    }
+
+    // Explain an empty plot, the threshold is in the units of the axis
+    let note = document.getElementById("step_note")
+    note.hidden = have_steps
+    note.textContent = "No step response: not enough of the analysis time has a target above 20 " + PID.units + "."
+    if (PID.units == "deg /s") {
+        note.textContent += " Select a section with some sharp stick inputs."
     }
 
     step_plot.layout.yaxis.range = [0, 2]
