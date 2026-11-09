@@ -422,6 +422,15 @@ function redraw() {
         const name = "Mag " + (i + 1)
         MAG_Data[i].param_selection = []
 
+        // Leave a gap in the plot where the attitude source has no data
+        const valid = MAG_Data[i].valid
+        function mask_invalid(values) {
+            if ((valid == null) || !Array.isArray(values)) {
+                return values
+            }
+            return values.map((v, j) => valid[j] ? v : null)
+        }
+
         function setup_plot(data, group_index, fit_name) {
             const show = data.show.checked
             const index = mag_plot.x.data.length
@@ -452,7 +461,7 @@ function redraw() {
                 legendgrouptitle: { text: group_name },
                 hovertemplate: gauss_hovertemplate,
                 x: MAG_Data[i].time,
-                y: data.error
+                y: mask_invalid(data.error)
             })
 
             // Calculate yaw change from existing calibration
@@ -479,7 +488,7 @@ function redraw() {
                 hoverinfo : existing ? "none" : "all",
                 hovertemplate: existing ? "" : yaw_change_hover,
                 x: MAG_Data[i].time,
-                y: mag_yaw
+                y: mask_invalid(mag_yaw)
             })
 
             let att_yaw = 0
@@ -496,7 +505,7 @@ function redraw() {
                 legendgrouptitle: { text: group_name },
                 hovertemplate: yaw_change_hover,
                 x: MAG_Data[i].time,
-                y: att_yaw
+                y: mask_invalid(att_yaw)
             })
 
             // Calculate field length
@@ -1222,7 +1231,7 @@ function get_attitude_valid(quaternion, time) {
     return valid
 }
 
-// True if any compass has valid samples in the analysis time
+// True if every compass with a validity mask has valid samples in the analysis time
 function have_valid_samples() {
     for (let i = 0; i < 3; i++) {
         if ((MAG_Data[i] == null) || (MAG_Data[i].valid == null)) {
