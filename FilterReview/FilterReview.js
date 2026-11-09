@@ -181,7 +181,7 @@ function HarmonicNotchFilter(params) {
         }
     }
 
-    if (this.tracking == null) {
+    if ((this.tracking == null) && (this.params.enable > 0)) {
         alert("Unsupported notch mode " + this.params.mode)
     }
 
