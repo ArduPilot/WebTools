@@ -414,9 +414,11 @@ function redraw() {
     field_length.data = [ field_length.data[0] ]
     if (earth_field.track != null) {
         // Expected field length along the flight track
+        // Held at the end values outside the track, as in the fit
         const track = earth_field.track
-        field_length.data[0].x = track.time
-        field_length.data[0].y = track.time.map((_, i) => Math.sqrt(track.x[i]**2 + track.y[i]**2 + track.z[i]**2))
+        const length = track.time.map((_, i) => Math.sqrt(track.x[i]**2 + track.y[i]**2 + track.z[i]**2))
+        field_length.data[0].x = [Math.min(MAG_Data.start_time, track.time[0]), ...track.time, Math.max(MAG_Data.end_time, track.time.at(-1))]
+        field_length.data[0].y = [length[0], ...length, length.at(-1)]
     } else {
         field_length.data[0].x = [MAG_Data.start_time, MAG_Data.end_time]
         field_length.data[0].y = [earth_field.intensity * 1000.0, earth_field.intensity * 1000.0]
