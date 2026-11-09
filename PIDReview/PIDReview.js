@@ -510,6 +510,7 @@ function clear_calculation() {
     }
     // Enable button to fix
     document.getElementById("calculate").disabled = false
+    document.getElementById("step_note").hidden = true
 
     for (let i = 0; i < PID_log_messages.length; i++) {
         if ((PID_log_messages[i] == null) || (PID_log_messages[i].sets == null)) {
