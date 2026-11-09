@@ -156,6 +156,18 @@ function auto_fit_strongest_peak(spectrum, scale) {
             continue
         }
         const position = grid.min + k * grid.step
+        // Must also be the maximum of the window the peak height is taken from, otherwise a nearby
+        // noise maximum would borrow the height of the real peak
+        const peak_half_width = Math.round((scale ?? position) * auto_fit_rules.peak_width / grid.step)
+        for (let n = Math.max(0, k - peak_half_width); n <= Math.min(dB.length - 1, k + peak_half_width); n++) {
+            if ((dB[n] != null) && (dB[n] > dB[k])) {
+                is_max = false
+                break
+            }
+        }
+        if (!is_max) {
+            continue
+        }
         const excess = auto_fit_peak_excess(spectrum, position, scale ?? position)
         if ((best == null) || (excess > best.excess)) {
             best = { position, excess }
@@ -317,14 +329,18 @@ function auto_fit_throttle() {
     }
 
     // Lower the frequency limit so the notch keeps tracking below the reference throttle
+    // REF is set to two decimal places, scale the frequency to match it
+    const ref_rounded = Math.round(ref * 100) / 100
+    const freq = fundamental * Math.sqrt(ref_rounded / ref)
+
     const low = auto_fit_percentile(spectrum.tracked, auto_fit_rules.low_percentile) * fundamental
-    const min_ratio = Math.min(1, Math.max(0.1, Math.floor(20 * low * auto_fit_rules.min_freq_ratio / fundamental) / 20))
+    const min_ratio = Math.min(1, Math.max(0.1, Math.floor(20 * low * auto_fit_rules.min_freq_ratio / freq) / 20))
 
     return {
         name: "throttle",
         mode: 1,
-        freq: Math.round(fundamental),
-        ref: Math.round(ref * 100) / 100,
+        freq: Math.round(freq),
+        ref: ref_rounded,
         min_ratio,
         multi_source: false,
         num_sources: 1,
@@ -332,15 +348,35 @@ function auto_fit_throttle() {
     }
 }
 
-// Number of notch filters the firmware would use for this notch
-function auto_fit_notch_count(result, options) {
-    const num_harmonics = result.harmonics.toString(2).split("1").length - 1
-    let num_imus = 1
-    if ((options & 8) != 0) {
-        // EnableOnAllIMUs
-        num_imus = new Set(Gyro_batch.filter((batch) => batch != null).map((batch) => batch.sensor_num)).size
+// Number of notch filters for a notch, as counted by the firmware against its limit
+function auto_fit_count_filters(harmonics, options, num_sources) {
+    const num_harmonics = harmonics.toString(2).split("1").length - 1
+    let composite = 1
+    if ((options & 1) != 0) {
+        composite = 2
+    } else if ((options & 16) != 0) {
+        composite = 3
+    } else if ((options & 64) != 0) {
+        composite = 5
     }
-    return num_harmonics * (result.multi_source ? result.num_sources : 1) * num_imus
+    const multi_source = (options & 2) != 0
+    // EnableOnAllIMUs runs the notch on every IMU in use
+    const num_imus = ((options & 8) != 0) ? Math.max(1, Gyro_batch.num_gyro || 1) : 1
+    return num_harmonics * composite * (multi_source ? num_sources : 1) * num_imus
+}
+
+// Number of notch filters the fitted notch and the second notch would use
+// The second notch only counts its ESC motors as sources, so this can be low if it is a multi-source throttle notch
+function auto_fit_notch_count(result, options) {
+    let count = auto_fit_count_filters(result.harmonics, options, result.num_sources)
+
+    const names = get_HNotch_param_names()[1]
+    if ((names != null) && (parameter_get_value(names.enable) > 0)) {
+        const mode = parameter_get_value(names.mode)
+        const sources = (mode == 3) ? Math.max(1, tracking_methods[3].get_num_motors() || 1) : 1
+        count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), sources)
+    }
+    return count
 }
 
 // Smallest number of notch filters supported, on F4 boards, F7 supports 27 and H7 54
@@ -399,7 +435,7 @@ function auto_fit() {
     info.textContent = "Fitted using " + result.name + (errors.length > 0 ? " (" + errors.join(", ") + ")" : "")
     const num_notches = auto_fit_notch_count(result, options)
     if (num_notches > auto_fit_max_notches) {
-        info.textContent += ". This uses " + num_notches + " notch filters, F4 boards support " + auto_fit_max_notches + ", F7 27 and H7 54. Reduce the harmonics if needed."
+        info.textContent += ". The notches need at least " + num_notches + " filters, F4 boards support " + auto_fit_max_notches + ", F7 27 and H7 54. Reduce the harmonics if needed."
     }
 
     // Already in a loading call
