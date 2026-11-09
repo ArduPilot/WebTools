@@ -398,13 +398,13 @@ function get_FFT_data_index(set_num, plot_type) {
 function setup_FFT_data() {
 
     const PID = PID_log_messages[get_axis_index()]
+    document.getElementById("step_note").hidden = true
 
     // Clear existing data
     TimeInputs.layout.shapes = []
     TimeOutputs.layout.shapes = []
     fft_plot.data = []
     step_plot.data = []
-    document.getElementById("step_note").hidden = true
 
 
     // Add group for each param set
