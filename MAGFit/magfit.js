@@ -412,8 +412,15 @@ function redraw() {
     yaw_change.att.data = [ yaw_change.att.data[0] ]
 
     field_length.data = [ field_length.data[0] ]
-    field_length.data[0].x = [MAG_Data.start_time, MAG_Data.end_time]
-    field_length.data[0].y = [earth_field.intensity * 1000.0, earth_field.intensity * 1000.0]
+    if (earth_field.track != null) {
+        // Expected field length along the flight track
+        const track = earth_field.track
+        field_length.data[0].x = track.time
+        field_length.data[0].y = track.time.map((_, i) => Math.sqrt(track.x[i]**2 + track.y[i]**2 + track.z[i]**2))
+    } else {
+        field_length.data[0].x = [MAG_Data.start_time, MAG_Data.end_time]
+        field_length.data[0].y = [earth_field.intensity * 1000.0, earth_field.intensity * 1000.0]
+    }
 
     for (let i = 0; i < 3; i++) {
         if (MAG_Data[i] == null) {
@@ -893,9 +900,11 @@ function array_wrap_2PI(A) {
 }
 
 // Calculate yaw estimate from compass only, tilt correction
-function get_yaw(mag_field, quaternion) {
+// Declination is taken along the flight track if it is used
+function get_yaw(mag_field, quaternion, time) {
     const len = mag_field.x.length
-    const declination_rad = earth_field.declination * (Math.PI / 180)
+    let declination_rad = earth_field.declination * (Math.PI / 180)
+    let track_index = { i: 0 }
 
     let yaw = new Array(len)
     let quat = new Quaternion()
@@ -922,6 +931,11 @@ function get_yaw(mag_field, quaternion) {
 
         const X = cp * mag_field.x[i] + sr * sp * mag_field.y[i] + cr * sp * mag_field.z[i]
         const Y =                     -1.0 * cr * mag_field.y[i] +      sr * mag_field.z[i]
+
+        if (earth_field.track != null) {
+            const ef = get_earth_field_vector(time[i], track_index)
+            declination_rad = Math.atan2(ef[1], ef[0])
+        }
 
         yaw[i] = wrap_2PI(Math.atan2(Y,X) + declination_rad)
     }
@@ -1325,7 +1339,7 @@ function select_body_frame_attitude() {
         MAG_Data[i].orig.error = calc_error(MAG_Data[i].expected, MAG_Data[i].orig)
 
         // Yaw estimate from existing calibration
-        MAG_Data[i].orig.yaw = get_yaw(MAG_Data[i].orig, MAG_Data[i].quaternion)
+        MAG_Data[i].orig.yaw = get_yaw(MAG_Data[i].orig, MAG_Data[i].quaternion, MAG_Data[i].time)
     }
 }
 
@@ -1577,7 +1591,7 @@ function fit() {
                 }
                 ret.mean_error = Math.sqrt(error_sum / num_samples)
 
-                ret.yaw = get_yaw(ret, MAG_Data[i].quaternion)
+                ret.yaw = get_yaw(ret, MAG_Data[i].quaternion, MAG_Data[i].time)
 
                 return ret
             }
