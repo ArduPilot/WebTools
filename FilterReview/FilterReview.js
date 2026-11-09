@@ -363,6 +363,8 @@ function reset() {
 
     document.title = "ArduPilot Filter Review"
 
+    document.getElementById("auto_fit_info").textContent = ""
+
     document.getElementById("log_type_raw").checked = true
     document.getElementById("log_type_batch").disabled = false
     document.getElementById("log_type_raw").disabled = false

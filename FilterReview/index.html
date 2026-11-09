@@ -469,8 +469,8 @@ These params can then be saved and loaded into the autopilot without the need fo
 <fieldset style="width:532px">
     <legend>First Notch Filter</legend>
     <p>
-        <input type="button" id="auto_fit" value="Auto fit" onclick="auto_fit()"
-        data-tippy-content="Set up this notch from the log. Uses ESC telemetry if logged, otherwise per motor throttle, checks the noise peaks follow it and sets the harmonics and attenuation from how far the peaks stand out from the noise floor. Uses the selected analysis time.">
+        <input type="button" id="auto_fit" value="Auto fit" onclick="loading_call(auto_fit)"
+        data-tippy-content="Set up this notch from the log. Uses ESC telemetry if logged, otherwise throttle, checks the noise peaks follow it and sets the harmonics and attenuation from how far the peaks stand out from the noise floor. Uses the selected analysis time.">
         <span id="auto_fit_info"></span>
     </p>
     <p>
