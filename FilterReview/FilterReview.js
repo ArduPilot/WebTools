@@ -1949,9 +1949,6 @@ function open_in_filter_tool() {
     // Filter Tool only has two harmonic notches
     const extra_notches = [3, 4].filter((num) => (document.getElementById("Notch" + num + "Params").style.display != "none") &&
                                                  (parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0))
-    if (extra_notches.length > 0) {
-        alert("Filter Tool supports two harmonic notches, notch " + extra_notches.join(" and ") + " will not be included")
-    }
 
     // Assume same base
     let url =  new URL(window.location.href)
@@ -2014,6 +2011,11 @@ function open_in_filter_tool() {
 
 
     window.open(url.toString())
+
+    // Warn after opening, a popup blocker can stop the window opening if the alert is left open
+    if (extra_notches.length > 0) {
+        alert("Filter Tool supports two harmonic notches, notch " + extra_notches.join(" and ") + " will not be included")
+    }
 
 }
 
