@@ -492,7 +492,8 @@ function Quaternion() {
 
     // get euler pitch angle
     this.get_euler_pitch = function() {
-        return Math.asin(2.0 * (this.q1 * this.q3 - this.q4 * this.q2))
+        // Clamp as rounding can take this just outside +-1 near 90 deg pitch
+        return Math.asin(Math.min(Math.max(2.0 * (this.q1 * this.q3 - this.q4 * this.q2), -1.0), 1.0))
     }
 
     // get euler yaw angle
