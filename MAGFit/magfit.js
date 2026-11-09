@@ -821,6 +821,11 @@ function calculate() {
 
     select_body_frame_attitude()
 
+    if (!have_valid_samples()) {
+        alert("The selected attitude source has no data in the analysis time")
+        return
+    }
+
     calculate_bins()
 
     check_orientation()
@@ -904,6 +909,14 @@ function get_yaw(mag_field, quaternion) {
     return yaw
 }
 
+// Validity of each compass sample for the selected attitude source between the given indexes, null if all are valid
+function get_valid(i, start_index, end_index) {
+    if (MAG_Data[i].valid == null) {
+        return null
+    }
+    return MAG_Data[i].valid.slice(start_index, end_index)
+}
+
 // Calculate error weights based on attitude binning
 const num_bins = 80
 function calculate_bins() {
@@ -957,7 +970,8 @@ function calculate_bins() {
     console.log(`Binning took: ${end - start} ms`);
 }
 
-function get_weights(bins) {
+// valid is optional, samples that are not valid get zero weight
+function get_weights(bins, valid) {
 
     const count = new Array(num_bins).fill(0)
 
@@ -965,6 +979,9 @@ function get_weights(bins) {
     let num_unique_bins = 0
     let total_bins = 0
     for (let i = 0; i < len; i++) {
+        if ((valid != null) && !valid[i]) {
+            continue
+        }
         if (count[bins[i]] == 0) {
             num_unique_bins++
         }
@@ -977,11 +994,15 @@ function get_weights(bins) {
     let weights = new Array(len).fill(1)
 
     for (let i = 0; i < len; i++) {
+        if ((valid != null) && !valid[i]) {
+            weights[i] = 0
+            continue
+        }
         // Scale by mean_bin_size so that the average weight is 1, this give comparable error magnitude to the un-weighted case
         weights[i] = mean_bin_size / count[bins[i]]
     }
 
-    return { weights, coverage }
+    return { weights, coverage, num_valid: total_bins }
 }
 
 function check_orientation() {
@@ -1003,20 +1024,25 @@ function check_orientation() {
         const num_samples = end_index - start_index
 
         // Get weighting based on bins
-        const weights = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index)).weights
+        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index), get_valid(i, start_index, end_index))
+        const weights = weight_obj.weights
+        const num_valid = weight_obj.num_valid
 
         // Calculate average earth filed to match sensor to
         let ef_mean = { x:0.0, y:0.0, z:0.0 }
         for (let j = 0; j < num_samples; j++) {
             const data_index = start_index + j
+            if (weights[j] == 0) {
+                continue
+            }
 
             ef_mean.x += MAG_Data[i].expected.x[data_index]
             ef_mean.y += MAG_Data[i].expected.y[data_index]
             ef_mean.z += MAG_Data[i].expected.z[data_index]
         }
-        ef_mean.x /= num_samples
-        ef_mean.y /= num_samples
-        ef_mean.z /= num_samples
+        ef_mean.x /= num_valid
+        ef_mean.y /= num_valid
+        ef_mean.z /= num_valid
 
         let rotation = new Quaternion()
 
@@ -1056,13 +1082,16 @@ function check_orientation() {
                 y[j] = tmp[1]
                 z[j] = tmp[2]
 
+                if (weights[j] == 0) {
+                    continue
+                }
                 mean.x += x[j]
                 mean.y += y[j]
                 mean.z += z[j]
             }
-            mean.x /= num_samples
-            mean.y /= num_samples
-            mean.z /= num_samples
+            mean.x /= num_valid
+            mean.y /= num_valid
+            mean.z /= num_valid
 
             const offsets = { 
                 x: ef_mean.x - mean.x,
@@ -1079,7 +1108,7 @@ function check_orientation() {
                               (z[j] - MAG_Data[i].expected.z[data_index] + offsets.z)**2) * weights[j]
             }
 
-            rot_error.push({ rotation: rot, error: error_sum / num_samples })
+            rot_error.push({ rotation: rot, error: error_sum / num_valid })
 
         }
 
@@ -1171,6 +1200,42 @@ function get_body_frame_ef(quaternion) {
     return ret
 }
 
+// For attitude sources with gaps, a compass sample is valid if it is within the source time and not in a gap
+// Returns null if the source has no gaps
+function get_attitude_valid(quaternion, time) {
+    if (quaternion.max_gap == null) {
+        return null
+    }
+    const q_time = quaternion.time
+    const last = q_time.length - 1
+    let valid = new Array(time.length).fill(false)
+    let k = 0
+    for (let j = 0; j < time.length; j++) {
+        if ((time[j] < q_time[0]) || (time[j] > q_time[last])) {
+            continue
+        }
+        while ((k < last - 1) && (q_time[k + 1] < time[j])) {
+            k++
+        }
+        valid[j] = (q_time[k + 1] - q_time[k]) <= quaternion.max_gap
+    }
+    return valid
+}
+
+// True if any compass has valid samples in the analysis time
+function have_valid_samples() {
+    for (let i = 0; i < 3; i++) {
+        if ((MAG_Data[i] == null) || (MAG_Data[i].valid == null)) {
+            continue
+        }
+        const valid = get_valid(i, find_start_index(MAG_Data[i].time), find_end_index(MAG_Data[i].time) + 1)
+        if (!valid.includes(true)) {
+            return false
+        }
+    }
+    return true
+}
+
 let source
 function select_body_frame_attitude() {
 
@@ -1252,6 +1317,7 @@ function select_body_frame_attitude() {
         }
 
         MAG_Data[i].quaternion = array_slerp(source.quaternion, source.quaternion.time, MAG_Data[i].time)
+        MAG_Data[i].valid = get_attitude_valid(source.quaternion, MAG_Data[i].time)
 
         // Get yaw from quaternion for comparison later
         let quat = new Quaternion()
@@ -1307,8 +1373,9 @@ function fit() {
         const num_samples = end_index - start_index
 
         // Get weighting based on bins
-        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index))
+        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index), get_valid(i, start_index, end_index))
         const weights = weight_obj.weights
+        const num_valid = weight_obj.num_valid
         const sqrt_weight = array_sqrt(weights)
 
         // Update coverage graphic
@@ -1319,7 +1386,7 @@ function fit() {
         for (let j = 0; j < num_samples; j++) {
             error_sum += weights[j] * MAG_Data[i].orig.error[start_index + j]**2 
         }
-        MAG_Data[i].orig.mean_error = Math.sqrt(error_sum / num_samples)
+        MAG_Data[i].orig.mean_error = Math.sqrt(error_sum / num_valid)
 
         let rot = {}
         let orientation
@@ -1526,7 +1593,7 @@ function fit() {
                 for (let j = 0; j < num_samples; j++) {
                     error_sum += weights[j] * ret.error[start_index + j]**2
                 }
-                ret.mean_error = Math.sqrt(error_sum / num_samples)
+                ret.mean_error = Math.sqrt(error_sum / num_valid)
 
                 ret.yaw = get_yaw(ret, MAG_Data[i].quaternion)
 
@@ -1715,6 +1782,7 @@ function set_need_calc(b) {
     document.getElementById('SaveParams').disabled = b
 }
 
+const max_yaw_gap = 1.0
 // Make a new attitude using the roll and pitch from quaternion and the yaw (deg) from another source.
 // Only the times where yaw is available are used, gaps of more than 1 second in the yaw are skipped.
 function replace_yaw(quaternion, yaw_time, yaw_deg) {
@@ -1744,7 +1812,7 @@ function replace_yaw(quaternion, yaw_time, yaw_deg) {
             yaw_index++
         }
         const dt = yaw_time[yaw_index + 1] - yaw_time[yaw_index]
-        if (dt > 1.0) {
+        if (dt > max_yaw_gap) {
             continue
         }
         const ratio = (dt > 0) ? (time - yaw_time[yaw_index]) / dt : 0
@@ -1766,6 +1834,8 @@ function replace_yaw(quaternion, yaw_time, yaw_deg) {
     if (ret.time.length < 2) {
         return
     }
+    // Compass samples in gaps longer than this are not used
+    ret.max_gap = max_yaw_gap
     return ret
 }
 
