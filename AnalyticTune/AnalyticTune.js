@@ -1406,7 +1406,7 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     // Determine average sample rate
     const trecord = (timeRate[timeRate.length - 1] - timeRate[0]) / 1000000
     const samplerate = (timeRate.length)/ trecord
-    console.log("sample rate: ", samplerate, t_start, t_end)
+    console.log("sample rate: ", samplerate, t_start, t_end, trecord)
     var timeATT
     var ind1_a
     var ind2_a
@@ -1545,9 +1545,8 @@ function load_posctrl_time_history_data(t_start, t_end, axis) {
     // use integrated velocity to remove bias from position data
     let intrate = new Array(RateData.length).fill(0);
     for (let k=1;k<RateData.length;k++) {
-        intrate[k] = intrate[k-1] + RateData[k] / trecord;
+        intrate[k] = intrate[k-1] + RateData[k] / samplerate;
     }
-//    DRBRespData = array_add(DRBInputData, array_offset(AttData,-1*array_mean(AttData)))
     DRBRespData = array_add(DRBInputData, intrate)
 
     console.log("DRBinputData: ", DRBInputData)
