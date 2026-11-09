@@ -2446,6 +2446,24 @@ async function load(log_file) {
     }
     Gyro_batch.num_gyro = num_gyro
 
+    // Used by auto fit to count notch filters as the firmware does, INS_USE defaults to 1
+    Gyro_batch.num_imu_use = 0
+    for (const name of ["INS_USE", "INS_USE2", "INS_USE3"]) {
+        const use = get_param(name)
+        Gyro_batch.num_imu_use += ((use == null) || (use != 0)) ? 1 : 0
+    }
+    Gyro_batch.num_motors = 0
+    for (let i = 1; i <= 32; i++) {
+        const fun = get_param("SERVO" + i + "_FUNCTION")
+        if ((fun != null) && (((fun >= 33) && (fun <= 40)) || ((fun >= 82) && (fun <= 85)))) {
+            Gyro_batch.num_motors++
+        }
+    }
+
+    // Heli firmware does not allow a throttle notch
+    const { build_type } = get_version_and_board(log)
+    Gyro_batch.heli = (build_type == 13) || [6, 11, 13].includes(get_param("FRAME_CLASS"))
+
     // Populate filter version
     if (('VER' in log.messageTypes) && log.messageTypes.VER.expressions.includes("FV")) {
         // Version should be constant for whole log

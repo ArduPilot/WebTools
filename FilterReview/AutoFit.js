@@ -256,6 +256,9 @@ function auto_fit_esc(esc_mask) {
 // Tracked frequency is freq * sqrt(throttle / ref), fit freq with ref as the mean throttle
 // Average throttle is used, so the notch is a single throttle notch rather than one per motor
 function auto_fit_throttle() {
+    if (Gyro_batch.heli) {
+        return { error: "heli firmware does not allow a throttle notch" }
+    }
     const throttle = tracking_methods[1]
     if (!throttle.have_data({ options: 0 })) {
         return { error: "no throttle" }
@@ -360,21 +363,30 @@ function auto_fit_count_filters(harmonics, options, num_sources) {
         composite = 5
     }
     const multi_source = (options & 2) != 0
-    // EnableOnAllIMUs runs the notch on every IMU in use
-    const num_imus = ((options & 8) != 0) ? Math.max(1, Gyro_batch.num_gyro || 1) : 1
+    // EnableOnAllIMUs runs the notch on every IMU with INS_USE set
+    const num_imus = ((options & 8) != 0) ? Math.max(1, Gyro_batch.num_imu_use || 1) : 1
     return num_harmonics * composite * (multi_source ? num_sources : 1) * num_imus
 }
 
+// Number of sources for a multi-source notch, the firmware uses three peaks for FFT and the motor count otherwise
+function auto_fit_num_sources(mode) {
+    if (mode == 4) {
+        return 3
+    }
+    if (Gyro_batch.num_motors > 0) {
+        return Gyro_batch.num_motors
+    }
+    return Math.max(1, tracking_methods[3].get_num_motors() || 1)
+}
+
 // Number of notch filters the fitted notch and the second notch would use
-// The second notch only counts its ESC motors as sources, so this can be low if it is a multi-source throttle notch
 function auto_fit_notch_count(result, options) {
-    let count = auto_fit_count_filters(result.harmonics, options, result.num_sources)
+    let count = auto_fit_count_filters(result.harmonics, options, auto_fit_num_sources(result.mode))
 
     const names = get_HNotch_param_names()[1]
     if ((names != null) && (parameter_get_value(names.enable) > 0)) {
         const mode = parameter_get_value(names.mode)
-        const sources = (mode == 3) ? Math.max(1, tracking_methods[3].get_num_motors() || 1) : 1
-        count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), sources)
+        count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), auto_fit_num_sources(mode))
     }
     return count
 }
@@ -435,7 +447,7 @@ function auto_fit() {
     info.textContent = "Fitted using " + result.name + (errors.length > 0 ? " (" + errors.join(", ") + ")" : "")
     const num_notches = auto_fit_notch_count(result, options)
     if (num_notches > auto_fit_max_notches) {
-        info.textContent += ". The notches need at least " + num_notches + " filters, F4 boards support " + auto_fit_max_notches + ", F7 27 and H7 54. Reduce the harmonics if needed."
+        info.textContent += ". The notches need " + num_notches + " filters, F4 boards support " + auto_fit_max_notches + ", F7 27 and H7 54. Reduce the harmonics if needed."
     }
 
     // Already in a loading call
