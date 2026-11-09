@@ -1845,10 +1845,14 @@ function update_hidden(source) {
 function get_estimate_checkboxes() {
     let ret = []
     for (let i = 0; i < 3; i++) {
+        // Estimate needs pre-filter data for this gyro
+        if (find_instance(i, false) == null) {
+            continue
+        }
         for (let j = 0; j < axis.length; j++) {
             const checkbox = document.getElementById("Gyro" + i + "PostEst" + axis[j])
             if (!checkbox.disabled) {
-                ret.push({ checkbox, gyro: i, axis: axis[j] })
+                ret.push({ checkbox, gyro: i, axis: axis[j], axis_index: j })
             }
         }
     }
@@ -1875,8 +1879,10 @@ function show_estimated() {
     }
     for (const estimate of shown) {
         estimate.checkbox.checked = true
-        update_hidden(estimate.checkbox)
+        fft_plot.data[get_FFT_data_index(estimate.gyro, 2, estimate.axis_index)].visible = true
     }
+    Plotly.redraw("FFTPlot")
+    update_estimate_hint()
 }
 
 // Recalculate after filter parameter change
@@ -2082,7 +2088,7 @@ async function load_parameters(file) {
     }
 
     filter_param_read()
-    re_calc()
+    recalculate_filters()
 }
 
 // Get selected filter version
