@@ -1946,6 +1946,13 @@ function time_range_changed() {
 // build url and query string for current params and open filter tool in new window
 function open_in_filter_tool() {
 
+    // Filter Tool only has two harmonic notches
+    const extra_notches = [3, 4].filter((num) => (document.getElementById("Notch" + num + "Params").style.display != "none") &&
+                                                 (parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0))
+    if (extra_notches.length > 0) {
+        alert("Filter Tool supports two harmonic notches, notch " + extra_notches.join(" and ") + " will not be included")
+    }
+
     // Assume same base
     let url =  new URL(window.location.href)
     url.pathname = url.pathname.replace('FilterReview','FilterTool')
