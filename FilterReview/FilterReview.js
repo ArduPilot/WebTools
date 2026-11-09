@@ -295,10 +295,9 @@ function update_missing_data_warning() {
 // Fraction of analysis time that has no raw data, batches are split where data is missing
 const missing_data_warn_fraction = 0.1
 function get_missing_fraction(batches) {
-    const first = batches[0]
-    const last = batches[batches.length - 1]
-    const start = Math.max(parseFloat(document.getElementById("TimeStart").value), first.sample_time)
-    const end = Math.min(parseFloat(document.getElementById("TimeEnd").value), last.sample_time + (last.x.length / last.sample_rate))
+    // Clip to the time covered by all IMUs, so an IMU that starts late or stops early is counted as missing
+    const start = Math.max(parseFloat(document.getElementById("TimeStart").value), Gyro_batch.start_time)
+    const end = Math.min(parseFloat(document.getElementById("TimeEnd").value), Gyro_batch.end_time)
     if (!(end > start)) {
         return 0
     }
