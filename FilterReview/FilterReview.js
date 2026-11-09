@@ -2231,7 +2231,8 @@ function load_from_batch(log, num_gyro, gyro_rate, get_param) {
 // Return true for each time at which the vehicle was armed, from ARM log messages
 function armed_mask(time, ARM) {
     const mask = new Array(time.length)
-    let armed = false
+    // The first arm is not logged if disarmed logging is off, so start from the opposite of the first logged state
+    let armed = (ARM.ArmState.length > 0) && (ARM.ArmState[0] == 0)
     let k = 0
     for (let j = 0; j < time.length; j++) {
         while ((k < ARM.TimeUS.length) && (ARM.TimeUS[k] <= time[j])) {
