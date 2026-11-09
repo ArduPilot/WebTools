@@ -400,12 +400,29 @@ function update_shown_params() {
 function redraw() {
 
 
-    // Expected field
+    // Expected field, with a gap where the attitude source has gaps
+    const source_time = source.quaternion.time
+    const max_gap = source.quaternion.max_gap
     for (const axi of axis) {
         mag_plot[axi].data = [ mag_plot[axi].data[0] ]
 
-        mag_plot[axi].data[0].x = source.quaternion.time
-        mag_plot[axi].data[0].y = source[axi]
+        if (max_gap == null) {
+            mag_plot[axi].data[0].x = source_time
+            mag_plot[axi].data[0].y = source[axi]
+            continue
+        }
+        let x = []
+        let y = []
+        for (let i = 0; i < source_time.length; i++) {
+            if ((i > 0) && (source_time[i] - source_time[i-1] > max_gap)) {
+                x.push(null)
+                y.push(null)
+            }
+            x.push(source_time[i])
+            y.push(source[axi][i])
+        }
+        mag_plot[axi].data[0].x = x
+        mag_plot[axi].data[0].y = y
     }
     error_plot.data = [ error_plot.data[0] ]
     yaw_change.mag.data = [ yaw_change.mag.data[0] ]
