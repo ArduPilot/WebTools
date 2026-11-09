@@ -404,6 +404,7 @@ function setup_FFT_data() {
     TimeOutputs.layout.shapes = []
     fft_plot.data = []
     step_plot.data = []
+    show_step_stats([])
 
 
     // Add group for each param set
@@ -1035,8 +1036,12 @@ const step_stats_final_min = 0.5
 const step_stats_final_max = 1.5
 function get_step_stats(time, response) {
     // The end of the estimate is not used as it can turn up or down due to the method
+    // No stats if the estimate is too short (small FFT window or high log rate)
     const end_index = time.findIndex((t) => t > step_stats_end_time)
-    const len = (end_index > 0) ? end_index : response.length
+    if (end_index < 0) {
+        return
+    }
+    const len = end_index
     const final_start = time.findIndex((t) => t >= step_stats_final_start)
     if ((len < 20) || (final_start < 0) || (final_start >= len - 1)) {
         return
@@ -1083,8 +1088,11 @@ function get_step_stats(time, response) {
     return { final, rise_time, peak, peak_time: time[peak_index], overshoot, settling_time }
 }
 
-// Show table of step response stats
-function show_step_stats(stats) {
+// Show table of step response stats, skipping tests that are not selected
+let last_step_stats = []
+function show_step_stats(all_stats) {
+    last_step_stats = all_stats
+    const stats = all_stats.filter((set) => document.getElementById("set_selection_" + set.set).checked)
     let div = document.getElementById("step_stats")
     div.replaceChildren()
     div.hidden = stats.length == 0
@@ -1322,7 +1330,7 @@ function redraw_step() {
         if (mean_count > 0) {
             const stats = get_step_stats(time, step_plot.data[plot_index+1].y)
             if (stats != null) {
-                step_stats.push(Object.assign({ name: "Test " + (j+1), color: plot_default_color(j) }, stats))
+                step_stats.push(Object.assign({ set: j, name: "Test " + (j+1), color: plot_default_color(j) }, stats))
             }
         }
 
@@ -1395,6 +1403,7 @@ function update_hidden(source) {
 
         // Set mean plot
         step_plot.data[set_index+1].visible = check
+        show_step_stats(last_step_stats)
 
         // See how many mean lines are showing and hide plot of all
         let visible_mean = 0
