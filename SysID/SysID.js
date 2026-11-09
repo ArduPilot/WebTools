@@ -416,7 +416,7 @@ async function run_transfer_function_ID(parser) {
     const ind2_i = nearestIndex(timeData_arr, t_end*1000000)
     console.log("ind1: ",ind1_i," ind2: ",ind2_i)
 
-    timeData = Array.from(timeData_arr)
+    let timeData = Array.from(timeData_arr)
     console.log("time field pre slicing size: ", timeData.length)
 
     timeData = timeData.slice(ind1_i, ind2_i)
@@ -453,7 +453,7 @@ async function run_transfer_function_ID(parser) {
             mult = parseFloat(outputValues.multipliers[0])
         }
         let ang_data = parser.get("ATT", outputValues.compensations[0])
-        ang_data_arr = Array.from(ang_data)
+        let ang_data_arr = Array.from(ang_data)
         ang_data_arr.slice(att_ind1, att_ind2)
         console.log("data field ", outputValues.compensations[0], " pre slicing size: ", outputData.length)
         const G = 9.81
@@ -677,7 +677,7 @@ async function run_SS_ID(parser) {
     const ind2_i = nearestIndex(timeData_arr, t_end_ss*1000000)
     console.log("ind1: ",ind1_i," ind2: ",ind2_i)
 
-    timeData = Array.from(timeData_arr)
+    let timeData = Array.from(timeData_arr)
     console.log("time field pre slicing size: ",timeData.length)
 
     timeData = timeData.slice(ind1_i, ind2_i)
@@ -718,19 +718,17 @@ async function run_SS_ID(parser) {
                 mult = parseFloat(outputValues.multipliers[i])
             }
             let ang_data = parser.get("ATT", outputValues.compensations[i])
-            ang_data_arr = Array.from(ang_data)
+            let ang_data_arr = Array.from(ang_data)
             ang_data_arr.slice(att_ind1, att_ind2)
             console.log("data field ", outputValues.compensations[i], " pre slicing size: ", data_arr.length)
             const G = 9.81
             if (outputValues.compensations[i] == "Roll") {
                 for (let j = 0; j < data_arr.length; j++) {
-                    temp_data = data_arr[j]
                     data_arr[j] = data_arr[j] + (Math.PI/180) * mult * G * ang_data_arr[att_ind1 + j]
                 }
             }
             if (outputValues.compensations[i] == "Pitch") {
                 for (let j = 0; j < data_arr.length; j++) {
-                    temp_data = data_arr[j]
                     data_arr[j] = data_arr[j] - (Math.PI/180) * mult * G * ang_data_arr[att_ind1 + j]
                 }
             }
