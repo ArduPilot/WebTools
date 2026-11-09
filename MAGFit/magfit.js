@@ -788,7 +788,11 @@ function find_end_index(time) {
 function update_earth_field() {
     const Lat = parseFloat(document.getElementById("Lat").value)
     const Lng = parseFloat(document.getElementById("Lng").value)
-    const Alt = parseFloat(document.getElementById("Alt").value)
+    let Alt = parseFloat(document.getElementById("Alt").value)
+    if (isNaN(Alt)) {
+        // No altitude, use sea level
+        Alt = 0
+    }
     const date = new Date(document.getElementById("Date").value)
     if (isNaN(Lat) || isNaN(Lng) || isNaN(date.getTime())) {
         return false
@@ -1719,12 +1723,19 @@ function extractLatLon(log, get_param) {
 
 // Get date of log from GPS time, returns undefined if there is no GPS time
 function get_log_date(log) {
-  if (!("GPS" in log.messageTypes) || !("instances" in log.messageTypes.GPS)) {
+  if (!("GPS" in log.messageTypes)) {
     return
   }
-  for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
-    const GWk = log.get_instance("GPS", inst, "GWk")
-    const GMS = log.get_instance("GPS", inst, "GMS")
+  // Older logs have GPS without instances
+  let sources = []
+  if ("instances" in log.messageTypes.GPS) {
+    for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+      sources.push({ GWk: log.get_instance("GPS", inst, "GWk"), GMS: log.get_instance("GPS", inst, "GMS") })
+    }
+  } else {
+    sources.push({ GWk: log.get("GPS", "GWk"), GMS: log.get("GPS", "GMS") })
+  }
+  for (const { GWk, GMS } of sources) {
     for (let i = 0; i < GWk.length; i++) {
       if (GWk[i] > 0) {
         // GPS epoch is 6 January 1980, ignore leap seconds as only the date is needed
