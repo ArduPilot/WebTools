@@ -2016,7 +2016,10 @@ function save_parameters() {
         var params = ""
         for (const v in inputs) {
             var name = "" + inputs[v].id
-            if (name.startsWith("INS_")) {
+            // Skip notch 3 and 4 if the firmware does not have them
+            const hidden = (name.startsWith("INS_HNTC3_") && document.getElementById("Notch3Params").style.display == "none") ||
+                           (name.startsWith("INS_HNTC4_") && document.getElementById("Notch4Params").style.display == "none")
+            if (name.startsWith("INS_") && !hidden) {
                 var value = inputs[v].value
                 params += name + "," + param_to_string(value) + "\n"
             }
