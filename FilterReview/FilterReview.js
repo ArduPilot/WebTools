@@ -363,6 +363,8 @@ function reset() {
 
     document.title = "ArduPilot Filter Review"
 
+    document.getElementById("auto_fit_info").textContent = ""
+
     document.getElementById("log_type_raw").checked = true
     document.getElementById("log_type_batch").disabled = false
     document.getElementById("log_type_raw").disabled = false
@@ -379,6 +381,7 @@ function reset() {
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
     document.getElementById("OpenFilterTool").disabled = true
+    document.getElementById("auto_fit").disabled = true
     document.getElementById("SaveParams").disabled = true
     document.getElementById("LoadParams").disabled = true
 
@@ -2441,6 +2444,42 @@ async function load(log_file) {
         alert("No valid gyro data found in log")
         return
     }
+    Gyro_batch.num_gyro = num_gyro
+
+    // Used by auto fit to count notch filters as the firmware does, INS_USE defaults to 1
+    Gyro_batch.num_imu_use = 0
+    for (const name of ["INS_USE", "INS_USE2", "INS_USE3"]) {
+        const use = get_param(name)
+        Gyro_batch.num_imu_use += ((use == null) || (use != 0)) ? 1 : 0
+    }
+    // Aux IMUs only count if the board has them
+    for (const name of ["INS4_USE", "INS5_USE"]) {
+        const use = get_param(name)
+        Gyro_batch.num_imu_use += ((use != null) && (use != 0)) ? 1 : 0
+    }
+
+    // With FFT enabled the firmware counts every notch group, notch 3 and 4 are not shown on the page
+    Gyro_batch.fft_enabled = get_param("FFT_ENABLE") > 0
+    Gyro_batch.log_notches = []
+    for (const num of [3, 4]) {
+        const prefix = "INS_HNTC" + num + "_"
+        const enable = get_param(prefix + "ENABLE")
+        if (enable == null) {
+            continue
+        }
+        Gyro_batch.log_notches.push({ num, enable, mode: get_param(prefix + "MODE"), harmonics: get_param(prefix + "HMNCS"), options: get_param(prefix + "OPTS") })
+    }
+    Gyro_batch.num_motors = 0
+    for (let i = 1; i <= 32; i++) {
+        const fun = get_param("SERVO" + i + "_FUNCTION")
+        if ((fun != null) && (((fun >= 33) && (fun <= 40)) || ((fun >= 82) && (fun <= 85)))) {
+            Gyro_batch.num_motors++
+        }
+    }
+
+    // Heli firmware does not allow a throttle notch
+    const { build_type } = get_version_and_board(log)
+    Gyro_batch.heli = (build_type == 13) || [6, 11, 13].includes(get_param("FRAME_CLASS"))
 
     // Populate filter version
     if (('VER' in log.messageTypes) && log.messageTypes.VER.expressions.includes("FV")) {
@@ -2697,6 +2736,7 @@ async function load(log_file) {
     redraw()
 
     document.getElementById("OpenFilterTool").disabled = false
+    document.getElementById("auto_fit").disabled = false
     document.getElementById("SaveParams").disabled = false
     document.getElementById("LoadParams").disabled = false
 
