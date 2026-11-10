@@ -222,22 +222,9 @@ function auto_fit_esc(esc_mask) {
         return { error: "no FFT windows with the motors running" }
     }
 
-    // Check the noise peaks follow whole multiples of the motor frequency, a much larger peak elsewhere
-    // suggests the ESC frequency is scaled wrongly, for example by the motor poles
-    const peaks = auto_fit_harmonic_peaks(spectrum, 1)
-    const strongest = auto_fit_strongest_peak(spectrum, 1)
-    const max_harmonic_excess = Math.max(...peaks.map((peak) => peak.excess))
-    if (strongest != null) {
-        const nearest = Math.max(1, Math.round(strongest.position))
-        const off_harmonic = Math.abs(strongest.position - nearest) > nearest * auto_fit_rules.esc_order_tolerance
-        if (off_harmonic && (strongest.excess > max_harmonic_excess + auto_fit_rules.min_peak_dB)) {
-            return { error: "largest noise peak at " + strongest.position.toFixed(2) + " times the ESC frequency, check motor poles" }
-        }
-    }
-
-    // The notch tracks each motor separately, so also look for harmonics of each motor on its own. Motors at
-    // different speeds can spread the higher harmonics out in the mean spectrum. A harmonic is used if it
-    // stands out for the mean or for any one motor.
+    // The notch tracks each motor separately, so also look at each motor on its own. Motors at different
+    // speeds can spread the harmonics out in the mean spectrum.
+    const spectra = [spectrum]
     const multi_source = esc.get_num_motors() > 1
     if (multi_source) {
         const motor_config = { options: 2, ref: 1, freq: 0, esc_mask }
@@ -250,13 +237,41 @@ function auto_fit_esc(esc_mask) {
                 return freq[motor]
             }
             const motor_spectrum = auto_fit_order_spectrum(get_motor_tracked, spectrum.grid)
-            if (motor_spectrum.tracked.length == 0) {
-                continue
+            if (motor_spectrum.tracked.length > 0) {
+                spectra.push(motor_spectrum)
             }
-            const motor_peaks = auto_fit_harmonic_peaks(motor_spectrum, 1)
-            for (let i = 0; i < peaks.length; i++) {
-                peaks[i].excess = Math.max(peaks[i].excess, motor_peaks[i].excess)
-            }
+        }
+    }
+
+    // Check the noise peaks follow whole multiples of the motor frequency, a much larger peak elsewhere
+    // suggests the ESC frequency is scaled wrongly, for example by the motor poles. Wrong scaling moves the
+    // peak in every spectrum, motors at different speeds only move it in some, so reject only if all fail.
+    let off_harmonic_peak = null
+    for (const s of spectra) {
+        const strongest = auto_fit_strongest_peak(s, 1)
+        if (strongest == null) {
+            off_harmonic_peak = null
+            break
+        }
+        const nearest = Math.max(1, Math.round(strongest.position))
+        const off_harmonic = Math.abs(strongest.position - nearest) > nearest * auto_fit_rules.esc_order_tolerance
+        const max_harmonic_excess = Math.max(...auto_fit_harmonic_peaks(s, 1).map((peak) => peak.excess))
+        if (!off_harmonic || (strongest.excess <= max_harmonic_excess + auto_fit_rules.min_peak_dB)) {
+            off_harmonic_peak = null
+            break
+        }
+        off_harmonic_peak ??= strongest.position
+    }
+    if (off_harmonic_peak != null) {
+        return { error: "largest noise peak at " + off_harmonic_peak.toFixed(2) + " times the ESC frequency, check motor poles" }
+    }
+
+    // A harmonic is used if it stands out for the mean or for any one motor
+    const peaks = auto_fit_harmonic_peaks(spectrum, 1)
+    for (const s of spectra.slice(1)) {
+        const motor_peaks = auto_fit_harmonic_peaks(s, 1)
+        for (let i = 0; i < peaks.length; i++) {
+            peaks[i].excess = Math.max(peaks[i].excess, motor_peaks[i].excess)
         }
     }
 
@@ -265,7 +280,9 @@ function auto_fit_esc(esc_mask) {
         return { error: "no noise peaks follow the ESC frequency" }
     }
 
-    const low = auto_fit_percentile(spectrum.tracked, auto_fit_rules.low_percentile)
+    // Lowest frequency of any one motor, a slow motor can be well below the mean
+    const tracked = (spectra.length > 1) ? spectra.slice(1).flatMap((s) => s.tracked) : spectrum.tracked
+    const low = auto_fit_percentile(tracked, auto_fit_rules.low_percentile)
     return {
         name: "ESC",
         mode: 3,
@@ -376,7 +393,8 @@ function auto_fit_throttle() {
 
 // Number of notch filters for a notch, as counted by the firmware against its limit
 function auto_fit_count_filters(harmonics, options, num_sources) {
-    const num_harmonics = harmonics.toString(2).split("1").length - 1
+    // HMNCS is a signed 32 bit bitmask, count all 32 bits
+    const num_harmonics = (harmonics >>> 0).toString(2).split("1").length - 1
     let composite = 1
     if ((options & 1) != 0) {
         composite = 2
@@ -416,10 +434,11 @@ function auto_fit_notch_count(result, options) {
         }
     }
 
-    // Notches from the log that are not on the page
+    // Notches from the log that are not on the page, a disabled notch may not log its parameters, use the
+    // firmware defaults for them
     for (const notch of (Gyro_batch.log_notches || [])) {
         if ((notch.num > all_names.length) && counted(notch.enable)) {
-            count += auto_fit_count_filters(notch.harmonics || 0, notch.options || 0, auto_fit_num_sources(notch.mode))
+            count += auto_fit_count_filters(notch.harmonics ?? 3, notch.options ?? 0, auto_fit_num_sources(notch.mode ?? 1))
         }
     }
     return count
