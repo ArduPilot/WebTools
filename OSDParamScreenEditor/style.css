@@ -1,0 +1,48 @@
+:root{font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:#223247;background:#eef3f8}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1320px;margin:auto;padding:24px}header{padding:20px 4px 16px}h1{font-size:clamp(28px,4vw,40px);line-height:1.1;color:#123a73;margin:5px 0}.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.8px;color:#446991}.by{font-weight:700;color:#123a73;margin:8px 0}.notice{background:#fff6df;border:1px solid #e5c97c;border-left:5px solid #bd8525;padding:13px 16px;border-radius:8px;margin:12px 0 18px}.card{background:#fff;border:1px solid #d8e2ed;border-radius:12px;box-shadow:0 3px 18px #2442600a;margin:15px 0;padding:18px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}.toolbar:last-child{margin-bottom:0}button,.filebtn,select{font:inherit;border-radius:7px;border:1px solid #b6c8da;padding:8px 12px;background:#f8fbff;color:#163b68;cursor:pointer}button:hover,.filebtn:hover{background:#e5effb}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #78aaf1;outline-offset:1px}label{font-weight:600}select{margin-left:6px}#fetchMeta,#saveJson{background:#123a73;color:white;border-color:#123a73}#fetchMeta:hover,#saveJson:hover{background:#22558f}.muted{color:#667789;font-weight:400}.tiny{font-size:12px}.tabs{display:flex;gap:8px;border-bottom:1px solid #d8e2ed;padding-bottom:10px;margin-bottom:14px}.tabs button.active{background:#123a73;color:#fff}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:980px}th{background:#edf3f9;color:#304e6d;text-align:left;font-size:13px}th,td{border-bottom:1px solid #e6ecf2;padding:10px 8px;vertical-align:middle}th small{display:block;font-weight:400}td:first-child{font-weight:700;color:#123a73;text-align:center}input[type=text],input[type=number]{font:inherit;width:100%;padding:8px;border:1px solid #bdccda;border-radius:6px;background:#fff}input[type=text]:focus,input[type=number]:focus{border-color:#4174a8}td:nth-child(2){width:30%}td:nth-child(n+3):nth-child(-n+5){width:12%}.desc{font-size:12px;color:#65758a;max-width:280px;overflow-wrap:anywhere}.logtop{display:flex;justify-content:space-between;align-items:center}.logtop h2{font-size:18px;margin:0 0 10px}#log{min-height:100px;max-height:230px;overflow:auto;background:#f7f9fc;border:1px solid #dfe7ef;border-radius:7px;padding:10px;font:13px/1.6 ui-monospace,Consolas,monospace}.log-success{color:#16743b}.log-warning{color:#b3242d}.log-info{color:#334b63}footer{text-align:center;color:#6c7d90;padding:16px}@media(max-width:600px){.wrap{padding:12px}.card{padding:12px}.toolbar>*{flex-grow:1}}
+
+#usbConnect,#readFC,#writeFC{background:#123a73;color:white;border-color:#123a73}button:disabled{opacity:.45;cursor:not-allowed}
+
+/* Keep the successful USB connection visibly green, not greyed out. */
+#usbConnect.connected,#usbConnect.connected:disabled{background:#16743b;color:#fff;border-color:#126031;opacity:1;cursor:default;}
+
+/* Disabled slots retain their stored values, but cannot be edited until enabled. */
+tr.slot-disabled td:nth-child(n+2):nth-child(-n+5) input:disabled{background:#e4e8ed;color:#7d8793;border-color:#c7ced7;opacity:1;cursor:not-allowed;}
+.slot-enable{width:17px;height:17px;accent-color:#123a73;cursor:pointer;margin-top:5px;}
+
+/* v8 compact vertical layout: keep controls readable while reducing scrolling. */
+:root{line-height:1.35}
+.wrap{padding:12px 20px}
+header{padding:7px 4px 5px}
+header p{margin:3px 0}
+h1{font-size:clamp(25px,3vw,33px);margin:2px 0}
+.by{margin:3px 0}
+.notice{padding:8px 12px;margin:7px 0 9px;line-height:1.3}
+.card{margin:8px 0;padding:10px 12px}
+.toolbar{gap:7px;margin:0 0 6px}
+.toolbar:last-child{margin-bottom:0}
+button,.filebtn,select{padding:5px 9px}
+.tabs{gap:6px;padding-bottom:6px;margin-bottom:6px}
+th,td{padding:5px 7px}
+input[type=text],input[type=number]{padding:5px 7px}
+.slot-enable{margin-top:2px}
+.card .tiny{margin:7px 0 0;line-height:1.3}
+.logtop h2{margin:0 0 5px}
+#log{min-height:72px;max-height:150px;padding:7px;line-height:1.4}
+footer{padding:8px}
+@media(max-width:600px){.wrap{padding:8px}.card{padding:9px}.toolbar>*{flex-grow:1}}
+
+/* v9: searchable parameter chooser with visible dropdown arrow. */
+.parameter-picker{position:relative;display:flex;min-width:190px}
+.parameter-picker input{padding-right:30px!important}
+.parameter-picker .picker-arrow{position:absolute;right:1px;top:1px;bottom:1px;width:29px;padding:0;border:0;background:transparent;color:#123a73;font-size:19px}
+.parameter-picker .picker-arrow:disabled{color:#929aa3;background:transparent}
+.picker-menu{position:absolute;z-index:30;top:calc(100% + 2px);left:0;right:0;min-width:260px;max-height:230px;overflow-y:auto;background:white;border:1px solid #aebfd2;border-radius:6px;box-shadow:0 8px 18px #1d304638}
+.picker-menu[hidden]{display:none}
+.picker-option{display:block;width:100%;text-align:left;border:0;border-radius:0;background:white;color:#263a50;padding:5px 9px;font:13px system-ui;overflow-wrap:anywhere}
+.picker-option:hover,.picker-option.highlight{background:#dbeafb;color:#123a73}
+.picker-empty{padding:7px;color:#718092;font-size:12px}
+button.danger{background:#ad2929;color:white;border-color:#ad2929}
+button.danger:hover{background:#891d1d}
+
+/* Keep running-action labels legible while preventing repeated clicks. */
+button[aria-busy='true']{opacity:1!important;cursor:progress!important} .filebtn.is-loading{opacity:.75;cursor:progress}
