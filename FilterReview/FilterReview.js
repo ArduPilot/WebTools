@@ -1855,18 +1855,8 @@ function get_HNotch_param_names() {
     return ret
 }
 
-// Show or hide a notch, the third and fourth notches are only available on some firmware
-function show_notch(index, show) {
-    const num = index + 1
-    const display = show ? "" : "none"
-    document.getElementById("Notch" + num + "Params").style.display = display
-    document.getElementById("Notch" + num + "ShowGroup").style.display = display
-    document.getElementById("SpecNotch" + num + "ShowGroup").style.display = display
-
-    // Hide the table holding the extra notches if none are shown
-    const any_shown = ["Notch3Params", "Notch4Params"].some((id) => document.getElementById(id).style.display != "none")
-    document.getElementById("ExtraNotches").style.display = any_shown ? "" : "none"
-}
+// Notches present in the log or parameter file, the third and fourth are only available on newer firmware
+var notch_in_firmware = [true, true, false, false]
 
 function load_filters() {
 
@@ -1896,14 +1886,22 @@ function update_hidden_params() {
     const filter_version = get_filter_version()
     const show_esc_mask = filter_version >= 4
 
+    // The third and fourth notches are side by side, only show their enable params unless either is enabled
+    const show_extra = HNotch_params.slice(2).some((names) => parameter_get_value(names.enable) > 0)
+
     for (let i = 0; i < HNotch_params.length; i++) {
-        // Show/hide ESCMSK based on filter version
-        const esc_mask_elem = document.getElementById(HNotch_params[i].esc_mask)
-        if (esc_mask_elem != null) {
-            esc_mask_elem.parentElement.style.display = show_esc_mask ? "" : "none"
-            if (!show_esc_mask) {
-                parameter_set_value(HNotch_params[i].esc_mask, 0)
+        const show_all = (i < 2) || show_extra
+        for (const [key, name] of Object.entries(HNotch_params[i])) {
+            const elem = document.getElementById(name)
+            if ((key == "enable") || (elem == null)) {
+                continue
             }
+            // Show/hide ESCMSK based on filter version
+            const show = show_all && ((key != "esc_mask") || show_esc_mask)
+            elem.parentElement.style.display = show ? "" : "none"
+        }
+        if (!show_esc_mask) {
+            parameter_set_value(HNotch_params[i].esc_mask, 0)
         }
 
         // Set harmonic bitmask size based on firmware capability
@@ -1947,8 +1945,7 @@ function time_range_changed() {
 function open_in_filter_tool() {
 
     // Filter Tool only has two harmonic notches
-    const extra_notches = [3, 4].filter((num) => (document.getElementById("Notch" + num + "Params").style.display != "none") &&
-                                                 (parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0))
+    const extra_notches = [3, 4].filter((num) => parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0)
 
     // Assume same base
     let url =  new URL(window.location.href)
@@ -2025,10 +2022,10 @@ function save_parameters() {
         var params = ""
         for (const v in inputs) {
             var name = "" + inputs[v].id
-            // Skip notch 3 and 4 if the firmware does not have them
-            const hidden = (name.startsWith("INS_HNTC3_") && document.getElementById("Notch3Params").style.display == "none") ||
-                           (name.startsWith("INS_HNTC4_") && document.getElementById("Notch4Params").style.display == "none")
-            if (name.startsWith("INS_") && !hidden) {
+            // Skip notch 3 and 4 if the firmware does not have them, unless they have been enabled
+            const skip = [3, 4].some((num) => name.startsWith("INS_HNTC" + num + "_") && !notch_in_firmware[num - 1] &&
+                                              !(parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0))
+            if (name.startsWith("INS_") && !skip) {
                 var value = inputs[v].value
                 params += name + "," + param_to_string(value) + "\n"
             }
@@ -2058,11 +2055,11 @@ async function load_parameters(file) {
         }
     }
 
-    // Show the third and fourth notches if they are in the file
+    // Record if the third and fourth notches are in the file
     const HNotch_params = get_HNotch_param_names()
     for (let i = 2; i < HNotch_params.length; i++) {
         if (text.includes(HNotch_params[i].enable)) {
-            show_notch(i, true)
+            notch_in_firmware[i] = true
         }
     }
 
@@ -2532,9 +2529,9 @@ async function load(log_file) {
         }
     }
 
-    // Only show the third and fourth notches if the firmware has them
+    // Record if the firmware has the third and fourth notches
     for (let i = 2; i < HNotch_params.length; i++) {
-        show_notch(i, get_param(HNotch_params[i].enable) != null)
+        notch_in_firmware[i] = get_param(HNotch_params[i].enable) != null
     }
 
     const other_params = ["INS_GYRO_FILTER", "SCHED_LOOP_RATE"]
