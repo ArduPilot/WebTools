@@ -28,8 +28,13 @@ const auto_fit_rules = {
     low_percentile: 0.05,
     // Bandwidth as a fraction of the notch frequency, as suggested in the parameter description
     bandwidth_ratio: 0.5,
-    // ESC tracking is rejected if the largest peak is this far from a whole multiple of the motor frequency
+    // ESC tracking is rejected if the harmonics of another fundamental fit the noise this much better than
+    // those of the motor frequency, fundamentals within the tolerance of the motor frequency are not checked
+    esc_check_ratio: 1.5,
     esc_order_tolerance: 0.1,
+    // Range of fundamentals checked, as multiples of the motor frequency
+    esc_check_min: 0.5,
+    esc_check_max: 2,
 }
 
 // Mean pre-filter power, summed over axes, on a grid of multiples of the tracked frequency
@@ -179,6 +184,15 @@ function auto_fit_strongest_peak(spectrum, scale) {
     return best
 }
 
+// How well the harmonics of a fundamental fit the noise, the sum of how far each harmonic stands out
+function auto_fit_series_score(spectrum, fundamental) {
+    const peaks = auto_fit_harmonic_peaks(spectrum, fundamental)
+    return {
+        score: peaks.reduce((sum, peak) => sum + Math.max(0, peak.excess), 0),
+        fundamental_excess: peaks[0].excess
+    }
+}
+
 // Pick the harmonics to notch and the attenuation from the peaks
 function auto_fit_select(peaks) {
     let harmonics = 0
@@ -243,27 +257,34 @@ function auto_fit_esc(esc_mask) {
         }
     }
 
-    // Check the noise peaks follow whole multiples of the motor frequency, a much larger peak elsewhere
-    // suggests the ESC frequency is scaled wrongly, for example by the motor poles. Wrong scaling moves the
-    // peak in every spectrum, motors at different speeds only move it in some, so reject only if all fail.
-    // A spectrum with no clear peak says nothing about the scaling and is skipped.
-    let off_harmonic_peak = null
-    for (const s of spectra) {
-        const strongest = auto_fit_strongest_peak(s, 1)
-        if (strongest == null) {
-            continue
+    // Check the noise follows whole multiples of the motor frequency. If the ESC frequency is scaled wrongly,
+    // for example by the motor poles, each motor's own harmonics move to the same other fundamental in its
+    // spectrum. Other motors at different speeds only line up at a ratio that differs from motor to motor,
+    // so the fit of each fundamental is averaged over the motor spectra.
+    const motor_spectra = (spectra.length > 1) ? spectra.slice(1) : spectra
+    const mean_fit = (fundamental) => {
+        let score = 0
+        let fundamental_excess = 0
+        for (const s of motor_spectra) {
+            const fit = auto_fit_series_score(s, fundamental)
+            score += fit.score
+            fundamental_excess += Math.max(0, fit.fundamental_excess)
         }
-        const nearest = Math.max(1, Math.round(strongest.position))
-        const off_harmonic = Math.abs(strongest.position - nearest) > nearest * auto_fit_rules.esc_order_tolerance
-        const max_harmonic_excess = Math.max(...auto_fit_harmonic_peaks(s, 1).map((peak) => peak.excess))
-        if (!off_harmonic || (strongest.excess <= max_harmonic_excess + auto_fit_rules.min_peak_dB)) {
-            off_harmonic_peak = null
-            break
-        }
-        off_harmonic_peak ??= strongest.position
+        return { score: score / motor_spectra.length, fundamental_excess: fundamental_excess / motor_spectra.length }
     }
-    if (off_harmonic_peak != null) {
-        return { error: "largest noise peak at " + off_harmonic_peak.toFixed(2) + " times the ESC frequency, check motor poles" }
+    // Telemetry can be a little off, so the motor frequency fit is the best within the tolerance
+    let logged_score = 0
+    let best_other_score = 0
+    for (let fundamental = auto_fit_rules.esc_check_min; fundamental <= auto_fit_rules.esc_check_max; fundamental += 0.01) {
+        const fit = mean_fit(fundamental)
+        if (Math.abs(fundamental - 1) <= auto_fit_rules.esc_order_tolerance) {
+            logged_score = Math.max(logged_score, fit.score)
+        } else if (fit.fundamental_excess >= auto_fit_rules.min_peak_dB) {
+            best_other_score = Math.max(best_other_score, fit.score)
+        }
+    }
+    if (best_other_score > logged_score * auto_fit_rules.esc_check_ratio) {
+        return { error: "noise does not follow whole multiples of the ESC frequency, check motor poles" }
     }
 
     // A harmonic is used if it stands out for the mean or for any one motor
