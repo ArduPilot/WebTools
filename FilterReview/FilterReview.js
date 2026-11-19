@@ -274,39 +274,57 @@ function HarmonicNotchFilter(params) {
     return this
 }
 
-// Warn if raw data is missing for a large part of the analysis time
-function update_missing_data_warning() {
+// Show how much of the analysis time is used for raw data, highlight if a lot is lost
+function update_usable_data() {
     for (let i = 0; i < 3; i++) {
-        let missing = 0
+        let usable = null
         if (Gyro_batch.type == "raw") {
             for (let j = 0; j < Gyro_batch.length; j++) {
-                if ((Gyro_batch[j] == null) || (Gyro_batch[j].sensor_num != i)) {
+                if ((Gyro_batch[j] == null) || (Gyro_batch[j].sensor_num != i) || (Gyro_batch[j].FFT == null)) {
                     continue
                 }
-                missing = Math.max(missing, get_missing_fraction(Gyro_batch[j]))
+                const fraction = get_usable_fraction(Gyro_batch[j].FFT)
+                if ((fraction != null) && ((usable == null) || (fraction < usable))) {
+                    usable = fraction
+                }
             }
         }
-        let missing_label = document.getElementById("Gyro" + i + "_missing")
-        missing_label.hidden = missing < missing_data_warn_fraction
-        missing_label.lastElementChild.textContent = "Missing data: " + Math.round(missing * 100) + "% of analysis time"
+        // Space is kept when there is no value so the gyro boxes stay the same height
+        let label = document.getElementById("Gyro" + i + "_usable")
+        label.style.visibility = (usable == null) ? "hidden" : ""
+        label.style.color = ((usable != null) && (usable < usable_data_warn_fraction)) ? "#c00000" : ""
+        label.textContent = "Usable data: " + Math.round((usable ?? 0) * 100) + "% of analysis time"
     }
 }
 
-// Fraction of analysis time that has no raw data, batches are split where data is missing
-const missing_data_warn_fraction = 0.1
-function get_missing_fraction(batches) {
-    // Clip to the time covered by all IMUs, so an IMU that starts late or stops early is counted as missing
+// Fraction of the analysis time covered by the FFT windows used. Data is lost where it is missing from the
+// log, and at the end of each continuous section where there is not enough left for another whole window,
+// so this depends on the window size.
+const usable_data_warn_fraction = 0.9
+function get_usable_fraction(FFT) {
+    // Clip to the time covered by all IMUs, so an IMU that starts late or stops early counts as lost data
     const start = Math.max(parseFloat(document.getElementById("TimeStart").value), Gyro_batch.start_time)
     const end = Math.min(parseFloat(document.getElementById("TimeEnd").value), Gyro_batch.end_time)
     if (!(end > start)) {
+        return null
+    }
+    if (FFT.time.length == 0) {
         return 0
     }
+
+    // Windows are in time order and overlap, count the time covered by any window once
+    const half_window = FFT.window_size / FFT.average_sample_rate / 2
     let covered = 0
-    for (const batch of batches) {
-        const batch_end = batch.sample_time + (batch.x.length / batch.sample_rate)
-        covered += Math.max(0, Math.min(end, batch_end) - Math.max(start, batch.sample_time))
+    let covered_to = start
+    for (let j = find_start_index(FFT.time); j <= find_end_index(FFT.time); j++) {
+        const window_start = Math.max(FFT.time[j] - half_window, covered_to)
+        const window_end = Math.min(FFT.time[j] + half_window, end)
+        if (window_end > window_start) {
+            covered += window_end - window_start
+            covered_to = window_end
+        }
     }
-    return Math.max(0, 1 - (covered / (end - start)))
+    return covered / (end - start)
 }
 
 function run_batch_fft(data_set) {
@@ -429,7 +447,7 @@ function reset() {
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
         document.getElementById("BodeGyroInst" + i).disabled = true
-        document.getElementById("Gyro" + i + "_missing").hidden = true
+        document.getElementById("Gyro" + i + "_usable").style.visibility = "hidden"
 
         let fieldset = document.getElementById("Gyro" + i)
         fieldset.style["border-color"] = "rgb(192, 192, 192)"
@@ -801,7 +819,7 @@ function re_calc() {
 
     calculate()
 
-    update_missing_data_warning()
+    update_usable_data()
 
     load_filters()
 
@@ -2800,7 +2818,7 @@ async function load(log_file) {
     // Calculate FFT
     calculate()
 
-    update_missing_data_warning()
+    update_usable_data()
 
     // Update transfer function from filter setting
     calculate_transfer_function()
