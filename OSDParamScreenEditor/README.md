@@ -4,8 +4,9 @@ Developed by Atx_Heli. A browser-based editor for the nine adjustable parameter 
 
 ## Requirements
 
-- Desktop Chrome, Edge or Firefox (Web Serial is required for USB; Safari is not supported).
-- The page must be served over HTTPS or from localhost. To run locally, use `python -m http.server 8000` in this directory and open `http://localhost:8000`.
+- Desktop Chrome or Edge, or Firefox on Windows (Web Serial is required for USB). Firefox on Linux cannot access serial ports, and Safari is not supported. On Linux, use Chrome from Google's `.deb` package; the snap builds of Firefox and Chromium are sandboxed away from serial ports.
+- On Linux, your user must be in the `dialout` group to open the flight controller's port.
+- The page must be served over HTTPS or from localhost. To run locally, run `python3 -m http.server 8000` from the WebTools repository root (the tool loads the shared `modules/MAVLink` codec) and open `http://localhost:8000/OSDParamScreenEditor/`.
 - Close Mission Planner or any other program using the flight controller's serial port. A web page cannot open a port that another program already has open.
 
 ## Connecting and reading
@@ -48,10 +49,10 @@ The activity log at the bottom shows connection status, reads, writes and warnin
 
 ## MAVLink details
 
-A built-in MAVLink 2 codec supports HEARTBEAT, PARAM_REQUEST_LIST, PARAM_VALUE, PARAM_REQUEST_READ, PARAM_SET, OSD_PARAM_CONFIG / REPLY and OSD_PARAM_SHOW_CONFIG / REPLY. The tool targets the autopilot component of the ArduPilot system found from its heartbeat, and matches slot replies to requests by request ID. No build step or third-party JavaScript libraries are used.
+MAVLink encoding and parsing use the shared codec in `modules/MAVLink/mavlink.js`; this tool adds only the Web Serial transport. It uses HEARTBEAT, PARAM_REQUEST_LIST, PARAM_VALUE, PARAM_REQUEST_READ, PARAM_SET, OSD_PARAM_CONFIG / REPLY and OSD_PARAM_SHOW_CONFIG / REPLY. The tool targets the autopilot component of the ArduPilot system found from its heartbeat, and matches slot replies to requests by request ID. No build step is needed.
 
 ## Notes
 
-- Tested on PC in Chrome and Firefox with an ArduPlane 4.8-dev flight controller.
+- Tested on Windows in Chrome and Firefox with an ArduPlane 4.8-dev flight controller.
 - The FC parameter list can be large; slow links may time out.
 - Always keep a JSON backup and write only while disarmed.
