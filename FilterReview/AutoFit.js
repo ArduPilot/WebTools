@@ -246,12 +246,12 @@ function auto_fit_esc(esc_mask) {
     // Check the noise peaks follow whole multiples of the motor frequency, a much larger peak elsewhere
     // suggests the ESC frequency is scaled wrongly, for example by the motor poles. Wrong scaling moves the
     // peak in every spectrum, motors at different speeds only move it in some, so reject only if all fail.
+    // A spectrum with no clear peak says nothing about the scaling and is skipped.
     let off_harmonic_peak = null
     for (const s of spectra) {
         const strongest = auto_fit_strongest_peak(s, 1)
         if (strongest == null) {
-            off_harmonic_peak = null
-            break
+            continue
         }
         const nearest = Math.max(1, Math.round(strongest.position))
         const off_harmonic = Math.abs(strongest.position - nearest) > nearest * auto_fit_rules.esc_order_tolerance
