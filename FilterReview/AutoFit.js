@@ -31,7 +31,7 @@ const auto_fit_rules = {
     // ESC tracking is rejected if the harmonics of another fundamental fit the noise this much better than
     // those of the motor frequency, fundamentals within the tolerance of the motor frequency are not checked
     esc_check_ratio: 1.5,
-    esc_order_tolerance: 0.1,
+    esc_order_tolerance: 0.05,
     // Range of fundamentals checked, as multiples of the motor frequency
     esc_check_min: 0.5,
     esc_check_max: 2,
@@ -264,13 +264,16 @@ function auto_fit_esc(esc_mask) {
     const motor_spectra = (spectra.length > 1) ? spectra.slice(1) : spectra
     const mean_fit = (fundamental) => {
         let score = 0
-        let fundamental_excess = 0
+        let num_peaks = 0
         for (const s of motor_spectra) {
             const fit = auto_fit_series_score(s, fundamental)
             score += fit.score
-            fundamental_excess += Math.max(0, fit.fundamental_excess)
+            if (fit.fundamental_excess >= auto_fit_rules.min_peak_dB) {
+                num_peaks++
+            }
         }
-        return { score: score / motor_spectra.length, fundamental_excess: fundamental_excess / motor_spectra.length }
+        // The fundamental must stand out for most motors, a peak from one motor alone is a speed difference
+        return { score: score / motor_spectra.length, has_peak: num_peaks > motor_spectra.length / 2 }
     }
     // Telemetry can be a little off, so the motor frequency fit is the best within the tolerance
     let logged_score = 0
@@ -279,7 +282,7 @@ function auto_fit_esc(esc_mask) {
         const fit = mean_fit(fundamental)
         if (Math.abs(fundamental - 1) <= auto_fit_rules.esc_order_tolerance) {
             logged_score = Math.max(logged_score, fit.score)
-        } else if (fit.fundamental_excess >= auto_fit_rules.min_peak_dB) {
+        } else if (fit.has_peak) {
             best_other_score = Math.max(best_other_score, fit.score)
         }
     }
