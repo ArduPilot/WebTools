@@ -400,13 +400,12 @@ function update_shown_params() {
 function redraw() {
 
 
-    // Expected field, with a gap where the attitude source has gaps
+    // Expected field, with a gap where the yaw override has no yaw
     const source_time = source.quaternion.time
-    const max_gap = source.quaternion.max_gap
     for (const axi of axis) {
         mag_plot[axi].data = [ mag_plot[axi].data[0] ]
 
-        if (max_gap == null) {
+        if (source.yaw_override == null) {
             mag_plot[axi].data[0].x = source_time
             mag_plot[axi].data[0].y = source[axi]
             continue
@@ -414,7 +413,7 @@ function redraw() {
         let x = []
         let y = []
         for (let i = 0; i < source_time.length; i++) {
-            if ((i > 0) && (source_time[i] - source_time[i-1] > max_gap)) {
+            if ((i > 0) && (source_time[i] - source_time[i-1] > max_yaw_gap)) {
                 x.push(null)
                 y.push(null)
             }
@@ -1226,12 +1225,8 @@ function get_body_frame_ef(quaternion) {
     return ret
 }
 
-// For attitude sources with gaps, a compass sample is valid if it is within the source time and not in a gap
-// Returns null if the source has no gaps
-function get_attitude_valid(quaternion, time) {
-    if (quaternion.max_gap == null) {
-        return null
-    }
+// With a yaw override, a compass sample is valid if it is within the override yaw time and not in a gap
+function get_yaw_override_valid(quaternion, time) {
     const q_time = quaternion.time
     const last = q_time.length - 1
     let valid = new Array(time.length).fill(false)
@@ -1243,7 +1238,7 @@ function get_attitude_valid(quaternion, time) {
         while ((k < last - 1) && (q_time[k + 1] < time[j])) {
             k++
         }
-        valid[j] = (q_time[k + 1] - q_time[k]) <= quaternion.max_gap
+        valid[j] = (q_time[k + 1] - q_time[k]) <= max_yaw_gap
     }
     return valid
 }
@@ -1278,6 +1273,18 @@ function select_body_frame_attitude() {
     if (source == null) {
         alert("No attitude source selected")
         throw new Error()
+    }
+
+    // Replace the yaw if a yaw override is selected
+    const yaw_override = yaw_overrides.find((override) => override.select.checked && (override.time != null))
+    if (yaw_override != null) {
+        const quaternion = replace_yaw(source.quaternion, yaw_override.time, yaw_override.yaw)
+        if (quaternion == null) {
+            source = null
+            alert(yaw_override.name + " yaw does not overlap with " + source_name() + " attitude")
+            throw new Error()
+        }
+        source = { name: source_name() + " with " + yaw_override.name + " yaw", quaternion, yaw_override }
     }
 
     // Calculate expected for this source
@@ -1343,7 +1350,7 @@ function select_body_frame_attitude() {
         }
 
         MAG_Data[i].quaternion = array_slerp(source.quaternion, source.quaternion.time, MAG_Data[i].time)
-        MAG_Data[i].valid = get_attitude_valid(source.quaternion, MAG_Data[i].time)
+        MAG_Data[i].valid = (source.yaw_override != null) ? get_yaw_override_valid(source.quaternion, MAG_Data[i].time) : null
 
         // Get yaw from quaternion for comparison later
         let quat = new Quaternion()
@@ -1808,6 +1815,7 @@ function set_need_calc(b) {
     document.getElementById('SaveParams').disabled = b
 }
 
+// Yaw override yaw is not interpolated over gaps longer than this (s), compass samples in the gaps are not used
 const max_yaw_gap = 1.0
 // Make a new attitude using the roll and pitch from quaternion and the yaw (deg) from another source.
 // Only the times where yaw is available are used, gaps of more than 1 second in the yaw are skipped.
@@ -1860,13 +1868,10 @@ function replace_yaw(quaternion, yaw_time, yaw_deg) {
     if (ret.time.length < 2) {
         return
     }
-    // Compass samples in gaps longer than this are not used
-    ret.max_gap = max_yaw_gap
     return ret
 }
 
-// time_range is optional, if given the analysis time is limited to it when this source is selected
-function add_attitude_source(quaternion, name, time_range) {
+function add_attitude_source(quaternion, name) {
 
     // Add check box for this attitude source
     let section = document.getElementById("ATTITUDE")
@@ -1881,15 +1886,6 @@ function add_attitude_source(quaternion, name, time_range) {
     radio.addEventListener('change', function() { 
         set_need_calc(true)
         source = null
-
-        if (time_range != null) {
-            // Limit analysis time to the period this source is valid for
-            let start = document.getElementById("TimeStart")
-            let end = document.getElementById("TimeEnd")
-            start.value = Math.min(Math.max(parseFloat(start.value), time_range[0]), time_range[1])
-            end.value = Math.max(Math.min(parseFloat(end.value), time_range[1]), time_range[0])
-            time_range_changed()
-        }
     })
 
     let label = document.createElement("label")
@@ -1904,9 +1900,41 @@ function add_attitude_source(quaternion, name, time_range) {
 
 }
 
+// Add a yaw override option, time and yaw (deg) are only where yaw is available, null for no override
+function add_yaw_override(name, time, yaw) {
+    let section = document.getElementById("YAW_OVERRIDE")
+
+    let radio = document.createElement("input")
+    radio.setAttribute('type', 'radio')
+    radio.setAttribute('id', "YAW_OVERRIDE" + name)
+    radio.setAttribute('name', "yaw_override")
+
+    // Clear selected source and enable re-calc
+    radio.addEventListener('change', function() {
+        set_need_calc(true)
+        source = null
+    })
+
+    let label = document.createElement("label")
+    label.setAttribute('for', "YAW_OVERRIDE" + name)
+    label.innerHTML = name
+
+    section.appendChild(radio)
+    section.appendChild(label)
+    section.appendChild(document.createElement("br"))
+
+    return { name, time, yaw, select: radio }
+}
+
+// Name of the selected attitude source
+function source_name() {
+    return body_frame_earth_field.find((ef) => ef.select.checked).name
+}
+
 var MAG_Data
 var fits
 var body_frame_earth_field
+var yaw_overrides
 var earth_field
 async function load(log_file) {
 
@@ -2165,6 +2193,12 @@ async function load(log_file) {
     body_frame_earth_field = []
     source = null
 
+    // Clear yaw override options, none is the default
+    let yaw_override_select = document.getElementById("YAW_OVERRIDE")
+    yaw_override_select.replaceChildren(yaw_override_select.children[0])
+    yaw_overrides = [ add_yaw_override("None", null, null) ]
+    yaw_overrides[0].select.checked = true
+
     if ("AHR2" in log.messageTypes) {
 
         const quaternion = {
@@ -2225,51 +2259,47 @@ async function load(log_file) {
             }
             body_frame_earth_field.push(field)
 
-            // EKF roll and pitch with yaw from the EKF's Gaussian sum filter (GSF) yaw estimator, this does not use the compass
+            // Yaw from the EKF's Gaussian sum filter (GSF) yaw estimator, this does not use the compass
             if (("XKY0" in log.messageTypes) && ("instances" in log.messageTypes.XKY0) && (primary in log.messageTypes.XKY0.instances)) {
                 const time = TimeUS_to_seconds(log.get_instance("XKY0", primary, "TimeUS"))
                 const yaw = log.get_instance("XKY0", primary, "YC")
-                const yaw_sd = log.get_instance("XKY0", primary, "YCS")
+                const YCS = log.get_instance("XKY0", primary, "YCS")
 
-                // Use the same accuracy threshold as the EKF does for a yaw reset (GSF_YAW_ACCURACY_THRESHOLD_DEG)
-                // YCS is logged as sqrt(degrees(variance)) so convert the threshold to match
-                const threshold = Math.sqrt((15.0 * (Math.PI / 180))**2 * (180 / Math.PI))
+                // The GSF yaw is only used once it has converged, the EKF uses it for a yaw reset when its variance
+                // is below radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)^2, with the threshold 15 deg. YCS is logged as
+                // sqrt(degrees(variance)), with degrees() applied to the variance, so the same limit on YCS is:
+                const max_variance = (15.0 * (Math.PI / 180))**2
+                const max_YCS = Math.sqrt(max_variance * (180 / Math.PI))
                 let valid_time = []
                 let valid_yaw = []
                 for (let i = 0; i < time.length; i++) {
-                    if (yaw_sd[i] < threshold) {
+                    if (YCS[i] < max_YCS) {
                         valid_time.push(time[i])
                         valid_yaw.push(yaw[i])
                     }
                 }
-
-                const GSF_quaternion = replace_yaw(quaternion, valid_time, valid_yaw)
-                if (GSF_quaternion != null) {
-                    const range = [GSF_quaternion.time[0], GSF_quaternion.time[GSF_quaternion.time.length - 1]]
-                    body_frame_earth_field.push(add_attitude_source(GSF_quaternion, "EKF 3 IMU " + (primary + 1) + " GSF yaw", range))
+                if (valid_time.length >= 2) {
+                    yaw_overrides.push(add_yaw_override("GSF", valid_time, valid_yaw))
                 }
             }
+        }
+    }
 
-            // EKF roll and pitch with yaw from GPS (for example moving baseline), yaw is logged as 0 when not available
-            if (("GPS" in log.messageTypes) && ("instances" in log.messageTypes.GPS)) {
-                for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
-                    const time = TimeUS_to_seconds(log.get_instance("GPS", inst, "TimeUS"))
-                    const yaw = log.get_instance("GPS", inst, "Yaw")
-                    let valid_time = []
-                    let valid_yaw = []
-                    for (let i = 0; i < time.length; i++) {
-                        if (yaw[i] != 0) {
-                            valid_time.push(time[i])
-                            valid_yaw.push(yaw[i])
-                        }
-                    }
-
-                    const GPS_quaternion = replace_yaw(quaternion, valid_time, valid_yaw)
-                    if (GPS_quaternion != null) {
-                        const range = [GPS_quaternion.time[0], GPS_quaternion.time[GPS_quaternion.time.length - 1]]
-                        body_frame_earth_field.push(add_attitude_source(GPS_quaternion, "EKF 3 IMU " + (primary + 1) + " GPS " + (parseFloat(inst) + 1) + " yaw", range))
-                    }
+    // Yaw from GPS (for example moving baseline), yaw is logged as 0 when not available
+    if (("GPS" in log.messageTypes) && ("instances" in log.messageTypes.GPS)) {
+        for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+            const time = TimeUS_to_seconds(log.get_instance("GPS", inst, "TimeUS"))
+            const yaw = log.get_instance("GPS", inst, "Yaw")
+            let valid_time = []
+            let valid_yaw = []
+            for (let i = 0; i < time.length; i++) {
+                if (yaw[i] != 0) {
+                    valid_time.push(time[i])
+                    valid_yaw.push(yaw[i])
                 }
+            }
+            if (valid_time.length >= 2) {
+                yaw_overrides.push(add_yaw_override("GPS " + (parseFloat(inst) + 1), valid_time, valid_yaw))
             }
         }
     }
@@ -2282,6 +2312,8 @@ async function load(log_file) {
         body_frame_earth_field[0].select.checked = true
         body_frame_earth_field[0].select.disabled = true
     }
+    // No yaw override available
+    yaw_overrides[0].select.disabled = yaw_overrides.length == 1
 
     // Add interference sources
     motor_comp.data = []
