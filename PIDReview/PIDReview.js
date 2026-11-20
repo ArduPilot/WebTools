@@ -1037,6 +1037,9 @@ const step_stats_end_time = 0.4
 const step_stats_final_start = 0.2
 const step_stats_final_min = 0.5
 const step_stats_final_max = 1.5
+// The response is taken as still rising if it rose over this time at the end and ends within the settling band of the peak
+const step_stats_rising_time = 0.05
+const step_stats_settle_band = 0.05
 function get_step_stats(time, response) {
     // The end of the estimate is not used as it can turn up or down due to the method
     // No stats if the estimate is too short (small FFT window or high log rate)
@@ -1075,13 +1078,16 @@ function get_step_stats(time, response) {
     }
     const peak = response[peak_index]
 
-    // Overshoot of the peak over the final value, none if the peak is at the end as the response is still rising
-    const overshoot = (peak_index < len - 1) ? Math.max(0, (peak - final) / final) * 100 : 0
+    // Overshoot of the peak over the final value, none if the response is still rising at the end
+    // Judged on the trend at the end rather than whether the last sample is the peak, so it does not flip on noise
+    const rising_start = Math.max(0, time.findIndex((t) => t >= time[len - 1] - step_stats_rising_time))
+    const rising = (response[len - 1] > response[rising_start]) && ((peak - response[len - 1]) <= step_stats_settle_band * final)
+    const overshoot = rising ? 0 : Math.max(0, (peak - final) / final) * 100
 
     // Settling time, last time outside 5% of the final value, must settle before the end of the final window
     let settling_index = 0
     for (let i = len - 1; i >= 0; i--) {
-        if (Math.abs(response[i] - final) > 0.05 * final) {
+        if (Math.abs(response[i] - final) > step_stats_settle_band * final) {
             settling_index = i + 1
             break
         }
@@ -1153,7 +1159,7 @@ function show_step_stats(all_stats) {
     let note = document.createElement("p")
     note.style.margin = "4px 0 0 0"
     note.style.textAlign = "center"
-    note.appendChild(document.createTextNode("Measured on the mean response up to " + seconds(step_stats_end_time) + ". Rise time, overshoot and settling time are relative to the final value, the mean from " + seconds(step_stats_final_start) + " to " + seconds(step_stats_end_time) + ". Overshoot is 0 if the peak is at the end, as the response is still rising. Not shown if the final value is not between " + percent(step_stats_final_min) + " and " + percent(step_stats_final_max) + "."))
+    note.appendChild(document.createTextNode("Measured on the mean response up to " + seconds(step_stats_end_time) + ". Rise time, overshoot and settling time are relative to the final value, the mean from " + seconds(step_stats_final_start) + " to " + seconds(step_stats_end_time) + ". Overshoot is 0 if the response is still rising at the end. Not shown if the final value is not between " + percent(step_stats_final_min) + " and " + percent(step_stats_final_max) + "."))
     div.appendChild(note)
 }
 
