@@ -2469,10 +2469,17 @@ async function load(log_file) {
         }
         Gyro_batch.log_notches.push({ num, enable, mode: get_param(prefix + "MODE"), harmonics: get_param(prefix + "HMNCS"), options: get_param(prefix + "OPTS") })
     }
+    // Count outputs in the firmware motor mask: Motor1-32, plus ThrottleLeft/Right on tailsitters and bicopters
+    const tailsitter = (get_param("FRAME_CLASS") == 10) || (get_param("Q_FRAME_CLASS") == 10)
     Gyro_batch.num_motors = 0
     for (let i = 1; i <= 32; i++) {
         const fun = get_param("SERVO" + i + "_FUNCTION")
-        if ((fun != null) && (((fun >= 33) && (fun <= 40)) || ((fun >= 82) && (fun <= 85)))) {
+        if (fun == null) {
+            continue
+        }
+        const motor = ((fun >= 33) && (fun <= 40)) || ((fun >= 82) && (fun <= 85)) || ((fun >= 160) && (fun <= 179))
+        const throttle_left_right = tailsitter && ((fun == 73) || (fun == 74))
+        if (motor || throttle_left_right) {
             Gyro_batch.num_motors++
         }
     }
