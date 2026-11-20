@@ -1593,7 +1593,7 @@ function show_param_changes(param_changes) {
 
         // table formatting helper
         function set_cell_style(cell) {
-            cell.style.border = "1px solid #000"
+            cell.style.border = "1px solid"
             cell.style.padding = "8px"
         }
 
