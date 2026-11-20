@@ -1797,7 +1797,11 @@ function show_outputs(build_type) {
 
     // Function names for this vehicle, all outputs have the same values as SERVO1_FUNCTION
     // If the vehicle is unknown only the number is shown
-    const vehicle_key = (build_type in vehicle_build_types) ? vehicle_build_types[build_type].key : null
+    // If the vehicle is known but its metadata did not load only the number is shown too
+    let vehicle_key = (build_type in vehicle_build_types) ? vehicle_build_types[build_type].key : null
+    if (param_metadata[vehicle_key] == null) {
+        vehicle_key = null
+    }
 
     // DroneCAN drivers, check that the driver is assigned to a port and that it uses DroneCAN
     let can_drivers = []
