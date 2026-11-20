@@ -13,16 +13,25 @@ table.header img.github {
     width: 60px;
 }
 
-/* Theme toggle added by theme.js, beside the GitHub links so it does not change the layout */
-table.header td:last-child {
-    position: relative;
+/* Light/dark theme toggle, beside the GitHub links and drawn the same way */
+table.header td.theme {
+    width: 60px;
+    text-align: center;
 }
 .theme-toggle {
-    position: absolute;
-    top: 50%;
-    left: 75px;
-    transform: translateY(-50%);
-    white-space: nowrap;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: bold 14px sans-serif;
+    color: #1b1f23;
+}
+.theme-toggle img {
+    width: 40px;
+    margin-bottom: 4px;
+}
+.theme-toggle:hover img {
+    opacity: 0.7;
 }
 
 /* Tool title, links back to the page */
@@ -43,10 +52,12 @@ html[data-theme="dark"] a:link {
 html[data-theme="dark"] a:visited {
     color: #c58af9;
 }
-html[data-theme="dark"] h1 a.title {
+html[data-theme="dark"] h1 a.title,
+html[data-theme="dark"] .theme-toggle {
     color: inherit;
 }
 html[data-theme="dark"] img.github,
+html[data-theme="dark"] .theme-toggle img,
 html[data-theme="dark"] img[src$="question-circle.svg"] {
     filter: invert(1);
 }
@@ -54,21 +65,72 @@ html[data-theme="dark"] #loading {
     background-color: #181a1b !important;
 }
 
-/* Plotly: replace its default colours, colours set by the tools are kept */
-html[data-theme="dark"] .js-plotly-plot .main-svg[style*="background: rgb(255, 255, 255)"] {
-    background: transparent !important;
+/* Plot colours are set by theme.js */
+
+/* Tooltips drawn by theme.js in the dark theme */
+.theme-tooltip {
+    position: absolute;
+    z-index: 10000;
+    max-width: 500px;
+    padding: 4px 8px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #2b2d2e;
+    color: #e0e0e0;
+    font: 13px sans-serif;
+    pointer-events: none;
 }
-html[data-theme="dark"] .js-plotly-plot rect[style*="fill: rgb(255, 255, 255)"] {
-    fill: transparent !important;
+
+/* Landing page screenshots of white plots are drawn dark, with the same hues */
+html[data-theme="dark"] img.dark-invert {
+    filter: invert(1) hue-rotate(180deg);
 }
-html[data-theme="dark"] .js-plotly-plot .infolayer text[style*="fill: rgb(68, 68, 68)"],
-html[data-theme="dark"] .js-plotly-plot [class*="axislayer"] text[style*="fill: rgb(68, 68, 68)"] {
-    fill: #e0e0e0 !important;
+
+/* Tabulator tables */
+html[data-theme="dark"] .tabulator,
+html[data-theme="dark"] .tabulator .tabulator-tableholder,
+html[data-theme="dark"] .tabulator .tabulator-table,
+html[data-theme="dark"] .tabulator .tabulator-footer {
+    background-color: #181a1b;
+    border-color: #555;
+    color: #e0e0e0;
 }
-/* Grid colours are always derived from the background, so replace all of them */
-html[data-theme="dark"] .js-plotly-plot .gridlayer path {
-    stroke: #3a3a3a !important;
+html[data-theme="dark"] .tabulator .tabulator-header,
+html[data-theme="dark"] .tabulator .tabulator-header .tabulator-col {
+    background-color: #2b2d2e;
+    border-color: #555;
+    color: #e0e0e0;
 }
-html[data-theme="dark"] .js-plotly-plot .zerolinelayer path[style*="stroke: rgb(68, 68, 68)"] {
-    stroke: #888 !important;
+html[data-theme="dark"] .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
+    background-color: #3a3c3d;
+}
+html[data-theme="dark"] .tabulator-row {
+    background-color: #181a1b;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-row-even {
+    background-color: #222425;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-selectable:hover {
+    background-color: #33363a;
+}
+html[data-theme="dark"] .tabulator-row .tabulator-cell {
+    border-color: #444;
+}
+html[data-theme="dark"] .tabulator .tabulator-calcs-holder,
+html[data-theme="dark"] .tabulator .tabulator-calcs-holder .tabulator-row,
+html[data-theme="dark"] .tabulator .tabulator-row.tabulator-calcs {
+    background-color: #2b2d2e !important;
+    border-color: #555;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-group {
+    background-color: #2b2d2e;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+/* Plotly draws the legend line of a trace coloured by a colour scale in black */
+html[data-theme="dark"] .js-plotly-plot .legendlines path[style*="stroke: rgb(0, 0, 0)"] {
+    stroke: #e0e0e0 !important;
 }

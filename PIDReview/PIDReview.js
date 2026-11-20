@@ -605,7 +605,7 @@ function add_param_sets() {
     table.appendChild(header)
 
     function set_cell_style(cell, color) {
-        cell.style.border = "1px solid #000"
+        cell.style.border = "1px solid"
         cell.style.padding = "8px"
         if (color != null) {
             // add alpha, 40%
