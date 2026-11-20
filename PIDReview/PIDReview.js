@@ -1037,7 +1037,8 @@ const step_stats_end_time = 0.4
 const step_stats_final_start = 0.2
 const step_stats_final_min = 0.5
 const step_stats_final_max = 1.5
-// The response is taken as still rising if it rose over this time at the end and ends within the settling band of the peak
+// The response is taken as still rising if its peak is in this time at the end, it rose over this time, and it ends
+// within the settling band of the peak
 const step_stats_rising_time = 0.05
 const step_stats_settle_band = 0.05
 function get_step_stats(time, response) {
@@ -1081,7 +1082,7 @@ function get_step_stats(time, response) {
     // Overshoot of the peak over the final value, none if the response is still rising at the end
     // Judged on the trend at the end rather than whether the last sample is the peak, so it does not flip on noise
     const rising_start = Math.max(0, time.findIndex((t) => t >= time[len - 1] - step_stats_rising_time))
-    const rising = (response[len - 1] > response[rising_start]) && ((peak - response[len - 1]) <= step_stats_settle_band * final)
+    const rising = (peak_index >= rising_start) && (response[len - 1] > response[rising_start]) && ((peak - response[len - 1]) <= step_stats_settle_band * final)
     const overshoot = rising ? 0 : Math.max(0, (peak - final) / final) * 100
 
     // Settling time, last time outside 5% of the final value, must settle before the end of the final window
