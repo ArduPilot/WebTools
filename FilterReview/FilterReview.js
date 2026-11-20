@@ -2478,7 +2478,9 @@ async function load(log_file) {
     const boost_throttle = 81
     let mask_functions
     if (frame_class == 6) {
-        // Single heli: main rotor RSC, and tail RSC for direct drive tails
+        // Single heli: main rotor RSC, and tail RSC for direct drive tails (H_TAIL_TYPE 2 to 5), the firmware
+        // configures the tail RSC in setpoint mode for variable pitch and DDFP mode for fixed pitch, and only
+        // leaves it out of the motor mask when it is disabled for servo tails
         const tail_type = get_param("H_TAIL_TYPE")
         mask_functions = ((tail_type >= 2) && (tail_type <= 5)) ? [31, 32] : [31]
     } else if ((frame_class == 11) || (frame_class == 13)) {

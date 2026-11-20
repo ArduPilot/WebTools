@@ -441,11 +441,8 @@ function auto_fit_num_sources(mode) {
     if (mode == 4) {
         return 3
     }
-    if (Gyro_batch.num_motors > 0) {
-        // The firmware never runs more than 12 notches per harmonic
-        return Math.min(Gyro_batch.num_motors, auto_fit_max_sources)
-    }
-    return Math.max(1, tracking_methods[3].get_num_motors() || 1)
+    // The firmware counts outputs in the motor mask, with at least one and never more than 12
+    return Math.max(1, Math.min(Gyro_batch.num_motors || 0, auto_fit_max_sources))
 }
 
 // Number of notch filters the fitted notch and the other notches would use
