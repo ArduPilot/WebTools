@@ -290,10 +290,11 @@ function update_usable_data() {
             }
         }
         // Space is kept when there is no value so the gyro boxes stay the same height
+        const percent = Math.round((usable ?? 0) * 100)
         let label = document.getElementById("Gyro" + i + "_usable")
         label.style.visibility = (usable == null) ? "hidden" : ""
-        label.style.color = ((usable != null) && (usable < usable_data_warn_fraction)) ? "#c00000" : ""
-        label.textContent = "Usable data: " + Math.round((usable ?? 0) * 100) + "% of analysis time"
+        label.style.color = ((usable != null) && (percent < usable_data_warn_fraction * 100)) ? "#c00000" : ""
+        label.textContent = "Usable data: " + percent + "% of analysis time"
     }
 }
 
@@ -316,7 +317,9 @@ function get_usable_fraction(FFT) {
     const half_window = FFT.window_size / FFT.average_sample_rate / 2
     let covered = 0
     let covered_to = start
-    for (let j = find_start_index(FFT.time); j <= find_end_index(FFT.time); j++) {
+    const start_index = find_start_index(FFT.time)
+    const end_index = find_end_index(FFT.time)
+    for (let j = start_index; j <= end_index; j++) {
         const window_start = Math.max(FFT.time[j] - half_window, covered_to)
         const window_end = Math.min(FFT.time[j] + half_window, end)
         if (window_end > window_start) {
