@@ -433,13 +433,17 @@ function auto_fit_count_filters(harmonics, options, num_sources) {
     return num_harmonics * composite * (multi_source ? num_sources : 1) * num_imus
 }
 
+// INS_MAX_NOTCHES in the firmware
+const auto_fit_max_sources = 12
+
 // Number of sources for a multi-source notch, the firmware uses three peaks for FFT and the motor count otherwise
 function auto_fit_num_sources(mode) {
     if (mode == 4) {
         return 3
     }
     if (Gyro_batch.num_motors > 0) {
-        return Gyro_batch.num_motors
+        // The firmware never runs more than 12 notches per harmonic
+        return Math.min(Gyro_batch.num_motors, auto_fit_max_sources)
     }
     return Math.max(1, tracking_methods[3].get_num_motors() || 1)
 }

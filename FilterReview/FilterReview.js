@@ -2469,17 +2469,37 @@ async function load(log_file) {
         }
         Gyro_batch.log_notches.push({ num, enable, mode: get_param(prefix + "MODE"), harmonics: get_param(prefix + "HMNCS"), options: get_param(prefix + "OPTS") })
     }
-    // Count outputs in the firmware motor mask: Motor1-32, plus ThrottleLeft/Right on tailsitters and bicopters
-    const tailsitter = (get_param("FRAME_CLASS") == 10) || (get_param("Q_FRAME_CLASS") == 10)
+    // Count outputs in the firmware motor mask, this depends on the frame class
+    let frame_class = get_param("FRAME_CLASS")
+    if (frame_class == null) {
+        frame_class = get_param("Q_FRAME_CLASS")
+    }
+    const motor_functions = (first, last) => Array.from({ length: last - first + 1 }, (_, k) => first + k)
+    const boost_throttle = 81
+    let mask_functions
+    if (frame_class == 6) {
+        // Single heli: main rotor RSC, and tail RSC for direct drive tails
+        const tail_type = get_param("H_TAIL_TYPE")
+        mask_functions = ((tail_type >= 2) && (tail_type <= 5)) ? [31, 32] : [31]
+    } else if ((frame_class == 11) || (frame_class == 13)) {
+        // Dual heli and heli quad: main rotor RSC
+        mask_functions = [31]
+    } else if (frame_class == 7) {
+        // Tri: motors 1, 2 and 4, motor 7 is the tail servo
+        mask_functions = [33, 34, 36, boost_throttle]
+    } else if ((frame_class == 8) || (frame_class == 9)) {
+        // Single and coax: motors 5 and 6, motors 1 to 4 are servos
+        mask_functions = [37, 38, boost_throttle]
+    } else if (frame_class == 10) {
+        // Tailsitter and bicopter: throttle left and right
+        mask_functions = [73, 74, boost_throttle]
+    } else {
+        // Matrix frames: Motor1-32
+        mask_functions = [...motor_functions(33, 40), ...motor_functions(82, 85), ...motor_functions(160, 179), boost_throttle]
+    }
     Gyro_batch.num_motors = 0
     for (let i = 1; i <= 32; i++) {
-        const fun = get_param("SERVO" + i + "_FUNCTION")
-        if (fun == null) {
-            continue
-        }
-        const motor = ((fun >= 33) && (fun <= 40)) || ((fun >= 82) && (fun <= 85)) || ((fun >= 160) && (fun <= 179))
-        const throttle_left_right = tailsitter && ((fun == 73) || (fun == 74))
-        if (motor || throttle_left_right) {
+        if (mask_functions.includes(get_param("SERVO" + i + "_FUNCTION"))) {
             Gyro_batch.num_motors++
         }
     }
