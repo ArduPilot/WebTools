@@ -13,8 +13,124 @@ table.header img.github {
     width: 60px;
 }
 
+/* Light/dark theme toggle, beside the GitHub links and drawn the same way */
+table.header td.theme {
+    width: 60px;
+    text-align: center;
+}
+.theme-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: bold 14px sans-serif;
+    color: #1b1f23;
+}
+.theme-toggle img {
+    width: 40px;
+    margin-bottom: 4px;
+}
+.theme-toggle:hover img {
+    opacity: 0.7;
+}
+
 /* Tool title, links back to the page */
 h1 a.title {
     color: #000000;
     text-decoration: none;
+}
+
+/* Dark theme, set by theme.js */
+html[data-theme="dark"] {
+    color-scheme: dark;
+    background-color: #181a1b;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] a:link {
+    color: #8ab4f8;
+}
+html[data-theme="dark"] a:visited {
+    color: #c58af9;
+}
+html[data-theme="dark"] h1 a.title,
+html[data-theme="dark"] .theme-toggle {
+    color: inherit;
+}
+html[data-theme="dark"] img.github,
+html[data-theme="dark"] .theme-toggle img,
+html[data-theme="dark"] img[src$="question-circle.svg"] {
+    filter: invert(1);
+}
+html[data-theme="dark"] #loading {
+    background-color: #181a1b !important;
+}
+
+/* Plot colours are set by theme.js */
+
+/* Tooltips drawn by theme.js in the dark theme */
+.theme-tooltip {
+    position: absolute;
+    z-index: 10000;
+    max-width: 500px;
+    padding: 4px 8px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #2b2d2e;
+    color: #e0e0e0;
+    font: 13px sans-serif;
+    pointer-events: none;
+}
+
+/* Landing page screenshots of white plots are drawn dark, with the same hues */
+html[data-theme="dark"] img.dark-invert {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* Tabulator tables */
+html[data-theme="dark"] .tabulator,
+html[data-theme="dark"] .tabulator .tabulator-tableholder,
+html[data-theme="dark"] .tabulator .tabulator-table,
+html[data-theme="dark"] .tabulator .tabulator-footer {
+    background-color: #181a1b;
+    border-color: #555;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator .tabulator-header,
+html[data-theme="dark"] .tabulator .tabulator-header .tabulator-col {
+    background-color: #2b2d2e;
+    border-color: #555;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
+    background-color: #3a3c3d;
+}
+html[data-theme="dark"] .tabulator-row {
+    background-color: #181a1b;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-row-even {
+    background-color: #222425;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-selectable:hover {
+    background-color: #33363a;
+}
+html[data-theme="dark"] .tabulator-row .tabulator-cell {
+    border-color: #444;
+}
+html[data-theme="dark"] .tabulator .tabulator-calcs-holder,
+html[data-theme="dark"] .tabulator .tabulator-calcs-holder .tabulator-row,
+html[data-theme="dark"] .tabulator .tabulator-row.tabulator-calcs {
+    background-color: #2b2d2e !important;
+    border-color: #555;
+    color: #e0e0e0;
+}
+html[data-theme="dark"] .tabulator-row.tabulator-group {
+    background-color: #2b2d2e;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+/* Plotly draws the legend line of a trace coloured by a colour scale in black */
+html[data-theme="dark"] .js-plotly-plot .legendlines path[style*="stroke: rgb(0, 0, 0)"] {
+    stroke: #e0e0e0 !important;
 }
