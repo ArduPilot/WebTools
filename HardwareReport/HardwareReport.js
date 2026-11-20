@@ -1814,7 +1814,7 @@ function show_outputs(build_type) {
             continue
         }
         can_drivers.push({
-            prefix,
+            driver,
             esc: params[prefix + "UC_ESC_BM"] || 0,
             esc_offset: params[prefix + "UC_ESC_OF"] || 0,
             servo: params[prefix + "UC_SRV_BM"] || 0,
@@ -1840,16 +1840,22 @@ function show_outputs(build_type) {
             func = ((value_name != func) ? value_name : "Unknown") + " (" + value + ")"
         }
 
-        // GPIO outputs are never sent over CAN, ESCs are sent from the ESC offset and at most 20 of them
-        // Himark servos (UC_OPTION bit 6) only cover the first 17 outputs
+        // GPIO outputs are never sent over CAN
+        // ESCs are sent starting from the ESC offset output, the ESC index is the output number less the offset,
+        // at most 20 are sent. Servos are sent with actuator ID equal to the output number, Himark servos
+        // (UC_OPTION bit 6) are sent as a zero based index and only cover the first 17 outputs.
         let can = []
         for (const driver of (value < 0) ? [] : can_drivers) {
             const bit = 1 << (i - 1)
-            if ((driver.esc & bit) && ((i - 1) >= driver.esc_offset) && ((i - 1) < driver.esc_offset + 20)) {
-                can.push("DroneCAN ESC (" + driver.prefix + "UC_ESC_BM)")
+            const esc_index = (i - 1) - driver.esc_offset
+            if ((driver.esc & bit) && (esc_index >= 0) && (esc_index < 20)) {
+                can.push("Driver " + driver.driver + " ESC index " + esc_index)
             }
-            if ((driver.servo & bit) && (!driver.himark || (i <= 17))) {
-                can.push("DroneCAN servo (" + driver.prefix + "UC_SRV_BM)")
+            if ((driver.servo & bit) && !driver.himark) {
+                can.push("Driver " + driver.driver + " actuator ID " + i)
+            }
+            if ((driver.servo & bit) && driver.himark && (i <= 17)) {
+                can.push("Driver " + driver.driver + " Himark servo " + (i - 1))
             }
         }
         outputs.push({ output: i, func, can: can.join(", ") })
@@ -1879,10 +1885,10 @@ function show_outputs(build_type) {
 
     let header = document.createElement("tr")
     table.appendChild(header)
-    add_cell(header, "th", "Output")
+    add_cell(header, "th", "Servo number")
     add_cell(header, "th", "Function")
     if (show_can) {
-        add_cell(header, "th", "Also sent over CAN")
+        add_cell(header, "th", "DroneCAN")
     }
 
     for (const output of outputs) {
