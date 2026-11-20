@@ -1075,8 +1075,8 @@ function get_step_stats(time, response) {
     }
     const peak = response[peak_index]
 
-    // Overshoot only if the peak is before the final window, otherwise the response is still rising
-    const overshoot = (peak_index < final_start) ? Math.max(0, (peak - final) / final) * 100 : null
+    // Overshoot of the peak over the final value, none if the peak is at the end as the response is still rising
+    const overshoot = (peak_index < len - 1) ? Math.max(0, (peak - final) / final) * 100 : 0
 
     // Settling time, last time outside 5% of the final value, must settle before the end of the final window
     let settling_index = 0
@@ -1118,8 +1118,12 @@ function show_step_stats(all_stats) {
         cell.appendChild(document.createTextNode(text))
         row.appendChild(cell)
     }
-    function ms(time) {
-        return (time == null) ? "-" : (time * 1000).toFixed(0) + " ms"
+    // Times in seconds to match the plot, values as a percentage of the step
+    function seconds(time) {
+        return (time == null) ? "-" : time.toFixed(3) + " s"
+    }
+    function percent(value) {
+        return (value * 100).toFixed(0) + " %"
     }
 
     let header = document.createElement("tr")
@@ -1135,21 +1139,21 @@ function show_step_stats(all_stats) {
             for (let i = 0; i < 5; i++) {
                 add_cell(row, "td", "-")
             }
-            add_cell(row, "td", set.final.toFixed(2))
+            add_cell(row, "td", percent(set.final))
             continue
         }
-        add_cell(row, "td", ms(set.rise_time))
-        add_cell(row, "td", set.peak.toFixed(2))
-        add_cell(row, "td", ms(set.peak_time))
-        add_cell(row, "td", (set.overshoot == null) ? "-" : set.overshoot.toFixed(0) + " %")
-        add_cell(row, "td", (set.settling_time == null) ? "> " + ms(step_stats_end_time) : ms(set.settling_time))
-        add_cell(row, "td", set.final.toFixed(2))
+        add_cell(row, "td", seconds(set.rise_time))
+        add_cell(row, "td", percent(set.peak))
+        add_cell(row, "td", seconds(set.peak_time))
+        add_cell(row, "td", set.overshoot.toFixed(0) + " %")
+        add_cell(row, "td", (set.settling_time == null) ? "> " + seconds(step_stats_end_time) : seconds(set.settling_time))
+        add_cell(row, "td", percent(set.final))
     }
 
     let note = document.createElement("p")
     note.style.margin = "4px 0 0 0"
     note.style.textAlign = "center"
-    note.appendChild(document.createTextNode("Measured on the mean response up to " + ms(step_stats_end_time) + ", relative to its final value (mean from " + ms(step_stats_final_start) + " to " + ms(step_stats_end_time) + "). Not shown if the final value is not between " + step_stats_final_min + " and " + step_stats_final_max + ". Overshoot is not shown if the peak is in the final value window."))
+    note.appendChild(document.createTextNode("Measured on the mean response up to " + seconds(step_stats_end_time) + ". Rise time, overshoot and settling time are relative to the final value, the mean from " + seconds(step_stats_final_start) + " to " + seconds(step_stats_end_time) + ". Overshoot is 0 if the peak is at the end, as the response is still rising. Not shown if the final value is not between " + percent(step_stats_final_min) + " and " + percent(step_stats_final_max) + "."))
     div.appendChild(note)
 }
 
