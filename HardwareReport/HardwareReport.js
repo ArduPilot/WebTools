@@ -1714,21 +1714,29 @@ function load_params(log) {
 
 }
 
-// Names for build types used in param_values.json and for display
+// Build types, key is the folder of the param metadata for that vehicle, name is for display
 const vehicle_build_types = {
-    1:  { key: "ArduRover", name: "Rover" },
-    2:  { key: "ArduCopter", name: "Copter" },
-    3:  { key: "ArduPlane", name: "Plane" },
+    1:  { key: "Rover", name: "Rover" },
+    2:  { key: "Copter", name: "Copter" },
+    3:  { key: "Plane", name: "Plane" },
     4:  { key: "AntennaTracker", name: "Antenna Tracker" },
-    7:  { key: "ArduSub", name: "Sub" },
+    7:  { key: "Sub", name: "Sub" },
     12: { key: "Blimp", name: "Blimp" },
-    13: { key: "ArduCopter", name: "Helicopter" },
+    13: { key: "Copter", name: "Helicopter" },
 }
 
-// Get the name of a param value from param_values.json, or the value if no name is found
-function get_param_value_name(vehicle_key, list, value) {
-    if ((vehicle_key in param_values) && (list in param_values[vehicle_key]) && (value in param_values[vehicle_key][list])) {
-        return param_values[vehicle_key][list][value]
+// Param metadata for each vehicle, loaded from <key>/params.json
+let param_metadata = {}
+
+// Get the name of a param value from the vehicle param metadata, or the value if no name is found
+function get_param_value_name(vehicle_key, name, value) {
+    const metadata = param_metadata[vehicle_key]
+    if (metadata != null) {
+        for (const group of Object.values(metadata)) {
+            if ((name in group) && ("Values" in group[name]) && (value in group[name].Values)) {
+                return group[name].Values[value]
+            }
+        }
     }
     return value.toString()
 }
@@ -1747,16 +1755,16 @@ function show_vehicle(build_type) {
     let name = vehicle.name
     let frame_params = []
     switch (vehicle.key) {
-        case "ArduCopter":
-        case "ArduRover":
+        case "Copter":
+        case "Rover":
             frame_params = ["FRAME_CLASS", "FRAME_TYPE"]
-            if ((vehicle.key == "ArduCopter") && [6, 11].includes(params.FRAME_CLASS)) {
+            if ((vehicle.key == "Copter") && [6, 11].includes(params.FRAME_CLASS)) {
                 // Single and dual helis don't use FRAME_TYPE
                 frame_params = ["FRAME_CLASS"]
             }
             break
 
-        case "ArduPlane":
+        case "Plane":
             if (("Q_ENABLE" in params) && (params.Q_ENABLE > 0)) {
                 name = "QuadPlane"
                 if (("Q_TILT_ENABLE" in params) && (params.Q_TILT_ENABLE > 0)) {
@@ -1769,7 +1777,7 @@ function show_vehicle(build_type) {
             }
             break
 
-        case "ArduSub":
+        case "Sub":
             frame_params = ["FRAME_CONFIG"]
             break
     }
@@ -1784,19 +1792,12 @@ function show_vehicle(build_type) {
     }
 }
 
-// Show configured output functions
+// Show servo output functions
 function show_outputs(build_type) {
 
-    // Use the names for this vehicle, if unknown use the first name found
-    let function_names
-    if ((build_type in vehicle_build_types) && (vehicle_build_types[build_type].key in param_values)) {
-        function_names = param_values[vehicle_build_types[build_type].key].SERVO_FUNCTION
-    } else {
-        function_names = {}
-        for (const values of Object.values(param_values)) {
-            function_names = Object.assign({}, values.SERVO_FUNCTION, function_names)
-        }
-    }
+    // Function names for this vehicle, all outputs have the same values as SERVO1_FUNCTION
+    // If the vehicle is unknown only the number is shown
+    const vehicle_key = (build_type in vehicle_build_types) ? vehicle_build_types[build_type].key : null
 
     // DroneCAN drivers, check that the driver is assigned to a port and that it uses DroneCAN
     let can_drivers = []
@@ -1821,15 +1822,23 @@ function show_outputs(build_type) {
         })
     }
 
+    // Outputs 17 to 32 are only used if enabled
+    const num_outputs = (("SERVO_32_ENABLE" in params) && (params.SERVO_32_ENABLE > 0)) ? 32 : 16
+
     let outputs = []
-    for (let i = 1; i <= 32; i++) {
+    for (let i = 1; i <= num_outputs; i++) {
         const name = "SERVO" + i + "_FUNCTION"
-        if (!(name in params) || (params[name] == 0)) {
+        if (!(name in params)) {
+            // Keep an empty row so the numbering is continuous
+            outputs.push({ output: i, func: "", can: "" })
             continue
         }
         const value = params[name]
-        let func = (value in function_names) ? function_names[value] : "Unknown"
-        func += " (" + value + ")"
+        let func = value.toString()
+        if (vehicle_key != null) {
+            const value_name = get_param_value_name(vehicle_key, "SERVO1_FUNCTION", value)
+            func = ((value_name != func) ? value_name : "Unknown") + " (" + value + ")"
+        }
 
         // GPIO outputs are never sent over CAN, ESCs are sent from the ESC offset and at most 20 of them
         // Himark servos (UC_OPTION bit 6) only cover the first 17 outputs
@@ -1846,7 +1855,7 @@ function show_outputs(build_type) {
         outputs.push({ output: i, func, can: can.join(", ") })
     }
 
-    if (outputs.length == 0) {
+    if (!outputs.some((output) => output.func != "")) {
         return
     }
 
@@ -3849,7 +3858,6 @@ function reset() {
 }
 
 let board_types = {}
-let param_values = {}
 async function initial_load() {
 
     function load_board_types(text) {
@@ -3871,11 +3879,14 @@ async function initial_load() {
         }
     }
 
-    const param_values_loaded = fetch("param_values.json")
-        .then((res) => res.json())
-        .then((data) => { param_values = data })
-        // Without the names the numeric values are shown
-        .catch((error) => console.log(error))
+    // Without the metadata the numeric values are shown
+    const vehicle_keys = new Set(Object.values(vehicle_build_types).map((vehicle) => vehicle.key))
+    const param_metadata_loaded = Promise.all([...vehicle_keys].map((key) =>
+        fetch(key + "/params.json")
+            .then((res) => res.json())
+            .then((data) => { param_metadata[key] = data })
+            .catch((error) => console.log(error))
+    ))
 
     const board_types_loaded = new Promise((resolve) => {
         fetch("board_types.txt")
@@ -3887,7 +3898,7 @@ async function initial_load() {
         });
     })
 
-    return Promise.all([board_types_loaded, param_values_loaded])
+    return Promise.all([board_types_loaded, param_metadata_loaded])
 }
 
 function save_text(text, file_postfix) {
