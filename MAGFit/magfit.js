@@ -844,7 +844,9 @@ function calculate() {
         return
     }
 
-    select_body_frame_attitude()
+    if (!select_body_frame_attitude()) {
+        return
+    }
 
     if (!have_valid_samples()) {
         alert("The selected attitude source has no data in the analysis time")
@@ -1258,11 +1260,12 @@ function have_valid_samples() {
 }
 
 let source
+// Returns false if the selected source can't be used
 function select_body_frame_attitude() {
 
     if (source != null) {
         // No need to re-calc
-        return
+        return true
     }
 
     for (const ef of body_frame_earth_field) {
@@ -1282,7 +1285,7 @@ function select_body_frame_attitude() {
         if (quaternion == null) {
             source = null
             alert(yaw_override.name + " yaw does not overlap with " + source_name() + " attitude")
-            throw new Error()
+            return false
         }
         source = { name: source_name() + " with " + yaw_override.name + " yaw", quaternion, yaw_override }
     }
@@ -1377,6 +1380,7 @@ function select_body_frame_attitude() {
         // Yaw estimate from existing calibration
         MAG_Data[i].orig.yaw = get_yaw(MAG_Data[i].orig, MAG_Data[i].quaternion)
     }
+    return true
 }
 
 // Solve Ax = B, returns null if there is no unique solution
@@ -2198,6 +2202,7 @@ async function load(log_file) {
     yaw_override_select.replaceChildren(yaw_override_select.children[0])
     yaw_overrides = [ add_yaw_override("None", null, null) ]
     yaw_overrides[0].select.checked = true
+    let yaw_override_options = []
 
     if ("AHR2" in log.messageTypes) {
 
@@ -2279,7 +2284,7 @@ async function load(log_file) {
                     }
                 }
                 if (valid_time.length >= 2) {
-                    yaw_overrides.push(add_yaw_override("GSF", valid_time, valid_yaw))
+                    yaw_override_options.push({ name: "GSF", time: valid_time, yaw: valid_yaw })
                 }
             }
         }
@@ -2299,7 +2304,7 @@ async function load(log_file) {
                 }
             }
             if (valid_time.length >= 2) {
-                yaw_overrides.push(add_yaw_override("GPS " + (parseFloat(inst) + 1), valid_time, valid_yaw))
+                yaw_override_options.push({ name: "GPS " + (parseFloat(inst) + 1), time: valid_time, yaw: valid_yaw })
             }
         }
     }
@@ -2311,6 +2316,12 @@ async function load(log_file) {
         // Only one item, select it and disable
         body_frame_earth_field[0].select.checked = true
         body_frame_earth_field[0].select.disabled = true
+    }
+    // Only offer a yaw override if it can be used with at least one attitude source
+    for (const option of yaw_override_options) {
+        if (body_frame_earth_field.some((ef) => replace_yaw(ef.quaternion, option.time, option.yaw) != null)) {
+            yaw_overrides.push(add_yaw_override(option.name, option.time, option.yaw))
+        }
     }
     // No yaw override available
     yaw_overrides[0].select.disabled = yaw_overrides.length == 1
