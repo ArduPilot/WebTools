@@ -32,7 +32,7 @@
             if (job.data) ftp.putFile(job.path, job.data, data => finish(job, data));
             else ftp.getFile(job.path, data => finish(job, data), job.options);
         }
-        catch (e) { finish(job, null); }
+        catch { finish(job, null); }
     }
 
     function dropQueued(predicate) {
