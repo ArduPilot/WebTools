@@ -24,22 +24,14 @@
     }
   },
   "AnalyticTune/AnalyticTune.js": {
-    "no-redeclare": {
-      "count": 11
-    },
     "no-undef": {
-      "count": 76
+      "count": 1
     },
     "no-unused-vars": {
       "count": 2
     },
     "no-useless-assignment": {
       "count": 6
-    }
-  },
-  "AnalyticTune/index.html": {
-    "no-undef": {
-      "count": 12
     }
   },
   "DFULoader/dfu-util.js": {
