@@ -1855,9 +1855,6 @@ function get_HNotch_param_names() {
     return ret
 }
 
-// Notches present in the log or parameter file, the third and fourth are only available on newer firmware
-var notch_in_firmware = [true, true, false, false]
-
 function load_filters() {
 
     filters = []
@@ -2022,10 +2019,7 @@ function save_parameters() {
         var params = ""
         for (const v in inputs) {
             var name = "" + inputs[v].id
-            // Skip notch 3 and 4 if the firmware does not have them, unless they have been enabled
-            const skip = [3, 4].some((num) => name.startsWith("INS_HNTC" + num + "_") && !notch_in_firmware[num - 1] &&
-                                              !(parseFloat(document.getElementById("INS_HNTC" + num + "_ENABLE").value) > 0))
-            if (name.startsWith("INS_") && !skip) {
+            if (name.startsWith("INS_")) {
                 var value = inputs[v].value
                 params += name + "," + param_to_string(value) + "\n"
             }
@@ -2052,14 +2046,6 @@ async function load_parameters(file) {
             if (parameter_set_value(vname, value)) {
                 console.log("set " + vname + "=" + value)
             }
-        }
-    }
-
-    // Record if the third and fourth notches are in the file
-    const HNotch_params = get_HNotch_param_names()
-    for (let i = 2; i < HNotch_params.length; i++) {
-        if (text.includes(HNotch_params[i].enable)) {
-            notch_in_firmware[i] = true
         }
     }
 
@@ -2527,11 +2513,6 @@ async function load(log_file) {
                 parameter_set_value(param, value)
             }
         }
-    }
-
-    // Record if the firmware has the third and fourth notches
-    for (let i = 2; i < HNotch_params.length; i++) {
-        notch_in_firmware[i] = get_param(HNotch_params[i].enable) != null
     }
 
     const other_params = ["INS_GYRO_FILTER", "SCHED_LOOP_RATE"]
