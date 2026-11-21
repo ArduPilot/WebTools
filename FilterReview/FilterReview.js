@@ -363,6 +363,9 @@ function reset() {
 
     document.title = "ArduPilot Filter Review"
 
+    document.getElementById("auto_fit_info").textContent = ""
+    document.getElementById("auto_fit_info").title = ""
+
     document.getElementById("log_type_raw").checked = true
     document.getElementById("log_type_batch").disabled = false
     document.getElementById("log_type_raw").disabled = false
@@ -379,6 +382,7 @@ function reset() {
     document.getElementById("calculate").disabled = true
     document.getElementById("calculate_filters").disabled = true
     document.getElementById("OpenFilterTool").disabled = true
+    document.getElementById("auto_fit").disabled = true
     document.getElementById("SaveParams").disabled = true
     document.getElementById("LoadParams").disabled = true
 
@@ -2441,6 +2445,9 @@ async function load(log_file) {
         alert("No valid gyro data found in log")
         return
     }
+    // Heli firmware does not allow a throttle notch
+    const { build_type } = get_version_and_board(log)
+    Gyro_batch.heli = (build_type == 13) || [6, 11, 13].includes(get_param("FRAME_CLASS"))
 
     // Populate filter version
     if (('VER' in log.messageTypes) && log.messageTypes.VER.expressions.includes("FV")) {
@@ -2697,6 +2704,7 @@ async function load(log_file) {
     redraw()
 
     document.getElementById("OpenFilterTool").disabled = false
+    document.getElementById("auto_fit").disabled = !Gyro_batch.have_pre
     document.getElementById("SaveParams").disabled = false
     document.getElementById("LoadParams").disabled = false
 

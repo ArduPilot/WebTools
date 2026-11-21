@@ -12,6 +12,7 @@
 <script src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
 
 <script type="text/javascript" src="FilterReview.js"></script>
+<script type="text/javascript" src="AutoFit.js"></script>
 
 <script type="text/javascript" src="tracking/Atmosphere_model.js"></script>
 <script type="text/javascript" src="tracking/BaseClass.js"></script>
@@ -426,7 +427,7 @@ These params can then be saved and loaded into the autopilot without the need fo
 <tr>
 <td style="width: 30px;"></td>
 <td>
-    <fieldset style="width:300px;height:70px">
+    <fieldset style="width:300px;height:100px">
     <legend>Low Pass Filter</legend>
     <p>
         <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0" style="width: 100px" onchange="filter_param_read()"/>
@@ -434,7 +435,7 @@ These params can then be saved and loaded into the autopilot without the need fo
     </fieldset>
 </td>
 <td>
-    <fieldset style="width:300px;height:70px">
+    <fieldset style="width:300px;height:100px">
     <legend>Loop Rate</legend>
     <p>
         <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" min="25" value="400" style="width: 100px" data-paramValues="false" onchange="filter_param_read()"/>
@@ -442,7 +443,7 @@ These params can then be saved and loaded into the autopilot without the need fo
     </fieldset>
 </td>
 <td>
-    <fieldset style="width:428px;height:70px">
+    <fieldset style="width:428px;height:100px">
     <legend>Setup
         <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom" 
         data-tippy-content='Recalculate filters after changing any parameters to update the estimated post filter spectrum. Save or load parameters to/from a param file.',
@@ -453,6 +454,13 @@ These params can then be saved and loaded into the autopilot without the need fo
         <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
         <button class="styleClass" id="LoadParams" onclick="document.getElementById('LoadParamsbase').click()">Load Parameters</button>
         <input type='file' id="LoadParamsbase" style="display:none" onchange="load_parameters(this.files[0]);">
+    </p>
+    <p>
+        <input type="button" id="auto_fit" value="Auto fit first notch (beta)" onclick="loading_call(auto_fit)" disabled>
+        <img id="TT" src="../images/question-circle.svg" style="width: 1em; vertical-align: bottom"
+        data-tippy-content='Beta: sets up the first notch from the pre-filter data in the analysis time. Uses ESC telemetry if logged, otherwise throttle. Checks the noise peaks follow it, then sets the harmonics and attenuation from how far the peaks stand out from the noise floor and the frequency limit from the lowest frequency in flight. Select an analysis time that covers the flight without takeoff and landing. The result is shown with a rough confidence, check the estimated post-filter spectrum before flying it.',
+        data-tippy-maxWidth='750px'/>
+        <span id="auto_fit_info"></span>
     </p>
     </fieldset>
 </td>
