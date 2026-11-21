@@ -68,9 +68,6 @@
     "no-cond-assign": {
       "count": 2
     },
-    "no-undef": {
-      "count": 1
-    },
     "no-unused-vars": {
       "count": 1
     },
