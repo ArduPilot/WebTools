@@ -1835,6 +1835,50 @@ function update_hidden(source) {
 
 }
 
+// Get estimated post filter checkboxes that can be selected
+function get_estimate_checkboxes() {
+    let ret = []
+    for (let i = 0; i < 3; i++) {
+        // Estimate needs pre-filter data for this gyro
+        if (find_instance(i, false) == null) {
+            continue
+        }
+        for (let j = 0; j < axis.length; j++) {
+            const checkbox = document.getElementById("Gyro" + i + "PostEst" + axis[j])
+            if (!checkbox.disabled) {
+                ret.push({ checkbox, gyro: i, axis: axis[j], axis_index: j })
+            }
+        }
+    }
+    return ret
+}
+
+// Show the estimated post filter if none is shown. Only for gyros with some pre-filter shown, for the axes the logged
+// post filter is shown for, or all axes if that is none
+function show_estimated() {
+    let estimates = get_estimate_checkboxes()
+    if (estimates.some((estimate) => estimate.checkbox.checked)) {
+        return
+    }
+    const pre_shown = (gyro) => axis.some((name) => document.getElementById("Gyro" + gyro + "Pre" + name).checked)
+    estimates = estimates.filter((estimate) => pre_shown(estimate.gyro))
+    let shown = estimates.filter((estimate) => document.getElementById("Gyro" + estimate.gyro + "Post" + estimate.axis).checked)
+    if (shown.length == 0) {
+        shown = estimates
+    }
+    for (const estimate of shown) {
+        estimate.checkbox.checked = true
+        fft_plot.data[get_FFT_data_index(estimate.gyro, 2, estimate.axis_index)].visible = true
+    }
+    Plotly.redraw("FFTPlot")
+}
+
+// Recalculate after filter parameter change and show the estimated post filter
+function recalculate_filters() {
+    re_calc()
+    show_estimated()
+}
+
 function get_HNotch_param_names() {
     let prefix = ["INS_HNTCH_", "INS_HNTC2_"]
     let ret = []
@@ -2032,7 +2076,7 @@ async function load_parameters(file) {
     }
 
     filter_param_read()
-    re_calc()
+    recalculate_filters()
 }
 
 // Get selected filter version
