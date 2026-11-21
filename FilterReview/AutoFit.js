@@ -207,7 +207,7 @@ function auto_fit_select(peaks) {
         return
     }
     const attenuation = Math.round(Math.min(Math.max(max_excess, auto_fit_rules.min_attenuation), auto_fit_rules.max_attenuation))
-    return { harmonics, attenuation }
+    return { harmonics, attenuation, max_excess }
 }
 
 function auto_fit_percentile(values, fraction) {
@@ -289,6 +289,8 @@ function auto_fit_esc(esc_mask) {
     if (best_other_score > logged_score * auto_fit_rules.esc_check_ratio) {
         return { error: "noise does not follow whole multiples of the ESC frequency, check motor poles" }
     }
+    // How much better the motor frequency fits than any other, for the confidence
+    const fit_margin = (best_other_score > 0) ? logged_score / best_other_score : Infinity
 
     // A harmonic is used if it stands out for the mean or for any one motor
     const peaks = auto_fit_harmonic_peaks(spectrum, 1)
@@ -314,6 +316,7 @@ function auto_fit_esc(esc_mask) {
         ref: 1,
         min_ratio: 1,
         multi_source,
+        fit_margin,
         ...selection
     }
 }
@@ -339,27 +342,9 @@ function auto_fit_throttle() {
         return value.reduce((sum, v) => sum + v, 0) / value.length
     }
 
-    // Reference is the mean throttle over the windows used
-    let sum = 0
-    let count = 0
-    for (let i = 0; i < Gyro_batch.length; i++) {
-        if ((Gyro_batch[i] == null) || Gyro_batch[i].post_filter || (Gyro_batch[i].FFT == null)) {
-            continue
-        }
-        const time = Gyro_batch[i].FFT.time
-        for (let j = find_start_index(time); j < find_end_index(time) + 1; j++) {
-            const value = root_throttle(i, j)
-            if (value > 0) {
-                sum += value**2
-                count++
-            }
-        }
-    }
-    if (count == 0) {
-        return { error: "throttle is zero in the analysis time" }
-    }
-    const ref = sum / count
-    if (Math.round(ref * 100) == 0) {
+    // Reference is the mean throttle over the analysis time
+    const ref = throttle.get_mean()
+    if (!(Math.round(ref * 100) > 0)) {
         // REF is set to two decimal places, zero would disable tracking
         return { error: "mean throttle is too low" }
     }
@@ -396,13 +381,17 @@ function auto_fit_throttle() {
         return { error: "no noise peaks follow throttle" }
     }
 
-    // Lower the frequency limit so the notch keeps tracking below the reference throttle
-    // REF is set to two decimal places, scale the frequency to match it
+    // REF is set to two decimal places, the frequency at the rounded reference is the same notch
     const ref_rounded = Math.round(ref * 100) / 100
     const freq = fundamental * Math.sqrt(ref_rounded / ref)
 
-    const low = auto_fit_percentile(spectrum.tracked, auto_fit_rules.low_percentile) * fundamental
-    const min_ratio = Math.min(1, Math.max(0.1, Math.floor(20 * low * auto_fit_rules.min_freq_ratio / freq) / 20))
+    // The notch frequency never goes below FREQ * FM_RAT. Set FM_RAT so that limit is a little below the lowest
+    // frequency seen in flight, so the notch keeps tracking at low throttle. spectrum.tracked is the tracked
+    // frequency of each window divided by the frequency at the reference throttle.
+    const lowest_freq = auto_fit_percentile(spectrum.tracked, auto_fit_rules.low_percentile) * fundamental
+    const freq_limit = lowest_freq * auto_fit_rules.min_freq_ratio
+    // FM_RAT is between 0.1 and 1, rounded down to a multiple of 0.05
+    const min_ratio = Math.min(1, Math.max(0.1, Math.floor((freq_limit / freq) * 20) / 20))
 
     return {
         name: "throttle",
@@ -415,69 +404,37 @@ function auto_fit_throttle() {
     }
 }
 
-// Number of notch filters for a notch, as counted by the firmware against its limit
-function auto_fit_count_filters(harmonics, options, num_sources) {
-    // HMNCS is a signed 32 bit bitmask, count all 32 bits
-    const num_harmonics = (harmonics >>> 0).toString(2).split("1").length - 1
-    let composite = 1
-    if ((options & 1) != 0) {
-        composite = 2
-    } else if ((options & 16) != 0) {
-        composite = 3
-    } else if ((options & 64) != 0) {
-        composite = 5
+// Confidence levels, low, medium or high
+const auto_fit_confidence_levels = ["low", "medium", "high"]
+// Strongest notched harmonic above the noise floor needed for medium and high confidence (dB)
+const auto_fit_confidence_dB = [10, 20]
+// How much better the ESC frequency must fit than any other fundamental for medium and high confidence
+const auto_fit_confidence_margin = [1, 2]
+
+// Rough confidence in the fit, from how clear the noise peaks are and, for ESC, how clearly the noise follows the
+// ESC frequency. Throttle is at most medium, as it only approximates the motor speed.
+function auto_fit_confidence(result) {
+    const level_of = (value, thresholds) => thresholds.filter((threshold) => value >= threshold).length
+    let level = level_of(result.max_excess, auto_fit_confidence_dB)
+    let reason = "strongest harmonic " + Math.round(result.max_excess) + " dB above the noise floor"
+    if (result.fit_margin != null) {
+        level = Math.min(level, level_of(result.fit_margin, auto_fit_confidence_margin))
+        const margin = result.fit_margin
+        reason += ", the ESC frequency harmonics fit the noise " + ((margin < 1.05) ? "about as well as" : (isFinite(margin) ? margin.toFixed(1) + " times better than" : "better than")) + " those of any other frequency"
+    } else {
+        level = Math.min(level, 1)
+        reason += ", throttle only approximates motor speed"
     }
-    const multi_source = (options & 2) != 0
-    // EnableOnAllIMUs runs the notch on every IMU with INS_USE set
-    const num_imus = ((options & 8) != 0) ? Math.max(1, Gyro_batch.num_imu_use || 1) : 1
-    return num_harmonics * composite * (multi_source ? num_sources : 1) * num_imus
+    return { level: auto_fit_confidence_levels[level], reason }
 }
-
-// INS_MAX_NOTCHES in the firmware
-const auto_fit_max_sources = 12
-
-// Number of sources for a multi-source notch, the firmware uses three peaks for FFT and the motor count otherwise
-function auto_fit_num_sources(mode) {
-    if (mode == 4) {
-        return 3
-    }
-    // The firmware counts outputs in the motor mask, with at least one and never more than 12
-    return Math.max(1, Math.min(Gyro_batch.num_motors || 0, auto_fit_max_sources))
-}
-
-// Number of notch filters the fitted notch and the other notches would use
-// The firmware counts enabled notches, or all of them if FFT is enabled
-function auto_fit_notch_count(result, options) {
-    let count = auto_fit_count_filters(result.harmonics, options, auto_fit_num_sources(result.mode))
-
-    const counted = (enable) => (enable > 0) || Gyro_batch.fft_enabled
-    const all_names = get_HNotch_param_names()
-    for (let i = 1; i < all_names.length; i++) {
-        const names = all_names[i]
-        if (counted(parameter_get_value(names.enable))) {
-            count += auto_fit_count_filters(parameter_get_value(names.harmonics), parameter_get_value(names.options), auto_fit_num_sources(parameter_get_value(names.mode)))
-        }
-    }
-
-    // Notches from the log that are not on the page, a disabled notch may not log its parameters, use the
-    // firmware defaults for them
-    for (const notch of (Gyro_batch.log_notches || [])) {
-        if ((notch.num > all_names.length) && counted(notch.enable)) {
-            count += auto_fit_count_filters(notch.harmonics ?? 3, notch.options ?? 0, auto_fit_num_sources(notch.mode ?? 1))
-        }
-    }
-    return count
-}
-
-// Smallest number of notch filters supported, on F4 boards, F7 supports 27 and H7 54
-const auto_fit_max_notches = 24
 
 function auto_fit() {
     let info = document.getElementById("auto_fit_info")
     info.textContent = ""
+    info.title = ""
 
+    // The button is only enabled with pre-filter data
     if ((Gyro_batch == null) || !Gyro_batch.have_pre) {
-        alert("Auto fit needs pre-filter gyro data")
         return
     }
 
@@ -522,12 +479,14 @@ function auto_fit() {
     parameter_set_value(names.options, options)
     filter_param_read()
 
-    info.textContent = "Fitted using " + result.name + (errors.length > 0 ? " (" + errors.join(", ") + ")" : "")
-    const num_notches = auto_fit_notch_count(result, options)
-    if (num_notches > auto_fit_max_notches) {
-        info.textContent += ". The notches need " + num_notches + " filters, F4 boards support " + auto_fit_max_notches + ", F7 27 and H7 54. Reduce the harmonics if needed."
-    }
+    const confidence = auto_fit_confidence(result)
+    const message = "Fitted using " + result.name + (errors.length > 0 ? " (" + errors.join(", ") + ")" : "") +
+        ", confidence " + confidence.level + ": " + confidence.reason
+    info.textContent = "Fitted using " + result.name + ", " + confidence.level + " confidence"
+    info.title = message
 
     // Already in a loading call
     re_calc()
+
+    alert("Auto fit (beta)\n\n" + message + "\n\nCheck the estimated post-filter spectrum and fly the result carefully, auto fit only looks at the selected analysis time and may get it wrong.")
 }

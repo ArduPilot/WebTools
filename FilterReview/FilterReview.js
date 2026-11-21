@@ -364,6 +364,7 @@ function reset() {
     document.title = "ArduPilot Filter Review"
 
     document.getElementById("auto_fit_info").textContent = ""
+    document.getElementById("auto_fit_info").title = ""
 
     document.getElementById("log_type_raw").checked = true
     document.getElementById("log_type_batch").disabled = false
@@ -2444,68 +2445,6 @@ async function load(log_file) {
         alert("No valid gyro data found in log")
         return
     }
-    Gyro_batch.num_gyro = num_gyro
-
-    // Used by auto fit to count notch filters as the firmware does, INS_USE defaults to 1
-    Gyro_batch.num_imu_use = 0
-    for (const name of ["INS_USE", "INS_USE2", "INS_USE3"]) {
-        const use = get_param(name)
-        Gyro_batch.num_imu_use += ((use == null) || (use != 0)) ? 1 : 0
-    }
-    // Aux IMUs only count if the board has them
-    for (const name of ["INS4_USE", "INS5_USE"]) {
-        const use = get_param(name)
-        Gyro_batch.num_imu_use += ((use != null) && (use != 0)) ? 1 : 0
-    }
-
-    // With FFT enabled the firmware counts every notch group, notch 3 and 4 are not shown on the page
-    Gyro_batch.fft_enabled = get_param("FFT_ENABLE") > 0
-    Gyro_batch.log_notches = []
-    for (const num of [3, 4]) {
-        const prefix = "INS_HNTC" + num + "_"
-        const enable = get_param(prefix + "ENABLE")
-        if (enable == null) {
-            continue
-        }
-        Gyro_batch.log_notches.push({ num, enable, mode: get_param(prefix + "MODE"), harmonics: get_param(prefix + "HMNCS"), options: get_param(prefix + "OPTS") })
-    }
-    // Count outputs in the firmware motor mask, this depends on the frame class
-    let frame_class = get_param("FRAME_CLASS")
-    if (frame_class == null) {
-        frame_class = get_param("Q_FRAME_CLASS")
-    }
-    const motor_functions = (first, last) => Array.from({ length: last - first + 1 }, (_, k) => first + k)
-    const boost_throttle = 81
-    let mask_functions
-    if (frame_class == 6) {
-        // Single heli: main rotor RSC, and tail RSC for direct drive tails (H_TAIL_TYPE 2 to 5), the firmware
-        // configures the tail RSC in setpoint mode for variable pitch and DDFP mode for fixed pitch, and only
-        // leaves it out of the motor mask when it is disabled for servo tails
-        const tail_type = get_param("H_TAIL_TYPE")
-        mask_functions = ((tail_type >= 2) && (tail_type <= 5)) ? [31, 32] : [31]
-    } else if ((frame_class == 11) || (frame_class == 13)) {
-        // Dual heli and heli quad: main rotor RSC
-        mask_functions = [31]
-    } else if (frame_class == 7) {
-        // Tri: motors 1, 2 and 4, motor 7 is the tail servo
-        mask_functions = [33, 34, 36, boost_throttle]
-    } else if ((frame_class == 8) || (frame_class == 9)) {
-        // Single and coax: motors 5 and 6, motors 1 to 4 are servos
-        mask_functions = [37, 38, boost_throttle]
-    } else if (frame_class == 10) {
-        // Tailsitter and bicopter: throttle left and right
-        mask_functions = [73, 74, boost_throttle]
-    } else {
-        // Matrix frames: Motor1-32
-        mask_functions = [...motor_functions(33, 40), ...motor_functions(82, 85), ...motor_functions(160, 179), boost_throttle]
-    }
-    Gyro_batch.num_motors = 0
-    for (let i = 1; i <= 32; i++) {
-        if (mask_functions.includes(get_param("SERVO" + i + "_FUNCTION"))) {
-            Gyro_batch.num_motors++
-        }
-    }
-
     // Heli firmware does not allow a throttle notch
     const { build_type } = get_version_and_board(log)
     Gyro_batch.heli = (build_type == 13) || [6, 11, 13].includes(get_param("FRAME_CLASS"))
@@ -2765,7 +2704,7 @@ async function load(log_file) {
     redraw()
 
     document.getElementById("OpenFilterTool").disabled = false
-    document.getElementById("auto_fit").disabled = false
+    document.getElementById("auto_fit").disabled = !Gyro_batch.have_pre
     document.getElementById("SaveParams").disabled = false
     document.getElementById("LoadParams").disabled = false
 
