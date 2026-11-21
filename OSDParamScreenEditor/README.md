@@ -38,14 +38,14 @@ Click **Write to FC** with the vehicle disarmed.
 
 ## Files and metadata
 
-- **Vehicle / Download metadata:** loads the published Plane, Copter or Rover parameter definitions, used for the parameter list and suggested ranges. This needs network access. Alternatively use **Load metadata XML** with a locally saved `apm.pdef.xml`.
+- **Vehicle:** selects the Plane, Copter or Rover parameter definitions used for the parameter list and suggested ranges. It is set automatically from the FC heartbeat when connected. The definitions are bundled with the tool (`<Vehicle>_params.json`), so no network access is needed; regenerate them from the published `apm.pdef.json` with `python3 update_params.py`.
 - **Fill missing ranges:** fills only empty Min/Max/Increment fields from the metadata. Metadata ranges are suggestions; check them against your firmware.
-- **Save JSON / Load JSON:** save or load both screens as a JSON project, including each slot's enabled state. Loading a JSON file changes the editor but keeps the last FC read for comparison, so you can Read from FC, Load JSON, then Write to FC to apply a saved setup. In older JSON files without an `enabled` field, a slot is treated as enabled if it has a parameter name.
-- **Load .param / Export numeric .param:** import or export the enable, min, max and increment values in Mission Planner `.param` format. Parameter names are not included, because they are not stored as numeric parameters.
+- **Save JSON / Load JSON:** save or load both screens as a JSON project, including each slot's assigned parameter name and enabled state. This is the only offline format that keeps the slot assignments: a `.param` file stores them as `OSDn_PARAMm_KEY/IDX/GRP` internal numbers that cannot be turned back into a name without the firmware. Loading a JSON file changes the editor but keeps the last FC read for comparison, so you can Read from FC, Load JSON, then Write to FC to apply a saved setup. In older JSON files without an `enabled` field, a slot is treated as enabled if it has a parameter name.
+- **Load .param / Export numeric .param:** import or export the enable, min, max and increment values in `.param` / `.parm` format. Parameter names are not included, because they are not stored as numeric parameters.
 
 ## Activity log
 
-The activity log at the bottom shows connection status, reads, writes and warnings, color-coded by type. Buttons show what they are doing while an operation runs (for example READING or WRITING).
+The activity log at the bottom shows connection status, reads, writes and warnings, color-coded by type. A loading overlay is shown while reading from or writing to the FC.
 
 ## MAVLink details
 

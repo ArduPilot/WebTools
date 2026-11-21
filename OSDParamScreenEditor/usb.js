@@ -159,16 +159,24 @@ function updateUsbStatus() {
     $('writeFC').disabled = operation || !ready || !baseline;
     $('usbDisconnect').disabled = operation || !link?.active;
     const connectButton = $('usbConnect');
-    if (connectButton.dataset.progress !== '1') {
-        connectButton.textContent = ready ? 'Connected' : link?.active ? 'Connecting…' : 'Connect USB';
-    }
+    connectButton.textContent = ready ? 'Connected' : link?.active ? 'Connecting…' : 'Connect USB';
     connectButton.classList.toggle('connected', ready);
     connectButton.disabled = operation || Boolean(link?.active);
 }
 
 const VEHICLE_FROM_MAV_TYPE = {
     [mavlink20.MAV_TYPE_FIXED_WING]: 'Plane',
+    [mavlink20.MAV_TYPE_VTOL_DUOROTOR]: 'Plane',
+    [mavlink20.MAV_TYPE_VTOL_QUADROTOR]: 'Plane',
+    [mavlink20.MAV_TYPE_VTOL_TILTROTOR]: 'Plane',
     [mavlink20.MAV_TYPE_QUADROTOR]: 'Copter',
+    [mavlink20.MAV_TYPE_COAXIAL]: 'Copter',
+    [mavlink20.MAV_TYPE_HELICOPTER]: 'Copter',
+    [mavlink20.MAV_TYPE_HEXAROTOR]: 'Copter',
+    [mavlink20.MAV_TYPE_OCTOROTOR]: 'Copter',
+    [mavlink20.MAV_TYPE_TRICOPTER]: 'Copter',
+    [mavlink20.MAV_TYPE_DECAROTOR]: 'Copter',
+    [mavlink20.MAV_TYPE_DODECAROTOR]: 'Copter',
     [mavlink20.MAV_TYPE_GROUND_ROVER]: 'Rover',
     [mavlink20.MAV_TYPE_SURFACE_BOAT]: 'Rover',
 };
@@ -526,8 +534,8 @@ async function writeFC() {
     }
 }
 
-$('usbConnect').addEventListener('click', () => withProgress('usbConnect', 'CONNECTING…', connectUsb));
-$('usbDisconnect').addEventListener('click', () => withProgress('usbDisconnect', 'DISCONNECTING…', disconnectUsb));
-$('readFC').addEventListener('click', () => withProgress('readFC', 'READING…', readFC));
-$('writeFC').addEventListener('click', () => withProgress('writeFC', 'WRITING…', writeFC));
+$('usbConnect').addEventListener('click', () => connectUsb().catch(error => log(`Warning: ${error.message}`, 'warning')));
+$('usbDisconnect').addEventListener('click', () => disconnectUsb().catch(error => log(`Warning: ${error.message}`, 'warning')));
+$('readFC').addEventListener('click', () => withOverlay(readFC));
+$('writeFC').addEventListener('click', () => withOverlay(writeFC));
 updateUsbStatus();

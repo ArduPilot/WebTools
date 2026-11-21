@@ -1,9 +1,6 @@
 'use strict';
-const METADATA_URLS = {
-    Plane: 'https://autotest.ardupilot.org/Parameters/ArduPlane/apm.pdef.xml',
-    Copter: 'https://autotest.ardupilot.org/Parameters/ArduCopter/apm.pdef.xml',
-    Rover: 'https://autotest.ardupilot.org/Parameters/Rover/apm.pdef.xml',
-};
+// Parameter metadata is bundled with the tool, regenerate with update_params.py
+const VEHICLES = ['Plane', 'Copter', 'Rover'];
 const $ = id => document.getElementById(id);
 const emptySlot = () => ({
     name: '',
@@ -16,29 +13,17 @@ const emptySlot = () => ({
 });
 const state = { vehicle: 'Plane', screen: 5, slots: {}, metadata: {}, cache: {}, request: 0 };
 for (const screen of [5, 6]) for (let slot = 1; slot <= 9; slot++) state.slots[`${screen}:${slot}`] = emptySlot();
-// Show an in-progress label until the action settles, including failures.
-// Allow one paint frame so synchronous operations visibly update their button.
-async function withProgress(id, label, action) {
-    const button = $(id);
-    if (button.dataset.progress === '1') return;
-    const original = button.textContent;
-    const wasDisabled = button.disabled;
-    button.dataset.progress = '1';
-    button.textContent = label;
-    button.disabled = true;
-    button.setAttribute('aria-busy', 'true');
-    try {
-        await new Promise(resolve => requestAnimationFrame(() => resolve()));
-        return await action();
-    } catch (error) {
-        log(`Warning: ${original} failed: ${error.message}`, 'warning');
-    } finally {
-        delete button.dataset.progress;
-        button.removeAttribute('aria-busy');
-        button.textContent = original;
-        button.disabled = wasDisabled;
-        if (typeof updateUsbStatus === 'function') updateUsbStatus();
-    }
+// Run a slow action behind the shared loading overlay, logging any failure
+function withOverlay(action) {
+    loading_call(async () => {
+        try {
+            await action();
+        } catch (error) {
+            log(`Warning: ${error.message}`, 'warning');
+        } finally {
+            if (typeof updateUsbStatus === 'function') updateUsbStatus();
+        }
+    });
 }
 function log(message, type = 'info') {
     const line = document.createElement('div');
@@ -47,63 +32,39 @@ function log(message, type = 'info') {
     $('log').append(line);
     $('log').scrollTop = $('log').scrollHeight;
 }
-function parseMetadata(xml) {
-    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-    if (doc.querySelector('parsererror')) throw Error('Invalid XML');
+function parseMetadata(params) {
     const result = {};
-    for (const param of doc.getElementsByTagName('param')) {
-        const name = (param.getAttribute('name') || '').split(':').pop().toUpperCase();
-        if (!name) continue;
-        const fields = {};
-        for (const field of param.getElementsByTagName('field'))
-            fields[(field.getAttribute('name') || '').toLowerCase()] = (field.textContent || '').trim();
-        const range = (fields.range || '').split(/\s+/);
+    for (const [name, meta] of Object.entries(params)) {
         result[name] = {
-            min: range.length === 2 ? range[0] : '',
-            max: range.length === 2 ? range[1] : '',
-            increment: fields.increment || '',
-            description: param.getAttribute('documentation') || '',
-            readonly: fields.readonly === 'true',
+            min: meta.Range?.low ?? '',
+            max: meta.Range?.high ?? '',
+            increment: meta.Increment ?? '',
+            displayName: meta.DisplayName ?? '',
         };
     }
-    if (!Object.keys(result).length) throw Error('No parameters found in XML');
     return result;
 }
-function applyMetadata(xml, source) {
-    const parsed = parseMetadata(xml);
-    state.metadata = parsed;
-    state.cache[state.vehicle] = parsed;
-    $('metaStatus').textContent = `${state.vehicle}: ${Object.keys(parsed).length} parameters (${source})`;
-    render();
-    fillMissing(false);
-    log(`${state.vehicle} metadata loaded successfully (${Object.keys(parsed).length} parameters).`, 'success');
-}
-async function downloadMetadata() {
+async function loadMetadata() {
     const vehicle = state.vehicle;
     const request = ++state.request;
-    if (state.cache[vehicle]) {
-        state.metadata = state.cache[vehicle];
-        $('metaStatus').textContent = `${vehicle}: ${Object.keys(state.metadata).length} parameters (cached)`;
-        render();
-        log(`${vehicle} metadata loaded from cache.`, 'success');
-        return;
+    if (!state.cache[vehicle]) {
+        $('metaStatus').textContent = `Loading ${vehicle} metadata…`;
+        try {
+            const response = await fetch(`${vehicle}_params.json`);
+            if (!response.ok) throw Error(`HTTP ${response.status}`);
+            state.cache[vehicle] = parseMetadata(await response.json());
+        } catch (error) {
+            if (request !== state.request) return;
+            $('metaStatus').textContent = 'Metadata unavailable';
+            log(`Warning: Could not load ${vehicle} metadata (${error.message}).`, 'warning');
+            return;
+        }
     }
-    $('metaStatus').textContent = `Downloading ${vehicle} metadata…`;
-    log(`Downloading ${vehicle} metadata…`);
-    try {
-        const response = await fetch(METADATA_URLS[vehicle], { cache: 'default' });
-        if (!response.ok) throw Error(`HTTP ${response.status}`);
-        const xml = await response.text();
-        if (request !== state.request || vehicle !== state.vehicle) return;
-        applyMetadata(xml, 'online');
-    } catch (error) {
-        if (request !== state.request) return;
-        $('metaStatus').textContent = 'Metadata download unavailable';
-        log(
-            `Warning: Could not download metadata (${error.message}). Try Load metadata XML; the host may block browser cross-origin requests.`,
-            'warning',
-        );
-    }
+    if (request !== state.request || vehicle !== state.vehicle) return;
+    state.metadata = state.cache[vehicle];
+    $('metaStatus').textContent = `${vehicle}: ${Object.keys(state.metadata).length} parameters`;
+    render();
+    fillMissing(false);
 }
 function fillMissing(announce = true) {
     let count = 0;
@@ -189,6 +150,7 @@ function parameterPicker(slot, tr) {
             item.type = 'button';
             item.className = 'picker-option';
             item.textContent = value;
+            if (state.metadata[value]?.displayName) item.title = state.metadata[value].displayName;
             item.setAttribute('role', 'option');
             item.addEventListener('mousedown', e => e.preventDefault());
             item.addEventListener('click', () => select(value));
@@ -363,7 +325,7 @@ function loadJson(text) {
             source: 'JSON file',
         };
     }
-    if (METADATA_URLS[data.vehicle]) {
+    if (VEHICLES.includes(data.vehicle)) {
         $('vehicle').value = data.vehicle;
         switchVehicle(data.vehicle);
     }
@@ -452,29 +414,22 @@ function switchVehicle(vehicle) {
     state.vehicle = vehicle;
     state.request++;
     state.metadata = {};
-    $('metaStatus').textContent = `${vehicle}: metadata not loaded`;
-    downloadMetadata();
+    loadMetadata();
 }
 $('vehicle').addEventListener('change', event => switchVehicle(event.target.value));
-$('fetchMeta').addEventListener('click', () =>
-    withProgress('fetchMeta', 'DOWNLOADING…', async () => {
-        delete state.cache[state.vehicle];
-        await downloadMetadata();
-    }),
-);
-$('xmlFile').addEventListener('change', event => loadFile(event, text => applyMetadata(text, 'local XML')));
 $('jsonFile').addEventListener('change', event => loadFile(event, loadJson));
 $('paramFile').addEventListener('change', event => loadFile(event, parseParam));
-$('saveJson').addEventListener('click', () => withProgress('saveJson', 'SAVING…', saveJson));
-$('clearAll').addEventListener('click', () => withProgress('clearAll', 'CLEARING…', clearAll));
-$('saveParam').addEventListener('click', () => withProgress('saveParam', 'EXPORTING…', exportParam));
-$('fill').addEventListener('click', () => withProgress('fill', 'FILLING…', () => fillMissing()));
-$('clearLog').addEventListener('click', () => withProgress('clearLog', 'CLEARING…', () => $('log').replaceChildren()));
+$('saveJson').addEventListener('click', saveJson);
+$('clearAll').addEventListener('click', clearAll);
+$('saveParam').addEventListener('click', exportParam);
+$('fill').addEventListener('click', () => fillMissing());
+$('clearLog').addEventListener('click', () => $('log').replaceChildren());
 for (const screen of [5, 6])
     $(`tab${screen}`).addEventListener('click', () => {
         state.screen = screen;
         render();
     });
+init_loading_overlay();
 render();
-log('Offline editor ready. Choose a vehicle to load metadata, or load JSON/XML files.');
-downloadMetadata();
+log('Editor ready. Connect USB to read the FC, or load a JSON/.param file to edit offline.');
+loadMetadata();

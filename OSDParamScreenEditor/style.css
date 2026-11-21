@@ -91,13 +91,11 @@ label {
 select {
     margin-left: 6px;
 }
-#fetchMeta,
 #saveJson {
     background: #123a73;
     color: white;
     border-color: #123a73;
 }
-#fetchMeta:hover,
 #saveJson:hover {
     background: #22558f;
 }
@@ -417,11 +415,6 @@ button.danger:hover {
     background: #891d1d;
 }
 
-/* Keep running-action labels legible while preventing repeated clicks. */
-button[aria-busy='true'] {
-    opacity: 1 !important;
-    cursor: progress !important;
-}
 .filebtn.is-loading {
     opacity: 0.75;
     cursor: progress;
