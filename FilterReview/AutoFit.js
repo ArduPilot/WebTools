@@ -420,7 +420,11 @@ function auto_fit_confidence(result) {
     if (result.fit_margin != null) {
         level = Math.min(level, level_of(result.fit_margin, auto_fit_confidence_margin))
         const margin = result.fit_margin
-        reason += ", the ESC frequency harmonics fit the noise " + ((margin < 1.05) ? "about as well as" : (isFinite(margin) ? margin.toFixed(1) + " times better than" : "better than")) + " those of any other frequency"
+        if (margin < 0.95) {
+            reason += ", the harmonics of another frequency fit the noise " + (1 / margin).toFixed(1) + " times better than those of the ESC frequency"
+        } else {
+            reason += ", the ESC frequency harmonics fit the noise " + ((margin <= 1.05) ? "about as well as" : (isFinite(margin) ? margin.toFixed(1) + " times better than" : "better than")) + " those of any other frequency"
+        }
     } else {
         level = Math.min(level, 1)
         reason += ", throttle only approximates motor speed"
