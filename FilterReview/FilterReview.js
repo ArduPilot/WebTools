@@ -2246,6 +2246,11 @@ function load_from_batch(log, num_gyro, gyro_rate, get_param) {
     }
 }
 
+// Raw IMU data logged with gaps longer than this is split, so data logged slowly, for example rate limited while
+// disarmed by LOG_DARM_RATEMAX, ends up in batches too short to use. This allows for one missed sample from external
+// AHRS IMUs, which log at 50 Hz by default. Data rate limited to about 22 Hz or faster is not split by this.
+const raw_max_dt = 0.045
+
 // Log from raw sensor logging
 function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
     Gyro_batch = []
@@ -2300,8 +2305,10 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
             // Take running average of sample time, split into batches for gaps
             // Use threshold of 5 times the avarage gap seen so far.
             // This should mean we get a new batch after two missed meassages
+            // Also split for any gap over the max dt
             count++
-            if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1))) {
+            const gap = time[j] - time[j-1]
+            if (((gap*count) > ((time[j] - time[batch_start]) * 5)) || ((gap * US2S) > raw_max_dt) || (j == (len - 1))) {
                 if (count >= 64) {
                     // Must have at least 64 samples in each batch
                     const sample_rate = 1000000 / ((time[j-1] - time[batch_start]) / count)
