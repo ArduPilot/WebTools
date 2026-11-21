@@ -289,10 +289,10 @@ function update_usable_data() {
                 }
             }
         }
-        // Space is kept when there is no value so the gyro boxes stay the same height
+        // Only shown when there is a value
+        document.getElementById("Gyro" + i + "_usable_line").style.display = (usable == null) ? "none" : ""
         const percent = Math.round((usable ?? 0) * 100)
         let label = document.getElementById("Gyro" + i + "_usable")
-        label.style.visibility = (usable == null) ? "hidden" : ""
         label.style.color = ((usable != null) && (percent < usable_data_warn_fraction * 100)) ? "#c00000" : ""
         label.textContent = "Usable data: " + percent + "% of analysis time"
     }
@@ -450,7 +450,7 @@ function reset() {
         }
         document.getElementById("SpecGyroInst" + i).disabled = true
         document.getElementById("BodeGyroInst" + i).disabled = true
-        document.getElementById("Gyro" + i + "_usable").style.visibility = "hidden"
+        document.getElementById("Gyro" + i + "_usable_line").style.display = "none"
 
         let fieldset = document.getElementById("Gyro" + i)
         fieldset.style["border-color"] = "rgb(192, 192, 192)"
