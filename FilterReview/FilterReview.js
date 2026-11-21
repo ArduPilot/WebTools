@@ -1855,13 +1855,15 @@ function get_estimate_checkboxes() {
     return ret
 }
 
-// Show the estimated post filter if none is shown, for the axes the logged post filter is shown for,
-// or all if that is none
+// Show the estimated post filter if none is shown. Only for gyros with some pre-filter shown, for the axes the logged
+// post filter is shown for, or all axes if that is none
 function show_estimated() {
-    const estimates = get_estimate_checkboxes()
+    let estimates = get_estimate_checkboxes()
     if (estimates.some((estimate) => estimate.checkbox.checked)) {
         return
     }
+    const pre_shown = (gyro) => axis.some((name) => document.getElementById("Gyro" + gyro + "Pre" + name).checked)
+    estimates = estimates.filter((estimate) => pre_shown(estimate.gyro))
     let shown = estimates.filter((estimate) => document.getElementById("Gyro" + estimate.gyro + "Post" + estimate.axis).checked)
     if (shown.length == 0) {
         shown = estimates
