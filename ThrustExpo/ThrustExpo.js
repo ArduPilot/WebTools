@@ -94,6 +94,7 @@ function initParamInputs() {
                 params[paramName].value = parseFloat(this.value);
             });
             input.addEventListener("change", function (e) {
+                params[paramName].value = parseFloat(this.value);
                 updatePlotData();
             });
         } else if (paramName === "MOT_THST_EXPO") {
