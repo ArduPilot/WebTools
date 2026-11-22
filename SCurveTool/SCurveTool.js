@@ -33,7 +33,7 @@ function reset_wp_plot_data() {
             z:[],
             name: 'Target',
             mode: 'lines',
-            hovertemplate: "<extra></extra>N = %{y:.0f} m<br>E = %{x:.0f} m<br>U = %{z:.0f} m<br>Vel = %{line.color:.2f} m/s",
+            hovertemplate: "<extra></extra>N = %{x:.0f} m<br>E = %{y:.0f} m<br>U = %{z:.0f} m<br>Vel = %{line.color:.2f} m/s",
             line: {
                 width: 10,
                 color: [1], // Coloring based on Z values
@@ -436,15 +436,15 @@ async function replot()
     if (jerk_cb.checked) {
         wp_pos_plot.data[1].line.color = jerk_targ.map(v => vectorLength(v));
         wp_pos_plot.data[1].line.colorbar.title = "Jerk Magnitude";
-        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{y:.0f} m<br>E = %{x:.0f} m<br>U = %{z:.0f} m<br>Jerk = %{line.color:.2f} m/s³";
+        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{x:.0f} m<br>E = %{y:.0f} m<br>U = %{z:.0f} m<br>Jerk = %{line.color:.2f} m/s³";
     } else if (accel_cb.checked) {
         wp_pos_plot.data[1].line.color = accel_targ.map(v => vectorLength(v));
         wp_pos_plot.data[1].line.colorbar.title = "Accel Magnitude";
-        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{y:.0f} m<br>E = %{x:.0f} m<br>U = %{z:.0f} m<br>Accel = %{line.color:.2f} m/s²";
+        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{x:.0f} m<br>E = %{y:.0f} m<br>U = %{z:.0f} m<br>Accel = %{line.color:.2f} m/s²";
     } else if (vel_cb.checked) {
         wp_pos_plot.data[1].line.color = vel_targ.map(v => vectorLength(v));
         wp_pos_plot.data[1].line.colorbar.title = "Vel Magnitude";
-        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{y:.0f} m<br>E = %{x:.0f} m<br>U = %{z:.0f} m<br>Vel = %{line.color:.2f} m/s";
+        wp_pos_plot.data[1].hovertemplate = "<extra></extra>N = %{x:.0f} m<br>E = %{y:.0f} m<br>U = %{z:.0f} m<br>Vel = %{line.color:.2f} m/s";
     } else {
         wp_pos_plot.data[1].line.color = "rgba(0, 0, 0, 1)";
         wp_pos_plot.data[1].line.showscale = false;
