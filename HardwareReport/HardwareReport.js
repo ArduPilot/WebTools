@@ -832,7 +832,7 @@ function load_ins(log) {
         }
 
         const accel_offsets = get_param_array(params, names.accel.offset)
-        const accel_scale = get_param_array(params, names.accel.offset)
+        const accel_scale = get_param_array(params, names.accel.scale)
         const gyro_offsets = get_param_array(params, names.gyro.offset)
 
         let accel_temp_cal = false
