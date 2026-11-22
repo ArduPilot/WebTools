@@ -43,14 +43,11 @@
     }
   },
   "DFULoader/dfu-util.js": {
-    "no-prototype-builtins": {
-      "count": 1
-    },
     "no-undef": {
       "count": 2
     },
     "no-unused-vars": {
-      "count": 6
+      "count": 5
     },
     "no-useless-assignment": {
       "count": 1
@@ -65,13 +62,7 @@
     }
   },
   "DFULoader/dfuse.js": {
-    "no-cond-assign": {
-      "count": 2
-    },
     "no-undef": {
-      "count": 1
-    },
-    "no-unused-vars": {
       "count": 1
     },
     "no-useless-assignment": {
