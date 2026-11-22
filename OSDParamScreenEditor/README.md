@@ -20,7 +20,8 @@ Developed by Atx_Heli. A browser-based editor for the nine adjustable parameter 
 
 - **Parameter name:** click the arrow to browse, or type any part of a name to filter. Arrow keys and Enter work in the list.
 - **Min, Max, Increment:** the range and step size for the slot. Enabled slots need a positive increment.
-- **Enable checkbox** (under each slot number): uncheck to disable a slot without erasing its stored assignment. A disabled slot keeps its name and values visible but greyed out and not editable. Check it again to re-enable editing. Selecting `<BLANK / DISABLED>` or clearing the name also disables a slot.
+- **Typed slots:** some stock slots have a type (serial protocol, servo function, aux function, flight mode or failsafe action), so the OSD shows value names. The FC uses fixed ranges for a typed slot and ignores the ranges you enter. When you assign a different parameter, the slot becomes untyped so your ranges apply.
+- **Enable checkbox** (under each slot number): uncheck to disable a slot without erasing its stored assignment. A disabled slot keeps its name and values visible but greyed out and not editable. Check it again to re-enable editing. Selecting `<BLANK / DISABLED>` or clearing the name (once you leave the field) also disables a slot.
 - **CLEAR ALL:** clears and disables all 18 slots in the editor after confirmation. Nothing changes on the flight controller until you click **Write to FC**.
 - Switch between screens with the **Screen 5** and **Screen 6** tabs.
 
@@ -29,19 +30,20 @@ Developed by Atx_Heli. A browser-based editor for the nine adjustable parameter 
 Click **Write to FC** with the vehicle disarmed.
 
 - Writing is only possible after a successful **Read from FC**.
-- Only slots that differ from the last FC read are written. The tool requests acknowledgements and checks the slot names afterwards.
+- Only slots that differ from the last FC read are written. The tool requests acknowledgements, then reads each changed slot back and checks its name, type and ranges. The editor then shows the values the FC actually holds.
 - Enabled slots are checked before writing: the parameter must exist on the FC and the values must be valid numbers.
 - Disabled slots are written only through their `OSD{5,6}_PARAM{1..9}_EN` flag set to 0. Their stored name and values on the FC are left untouched and are not checked.
+- A slot with no parameter assigned, or whose stored assignment no longer matches a parameter, is read as empty and disabled. You can assign a parameter to it and write it.
 - If an enabled slot comes back from the FC with an empty name, writing is blocked so a configuration that could not be verified is not overwritten.
 - The tool does not set `OSD5_ENABLE` or `OSD6_ENABLE`. Enable the screens separately if needed.
 - If a read or write fails, reconnect and read again before trying another write.
 
 ## Files and metadata
 
-- **Vehicle:** selects the Plane, Copter or Rover parameter definitions used for the parameter list and suggested ranges. It is set automatically from the FC heartbeat when connected. The definitions are bundled with the tool (`<Vehicle>_params.json`), so no network access is needed; regenerate them from the published `apm.pdef.json` with `python3 update_params.py`.
+- **Vehicle:** selects the Plane, Copter or Rover parameter definitions used for the parameter list and suggested ranges. It is set automatically from the FC heartbeat when connected, then confirmed from the parameter list on Read from FC (the heartbeat type alone can't tell a QuadPlane from a Copter). The definitions are bundled with the tool (`<Vehicle>_params.json`), so no network access is needed; regenerate them from the published `apm.pdef.json` with `python3 update_params.py`.
 - **Fill missing ranges:** fills only empty Min/Max/Increment fields from the metadata. Metadata ranges are suggestions; check them against your firmware.
 - **Save JSON / Load JSON:** save or load both screens as a JSON project, including each slot's assigned parameter name and enabled state. This is the only offline format that keeps the slot assignments: a `.param` file stores them as `OSDn_PARAMm_KEY/IDX/GRP` internal numbers that cannot be turned back into a name without the firmware. Loading a JSON file changes the editor but keeps the last FC read for comparison, so you can Read from FC, Load JSON, then Write to FC to apply a saved setup. In older JSON files without an `enabled` field, a slot is treated as enabled if it has a parameter name.
-- **Load .param / Export numeric .param:** import or export the enable, min, max and increment values in `.param` / `.parm` format. Parameter names are not included, because they are not stored as numeric parameters.
+- **Load .param / Export numeric .param:** import or export the enable, min, max and increment values in `.param` / `.parm` format. Parameter names are not included, because they are not stored as numeric parameters. The exported enable flags follow each slot's Enable checkbox.
 
 ## Activity log
 

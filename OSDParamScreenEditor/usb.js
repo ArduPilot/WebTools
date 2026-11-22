@@ -30,7 +30,9 @@ class MavlinkSerial {
         this.readLoop();
     }
 
-    async disconnect() {
+    async disconnect(error) {
+        if (this.closed) return;
+        this.closed = true;
         this.active = false;
         for (const p of this.pending.splice(0)) {
             clearTimeout(p.timer);
@@ -56,10 +58,12 @@ class MavlinkSerial {
         } catch {
             // Port may already be closed
         }
-        this.onDisconnect?.();
+        this.onDisconnect?.(error);
     }
 
+    // On an unexpected end or read error, close the port properly so it can be reopened
     async readLoop() {
+        let error = null;
         try {
             while (this.active) {
                 const { value, done } = await this.reader.read();
@@ -67,13 +71,9 @@ class MavlinkSerial {
                 if (value) this.feed(value);
             }
         } catch (e) {
-            if (this.active) this.onDisconnect?.(e);
-        } finally {
-            if (this.active) {
-                this.active = false;
-                this.onDisconnect?.(Error('USB serial connection closed'));
-            }
+            error = e;
         }
+        if (this.active) await this.disconnect(error ?? Error('USB serial connection closed'));
     }
 
     feed(chunk) {
@@ -220,6 +220,15 @@ function onDisconnect(error) {
     updateUsbStatus();
 }
 
+// MAV_TYPE is ambiguous (a QuadPlane can report a multirotor type, a Copter tailsitter a VTOL
+// type), so once the parameter list is in, pick the vehicle from parameters unique to each.
+function vehicleFromParams() {
+    if (fcParams.has('Q_ENABLE')) return 'Plane';
+    if (fcParams.has('MODE1') && !fcParams.has('FLTMODE1')) return 'Rover';
+    if (fcParams.has('PILOT_SPEED_UP')) return 'Copter';
+    return null;
+}
+
 async function connectUsb() {
     if (link?.active) return;
     if (!window.isSecureContext || !navigator.serial) {
@@ -268,6 +277,11 @@ async function showSlot(screen, index) {
         m => m._id === mavlink20.MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG_REPLY && fromTarget(m) && m.request_id === id,
         2600
     );
+    if (msg.result === mavlink20.OSD_PARAM_INVALID_PARAMETER_INDEX) {
+        // No parameter assigned, or the stored KEY/IDX/GRP no longer resolves. OSD_PARAM_CONFIG can
+        // still assign one, so treat it as an empty, writable slot.
+        return { ...emptySlot(), source: 'FC read (unassigned)', unassigned: true };
+    }
     if (msg.result !== 0) throw Error(`OSD${screen} slot ${index}: result ${msg.result}`);
     return {
         name: cleanId(msg.param_id).trim().toUpperCase(),
@@ -301,6 +315,12 @@ async function readFC() {
             if (Date.now() - stable > 4000 && fcParams.size > 20) break;
         }
         log(`Received ${fcParams.size} FC parameters.`);
+        const vehicle = vehicleFromParams();
+        if (vehicle && state.vehicle !== vehicle) {
+            log(`Vehicle type set to ${vehicle} from the FC parameter list.`);
+            $('vehicle').value = vehicle;
+            switchVehicle(vehicle);
+        }
 
         const next = {};
         let successes = 0;
@@ -309,11 +329,12 @@ async function readFC() {
                 const key = `${screen}:${index}`;
                 try {
                     const slot = await showSlot(screen, index);
+                    next[key] = slot;
+                    successes++;
+                    if (slot.unassigned) continue;
                     const en = fcParams.get(`OSD${screen}_PARAM${index}_EN`);
                     slot.enabled = en ? en.value >= 0.5 : true;
                     slot.source = en ? 'FC read' : 'FC read (EN unknown)';
-                    next[key] = slot;
-                    successes++;
                     if (!slot.name) {
                         log(
                             `Warning: OSD${screen} slot ${index} returned an empty param_id after MAVLink 2 zero-padding (EN=${en?.value ?? 'unknown'}, min=${slot.min}, max=${slot.max}).`,
@@ -510,18 +531,35 @@ async function writeFC() {
                 const param = `OSD${screen}_PARAM${index}_EN`;
                 const response = await link.request(
                     new mavlink20.messages.param_request_read(link.targetSystem, link.targetComponent, param, -1),
-                    m => m._id === mavlink20.MAVLINK_MSG_ID_PARAM_VALUE && cleanId(m.param_id) === param,
+                    m => m._id === mavlink20.MAVLINK_MSG_ID_PARAM_VALUE && fromTarget(m) && cleanId(m.param_id) === param,
                     2500
                 );
                 if (response.param_value !== 0) throw Error(`${key}: disable did not verify`);
                 baseline[key] = { ...actual, enabled: false, source: 'FC read' };
                 state.slots[key].source = 'FC read';
             } else {
-                if (actual.name !== state.slots[key].name) throw Error(`${key}: readback name mismatch (${actual.name})`);
-                state.slots[key].source = 'FC read';
-                baseline[key] = structuredClone(state.slots[key]);
+                const wanted = state.slots[key];
+                if (actual.name !== wanted.name) throw Error(`${key}: readback name mismatch (${actual.name})`);
+                const type = Number(wanted.config_type || 0);
+                if (Number(actual.config_type) !== type) {
+                    throw Error(`${key}: readback type mismatch (sent ${type}, FC has ${actual.config_type})`);
+                }
+                const ranges = ['min', 'max', 'increment'];
+                if (ranges.some(f => !sameNumber(actual[f], wanted[f]))) {
+                    const got = `${actual.min}..${actual.max} step ${actual.increment}`;
+                    // A typed slot always uses the FC's fixed ranges for its type, so that is expected
+                    if (type === 0) throw Error(`${key}: readback range mismatch (FC has ${got})`);
+                    log(
+                        `Warning: OSD${screen} slot ${index} (${actual.name}) is a typed slot (type ${type}); the FC applied its fixed range ${got} instead of the values entered.`,
+                        'warning'
+                    );
+                }
+                // Keep what the FC actually holds
+                baseline[key] = { ...actual, enabled: true, source: 'FC read' };
+                state.slots[key] = structuredClone(baseline[key]);
             }
         }
+        render();
         log('All changed OSD slots verified successfully.', 'success');
     } catch (e) {
         log(

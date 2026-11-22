@@ -86,7 +86,15 @@ function fillMissing(announce = true) {
             count ? 'success' : 'info',
         );
 }
-function parameterPicker(slot, tr) {
+// Change a slot's parameter. A typed slot (servo function, flight mode, etc.) uses fixed ranges on
+// the FC, so the type only carries over if the name is unchanged from the last FC read.
+function setSlotName(slot, key, value) {
+    if (value === slot.name) return;
+    slot.name = value;
+    const original = typeof baseline === 'undefined' ? null : baseline?.[key];
+    slot.config_type = original && original.name === value ? original.config_type : 0;
+}
+function parameterPicker(slot, tr, key) {
     const wrapper = document.createElement('div');
     wrapper.className = 'parameter-picker';
     const name = document.createElement('input');
@@ -126,7 +134,7 @@ function parameterPicker(slot, tr) {
         selected = -1;
     }
     function select(value) {
-        slot.name = value;
+        setSlotName(slot, key, value);
         slot.enabled = Boolean(value);
         slot.source = 'Edited';
         const meta = state.metadata[value];
@@ -166,8 +174,14 @@ function parameterPicker(slot, tr) {
         name.setAttribute('aria-expanded', 'true');
         selected = -1;
     }
+    // A slot whose name was cleared by typing is disabled once editing finishes
+    function commitTyped() {
+        if (slot.name || !slot.enabled) return false;
+        slot.enabled = false;
+        return true;
+    }
     name.addEventListener('input', () => {
-        slot.name = name.value.trim().toUpperCase();
+        setSlotName(slot, key, name.value.trim().toUpperCase());
         slot.source = 'Edited';
         updateDescription(tr, slot);
         open();
@@ -192,6 +206,7 @@ function parameterPicker(slot, tr) {
             if (selected >= 0 && items[selected]) items[selected].click();
             else {
                 close();
+                commitTyped();
                 const meta = state.metadata[slot.name];
                 if (meta)
                     for (const f of ['min', 'max', 'increment'])
@@ -208,7 +223,9 @@ function parameterPicker(slot, tr) {
     });
     name.addEventListener('blur', () => {
         setTimeout(() => {
-            if (!wrapper.contains(document.activeElement)) close();
+            if (wrapper.contains(document.activeElement)) return;
+            close();
+            if (commitTyped()) render();
         }, 120);
     });
     return wrapper;
@@ -241,7 +258,7 @@ function render() {
         tr.append(number);
         tr.classList.toggle('slot-disabled', !slot.enabled);
         const paramTd = document.createElement('td');
-        paramTd.append(parameterPicker(slot, tr));
+        paramTd.append(parameterPicker(slot, tr, key));
         tr.append(paramTd);
         for (const field of ['min', 'max', 'increment']) {
             const td = document.createElement('td');
@@ -370,7 +387,7 @@ function exportParam() {
     for (const [key, slot] of Object.entries(state.slots)) {
         const [screen, index] = key.split(':');
         const prefix = `OSD${screen}_PARAM${index}_`;
-        lines.push(`${prefix}EN,${slot.enabled !== false && slot.name ? 1 : 0}`);
+        lines.push(`${prefix}EN,${slot.enabled === true ? 1 : 0}`);
         for (const [field, suffix] of [
             ['min', 'MIN'],
             ['max', 'MAX'],
