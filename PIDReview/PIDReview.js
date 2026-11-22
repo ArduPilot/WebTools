@@ -748,13 +748,11 @@ function add_param_sets() {
     }
 
     // Change to Out on spectrogram if disabled option is set
-    const disabled_checked = document.getElementById("Spec_Err").checked ||
-                             document.getElementById("Spec_P").checked ||
-                             document.getElementById("Spec_I").checked ||
-                             document.getElementById("Spec_D").checked ||
-                             document.getElementById("Spec_FF").checked ||
-                             document.getElementById("Spec_DFF").checked
-    if ((!have_all || !have_DFF) && disabled_checked) {
+    const disabled_checked = ["Spec_Err", "Spec_P", "Spec_I", "Spec_D", "Spec_FF", "Spec_DFF"].some((id) => {
+        const input = document.getElementById(id)
+        return input.checked && input.disabled
+    })
+    if (disabled_checked) {
         document.getElementById("Spec_Out").checked = true
     }
 
@@ -1241,6 +1239,8 @@ function redraw_step() {
         sn[j] /= last_sn
     }
     // Reflect for full spectrum
+    // The gaussian can be longer than real_len at low logging rates, reflect only the real_len single sided part
+    sn = sn.slice(0, real_len)
     sn = [...sn, ...sn.slice(1,real_len-1).reverse()]
 
     // Scale
