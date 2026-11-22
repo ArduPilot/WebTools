@@ -1881,7 +1881,7 @@ function show_outputs(build_type) {
 
     function add_cell(row, type, text) {
         let cell = document.createElement(type)
-        cell.style.border = "1px solid #000"
+        cell.style.border = "1px solid"
         cell.style.padding = "4px 8px"
         cell.appendChild(document.createTextNode(text))
         row.appendChild(cell)

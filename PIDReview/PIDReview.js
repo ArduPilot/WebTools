@@ -1117,12 +1117,16 @@ function show_step_stats(all_stats) {
 
     function add_cell(row, type, text, color) {
         let cell = document.createElement(type)
-        cell.style.border = "1px solid #000"
+        cell.style.border = "1px solid"
         cell.style.padding = "4px 8px"
+        let content = document.createTextNode(text)
         if (color != null) {
-            cell.style.color = color
+            // Color the text only, the border follows the cell's text color
+            content = document.createElement("span")
+            content.style.color = color
+            content.textContent = text
         }
-        cell.appendChild(document.createTextNode(text))
+        cell.appendChild(content)
         row.appendChild(cell)
     }
     // Times in seconds to match the plot, values as a percentage of the step
