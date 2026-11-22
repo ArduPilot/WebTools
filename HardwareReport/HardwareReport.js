@@ -914,12 +914,12 @@ function load_ins(log) {
 
         if ("acc_all_healthy" in params) {
             fieldset.appendChild(document.createElement("br"))
-            fieldset.appendChild(document.createTextNode("Accel health: " + (params.gyro_all_healthy ? "\u2705" : "\u274C")))
+            fieldset.appendChild(document.createTextNode("Accel health: " + (params.acc_all_healthy ? "\u2705" : "\u274C")))
         }
 
-        if ("acc_all_healthy" in params) {
+        if ("gyro_all_healthy" in params) {
             fieldset.appendChild(document.createElement("br"))
-            fieldset.appendChild(document.createTextNode("Gyro health: " + (params.acc_all_healthy ? "\u2705" : "\u274C")))
+            fieldset.appendChild(document.createTextNode("Gyro health: " + (params.gyro_all_healthy ? "\u2705" : "\u274C")))
         }
 
         return fieldset
