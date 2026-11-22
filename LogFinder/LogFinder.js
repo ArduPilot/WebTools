@@ -827,7 +827,7 @@ async function initial_load() {
 
         function redraw_tables() {
             for (const table of tables) {
-                update_param_diff(table, table.getRows())
+                update_param_diff(table, table.getRows("active"))
             }
         }
         ignore.check.addEventListener('change', redraw_tables)
