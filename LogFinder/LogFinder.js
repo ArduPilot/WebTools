@@ -574,7 +574,7 @@ function setup_table(logs) {
                 { title: "Name", field: "info.name", formatter:name_format },
                 { title: "Size", field: "info.size", formatter:size_format, bottomCalc:size_bottom_calc, bottomCalcFormatter:size_format, width: 90 },
                 { title: "Firmware Version", field:"info.fw_string" },
-                { title: "Flight Time", field:"info.flight_time", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format, width: 105 },
+                { title: "Flight Time", field:"info.flight_time", sorter:"number", formatter:flight_time_format, bottomCalc:flight_time_bottom_calc, bottomCalcFormatter:flight_time_format, width: 105 },
                 { title: "Flight distance", field:"info.distance_traveled", formatter:distance_format, bottomCalc:flight_distance_bottom_calc, bottomCalcFormatter:get_dist_string, width: 125 },
                 { title: "Param Changes", field:"param_diff", formatter:param_diff_format, headerSort:false, width: 110, bottomCalc:param_diff_bottom_calc, bottomCalcFormatter:param_diff_format },
                 { title: "" , headerSort:false, formatter:buttons, width: 185 },
@@ -827,7 +827,7 @@ async function initial_load() {
 
         function redraw_tables() {
             for (const table of tables) {
-                update_param_diff(table, table.getRows())
+                update_param_diff(table, table.getRows("active"))
             }
         }
         ignore.check.addEventListener('change', redraw_tables)
