@@ -260,8 +260,8 @@ async function generate_fence(feature, name) {
 
     // Save to file
     // sanitize name for use in file
-    name = name.replace('/', '_')
-    name = name.replace('\\', '_')
+    name = name.replaceAll('/', '_')
+    name = name.replaceAll('\\', '_')
 
     let text = 'QGC WPL 110\n'
     let points = 1
