@@ -162,7 +162,7 @@ input[type='number']:focus {
 td:nth-child(2) {
     width: 30%;
 }
-td:nth-child(n + 3):nth-child(-n + 5) {
+td:nth-child(n + 4):nth-child(-n + 6) {
     width: 12%;
 }
 .desc {
@@ -242,7 +242,7 @@ button:disabled {
 }
 
 /* Disabled slots retain their stored values, but cannot be edited until enabled. */
-tr.slot-disabled td:nth-child(n + 2):nth-child(-n + 5) input:disabled {
+tr.slot-disabled td:nth-child(n + 2):nth-child(-n + 6) input:disabled {
     background: #e4e8ed;
     color: #7d8793;
     border-color: #c7ced7;

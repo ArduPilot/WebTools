@@ -120,6 +120,7 @@ class MavlinkSerial {
                 this.pending.splice(this.pending.indexOf(p), 1);
                 p.reject(e);
             }
+            waiting.catch(() => {});
             throw e;
         }
         return waiting;
@@ -131,6 +132,7 @@ let fcParams = new Map();
 let baseline = null;
 let requestId = 100;
 let operation = false;
+let connecting = false;
 
 const pause = ms => new Promise(r => setTimeout(r, ms));
 
@@ -159,9 +161,9 @@ function updateUsbStatus() {
     $('writeFC').disabled = operation || !ready || !baseline;
     $('usbDisconnect').disabled = operation || !link?.active;
     const connectButton = $('usbConnect');
-    connectButton.textContent = ready ? 'Connected' : link?.active ? 'Connecting…' : 'Connect USB';
+    connectButton.textContent = ready ? 'Connected' : connecting || link?.active ? 'Connecting…' : 'Connect USB';
     connectButton.classList.toggle('connected', ready);
-    connectButton.disabled = operation || Boolean(link?.active);
+    connectButton.disabled = operation || connecting || Boolean(link?.active);
 }
 
 const VEHICLE_FROM_MAV_TYPE = {
@@ -230,12 +232,12 @@ function fcParamValue(name) {
 function vehicleFromParams() {
     if (fcParams.has('Q_ENABLE')) return 'Plane';
     if (fcParams.has('MODE1') && !fcParams.has('FLTMODE1')) return 'Rover';
-    if (fcParams.has('PILOT_SPEED_UP')) return 'Copter';
+    if (fcParams.has('PILOT_SPD_UP') || fcParams.has('PILOT_SPEED_UP')) return 'Copter';
     return null;
 }
 
 async function connectUsb() {
-    if (link?.active) return;
+    if (connecting || link?.active) return;
     if (!window.isSecureContext || !navigator.serial) {
         log(
             'Warning: USB requires Web Serial: use Chrome or Edge (or Firefox on Windows) on an HTTPS page or localhost. On Linux, snap builds of Firefox and Chromium cannot access serial ports.',
@@ -243,6 +245,10 @@ async function connectUsb() {
         );
         return;
     }
+    connecting = true;
+    // A read from a previous connection (possibly another FC) must not enable Write.
+    baseline = null;
+    updateUsbStatus();
     try {
         await mavlink20.ready;
         link = new MavlinkSerial(onMessage, onDisconnect);
@@ -267,6 +273,8 @@ async function connectUsb() {
         log(`USB connection failed: ${e.message}`, 'warning');
         if (link?.active) await link.disconnect();
         link = null;
+    } finally {
+        connecting = false;
         updateUsbStatus();
     }
 }
@@ -275,7 +283,8 @@ async function disconnectUsb() {
     if (link) await link.disconnect();
 }
 
-async function showSlot(screen, index) {
+async function showSlot(link, screen, index) {
+    if (!link?.active) throw Error('USB link lost');
     const id = ++requestId;
     const msg = await link.request(
         new mavlink20.messages.osd_param_show_config(link.targetSystem, link.targetComponent, id, screen, index),
@@ -302,6 +311,9 @@ async function showSlot(screen, index) {
 async function readFC() {
     if (!connected()) return;
     busy(true);
+    const readLink = link;
+    const linkLost = () => link !== readLink || !connected();
+    baseline = null;
     try {
         fcParams = new Map();
         log('Reading FC parameter list (this may take 15–30 seconds)…');
@@ -332,8 +344,9 @@ async function readFC() {
         for (const screen of [5, 6]) {
             for (let index = 1; index <= 9; index++) {
                 const key = `${screen}:${index}`;
+                if (linkLost()) throw Error('USB link lost during read; reconnect and read again.');
                 try {
-                    const slot = await showSlot(screen, index);
+                    const slot = await showSlot(readLink, screen, index);
                     next[key] = slot;
                     successes++;
                     if (slot.unassigned) continue;
@@ -352,6 +365,7 @@ async function readFC() {
                 }
             }
         }
+        if (linkLost()) throw Error('USB link lost during read; reconnect and read again.');
         if (!successes) {
             throw Error('No OSD slot replies received. The firmware may not support OSD configuration MAVLink messages.');
         }
@@ -531,7 +545,7 @@ async function writeFC() {
 
         // Read back every changed slot to confirm the FC accepted it
         for (const { screen, index, key } of changes) {
-            const actual = await showSlot(screen, index);
+            const actual = await showSlot(link, screen, index);
             if (state.slots[key].enabled !== true) {
                 const param = `OSD${screen}_PARAM${index}_EN`;
                 const response = await link.request(

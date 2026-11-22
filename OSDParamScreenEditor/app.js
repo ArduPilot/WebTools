@@ -184,6 +184,7 @@ function parameterPicker(slot, tr, key) {
         setSlotName(slot, key, name.value.trim().toUpperCase());
         slot.source = 'Edited';
         updateDescription(tr, slot);
+        updateCurrent(tr, slot);
         open();
     });
     name.addEventListener('focus', () => open());
@@ -262,11 +263,8 @@ function render() {
         tr.append(paramTd);
         const current = document.createElement('td');
         current.className = 'current';
-        // fcParamValue lives in usb.js, which loads after this file.
-        const value = slot.name && typeof fcParamValue === 'function' ? fcParamValue(slot.name) : undefined;
-        current.textContent = value === undefined ? '—' : String(Number(value.toPrecision(7)));
-        current.title = value === undefined ? 'Not read from FC' : `Current FC value of ${slot.name}`;
         tr.append(current);
+        updateCurrent(tr, slot);
         for (const field of ['min', 'max', 'increment']) {
             const td = document.createElement('td');
             const input = document.createElement('input');
@@ -300,6 +298,14 @@ function clearAll() {
     for (const key of Object.keys(state.slots)) state.slots[key] = { ...emptySlot(), source: 'Cleared' };
     render();
     log('All 18 editor slots cleared and disabled. FC unchanged until Write to FC.', 'success');
+}
+function updateCurrent(tr, slot) {
+    const current = tr.querySelector('td.current');
+    if (!current) return;
+    // fcParamValue lives in usb.js, which loads after this file.
+    const value = slot.name && typeof fcParamValue === 'function' ? fcParamValue(slot.name) : undefined;
+    current.textContent = value === undefined ? '—' : String(Number(value.toPrecision(7)));
+    current.title = value === undefined ? 'Not read from FC' : `Current FC value of ${slot.name}`;
 }
 function updateDescription(tr, slot) {
     const desc = tr.lastElementChild;
