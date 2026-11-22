@@ -48,11 +48,22 @@ class FFTTarget extends NotchTarget {
         for (var j=0; j < this.data.length; j++) {
             this.data.interpolated[instance][j] = linear_interp(this.data[j].freq, this.data[j].time, time)
         }
-        this.data.interpolated[instance].value = linear_interp(this.data.value, this.data.time, time)
+        if (this.data.value != null) {
+            // The center peak is only there if FTN1 is logged
+            this.data.interpolated[instance].value = linear_interp(this.data.value, this.data.time, time)
+        }
+    }
+
+    have_data(config) {
+        if ((config != null) && ((config.options & (1<<1)) == 0) && (this.data.value == null)) {
+            // Center peak tracking needs FTN1
+            return false
+        }
+        return super.have_data(config)
     }
 
     get_interpolated_target_freq(instance, index, config) {
-        if ((this.data.interpolated == null) || (this.data.interpolated[instance] == null) || (this.data.interpolated[instance].length == 0)) {
+        if ((this.data.interpolated == null) || (this.data.interpolated[instance] == null)) {
             return null
         }
 
