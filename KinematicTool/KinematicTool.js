@@ -432,6 +432,12 @@ function update_ruckig(config, desired, state, dt)
     const ruckig = new RuckigModule.Ruckig(1);
     const result = ruckig.calculate(input, trajectory);
 
+    if (result === undefined) {
+        // Result type is not registered with embind so there is no error code
+        console.log('Unknown error.')
+        return
+    }
+
     if (result.value !== 0) {
         if (result.value === -100) {
             console.log('Invalid input parameters.')
@@ -508,7 +514,8 @@ async function run_attitude()
         time: [0],
         pos: [wrap_PI(radians(parseFloat(document.getElementById("initial_pos").value)))],
         vel: [radians(parseFloat(document.getElementById("initial_vel").value))],
-        accel: [0]
+        accel: [0],
+        jerk: [0]
     }
 
     // Run until current reaches target
