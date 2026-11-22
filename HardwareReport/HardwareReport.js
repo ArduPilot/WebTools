@@ -483,7 +483,7 @@ function show_watchdog(log) {
                 for (let i = start_bit; i < stop_bit+1; i++) {
                     mask |= (1 << i)
                 }
-                let value = (ICSR & mask) >> start_bit
+                let value = (ICSR & mask) >>> start_bit
                 let text  = name + ": 0x" + value.toString(16)
                 if (decoder != null) {
                     text += " " + decoder(value)
@@ -1331,6 +1331,10 @@ function load_gps(log) {
                 const device_match = message.match(regex_gps_device)
                 if ((num_match != null) && (device_match != null)) {
                     const gps_num = parseInt(num_match[0]) - 1
+                    if (gps[gps_num] == null) {
+                        // GPS named at boot is not configured in the final parameters
+                        continue
+                    }
                     gps[gps_num].device = device_match[0]
                 }
             }
@@ -1910,7 +1914,10 @@ function load_param_file(text) {
     var lines = text.split('\n')
     params = {}
     for (let i in lines) {
-        var line = lines[i];
+        var line = lines[i].trim();
+        if (line.startsWith("#")) {
+            continue
+        }
         let v = line.split(/[\s,=\t]+/)
         if (v.length >= 2) {
             var name = v[0]
