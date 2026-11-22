@@ -124,6 +124,10 @@ function plot_log() {
 
     // Load user setting
     const bin_width = parseFloat(document.getElementById("WindowSize").value)
+    if (!(bin_width >= 0.1)) {
+        alert("Window size must be a number of at least 0.1 s")
+        return
+    }
     const use_size = document.getElementById("Unit_bps").checked
     const plot_labels = use_size ? rate_plot.bits : rate_plot.count
 
@@ -514,6 +518,10 @@ function load_tlog(log_file) {
 function plot_tlog() {
 
     const bin_width = parseFloat(document.getElementById("WindowSize").value)
+    if (!(bin_width >= 0.1)) {
+        alert("Window size must be a number of at least 0.1 s")
+        return
+    }
     const use_size = document.getElementById("Unit_bps").checked
 
     const plot_labels = use_size ? rate_plot.bits : rate_plot.count
