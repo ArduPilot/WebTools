@@ -1910,7 +1910,10 @@ function load_param_file(text) {
     var lines = text.split('\n')
     params = {}
     for (let i in lines) {
-        var line = lines[i];
+        var line = lines[i].trim();
+        if (line.startsWith("#")) {
+            continue
+        }
         let v = line.split(/[\s,=\t]+/)
         if (v.length >= 2) {
             var name = v[0]
