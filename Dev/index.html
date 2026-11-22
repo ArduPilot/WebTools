@@ -5,6 +5,7 @@
 <title>ArduPilot WIP Web Tools</title>
 <link rel="icon" href="../images/AP_favicon.png">
 <link rel="stylesheet" href="../Libraries/common.css">
+<script src="../Libraries/theme.js"></script>
 </head>
 <table class="header"><tr><td>
   <a href="https://ardupilot.org"><img src="../images/ArduPilot.png"></a>
@@ -12,6 +13,8 @@
   <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" class="github"></a>
   <br>
   <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" class="github"></a>
+</td><td class="theme">
+    <button id="theme_toggle" class="theme-toggle"><img src="../images/theme.svg" alt=""><br><span>Dark</span></button>
 </td></tr></table>
 
 <h1 style="text-align:center; width:1200px"><a href="" class="title">ArduPilot WIP Web Tools</a></h1>
@@ -26,7 +29,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../StreamStats" style="margin: 20px; display: inline-block;"><img src="../images/StreamStats_Icon.png" style="width:200px"></a>
+      <a href="../StreamStats" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/StreamStats_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>Stream stats</h2>
@@ -36,7 +39,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../KinematicTool" style="margin: 20px; display: inline-block;"><img src="../images/KinematicTool_Icon.png" style="width:200px"></a>
+      <a href="../KinematicTool" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/KinematicTool_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>Kinematic Tool</h2>
@@ -56,7 +59,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../RotationCheck" style="margin: 20px; display: inline-block;"><img src="../images/RotationCheck_Icon.png" style="width:200px"></a>
+      <a href="../RotationCheck" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/RotationCheck_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>Rotation Check</h2>
@@ -66,7 +69,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../SysID" style="margin: 20px; display: inline-block;"><img src="../images/sysid_python_stateSpace.png" style="width:200px; height:200px; background-color: #f0f0f0;"></a>
+      <a href="../SysID" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/sysid_python_stateSpace.png" style="width:200px; height:200px; background-color: #f0f0f0;"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>SysID</h2>
@@ -99,7 +102,7 @@ The tools on this page are either developer focused, or a work in progress, they
   
   <tr>
     <td>
-      <a href="../ThrustExpo" style="margin: 20px; display: inline-block;"><img src="../images/ThrustExpo_Icon.png" style="width:200px"></a>
+      <a href="../ThrustExpo" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/ThrustExpo_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>Thrust Expo</h2>
@@ -111,7 +114,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../AILogAnalyzer" style="margin: 20px; display: inline-block;"><img src="../images/AILogAnalyzer_Icon.png" style="width:200px"></a>
+      <a href="../AILogAnalyzer" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/AILogAnalyzer_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>AI Log Analyzer</h2>
@@ -122,7 +125,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../SCurveTool" style="margin: 20px; display: inline-block;"><img src="../images/SCurveTool_Icon.png" style="width:200px"></a>
+      <a href="../SCurveTool" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/SCurveTool_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>SCurve Kinematic Tool</h2>
@@ -132,7 +135,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../VideoOverlay" style="margin: 20px; display: inline-block;"><img src="../images/VideoOverlay_Icon.png" style="width:200px"></a>
+      <a href="../VideoOverlay" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/VideoOverlay_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>Video Overlay</h2>
@@ -142,7 +145,7 @@ The tools on this page are either developer focused, or a work in progress, they
 
   <tr>
     <td>
-      <a href="../AirspeedFit" style="margin: 20px; display: inline-block;"><img src="../images/AirspeedFit_Icon.png" style="width:200px"></a>
+      <a href="../AirspeedFit" style="margin: 20px; display: inline-block;"><img class="dark-invert" src="../images/AirspeedFit_Icon.png" style="width:200px"></a>
     </td>
     <td style="text-align:left; vertical-align:top; max-width:960px;">
       <h2>AirspeedFit</h2>

@@ -293,7 +293,7 @@ function update_usable_data() {
         document.getElementById("Gyro" + i + "_usable_line").style.display = (usable == null) ? "none" : ""
         const percent = Math.round((usable ?? 0) * 100)
         let label = document.getElementById("Gyro" + i + "_usable")
-        label.style.color = ((usable != null) && (percent < usable_data_warn_fraction * 100)) ? "#c00000" : ""
+        label.classList.toggle("usable-warn", (usable != null) && (percent < usable_data_warn_fraction * 100))
         label.textContent = "Usable data: " + percent + "% of analysis time"
     }
 }

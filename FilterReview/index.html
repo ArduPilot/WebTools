@@ -5,6 +5,7 @@
 <title>ArduPilot Filter Review</title>
 <link rel="icon" href="../images/AP_favicon.png">
 <link rel="stylesheet" href="../Libraries/common.css">
+<script src="../Libraries/theme.js"></script>
 <script src='../modules/plotly.js/dist/plotly.min.js'></script>
 <script src='../modules/fft.js/dist/fft.js'></script>
 
@@ -40,6 +41,8 @@
     <a href="https://github.com/ArduPilot/WebTools"><img src="../images/github-mark.png" class="github"></a>
     <br>
     <a href="https://github.com/ArduPilot/WebTools"><img src="../images/GitHub_Logo.png" class="github"></a>
+</td><td class="theme">
+    <button id="theme_toggle" class="theme-toggle"><img src="../images/theme.svg" alt=""><br><span>Dark</span></button>
 </td></tr></table>
 
 <table><tr><td style="width:1200px">
@@ -51,6 +54,12 @@
 <style>
     .tippy-box {
         font-size: 20px;
+    }
+    .usable-warn {
+        color: #c00000;
+    }
+    html[data-theme="dark"] .usable-warn {
+        color: #ff6b6b;
     }
 </style>
 
