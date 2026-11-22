@@ -154,6 +154,10 @@ function apply_crop() {
     // Apply to all features
     const crop_JSON = crop_polygon.toGeoJSON()
     for (const feature of features) {
+        if ((feature.geometry.type != "Polygon") && (feature.geometry.type != "MultiPolygon")) {
+            // Only polygons can be cropped, the others are not displayed
+            continue
+        }
         const cropped = turf.intersect(feature, crop_JSON)
         if (cropped != null) {
             cropped.id = feature.id,
