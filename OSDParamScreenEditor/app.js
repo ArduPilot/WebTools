@@ -260,6 +260,13 @@ function render() {
         const paramTd = document.createElement('td');
         paramTd.append(parameterPicker(slot, tr, key));
         tr.append(paramTd);
+        const current = document.createElement('td');
+        current.className = 'current';
+        // fcParamValue lives in usb.js, which loads after this file.
+        const value = slot.name && typeof fcParamValue === 'function' ? fcParamValue(slot.name) : undefined;
+        current.textContent = value === undefined ? '—' : String(Number(value.toPrecision(7)));
+        current.title = value === undefined ? 'Not read from FC' : `Current FC value of ${slot.name}`;
+        tr.append(current);
         for (const field of ['min', 'max', 'increment']) {
             const td = document.createElement('td');
             const input = document.createElement('input');

@@ -220,6 +220,11 @@ function onDisconnect(error) {
     updateUsbStatus();
 }
 
+// Current FC value of a parameter, from the last parameter list read (or later PARAM_VALUE updates).
+function fcParamValue(name) {
+    return fcParams.get(name)?.value;
+}
+
 // MAV_TYPE is ambiguous (a QuadPlane can report a multirotor type, a Copter tailsitter a VTOL
 // type), so once the parameter list is in, pick the vehicle from parameters unique to each.
 function vehicleFromParams() {
