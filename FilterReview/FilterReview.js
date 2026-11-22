@@ -2077,7 +2077,7 @@ function open_in_filter_tool() {
             continue
         }
         if (Gyro_batch[i].sensor_num == gyro_instance) {
-            url.searchParams.append("GYRO_SAMPLE_RATE", Math.round(Gyro_batch[i].gyro_rate))
+            url.searchParams.append("GyroSampleRate", Math.round(Gyro_batch[i].gyro_rate))
             break
         }
     }
