@@ -2282,7 +2282,7 @@ function add_sid_sets() {
     table.appendChild(header)
 
     function set_cell_style(cell, color, center) {
-        cell.style.border = "1px solid"
+        cell.style.border = "1px solid #000"
         cell.style.padding = "8px"
 
         if (center !== false) {

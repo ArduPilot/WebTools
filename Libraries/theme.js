@@ -9,7 +9,12 @@
     const root = document.documentElement
     const system_dark = window.matchMedia("(prefers-color-scheme: dark)")
 
+    // Choice made on this page, kept so the toggle still works if local storage is not available
+    let choice = null
     function get_saved() {
+        if (choice != null) {
+            return choice
+        }
         try {
             return localStorage.getItem("theme")
         } catch {
@@ -32,7 +37,8 @@
     const scene_axis = Object.assign({ color: foreground, backgroundcolor: "rgba(0,0,0,0)" }, axis)
     const dark_template = {
         layout: {
-            paper_bgcolor: "rgba(0,0,0,0)",
+            // Opaque so downloaded images are readable
+            paper_bgcolor: "#181a1b",
             plot_bgcolor: "rgba(0,0,0,0)",
             font: { color: foreground },
             xaxis: axis,
@@ -48,7 +54,7 @@
 
     // Some traces are drawn in black, swap them to the foreground colour in the dark theme
     function is_black(color) {
-        return (typeof color == "string") && ["#000", "#000000", "black", "rgb(0,0,0)"].includes(color.replace(/\s/g, "").toLowerCase())
+        return (typeof color == "string") && ["#000", "#000000", "black", "rgb(0,0,0)", "rgba(0,0,0,1)"].includes(color.replace(/\s/g, "").toLowerCase())
     }
     const color_paths = [["line"], ["marker"], ["marker", "line"]]
     function theme_trace(trace, dark) {
@@ -112,12 +118,12 @@
                     if (data.layout == null) {
                         data.layout = {}
                     }
-                    theme_plot(data.data, data.layout, is_dark())
+                    theme_plot(data.data, data.layout, root.dataset.theme == "dark")
                 } else {
                     if (layout == null) {
                         layout = {}
                     }
-                    theme_plot(data, layout, is_dark())
+                    theme_plot(data, layout, root.dataset.theme == "dark")
                 }
                 return original.call(this, gd, data, layout, config)
             }
@@ -149,6 +155,10 @@
             return
         }
         for (const gd of document.querySelectorAll(".js-plotly-plot")) {
+            if (gd.data == null) {
+                // Purged plot
+                continue
+            }
             theme_plot(gd.data, gd.layout, dark)
             window.Plotly.redraw(gd)
         }
@@ -161,7 +171,10 @@
     let tooltip_target
     function hide_tooltip() {
         if (tooltip_target != null) {
-            tooltip_target.setAttribute("title", tooltip_target.dataset.themeTitle)
+            // Put the title back unless the page has set a new one
+            if (!tooltip_target.hasAttribute("title")) {
+                tooltip_target.setAttribute("title", tooltip_target.dataset.themeTitle)
+            }
             delete tooltip_target.dataset.themeTitle
             tooltip_target = null
         }
@@ -193,6 +206,11 @@
     }
     function move_tooltip(event) {
         if ((tooltip == null) || tooltip.hidden) {
+            return
+        }
+        if ((tooltip_target != null) && !tooltip_target.isConnected) {
+            // Element removed from the page
+            hide_tooltip()
             return
         }
         const margin = 12
@@ -236,6 +254,13 @@
 
     apply()
     system_dark.addEventListener("change", apply)
+    // Follow a change made in another tab
+    window.addEventListener("storage", function (event) {
+        if (event.key == "theme") {
+            choice = null
+            apply()
+        }
+    })
 
     // The toggle button is in the page header
     window.addEventListener("DOMContentLoaded", function () {
@@ -244,8 +269,9 @@
             return
         }
         toggle.addEventListener("click", function () {
+            choice = is_dark() ? "light" : "dark"
             try {
-                localStorage.setItem("theme", is_dark() ? "light" : "dark")
+                localStorage.setItem("theme", choice)
             } catch {
                 // Storage not available, theme will not be remembered
             }
