@@ -80,7 +80,7 @@
   },
   "FilterTool/filters.js": {
     "no-undef": {
-      "count": 2
+      "count": 1
     }
   },
   "HardwareReport/HardwareReport.js": {
