@@ -400,12 +400,28 @@ function update_shown_params() {
 function redraw() {
 
 
-    // Expected field
+    // Expected field, with a gap where the yaw override has no yaw
+    const source_time = source.quaternion.time
     for (const axi of axis) {
         mag_plot[axi].data = [ mag_plot[axi].data[0] ]
 
-        mag_plot[axi].data[0].x = source.quaternion.time
-        mag_plot[axi].data[0].y = source[axi]
+        if (source.yaw_override == null) {
+            mag_plot[axi].data[0].x = source_time
+            mag_plot[axi].data[0].y = source[axi]
+            continue
+        }
+        let x = []
+        let y = []
+        for (let i = 0; i < source_time.length; i++) {
+            if ((i > 0) && (source_time[i] - source_time[i-1] > max_yaw_gap)) {
+                x.push(null)
+                y.push(null)
+            }
+            x.push(source_time[i])
+            y.push(source[axi][i])
+        }
+        mag_plot[axi].data[0].x = x
+        mag_plot[axi].data[0].y = y
     }
     error_plot.data = [ error_plot.data[0] ]
     yaw_change.mag.data = [ yaw_change.mag.data[0] ]
@@ -421,6 +437,15 @@ function redraw() {
         }
         const name = "Mag " + (i + 1)
         MAG_Data[i].param_selection = []
+
+        // Leave a gap in the plot where the attitude source has no data
+        const valid = MAG_Data[i].valid
+        function mask_invalid(values) {
+            if ((valid == null) || !Array.isArray(values)) {
+                return values
+            }
+            return values.map((v, j) => valid[j] ? v : null)
+        }
 
         function setup_plot(data, group_index, fit_name) {
             const show = data.show.checked
@@ -452,7 +477,7 @@ function redraw() {
                 legendgrouptitle: { text: group_name },
                 hovertemplate: gauss_hovertemplate,
                 x: MAG_Data[i].time,
-                y: data.error
+                y: mask_invalid(data.error)
             })
 
             // Calculate yaw change from existing calibration
@@ -479,7 +504,7 @@ function redraw() {
                 hoverinfo : existing ? "none" : "all",
                 hovertemplate: existing ? "" : yaw_change_hover,
                 x: MAG_Data[i].time,
-                y: mag_yaw
+                y: mask_invalid(mag_yaw)
             })
 
             let att_yaw = 0
@@ -496,7 +521,7 @@ function redraw() {
                 legendgrouptitle: { text: group_name },
                 hovertemplate: yaw_change_hover,
                 x: MAG_Data[i].time,
-                y: att_yaw
+                y: mask_invalid(att_yaw)
             })
 
             // Calculate field length
@@ -819,7 +844,14 @@ function calculate() {
         return
     }
 
-    select_body_frame_attitude()
+    if (!select_body_frame_attitude()) {
+        return
+    }
+
+    if (!have_valid_samples()) {
+        alert("The selected attitude source has no data in the analysis time")
+        return
+    }
 
     calculate_bins()
 
@@ -904,6 +936,14 @@ function get_yaw(mag_field, quaternion) {
     return yaw
 }
 
+// Validity of each compass sample for the selected attitude source between the given indexes, null if all are valid
+function get_valid(i, start_index, end_index) {
+    if (MAG_Data[i].valid == null) {
+        return null
+    }
+    return MAG_Data[i].valid.slice(start_index, end_index)
+}
+
 // Calculate error weights based on attitude binning
 const num_bins = 80
 function calculate_bins() {
@@ -957,7 +997,8 @@ function calculate_bins() {
     console.log(`Binning took: ${end - start} ms`);
 }
 
-function get_weights(bins) {
+// valid is optional, samples that are not valid get zero weight
+function get_weights(bins, valid) {
 
     const count = new Array(num_bins).fill(0)
 
@@ -965,6 +1006,9 @@ function get_weights(bins) {
     let num_unique_bins = 0
     let total_bins = 0
     for (let i = 0; i < len; i++) {
+        if ((valid != null) && !valid[i]) {
+            continue
+        }
         if (count[bins[i]] == 0) {
             num_unique_bins++
         }
@@ -977,11 +1021,15 @@ function get_weights(bins) {
     let weights = new Array(len).fill(1)
 
     for (let i = 0; i < len; i++) {
+        if ((valid != null) && !valid[i]) {
+            weights[i] = 0
+            continue
+        }
         // Scale by mean_bin_size so that the average weight is 1, this give comparable error magnitude to the un-weighted case
         weights[i] = mean_bin_size / count[bins[i]]
     }
 
-    return { weights, coverage }
+    return { weights, coverage, num_valid: total_bins }
 }
 
 function check_orientation() {
@@ -1003,20 +1051,25 @@ function check_orientation() {
         const num_samples = end_index - start_index
 
         // Get weighting based on bins
-        const weights = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index)).weights
+        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index), get_valid(i, start_index, end_index))
+        const weights = weight_obj.weights
+        const num_valid = weight_obj.num_valid
 
         // Calculate average earth filed to match sensor to
         let ef_mean = { x:0.0, y:0.0, z:0.0 }
         for (let j = 0; j < num_samples; j++) {
             const data_index = start_index + j
+            if (weights[j] == 0) {
+                continue
+            }
 
             ef_mean.x += MAG_Data[i].expected.x[data_index]
             ef_mean.y += MAG_Data[i].expected.y[data_index]
             ef_mean.z += MAG_Data[i].expected.z[data_index]
         }
-        ef_mean.x /= num_samples
-        ef_mean.y /= num_samples
-        ef_mean.z /= num_samples
+        ef_mean.x /= num_valid
+        ef_mean.y /= num_valid
+        ef_mean.z /= num_valid
 
         let rotation = new Quaternion()
 
@@ -1056,13 +1109,16 @@ function check_orientation() {
                 y[j] = tmp[1]
                 z[j] = tmp[2]
 
+                if (weights[j] == 0) {
+                    continue
+                }
                 mean.x += x[j]
                 mean.y += y[j]
                 mean.z += z[j]
             }
-            mean.x /= num_samples
-            mean.y /= num_samples
-            mean.z /= num_samples
+            mean.x /= num_valid
+            mean.y /= num_valid
+            mean.z /= num_valid
 
             const offsets = { 
                 x: ef_mean.x - mean.x,
@@ -1079,7 +1135,7 @@ function check_orientation() {
                               (z[j] - MAG_Data[i].expected.z[data_index] + offsets.z)**2) * weights[j]
             }
 
-            rot_error.push({ rotation: rot, error: error_sum / num_samples })
+            rot_error.push({ rotation: rot, error: error_sum / num_valid })
 
         }
 
@@ -1171,12 +1227,45 @@ function get_body_frame_ef(quaternion) {
     return ret
 }
 
+// With a yaw override, a compass sample is valid if it is within the override yaw time and not in a gap
+function get_yaw_override_valid(quaternion, time) {
+    const q_time = quaternion.time
+    const last = q_time.length - 1
+    let valid = new Array(time.length).fill(false)
+    let k = 0
+    for (let j = 0; j < time.length; j++) {
+        if ((time[j] < q_time[0]) || (time[j] > q_time[last])) {
+            continue
+        }
+        while ((k < last - 1) && (q_time[k + 1] < time[j])) {
+            k++
+        }
+        valid[j] = (q_time[k + 1] - q_time[k]) <= max_yaw_gap
+    }
+    return valid
+}
+
+// True if every compass with a validity mask has valid samples in the analysis time
+function have_valid_samples() {
+    for (let i = 0; i < 3; i++) {
+        if ((MAG_Data[i] == null) || (MAG_Data[i].valid == null)) {
+            continue
+        }
+        const valid = get_valid(i, find_start_index(MAG_Data[i].time), find_end_index(MAG_Data[i].time) + 1)
+        if (!valid.includes(true)) {
+            return false
+        }
+    }
+    return true
+}
+
 let source
+// Returns false if the selected source can't be used
 function select_body_frame_attitude() {
 
     if (source != null) {
         // No need to re-calc
-        return
+        return true
     }
 
     for (const ef of body_frame_earth_field) {
@@ -1187,6 +1276,18 @@ function select_body_frame_attitude() {
     if (source == null) {
         alert("No attitude source selected")
         throw new Error()
+    }
+
+    // Replace the yaw if a yaw override is selected
+    const yaw_override = yaw_overrides.find((override) => override.select.checked && (override.time != null))
+    if (yaw_override != null) {
+        const quaternion = replace_yaw(source.quaternion, yaw_override.time, yaw_override.yaw)
+        if (quaternion == null) {
+            source = null
+            alert(yaw_override.name + " yaw does not overlap with " + source_name() + " attitude")
+            return false
+        }
+        source = { name: source_name() + " with " + yaw_override.name + " yaw", quaternion, yaw_override }
     }
 
     // Calculate expected for this source
@@ -1252,6 +1353,7 @@ function select_body_frame_attitude() {
         }
 
         MAG_Data[i].quaternion = array_slerp(source.quaternion, source.quaternion.time, MAG_Data[i].time)
+        MAG_Data[i].valid = (source.yaw_override != null) ? get_yaw_override_valid(source.quaternion, MAG_Data[i].time) : null
 
         // Get yaw from quaternion for comparison later
         let quat = new Quaternion()
@@ -1278,6 +1380,7 @@ function select_body_frame_attitude() {
         // Yaw estimate from existing calibration
         MAG_Data[i].orig.yaw = get_yaw(MAG_Data[i].orig, MAG_Data[i].quaternion)
     }
+    return true
 }
 
 // Solve Ax = B, returns null if there is no unique solution
@@ -1307,8 +1410,9 @@ function fit() {
         const num_samples = end_index - start_index
 
         // Get weighting based on bins
-        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index))
+        const weight_obj = get_weights(MAG_Data[i].expected.bins.slice(start_index, end_index), get_valid(i, start_index, end_index))
         const weights = weight_obj.weights
+        const num_valid = weight_obj.num_valid
         const sqrt_weight = array_sqrt(weights)
 
         // Update coverage graphic
@@ -1319,7 +1423,7 @@ function fit() {
         for (let j = 0; j < num_samples; j++) {
             error_sum += weights[j] * MAG_Data[i].orig.error[start_index + j]**2 
         }
-        MAG_Data[i].orig.mean_error = Math.sqrt(error_sum / num_samples)
+        MAG_Data[i].orig.mean_error = Math.sqrt(error_sum / num_valid)
 
         let rot = {}
         let orientation
@@ -1526,7 +1630,7 @@ function fit() {
                 for (let j = 0; j < num_samples; j++) {
                     error_sum += weights[j] * ret.error[start_index + j]**2
                 }
-                ret.mean_error = Math.sqrt(error_sum / num_samples)
+                ret.mean_error = Math.sqrt(error_sum / num_valid)
 
                 ret.yaw = get_yaw(ret, MAG_Data[i].quaternion)
 
@@ -1715,6 +1819,62 @@ function set_need_calc(b) {
     document.getElementById('SaveParams').disabled = b
 }
 
+// Yaw override yaw is not interpolated over gaps longer than this (s), compass samples in the gaps are not used
+const max_yaw_gap = 1.0
+// Make a new attitude using the roll and pitch from quaternion and the yaw (deg) from another source.
+// Only the times where yaw is available are used, gaps of more than 1 second in the yaw are skipped.
+function replace_yaw(quaternion, yaw_time, yaw_deg) {
+    const yaw_len = yaw_time.length
+    if (yaw_len < 2) {
+        return
+    }
+
+    // Unwrap so yaw can be interpolated
+    let yaw = new Array(yaw_len)
+    yaw[0] = yaw_deg[0]
+    for (let i = 1; i < yaw_len; i++) {
+        let delta = yaw_deg[i] - yaw_deg[i-1]
+        delta -= 360 * Math.round(delta / 360)
+        yaw[i] = yaw[i-1] + delta
+    }
+
+    let ret = { time: [], q1: [], q2: [], q3: [], q4: [] }
+    let q = new Quaternion()
+    let yaw_index = 0
+    for (let i = 0; i < quaternion.time.length; i++) {
+        const time = quaternion.time[i]
+        if ((time < yaw_time[0]) || (time > yaw_time[yaw_len - 1])) {
+            continue
+        }
+        while ((yaw_index < yaw_len - 2) && (yaw_time[yaw_index + 1] < time)) {
+            yaw_index++
+        }
+        const dt = yaw_time[yaw_index + 1] - yaw_time[yaw_index]
+        if (dt > max_yaw_gap) {
+            continue
+        }
+        const ratio = (dt > 0) ? (time - yaw_time[yaw_index]) / dt : 0
+        const new_yaw = yaw[yaw_index] + (yaw[yaw_index + 1] - yaw[yaw_index]) * ratio
+
+        q.q1 = quaternion.q1[i]
+        q.q2 = quaternion.q2[i]
+        q.q3 = quaternion.q3[i]
+        q.q4 = quaternion.q4[i]
+        q.from_euler(q.get_euler_roll(), q.get_euler_pitch(), new_yaw * (Math.PI / 180))
+
+        ret.time.push(time)
+        ret.q1.push(q.q1)
+        ret.q2.push(q.q2)
+        ret.q3.push(q.q3)
+        ret.q4.push(q.q4)
+    }
+
+    if (ret.time.length < 2) {
+        return
+    }
+    return ret
+}
+
 function add_attitude_source(quaternion, name) {
 
     // Add check box for this attitude source
@@ -1744,9 +1904,41 @@ function add_attitude_source(quaternion, name) {
 
 }
 
+// Add a yaw override option, time and yaw (deg) are only where yaw is available, null for no override
+function add_yaw_override(name, time, yaw) {
+    let section = document.getElementById("YAW_OVERRIDE")
+
+    let radio = document.createElement("input")
+    radio.setAttribute('type', 'radio')
+    radio.setAttribute('id', "YAW_OVERRIDE" + name)
+    radio.setAttribute('name', "yaw_override")
+
+    // Clear selected source and enable re-calc
+    radio.addEventListener('change', function() {
+        set_need_calc(true)
+        source = null
+    })
+
+    let label = document.createElement("label")
+    label.setAttribute('for', "YAW_OVERRIDE" + name)
+    label.innerHTML = name
+
+    section.appendChild(radio)
+    section.appendChild(label)
+    section.appendChild(document.createElement("br"))
+
+    return { name, time, yaw, select: radio }
+}
+
+// Name of the selected attitude source
+function source_name() {
+    return body_frame_earth_field.find((ef) => ef.select.checked).name
+}
+
 var MAG_Data
 var fits
 var body_frame_earth_field
+var yaw_overrides
 var earth_field
 async function load(log_file) {
 
@@ -2022,6 +2214,13 @@ async function load(log_file) {
     body_frame_earth_field = []
     source = null
 
+    // Clear yaw override options, none is the default
+    let yaw_override_select = document.getElementById("YAW_OVERRIDE")
+    yaw_override_select.replaceChildren(yaw_override_select.children[0])
+    yaw_overrides = [ add_yaw_override("None", null, null) ]
+    yaw_overrides[0].select.checked = true
+    let yaw_override_options = []
+
     if ("AHR2" in log.messageTypes) {
 
         const quaternion = {
@@ -2081,6 +2280,49 @@ async function load(log_file) {
                 field.select.checked = true
             }
             body_frame_earth_field.push(field)
+
+            // Yaw from the EKF's Gaussian sum filter (GSF) yaw estimator, this does not use the compass
+            if (("XKY0" in log.messageTypes) && ("instances" in log.messageTypes.XKY0) && (primary in log.messageTypes.XKY0.instances)) {
+                const time = TimeUS_to_seconds(log.get_instance("XKY0", primary, "TimeUS"))
+                const yaw = log.get_instance("XKY0", primary, "YC")
+                const YCS = log.get_instance("XKY0", primary, "YCS")
+
+                // The GSF yaw is only used once it has converged, the EKF uses it for a yaw reset when its variance
+                // is below radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)^2, with the threshold 15 deg. YCS is logged as
+                // sqrt(degrees(variance)), with degrees() applied to the variance, so the same limit on YCS is:
+                const max_variance = (15.0 * (Math.PI / 180))**2
+                const max_YCS = Math.sqrt(max_variance * (180 / Math.PI))
+                let valid_time = []
+                let valid_yaw = []
+                for (let i = 0; i < time.length; i++) {
+                    if (YCS[i] < max_YCS) {
+                        valid_time.push(time[i])
+                        valid_yaw.push(yaw[i])
+                    }
+                }
+                if (valid_time.length >= 2) {
+                    yaw_override_options.push({ name: "GSF", time: valid_time, yaw: valid_yaw })
+                }
+            }
+        }
+    }
+
+    // Yaw from GPS (for example moving baseline), yaw is logged as 0 when not available
+    if (("GPS" in log.messageTypes) && ("instances" in log.messageTypes.GPS)) {
+        for (const inst of Object.keys(log.messageTypes.GPS.instances)) {
+            const time = TimeUS_to_seconds(log.get_instance("GPS", inst, "TimeUS"))
+            const yaw = log.get_instance("GPS", inst, "Yaw")
+            let valid_time = []
+            let valid_yaw = []
+            for (let i = 0; i < time.length; i++) {
+                if (yaw[i] != 0) {
+                    valid_time.push(time[i])
+                    valid_yaw.push(yaw[i])
+                }
+            }
+            if (valid_time.length >= 2) {
+                yaw_override_options.push({ name: "GPS " + (parseFloat(inst) + 1), time: valid_time, yaw: valid_yaw })
+            }
         }
     }
 
@@ -2092,6 +2334,14 @@ async function load(log_file) {
         body_frame_earth_field[0].select.checked = true
         body_frame_earth_field[0].select.disabled = true
     }
+    // Only offer a yaw override if it can be used with at least one attitude source
+    for (const option of yaw_override_options) {
+        if (body_frame_earth_field.some((ef) => replace_yaw(ef.quaternion, option.time, option.yaw) != null)) {
+            yaw_overrides.push(add_yaw_override(option.name, option.time, option.yaw))
+        }
+    }
+    // No yaw override available
+    yaw_overrides[0].select.disabled = yaw_overrides.length == 1
 
     // Add interference sources
     motor_comp.data = []
