@@ -2441,9 +2441,9 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
         // Assume a constant sample rate for the FFT
         const sample_rate = sample_rate_sum / sample_rate_count
         Gyro_batch[i].gyro_rate = sample_rate
-        if (gyro_rate[i] != null) {
+        if (gyro_rate[Gyro_batch[i].sensor_num] != null) {
             // Make sure rate is at least the reported sampling rate
-            Gyro_batch[i].gyro_rate = Math.max(gyro_rate[i], Gyro_batch[i].gyro_rate)
+            Gyro_batch[i].gyro_rate = Math.max(gyro_rate[Gyro_batch[i].sensor_num], Gyro_batch[i].gyro_rate)
         }
 
     }
