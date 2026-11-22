@@ -84,9 +84,6 @@
     }
   },
   "HardwareReport/HardwareReport.js": {
-    "no-duplicate-case": {
-      "count": 2
-    },
     "no-unused-vars": {
       "count": 1
     }

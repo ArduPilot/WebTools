@@ -337,10 +337,10 @@ function show_watchdog(log) {
             case 4:
                 fault_name = "MemManage"
                 break
-            case 4:
+            case 5:
                 fault_name = "BusFault"
                 break
-            case 4:
+            case 6:
                 fault_name = "UsageFault"
                 break
         }
