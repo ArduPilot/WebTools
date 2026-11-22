@@ -483,7 +483,7 @@ function show_watchdog(log) {
                 for (let i = start_bit; i < stop_bit+1; i++) {
                     mask |= (1 << i)
                 }
-                let value = (ICSR & mask) >> start_bit
+                let value = (ICSR & mask) >>> start_bit
                 let text  = name + ": 0x" + value.toString(16)
                 if (decoder != null) {
                     text += " " + decoder(value)
