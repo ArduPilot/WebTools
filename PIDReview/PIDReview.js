@@ -1576,7 +1576,7 @@ function split_into_batches(PID_log_messages, index, time) {
         if (((time[j] - time[j-1])*count) > ((time[j] - time[batch_start]) * 5) || (j == (len - 1)) || past_set_end) {
             if (count >= 64) {
                 // Must have at least 64 samples in each batch
-                const sample_rate = 1 / ((time[j-1] - time[batch_start]) / count)
+                const sample_rate = (j - 1 - batch_start) / (time[j-1] - time[batch_start])
                 sample_rate_sum += sample_rate
                 sample_rate_count++
 
