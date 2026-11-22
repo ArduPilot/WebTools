@@ -94,6 +94,7 @@ function initParamInputs() {
                 params[paramName].value = parseFloat(this.value);
             });
             input.addEventListener("change", function (e) {
+                params[paramName].value = parseFloat(this.value);
                 updatePlotData();
             });
         } else if (paramName === "MOT_THST_EXPO") {
@@ -337,7 +338,7 @@ function updateThrustExpoPlot(thrustExpo = null) {
     }
 
     let result;
-    if (thrustExpo) {
+    if (thrustExpo !== null && !isNaN(thrustExpo)) {
         // don't optimize if user has provided a value
         result = get_corrected_thrust(thrustExpo);
     } else {
