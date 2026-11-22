@@ -301,7 +301,12 @@ async function generate_fence(feature, name) {
 }
 
 function wrap_180(angle) {
-    return ((angle + 180) % 360) - 180;
+    // JS remainder keeps the sign of the dividend, so shift negative results up
+    let wrapped = (angle + 180) % 360
+    if (wrapped < 0) {
+        wrapped += 360
+    }
+    return wrapped - 180;
 }
 
 function longitude_scale(lat) {
