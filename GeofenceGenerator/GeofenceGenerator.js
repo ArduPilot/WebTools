@@ -230,7 +230,8 @@ async function generate_fence(feature, name) {
     // Convert to cartesian
     const cartesian = { x: new Array(len), y: new Array(len) }
     for (let i = 0; i<len; i++) {
-        const points = polys[i]
+        // Work on a copy so downloading does not edit the feature
+        const points = polys[i].slice()
         let xy_len = points.length
         if ((points[0][0] == points[xy_len-1][0]) && (points[0][1] == points[xy_len-1][1])) {
             // Drop last point if it is the same as the first
