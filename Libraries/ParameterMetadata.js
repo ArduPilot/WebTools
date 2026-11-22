@@ -9,6 +9,11 @@ function parameter_set_value(name, value) {
     // set main input
     param.value = value
 
+    // A drop down ignores text that is not one of its options, try the number, e.g. 1.000000 for 1
+    if ((param.tagName === "SELECT") && (param.selectedIndex < 0)) {
+        param.value = parseFloat(value)
+    }
+
     // Set bits in bitmask
     let items = param.parentElement.querySelectorAll("input[type=checkbox]")
     for (let item of items) {
