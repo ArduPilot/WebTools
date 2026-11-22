@@ -801,13 +801,13 @@ function get_ins_param_names(index) {
     const tcal_prefix = prefix + "_TCAL" + full_num + "_"
     let tcal = { enabled: tcal_prefix + "ENABLE",
                  t_min: tcal_prefix + "TMIN",
-                 t_max: tcal_prefix + "TMAN",
+                 t_max: tcal_prefix + "TMAX",
                  accel: [ get_param_name_vector3(tcal_prefix + "ACC1_"), 
                           get_param_name_vector3(tcal_prefix + "ACC2_"),
                           get_param_name_vector3(tcal_prefix + "ACC3_")],
-                 gyro: [ get_param_name_vector3(tcal_prefix + "ACC1_"), 
-                         get_param_name_vector3(tcal_prefix + "ACC2_"),
-                         get_param_name_vector3(tcal_prefix + "ACC3_")],
+                 gyro: [ get_param_name_vector3(tcal_prefix + "GYR1_"), 
+                         get_param_name_vector3(tcal_prefix + "GYR2_"),
+                         get_param_name_vector3(tcal_prefix + "GYR3_")],
                 }
 
     return { gyro: gyro, accel: accel, tcal: tcal,
