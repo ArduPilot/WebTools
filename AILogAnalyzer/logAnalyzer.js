@@ -141,7 +141,7 @@ async function connectIfNeeded() {
         try {
             // Instantiate OpenAI client
             openai = new OpenAI({apiKey, dangerouslyAllowBrowser: true});
-        } catch (error) {
+        } catch {
             throw new Error('Could not connect to OpenAI');
         }
     }
@@ -566,7 +566,7 @@ async function handleRunStream(runStream) {
         for await (const event of runStream) {
             // Handle different event types
             switch (event.event) {
-                case 'thread.message.delta':
+                case 'thread.message.delta': {
                     
                     // New message content received
                     const content = event.data.delta.content;
@@ -605,6 +605,7 @@ async function handleRunStream(runStream) {
                         }
                     }
                     break;
+                }
                     
                 case 'thread.run.requires_action':
                     // Handle required actions (tool calls)
