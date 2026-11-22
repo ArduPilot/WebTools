@@ -2420,9 +2420,9 @@ function load_from_raw_log(log, num_gyro, gyro_rate, get_param) {
 
                     Gyro_batch[i].push({ sample_time: time[batch_start] * US2S,
                                         sample_rate: sample_rate,
-                                        x: GyrX.slice(batch_start, j-i),
-                                        y: GyrY.slice(batch_start, j-i),
-                                        z: GyrZ.slice(batch_start, j-i) })
+                                        x: GyrX.slice(batch_start, j),
+                                        y: GyrY.slice(batch_start, j),
+                                        z: GyrZ.slice(batch_start, j) })
                 }
 
                 // Start the next batch from this point
