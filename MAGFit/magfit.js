@@ -2132,7 +2132,7 @@ async function load(log_file) {
                 }
                 const name =  "Battery " + (i+1) + " current"
                 MAG_Data[j].fits.push({
-                    value: linear_interp(value, time, MAG_Data[i].time),
+                    value: linear_interp(value, time, MAG_Data[j].time),
                     type: 2,
                     name: name,
                     tip: { text: "Calibrations with motor compensation from " + name + ". Ensure battery monitor is calibrated and functioning correctly."},
