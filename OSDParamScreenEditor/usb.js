@@ -58,7 +58,7 @@ class MavlinkSerial {
         } catch {
             // Port may already be closed
         }
-        this.onDisconnect?.(error);
+        this.onDisconnect?.(error, this);
     }
 
     // On an unexpected end or read error, close the port properly so it can be reopened
@@ -215,11 +215,20 @@ function onMessage(m) {
     }
 }
 
-function onDisconnect(error) {
+function onDisconnect(error, source) {
+    // A late close callback from an earlier connection must not tear down the current one
+    if (source && source !== link) return;
     baseline = null;
     if (error) log(`Warning: ${error.message}`, 'warning');
     link = null;
+    clearFcParams();
     updateUsbStatus();
+}
+
+// Forget the previous FC's parameters so the Current value column doesn't show stale values
+function clearFcParams() {
+    fcParams = new Map();
+    render();
 }
 
 // Current FC value of a parameter, from the last parameter list read (or later PARAM_VALUE updates).
@@ -248,6 +257,7 @@ async function connectUsb() {
     connecting = true;
     // A read from a previous connection (possibly another FC) must not enable Write.
     baseline = null;
+    clearFcParams();
     updateUsbStatus();
     try {
         await mavlink20.ready;
@@ -308,6 +318,20 @@ async function showSlot(link, screen, index) {
     };
 }
 
+// Fetch one parameter into fcParams (via onMessage); returns undefined if the FC doesn't reply
+async function readParam(readLink, name) {
+    try {
+        await readLink.request(
+            new mavlink20.messages.param_request_read(readLink.targetSystem, readLink.targetComponent, name, -1),
+            m => m._id === mavlink20.MAVLINK_MSG_ID_PARAM_VALUE && fromTarget(m) && cleanId(m.param_id) === name,
+            2500
+        );
+    } catch {
+        // Treated as unknown by the caller
+    }
+    return fcParams.get(name);
+}
+
 async function readFC() {
     if (!connected()) return;
     busy(true);
@@ -350,9 +374,13 @@ async function readFC() {
                     next[key] = slot;
                     successes++;
                     if (slot.unassigned) continue;
-                    const en = fcParams.get(`OSD${screen}_PARAM${index}_EN`);
+                    const enName = `OSD${screen}_PARAM${index}_EN`;
+                    if (!fcParams.has(enName)) await readParam(readLink, enName);
+                    const en = fcParams.get(enName);
                     slot.enabled = en ? en.value >= 0.5 : true;
                     slot.source = en ? 'FC read' : 'FC read (EN unknown)';
+                    // OSD_PARAM_CONFIG always sets EN, so a write could silently enable a disabled slot
+                    if (!en) slot.enUnknown = true;
                     if (!slot.name) {
                         log(
                             `Warning: OSD${screen} slot ${index} returned an empty param_id after MAVLink 2 zero-padding (EN=${en?.value ?? 'unknown'}, min=${slot.min}, max=${slot.max}).`,
@@ -379,7 +407,7 @@ async function readFC() {
             ? null
             : Object.fromEntries(
                   Object.entries(next)
-                      .filter(([, v]) => v)
+                      .filter(([, v]) => v && !v.enUnknown)
                       .map(([k, v]) => [k, structuredClone(v)])
               );
         if (unresolved.length) {
@@ -394,6 +422,15 @@ async function readFC() {
             `Read completed: ${successes}/18 OSD slots. Stored names are shown even for disabled slots; Source column identifies their state.`,
             'success'
         );
+        const enUnknown = Object.entries(next)
+            .filter(([, v]) => v?.enUnknown)
+            .map(([k]) => k);
+        if (enUnknown.length) {
+            log(
+                `Warning: Could not read the enable flag for slot(s) ${enUnknown.join(', ')}; they will not be written until a read succeeds.`,
+                'warning'
+            );
+        }
         if (successes < 18) {
             log('Warning: Some slots did not respond and will not be writable until a successful read.', 'warning');
         }
