@@ -403,8 +403,8 @@ function evaluate_transfer_functions(filter_groups, freq_max, freq_step, use_dB,
 
         const sample_rate = filters[0].sample_rate
         for (let j = 1; j < filters.length; j++) {
-            if (filters[0].sample_rate != sample_rate) {
-                error("Sample rate miss match")
+            if (filters[j].sample_rate != sample_rate) {
+                throw new Error("Sample rate miss match")
             }
         }
 
