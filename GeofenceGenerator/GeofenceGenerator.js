@@ -25,6 +25,7 @@ async function request() {
         polygons[i].remove()
     }
     polygons = []
+    features = []
 
     // Remove crop polygon and enable button its button
     if (crop_polygon != null) {
