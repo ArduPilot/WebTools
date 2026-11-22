@@ -1580,8 +1580,8 @@ function split_into_batches(PID_log_messages, index, time) {
                 sample_rate_sum += sample_rate
                 sample_rate_count++
 
-                // Add to batch
-                ret.push({param_set: param_set, sample_rate: sample_rate, batch_start: batch_start, batch_end: j-1})
+                // Add to batch, batch_end is one past the last sample, it is only used as the end of slice which excludes it
+                ret.push({param_set: param_set, sample_rate: sample_rate, batch_start: batch_start, batch_end: j})
             }
             if (past_set_end) {
                 // Move on to next set
