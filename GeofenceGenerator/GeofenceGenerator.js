@@ -374,14 +374,14 @@ function line_intersects(seg1_start, seg1_end, seg2_start, seg2_end) {
     }
 
     // implementation borrowed from http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
-    const r1 = (seg1_end[0] - seg1_start[0], seg1_end[1] - seg1_start[1])
-    const r2 = (seg2_end[0] - seg2_start[0], seg2_end[1] - seg2_start[1])
+    const r1 = [seg1_end[0] - seg1_start[0], seg1_end[1] - seg1_start[1]]
+    const r2 = [seg2_end[0] - seg2_start[0], seg2_end[1] - seg2_start[1]]
     const r1xr2 = r1[0]*r2[1] - r1[1]*r2[0]
     if (Math.abs(r1xr2) < 1e-09) {
         // either collinear or parallel and non-intersecting
         return false
     } else {
-        const ss2_ss1 = (seg2_start[0] - seg1_start[0], seg2_start[1] - seg1_start[1])
+        const ss2_ss1 = [seg2_start[0] - seg1_start[0], seg2_start[1] - seg1_start[1]]
         const q_pxr = ss2_ss1[0]*r1[1] - ss2_ss1[1]*r1[0]
         // t = (q - p) * s / (r * s)
         // u = (q - p) * r / (r * s)
@@ -558,6 +558,11 @@ function simplify_poly(x, y) {
 
         if ((min_poly_val > area_threshold) && (array_sum(poly_len) <= max_nodes)) {
             // reached threshold, simplification complete
+            break
+        }
+
+        if (min_poly_index === undefined) {
+            // every remaining point would create an intersection if removed, cant simplify any further
             break
         }
 
