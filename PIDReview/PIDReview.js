@@ -1241,6 +1241,8 @@ function redraw_step() {
         sn[j] /= last_sn
     }
     // Reflect for full spectrum
+    // The gaussian can be longer than real_len at low logging rates, reflect only the real_len single sided part
+    sn = sn.slice(0, real_len)
     sn = [...sn, ...sn.slice(1,real_len-1).reverse()]
 
     // Scale
