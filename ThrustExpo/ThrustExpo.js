@@ -337,7 +337,7 @@ function updateThrustExpoPlot(thrustExpo = null) {
     }
 
     let result;
-    if (thrustExpo) {
+    if (thrustExpo !== null && !isNaN(thrustExpo)) {
         // don't optimize if user has provided a value
         result = get_corrected_thrust(thrustExpo);
     } else {
