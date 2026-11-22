@@ -2483,6 +2483,10 @@ async function load(log_file) {
 
     const start = performance.now()
 
+    // Log type picked by the user before loading, reset() clears the selection
+    // The buttons are disabled once a log has been loaded, so a previous log's type is not a choice
+    const batch_selected = !document.getElementById("log_type_batch").disabled && document.getElementById("log_type_batch").checked
+
     // Reset buttons and labels
     reset()
 
@@ -2545,7 +2549,9 @@ async function load(log_file) {
 
     } else {
         // Have both, use selected
-        use_batch = document.getElementById("log_type_batch").checked
+        use_batch = batch_selected
+        document.getElementById("log_type_batch").checked = use_batch
+        document.getElementById("log_type_raw").checked = !use_batch
     }
 
     // Cannot change log type after the log has been loaded, disable both buttons
