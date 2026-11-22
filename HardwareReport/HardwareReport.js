@@ -1331,6 +1331,10 @@ function load_gps(log) {
                 const device_match = message.match(regex_gps_device)
                 if ((num_match != null) && (device_match != null)) {
                     const gps_num = parseInt(num_match[0]) - 1
+                    if (gps[gps_num] == null) {
+                        // GPS named at boot is not configured in the final parameters
+                        continue
+                    }
                     gps[gps_num].device = device_match[0]
                 }
             }
