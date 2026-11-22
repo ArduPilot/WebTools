@@ -132,7 +132,7 @@ function plot_log() {
     log_stats.data[0].values = []
     for (const [key, value] of Object.entries(stats)) {
         log_stats.data[0].labels.push(key)
-        log_stats.data[0].values.push(use_size ? value.size : value.count)
+        log_stats.data[0].values.push(use_size ? value.size * 8 : value.count)
     }
     log_stats.data[0].hovertemplate = plot_labels.pie_hovertemplate
 
