@@ -442,13 +442,11 @@ async function readFC() {
 }
 
 function sameNumber(a, b) {
-    const x = Number(a);
-    const y = Number(b);
-    return (
-        Number.isFinite(x) &&
-        Number.isFinite(y) &&
-        Math.abs(x - y) <= Math.max(1e-5, Math.abs(x) * 1e-5, Math.abs(y) * 1e-5)
-    );
+    // The FC stores these as float32, so compare at that precision. There is no absolute
+    // floor, which would hide changes to very small values such as 1e-6 -> 1e-5.
+    const x = Math.fround(Number(a));
+    const y = Math.fround(Number(b));
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= Math.max(Math.abs(x), Math.abs(y)) * 2 ** -23;
 }
 
 function slotChanged(slot, original) {
@@ -510,9 +508,11 @@ async function writeFC() {
         for (const screen of [5, 6]) {
             for (let index = 1; index <= 9; index++) {
                 const key = `${screen}:${index}`;
-                const slot = state.slots[key];
                 if (!(key in baseline)) continue;
-                if (!slotChanged(slot, baseline[key])) continue;
+                if (!slotChanged(state.slots[key], baseline[key])) continue;
+                // Snapshot the slot so edits made while Write is running can't change what is
+                // sent or what it is verified against
+                const slot = structuredClone(state.slots[key]);
                 const active = slot.enabled === true;
                 if (active && !slot.name) throw Error(`OSD${screen} slot ${index} is enabled but has no parameter name.`);
                 if (active && !fcParams.has(slot.name)) {
@@ -581,9 +581,9 @@ async function writeFC() {
         log(`Write completed: ${completed}/${changes.length} changed slots. Reading back for verification…`, 'success');
 
         // Read back every changed slot to confirm the FC accepted it
-        for (const { screen, index, key } of changes) {
+        for (const { screen, index, key, slot: wanted } of changes) {
             const actual = await showSlot(link, screen, index);
-            if (state.slots[key].enabled !== true) {
+            if (wanted.enabled !== true) {
                 const param = `OSD${screen}_PARAM${index}_EN`;
                 const response = await link.request(
                     new mavlink20.messages.param_request_read(link.targetSystem, link.targetComponent, param, -1),
@@ -594,7 +594,6 @@ async function writeFC() {
                 baseline[key] = { ...actual, enabled: false, source: 'FC read' };
                 state.slots[key].source = 'FC read';
             } else {
-                const wanted = state.slots[key];
                 if (actual.name !== wanted.name) throw Error(`${key}: readback name mismatch (${actual.name})`);
                 const type = Number(wanted.config_type || 0);
                 if (Number(actual.config_type) !== type) {
