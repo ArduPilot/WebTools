@@ -311,9 +311,9 @@ async function showSlot(link, screen, index) {
         name: cleanId(msg.param_id).trim().toUpperCase(),
         enabled: true,
         source: 'FC read',
-        min: String(Number(msg.min_value.toPrecision(7))),
-        max: String(Number(msg.max_value.toPrecision(7))),
-        increment: String(Number(msg.increment.toPrecision(7))),
+        min: fcText(msg.min_value),
+        max: fcText(msg.max_value),
+        increment: fcText(msg.increment),
         config_type: msg.config_type,
     };
 }
@@ -439,6 +439,11 @@ async function readFC() {
     } finally {
         busy(false);
     }
+}
+
+// How a range read from the FC is shown: its float32 value to 7 significant digits
+function fcText(value) {
+    return String(Number(Math.fround(Number(value)).toPrecision(7)));
 }
 
 function sameNumber(a, b) {
@@ -600,7 +605,8 @@ async function writeFC() {
                     throw Error(`${key}: readback type mismatch (sent ${type}, FC has ${actual.config_type})`);
                 }
                 const ranges = ['min', 'max', 'increment'];
-                if (ranges.some(f => !sameNumber(actual[f], wanted[f]))) {
+                // actual holds the FC's values rounded by fcText(), so round what was sent the same way
+                if (ranges.some(f => !sameNumber(actual[f], fcText(wanted[f])))) {
                     const got = `${actual.min}..${actual.max} step ${actual.increment}`;
                     // A typed slot always uses the FC's fixed ranges for its type, so that is expected
                     if (type === 0) throw Error(`${key}: readback range mismatch (FC has ${got})`);
