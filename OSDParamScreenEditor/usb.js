@@ -108,11 +108,14 @@ class MavlinkSerial {
         });
     }
 
-    // Send a message and resolve with the first received message accepted by match()
+    // Send a message and resolve with the first received message accepted by match().
+    // send() is raced against the response wait, so a stalled serial write still times out.
     async request(message, match, ms) {
         const waiting = this.wait(match, ms);
+        const sending = this.send(message);
+        sending.catch(() => {}); // a late failure after the reply arrived is harmless
         try {
-            await this.send(message);
+            await Promise.race([sending, waiting]);
         } catch (e) {
             const p = this.pending.find(x => x.match === match);
             if (p) {
@@ -443,7 +446,8 @@ async function readFC() {
 
 // A range read from the FC as the shortest decimal that converts back to the same float32, so
 // an untouched range is re-sent unchanged (16777215 stays 16777215, 0.1 stays 0.1). A candidate
-// must be within a quarter ulp, so it is never a rounding tie that another encoder could round
+// must be strictly less than half an ulp away (|f| * 2^-25 is between a quarter and half an ulp,
+// depending on the mantissa), so it is never a rounding tie that another encoder could round
 // the other way. 9 significant digits always qualifies.
 function fcText(value) {
     const f = Math.fround(Number(value));

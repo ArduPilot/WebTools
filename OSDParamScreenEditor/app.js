@@ -35,7 +35,8 @@ function log(message, type = 'info') {
 function parseMetadata(params) {
     const result = {};
     for (const [name, meta] of Object.entries(params)) {
-        result[name] = {
+        // FC parameter names are upper case; upstream metadata has at least one mixed-case typo (FOLLP_LkAHD)
+        result[name.toUpperCase()] = {
             min: meta.Range?.low ?? '',
             max: meta.Range?.high ?? '',
             increment: meta.Increment ?? '',
