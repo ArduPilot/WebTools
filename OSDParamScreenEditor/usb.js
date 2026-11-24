@@ -441,9 +441,18 @@ async function readFC() {
     }
 }
 
-// How a range read from the FC is shown: its float32 value to 7 significant digits
+// A range read from the FC as the shortest decimal that converts back to the same float32, so
+// an untouched range is re-sent unchanged (16777215 stays 16777215, 0.1 stays 0.1). A candidate
+// must be within a quarter ulp, so it is never a rounding tie that another encoder could round
+// the other way. 9 significant digits always qualifies.
 function fcText(value) {
-    return String(Number(Math.fround(Number(value)).toPrecision(7)));
+    const f = Math.fround(Number(value));
+    if (!Number.isFinite(f) || f === 0) return String(f);
+    for (let digits = 1; digits < 9; digits++) {
+        const text = f.toPrecision(digits);
+        if (Math.abs(Number(text) - f) < Math.abs(f) * 2 ** -25) return String(Number(text));
+    }
+    return String(Number(f.toPrecision(9)));
 }
 
 function sameNumber(a, b) {
@@ -605,8 +614,9 @@ async function writeFC() {
                     throw Error(`${key}: readback type mismatch (sent ${type}, FC has ${actual.config_type})`);
                 }
                 const ranges = ['min', 'max', 'increment'];
-                // actual holds the FC's values rounded by fcText(), so round what was sent the same way
-                if (ranges.some(f => !sameNumber(actual[f], fcText(wanted[f])))) {
+                // actual holds the FC's exact float32 values; sameNumber() allows the 1 ulp that
+                // jspack's float32 rounding of a tie can differ from Math.fround()
+                if (ranges.some(f => !sameNumber(actual[f], wanted[f]))) {
                     const got = `${actual.min}..${actual.max} step ${actual.increment}`;
                     // A typed slot always uses the FC's fixed ranges for its type, so that is expected
                     if (type === 0) throw Error(`${key}: readback range mismatch (FC has ${got})`);
